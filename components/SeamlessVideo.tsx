@@ -1,88 +1,109 @@
 'use client';
 import { useEffect, useRef } from 'react';
 
-// How many seconds before end to start the next video (hidden), giving the
-// decoder time to render its first frame before it becomes visible.
-const PRE_WARM_SECS = 2.0;
-// How many seconds before end to begin the opacity crossfade.
-const XFADE_SECS = 0.6;
-// Duration of the opacity transition in milliseconds.
-const XFADE_MS = 500;
+// How early (in seconds) to start the next video playing (hidden from canvas)
+// so its decoder is warm when we need it.
+const PRE_WARM_SECS = 3.0;
+// How early (in seconds) to actually switch the canvas to paint from next video.
+const SWITCH_SECS = 0.1;
+
+function drawCover(
+  ctx: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  cw: number,
+  ch: number
+) {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) return;
+  const scale = Math.max(cw / vw, ch / vh);
+  const dw = vw * scale;
+  const dh = vh * scale;
+  ctx.drawImage(video, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+}
 
 interface Props {
   src: string;
   poster?: string;
 }
 
-export default function SeamlessVideo({ src, poster }: Props) {
+export default function SeamlessVideo({ src }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const refA = useRef<HTMLVideoElement>(null);
   const refB = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
     const a = refA.current;
     const b = refB.current;
-    if (!a || !b) return;
-    const vids = [a, b];
+    if (!canvas || !a || !b) return;
 
-    let activeSlot = 0;       // which slot is the current visible video
-    let preWarming = false;   // next video has started playing (hidden)
-    let switching  = false;   // crossfade in progress
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    // Reset visual state immediately (no transition)
-    const setOpacity = (el: HTMLVideoElement, val: number, animated: boolean) => {
-      el.style.transition = animated ? `opacity ${XFADE_MS}ms ease-in-out` : 'none';
-      el.style.opacity = String(val);
+    // Mutable loop state (never stale — not closed over React state)
+    let active = a;
+    let next   = b;
+    let rafId: number;
+    let preWarmed = false;
+    let switched  = false;
+
+    const resize = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const tick = () => {
+      const cw = canvas.width;
+      const ch = canvas.height;
+
+      // Paint current frame.
+      // Canvas retains its last pixels if we skip a draw — no black ever shown.
+      if (active.readyState >= 2) {
+        drawCover(ctx, active, cw, ch);
+      }
+
+      const dur = active.duration;
+      if (dur && dur > 0) {
+        const remaining = dur - active.currentTime;
+
+        // Pre-warm: start next video running (off-canvas) so decoder is ready
+        if (!preWarmed && remaining <= PRE_WARM_SECS) {
+          preWarmed = true;
+          next.currentTime = 0;
+          next.play().catch(() => {});
+        }
+
+        // Switch: swap which video we paint from (instantly — canvas has last frame as fallback)
+        if (!switched && remaining <= SWITCH_SECS) {
+          switched = true;
+          const outgoing = active;
+          active = next;
+          next   = outgoing;
+
+          // Clean up outgoing after a brief moment
+          setTimeout(() => {
+            outgoing.pause();
+            outgoing.currentTime = 0;
+            preWarmed = false;
+            switched  = false;
+          }, 300);
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
     };
 
-    setOpacity(a, 1, false);
-    setOpacity(b, 0, false);
-
-    // Load both with same src; browser reuses cached data for the second one
-    vids.forEach(v => { v.src = src; v.load(); });
+    // Load both videos (same URL → browser reuses cached data for second one)
+    [a, b].forEach(v => { v.src = src; v.load(); });
     a.play().catch(() => {});
-
-    const onTimeUpdate = () => {
-      const active = vids[activeSlot];
-      const next   = vids[1 - activeSlot];
-      if (!active.duration) return;
-
-      const remaining = active.duration - active.currentTime;
-
-      // Step 1: pre-warm — start next video playing but invisible
-      if (!preWarming && !switching && remaining <= PRE_WARM_SECS) {
-        preWarming = true;
-        next.currentTime = 0;
-        setOpacity(next, 0, false);   // ensure hidden
-        next.play().catch(() => {});
-      }
-
-      // Step 2: crossfade — swap opacity once decoder has warmed up
-      if (!switching && remaining <= XFADE_SECS) {
-        switching = true;
-        const outgoing = active;
-        const incoming = next;
-        const prevSlot = activeSlot;
-        activeSlot = 1 - prevSlot;
-
-        setOpacity(outgoing, 0, true);
-        setOpacity(incoming, 1, true);
-
-        setTimeout(() => {
-          outgoing.pause();
-          outgoing.currentTime = 0;
-          setOpacity(outgoing, 0, false); // reset without animation
-          preWarming = false;
-          switching  = false;
-        }, XFADE_MS + 150);
-      }
-    };
-
-    a.addEventListener('timeupdate', onTimeUpdate);
-    b.addEventListener('timeupdate', onTimeUpdate);
+    rafId = requestAnimationFrame(tick);
 
     return () => {
-      a.removeEventListener('timeupdate', onTimeUpdate);
-      b.removeEventListener('timeupdate', onTimeUpdate);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', resize);
       a.pause();
       b.pause();
     };
@@ -90,21 +111,10 @@ export default function SeamlessVideo({ src, poster }: Props) {
 
   return (
     <>
-      <video
-        ref={refA}
-        poster={poster}
-        muted
-        playsInline
-        preload="auto"
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-      <video
-        ref={refB}
-        muted
-        playsInline
-        preload="auto"
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+      {/* Both video elements are invisible — canvas is the only visible surface */}
+      <video ref={refA} muted playsInline preload="auto" className="hidden" />
+      <video ref={refB} muted playsInline preload="auto" className="hidden" />
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
     </>
   );
 }
