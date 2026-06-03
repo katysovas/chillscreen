@@ -10,6 +10,7 @@ interface Props {
   onAudioToggle: () => void;
   onVolumeChange: (v: number) => void;
   onFavorite: () => void;
+  onShuffleAudio: () => void;
 }
 
 export default function SceneOverlay({
@@ -20,6 +21,7 @@ export default function SceneOverlay({
   onAudioToggle,
   onVolumeChange,
   onFavorite,
+  onShuffleAudio,
 }: Props) {
   const [visible, setVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -102,7 +104,7 @@ export default function SceneOverlay({
 
         {/* Bottom row: audio + coverr logo */}
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               data-overlay-btn
               onClick={onAudioToggle}
@@ -110,6 +112,14 @@ export default function SceneOverlay({
             >
               {audioPlaying ? '🔊' : '🔇'}
               <span className="hidden sm:inline">{audioPlaying ? 'Sound on' : 'Sound off'}</span>
+            </button>
+            <button
+              data-overlay-btn
+              onClick={onShuffleAudio}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition text-white text-sm"
+              title="Shuffle ambient audio"
+            >
+              🔀
             </button>
             {/* Volume slider — desktop only */}
             <input

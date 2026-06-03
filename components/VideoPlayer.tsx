@@ -44,6 +44,17 @@ export default function VideoPlayer() {
     if (userPicked) pingDownload(v.id).catch(() => {});
   };
 
+  const shuffleAudio = async () => {
+    const a = await fetchRandomAudio().catch(() => null);
+    if (!a) return;
+    storage.setAudio(a);
+    setAudio(a);
+    // If audio was playing, resume with new track after state updates
+    if (storage.isAudioOn()) {
+      setTimeout(() => audioRef.current?.toggle(), 100);
+    }
+  };
+
   const handleFavorite = (v?: CoverrVideo) => {
     const target = v ?? video;
     if (!target) return;
@@ -93,6 +104,7 @@ export default function VideoPlayer() {
         onAudioToggle={() => audioRef.current?.toggle()}
         onVolumeChange={v => audioRef.current?.setVolume(v)}
         onFavorite={() => handleFavorite()}
+        onShuffleAudio={shuffleAudio}
       />
 
       {/* Browse drawer */}
