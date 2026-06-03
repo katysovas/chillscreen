@@ -20,7 +20,7 @@ export default function SupportPage() {
           </p>
 
           <a
-            href="mailto:support@chillscreen.app"
+            href="mailto:support@chillscreen.com"
             className="inline-flex items-center rounded-xl bg-emerald-700 px-6 py-3 font-bold text-white transition hover:bg-emerald-800"
           >
             Email support

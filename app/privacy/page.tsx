@@ -64,7 +64,7 @@ export default function PrivacyPage() {
         <h2>Contact</h2>
         <p>
           Questions? Reach us at{' '}
-          <a href="mailto:privacy@chillscreen.app">privacy@chillscreen.app</a>.
+          <a href="mailto:privacy@chillscreen.com">privacy@chillscreen.com</a>.
         </p>
       </article>
     </main>
