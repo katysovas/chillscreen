@@ -6,6 +6,7 @@ import { fetchRandomVideo, fetchRandomAudio, pingDownload } from '@/lib/coverr';
 import SceneOverlay from './SceneOverlay';
 import AudioPlayer, { AudioPlayerHandle } from './AudioPlayer';
 import BrowseDrawer from './BrowseDrawer';
+import SeamlessVideo from './SeamlessVideo';
 
 export default function VideoPlayer() {
   const [video, setVideo] = useState<CoverrVideo | null>(null);
@@ -74,17 +75,8 @@ export default function VideoPlayer() {
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
-      {/* Fullscreen video */}
-      <video
-        key={video.id}
-        src={video.urls.mp4}
-        poster={video.poster}
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+      {/* Fullscreen seamless-looping video */}
+      <SeamlessVideo key={video.id} src={video.urls.mp4} poster={video.poster} />
 
       {/* Hidden audio player */}
       {audio && (
