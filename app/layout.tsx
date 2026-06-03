@@ -5,24 +5,19 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ChillScreen — A calm Home tab for Slack',
-  description:
-    'Pick a calming wallpaper scene for your Slack Home tab. One click. No noise.',
+  title: 'ChillScreen — Full-screen ambient scenes',
+  description: 'Full-screen looping ambient videos with optional ambient audio. Breathe.',
   openGraph: {
     title: 'ChillScreen',
-    description: 'A calm Home tab for Slack. Pick your scene. Breathe.',
+    description: 'Full-screen ambient scenes for focus, rest, and calm.',
     type: 'website',
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={`${inter.className} bg-black overflow-hidden`}>{children}</body>
     </html>
   );
 }
