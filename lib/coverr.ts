@@ -10,14 +10,10 @@ interface CuratedResponse {
   categories: HydratedCategory[];
 }
 
-let _curatedCache: CuratedResponse | null = null;
-
 export async function fetchCurated(): Promise<CuratedResponse> {
-  if (_curatedCache) return _curatedCache;
-  const res = await fetch('/api/coverr/curated');
+  const res = await fetch('/api/coverr/curated', { cache: 'no-store' });
   if (!res.ok) return { videos: [], audio: [], categories: [] };
-  _curatedCache = await res.json();
-  return _curatedCache!;
+  return res.json();
 }
 
 export async function fetchRandomVideo(): Promise<CoverrVideo> {

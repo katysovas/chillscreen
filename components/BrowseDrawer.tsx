@@ -24,11 +24,14 @@ export default function BrowseDrawer({ open, favorites, onClose, onSelect, onFav
     setLoading(true);
     try {
       const curated = await fetchCurated();
-      setCategories(curated.categories ?? []);
-      // If no saved tab, default to first category
-      if (storage.getCategory() === null && curated.categories.length > 0) {
-        setTab(curated.categories[0].id);
-      }
+      const cats = curated.categories ?? [];
+      setCategories(cats);
+      // Reset to first valid tab if current tab isn't recognised
+      setTab(prev => {
+        if (prev === 'favorites') return prev;
+        if (cats.find(c => c.id === prev)) return prev;
+        return cats.length > 0 ? cats[0].id : 'favorites';
+      });
     } finally {
       setLoading(false);
     }

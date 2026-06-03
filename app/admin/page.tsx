@@ -31,7 +31,7 @@ function VideoCard({ video: v, selected, onToggle, compact }: {
       </div>
       <div className="absolute bottom-0 inset-x-0 bg-black/70 px-2 py-1.5 cursor-pointer" onClick={onToggle}>
         <p className="text-xs text-white truncate">{v.title}</p>
-        {!compact && <p className="text-[10px] text-white/40 font-mono">{v.id}</p>}
+        <p className="text-[10px] text-white/40 font-mono">{v.id}</p>
       </div>
     </div>
   );
@@ -101,6 +101,7 @@ function CategoriesTab({ curated, setCurated, password }: {
   const [catQuery, setCatQuery] = useState('calm nature');
   const [catResults, setCatResults] = useState<CoverrVideo[]>([]);
   const [catLoading, setCatLoading] = useState(false);
+  const [manualId, setManualId] = useState('');
 
   const selectedCat = curated.categories.find(c => c.id === selectedCatId);
 
@@ -226,10 +227,28 @@ function CategoriesTab({ curated, setCurated, password }: {
             <span className="text-white/40 text-sm">{selectedCat.videoIds.length} videos</span>
           </div>
 
+          {/* Manual ID input */}
+          <div className="flex gap-2">
+            <input type="text" value={manualId} onChange={e => setManualId(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && manualId.trim()) {
+                  addVideoToCat(manualId.trim());
+                  setManualId('');
+                }
+              }}
+              placeholder="Paste a Coverr video ID…"
+              className="flex-1 bg-gray-800 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono" />
+            <button
+              onClick={() => { if (manualId.trim()) { addVideoToCat(manualId.trim()); setManualId(''); } }}
+              className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 rounded-lg text-sm font-medium transition">
+              Add ID
+            </button>
+          </div>
+
           {/* Search to add videos */}
           <div className="flex gap-2">
             <input type="text" value={catQuery} onChange={e => setCatQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && searchCatVideos()} placeholder="Search to add videos…"
+              onKeyDown={e => e.key === 'Enter' && searchCatVideos()} placeholder="Or search Coverr…"
               className="flex-1 bg-gray-800 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-emerald-500 text-sm" />
             <button onClick={searchCatVideos} disabled={catLoading}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition disabled:opacity-50">
@@ -273,7 +292,7 @@ function CategoriesTab({ curated, setCurated, password }: {
           )}
 
           {catResults.length === 0 && selectedCat.videoIds.length === 0 && (
-            <div className="text-center text-white/30 py-16 text-sm">Search above to find videos for this category</div>
+            <div className="text-center text-white/30 py-16 text-sm">Paste a video ID or search above to add videos</div>
           )}
         </div>
       ) : (
