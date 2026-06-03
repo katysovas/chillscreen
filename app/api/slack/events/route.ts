@@ -20,7 +20,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.event?.type === 'app_home_opened' && body.event.tab === 'home') {
-    await publishHome(body.event.user, 0);
+    try {
+      await publishHome(body.event.user, 0);
+      console.log('publishHome success for', body.event.user);
+    } catch (err) {
+      console.error('publishHome error:', err);
+    }
   }
 
   return new Response('', { status: 200 });
