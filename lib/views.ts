@@ -15,17 +15,27 @@ export function buildHomeView(selectedIndex: number) {
       type: 'section',
       text: { type: 'mrkdwn', text: '*Your current scene*' },
     },
-    {
-      type: 'image',
-      image_url: hero.url,
-      alt_text: hero.alt,
-    },
+    hero.videoUrl
+      ? {
+          type: 'video',
+          video_url: hero.videoUrl,
+          thumbnail_url: hero.thumbnailUrl ?? hero.url,
+          alt_text: hero.alt,
+          title: { type: 'plain_text', text: hero.alt },
+        }
+      : {
+          type: 'image',
+          image_url: hero.url,
+          alt_text: hero.alt,
+        },
     {
       type: 'context',
       elements: [
         {
           type: 'mrkdwn',
-          text: `Photo by <${hero.authorUrl}?${UTM}|${hero.author}> on <https://unsplash.com/?${UTM}|Unsplash>`,
+          text: hero.videoUrl
+            ? `🎬 Playing: ${hero.alt}`
+            : `Photo by <${hero.authorUrl}?${UTM}|${hero.author}> on <https://unsplash.com/?${UTM}|Unsplash>`,
         },
       ],
     },

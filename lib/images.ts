@@ -3,6 +3,8 @@ export type Wallpaper = {
   alt: string;
   author: string;
   authorUrl: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
 };
 
 // 6 manually curated calm landscapes from Unsplash (no runtime API key needed).
@@ -13,6 +15,9 @@ export const WALLPAPERS: Wallpaper[] = [
     alt: 'misty mountain at dawn',
     author: 'Kalen Emsley',
     authorUrl: 'https://unsplash.com/@kalenemsley',
+    // Calm aerial ocean waves — YouTube video block test
+    videoUrl: 'https://www.youtube.com/watch?v=7maJOI3QMu0',
+    thumbnailUrl: 'https://img.youtube.com/vi/7maJOI3QMu0/maxresdefault.jpg',
   },
   {
     url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1080&fit=crop&auto=format',
