@@ -1,4 +1,5 @@
-import curatedData from '@/data/curated.json';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { CuratedCategory } from '@/lib/types';
 
 const AUTH = { Authorization: `Bearer ${process.env.COVERR_API_KEY}` };
@@ -7,6 +8,11 @@ interface StoredCurated {
   videos: string[];
   audio: string[];
   categories: CuratedCategory[];
+}
+
+function loadCurated(): StoredCurated {
+  const raw = readFileSync(join(process.cwd(), 'data/curated.json'), 'utf-8');
+  return JSON.parse(raw);
 }
 
 async function fetchById(id: string, type: 'videos' | 'audios') {
@@ -22,7 +28,7 @@ async function fetchById(id: string, type: 'videos' | 'audios') {
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const curated = curatedData as unknown as StoredCurated;
+  const curated = loadCurated();
   const categories = curated.categories ?? [];
 
   // Collect all unique video IDs across top-level and all categories

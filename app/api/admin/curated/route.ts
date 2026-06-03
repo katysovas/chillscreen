@@ -1,5 +1,6 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { NextRequest } from 'next/server';
-import curatedData from '@/data/curated.json';
 
 function authorized(req: NextRequest) {
   return req.headers.get('x-admin-password') === process.env.ADMIN_PASSWORD;
@@ -7,5 +8,6 @@ function authorized(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return new Response('Unauthorized', { status: 401 });
-  return Response.json(curatedData);
+  const raw = readFileSync(join(process.cwd(), 'data/curated.json'), 'utf-8');
+  return Response.json(JSON.parse(raw));
 }
