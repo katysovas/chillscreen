@@ -1,6 +1,9 @@
 {
-  "_comment": "Managed via /admin. Add video/audio IDs and define categories with their videos.",
   "videos": [],
   "audio": [],
-  "categories": []
+  "categories": [
+    { "id": "nature", "name": "Nature", "emoji": "🌿", "videoIds": [] },
+    { "id": "ocean", "name": "Ocean", "emoji": "🌊", "videoIds": [] },
+    { "id": "city", "name": "City", "emoji": "🏙", "videoIds": [] }
+  ]
 }
