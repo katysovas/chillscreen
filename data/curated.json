@@ -1,5 +1,6 @@
 {
-  "_comment": "Add Coverr video/audio IDs here to control what appears in the library. Find IDs from coverr.co URLs or the 'Copy ID' button in the browse drawer.",
+  "_comment": "Managed via /admin. Add video/audio IDs and define categories with their videos.",
   "videos": [],
-  "audio": []
+  "audio": [],
+  "categories": []
 }

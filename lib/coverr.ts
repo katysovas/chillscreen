@@ -1,17 +1,27 @@
-import { CoverrVideo, CoverrAudio, CoverrCategory } from './types';
+import { CoverrVideo, CoverrAudio, HydratedCategory } from './types';
 
 function rand<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export async function fetchCurated(): Promise<{ videos: CoverrVideo[]; audio: CoverrAudio[] }> {
+interface CuratedResponse {
+  videos: CoverrVideo[];
+  audio: CoverrAudio[];
+  categories: HydratedCategory[];
+}
+
+let _curatedCache: CuratedResponse | null = null;
+
+export async function fetchCurated(): Promise<CuratedResponse> {
+  if (_curatedCache) return _curatedCache;
   const res = await fetch('/api/coverr/curated');
-  if (!res.ok) return { videos: [], audio: [] };
-  return res.json();
+  if (!res.ok) return { videos: [], audio: [], categories: [] };
+  _curatedCache = await res.json();
+  return _curatedCache!;
 }
 
 export async function fetchRandomVideo(): Promise<CoverrVideo> {
-  const curated = await fetchCurated().catch(() => ({ videos: [], audio: [] }));
+  const curated = await fetchCurated().catch(() => ({ videos: [], audio: [], categories: [] }));
   if (curated.videos.length) return rand(curated.videos);
   const res = await fetch('/api/coverr/videos?query=calm+nature&sort=popular&page_size=20&urls=true');
   const data = await res.json();
@@ -25,18 +35,8 @@ export async function fetchVideos(query: string, page = 0): Promise<CoverrVideo[
   return (await res.json()).hits ?? [];
 }
 
-export async function fetchCategoryVideos(categoryId: string): Promise<CoverrVideo[]> {
-  const res = await fetch(`/api/coverr/categories/${categoryId}/videos?urls=true`);
-  return (await res.json()).hits ?? [];
-}
-
-export async function fetchCategories(): Promise<CoverrCategory[]> {
-  const res = await fetch('/api/coverr/categories');
-  return (await res.json()).hits ?? [];
-}
-
 export async function fetchRandomAudio(): Promise<CoverrAudio | null> {
-  const curated = await fetchCurated().catch(() => ({ videos: [], audio: [] }));
+  const curated = await fetchCurated().catch(() => ({ videos: [], audio: [], categories: [] }));
   const curatedFree = curated.audio.filter(a => !a.isPremium);
   if (curatedFree.length) return rand(curatedFree);
   const res = await fetch('/api/coverr/audios?query=ambient&sort=popular&page_size=20');

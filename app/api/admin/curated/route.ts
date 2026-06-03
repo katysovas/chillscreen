@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const res = await fetch(meta.url);
     return Response.json(await res.json());
   } catch {
-    return Response.json({ videos: [], audio: [] });
+    return Response.json({ videos: [], audio: [], categories: [] });
   }
 }
 

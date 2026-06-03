@@ -24,3 +24,17 @@ export type CoverrCategory = {
   slug: string;
   thumbnail: string;
 };
+
+export type CuratedCategory = {
+  id: string;
+  name: string;
+  emoji: string;
+  videoIds: string[];
+};
+
+export type HydratedCategory = {
+  id: string;
+  name: string;
+  emoji: string;
+  videos: CoverrVideo[];
+};
