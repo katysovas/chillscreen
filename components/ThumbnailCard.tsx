@@ -56,6 +56,19 @@ export default function ThumbnailCard({ video, isFavorite, onSelect, onFavorite 
 
       {/* Overlay: title + favorite */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute top-1.5 right-1.5 flex gap-1">
+          <button
+            onClick={e => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(video.id).catch(() => {});
+            }}
+            className="px-1.5 py-0.5 rounded bg-black/60 text-white/70 hover:text-white text-[10px] font-mono transition"
+            title={`Copy ID: ${video.id}`}
+            aria-label="Copy video ID"
+          >
+            ID
+          </button>
+        </div>
         <div className="absolute bottom-0 inset-x-0 p-2 flex items-end justify-between">
           <span className="text-white text-xs font-medium truncate">{video.title}</span>
           <button
