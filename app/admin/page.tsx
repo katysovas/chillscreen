@@ -1,6 +1,85 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CoverrVideo } from '@/lib/types';
+
+function VideoCard({
+  video: v,
+  selected,
+  onToggle,
+}: {
+  video: CoverrVideo;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [hovered, setHovered] = useState(false);
+
+  const handleMouseEnter = () => {
+    setHovered(true);
+    videoRef.current?.play().catch(() => {});
+  };
+  const handleMouseLeave = () => {
+    setHovered(false);
+    if (videoRef.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; }
+  };
+
+  return (
+    <div
+      className={`relative aspect-video rounded-xl overflow-hidden ring-2 transition group ${
+        selected ? 'ring-emerald-500' : 'ring-transparent hover:ring-white/30'
+      }`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* Thumbnail */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={v.thumbnail}
+        alt={v.title}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${hovered ? 'opacity-0' : 'opacity-100'}`}
+      />
+      {/* Inline preview video */}
+      <video
+        ref={videoRef}
+        src={v.urls.mp4_preview}
+        muted
+        loop
+        playsInline
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+      />
+
+      {/* Selected checkmark */}
+      {selected && (
+        <div className="absolute top-2 left-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-xs font-bold pointer-events-none">
+          ✓
+        </div>
+      )}
+
+      {/* Action buttons — visible on hover */}
+      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <a
+          href={v.urls.mp4}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="px-1.5 py-0.5 rounded bg-black/70 text-white/80 hover:text-white text-[10px] font-medium"
+          title="Open full video in new tab"
+        >
+          ↗
+        </a>
+      </div>
+
+      {/* Bottom bar — click to toggle */}
+      <div
+        className="absolute bottom-0 inset-x-0 bg-black/70 px-2 py-1.5 cursor-pointer"
+        onClick={onToggle}
+      >
+        <p className="text-xs text-white truncate">{v.title}</p>
+        <p className="text-[10px] text-white/40 font-mono">{v.id}</p>
+      </div>
+    </div>
+  );
+}
 
 type Curated = { videos: string[]; audio: string[] };
 
@@ -151,25 +230,12 @@ export default function AdminPage() {
             {videos.map(v => {
               const selected = curated.videos.includes(v.id);
               return (
-                <div
+                <VideoCard
                   key={v.id}
-                  onClick={() => toggleVideo(v.id)}
-                  className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer ring-2 transition ${
-                    selected ? 'ring-emerald-500' : 'ring-transparent hover:ring-white/30'
-                  }`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={v.thumbnail} alt={v.title} className="w-full h-full object-cover" />
-                  {selected && (
-                    <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                      <span className="text-2xl">✓</span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 inset-x-0 bg-black/60 px-2 py-1">
-                    <p className="text-xs text-white truncate">{v.title}</p>
-                    <p className="text-[10px] text-white/40 font-mono">{v.id}</p>
-                  </div>
-                </div>
+                  video={v}
+                  selected={selected}
+                  onToggle={() => toggleVideo(v.id)}
+                />
               );
             })}
           </div>
