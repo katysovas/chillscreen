@@ -20,11 +20,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.event?.type === 'app_home_opened' && body.event.tab === 'home') {
-    // event.view is present when a view was previously published for this user.
-    // Skip re-publishing to avoid wiping their selected scene.
-    if (!body.event.view) {
-      await publishHome(body.event.user, 0);
-    }
+    await publishHome(body.event.user, 0);
   }
 
   return new Response('', { status: 200 });
