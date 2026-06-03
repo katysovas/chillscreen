@@ -39,9 +39,9 @@ export const WALLPAPERS: Wallpaper[] = [
     authorUrl: 'https://unsplash.com/@andreiciobanu',
   },
   {
-    url: 'https://images.unsplash.com/photo-1571931468053-8d86f199f72f?w=1080&fit=crop&auto=format',
-    alt: 'zen garden stones',
-    author: 'Sarah Brown',
-    authorUrl: 'https://unsplash.com/@sweetpagesco',
+    url: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=1080&fit=crop&auto=format',
+    alt: 'peaceful waterfall',
+    author: 'Patrice Bouchard',
+    authorUrl: 'https://unsplash.com/@patriceb',
   },
 ];
