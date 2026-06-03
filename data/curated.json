@@ -2,8 +2,29 @@
   "videos": [],
   "audio": [],
   "categories": [
-    { "id": "nature", "name": "Nature", "emoji": "🌿", "videoIds": [] },
-    { "id": "ocean", "name": "Ocean", "emoji": "🌊", "videoIds": [] },
-    { "id": "city", "name": "City", "emoji": "🏙", "videoIds": [] }
+    {
+      "id": "nature",
+      "name": "Nature",
+      "emoji": "🌿",
+      "videoIds": [
+        "HMr9f2ScFu",
+        "Q9gONWmDUy",
+        "RUouWxOq1f",
+        "zzVM5MP9rL",
+        "Yge1BU5B1G"
+      ]
+    },
+    {
+      "id": "ocean",
+      "name": "Ocean",
+      "emoji": "🌊",
+      "videoIds": []
+    },
+    {
+      "id": "city",
+      "name": "City",
+      "emoji": "🏙",
+      "videoIds": []
+    }
   ]
 }
