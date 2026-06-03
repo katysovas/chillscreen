@@ -1,0 +1,9 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "env": {
+    "SLACK_SIGNING_SECRET": "@slack-signing-secret",
+    "SLACK_BOT_TOKEN": "@slack-bot-token"
+  }
+}

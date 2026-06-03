@@ -1,0 +1,31 @@
+export const runtime = 'nodejs';
+
+import { NextRequest } from 'next/server';
+import { verifySlackSignature, publishHome } from '@/lib/slack';
+
+export async function POST(req: NextRequest) {
+  const raw = await req.text();
+  const sig = req.headers.get('x-slack-signature');
+  const ts = req.headers.get('x-slack-request-timestamp');
+
+  if (!verifySlackSignature(raw, sig, ts)) {
+    return new Response('bad signature', { status: 401 });
+  }
+
+  const body = JSON.parse(raw);
+
+  // One-time endpoint verification from the Slack dashboard
+  if (body.type === 'url_verification') {
+    return Response.json({ challenge: body.challenge });
+  }
+
+  if (body.event?.type === 'app_home_opened' && body.event.tab === 'home') {
+    // event.view is present when a view was previously published for this user.
+    // Skip re-publishing to avoid wiping their selected scene.
+    if (!body.event.view) {
+      await publishHome(body.event.user, 0);
+    }
+  }
+
+  return new Response('', { status: 200 });
+}
