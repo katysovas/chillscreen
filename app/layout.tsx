@@ -5,11 +5,11 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ChillScreen — Full-screen ambient scenes',
-  description: 'Full-screen looping ambient videos with optional ambient audio. Breathe.',
+  title: 'ChillScreen',
+  description: 'Walk forever.',
   openGraph: {
     title: 'ChillScreen',
-    description: 'Full-screen ambient scenes for focus, rest, and calm.',
+    description: 'Walk forever.',
     type: 'website',
   },
 };
