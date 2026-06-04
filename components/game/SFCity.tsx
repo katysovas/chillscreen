@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Character from './Character';
 import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
-import ConnectChatOverlay from './ConnectChatOverlay';
+import { NpcChatOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
+import { playerBubbleSide } from './ChatBubble';
 import { VenueRoadSigns } from './VenueRoadSigns';
 import { CHAR_BOTTOM } from './groundLayout';
 import Cinema, { CINEMA_SCALE, CINEMA_HEIGHT } from './Cinema';
@@ -28,6 +29,13 @@ import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
 import { getConcertNowPlaying, subscribeConcertNowPlaying } from '@/lib/concertNowPlaying';
+import { GROUND_TREE_XS } from '@/lib/sleepingCats';
+import { gameWorldOffRef } from '@/lib/gameWorldRef';
+import { isNearConcert } from '@/lib/concertDance';
+import { loadCinemaVideos } from '@/lib/cinemaVideoPool';
+import { SleepingCatsGround } from './SleepingCat';
+import { LovingCarLayer } from './LovingCar';
+import { SKY_CREATURES_KF, SkyCreaturesLayer } from './SkyCreatures';
 
 // ─── Keyframes & character CSS ───────────────────────────────────────────────
 const KF = `
@@ -41,6 +49,7 @@ const KF = `
   @keyframes greet-pop { 0%,100%{transform:translateX(-50%) scale(1) translateY(0);} 50%{transform:translateX(-50%) scale(1.18) translateY(-6px);} }
   @keyframes chat-in-left  { from{opacity:0;} to{opacity:1;} }
   @keyframes chat-in-right { from{opacity:0;} to{opacity:1;} }
+  ${SKY_CREATURES_KF}
 
   .ch-wrapper{width:500px;height:240px;position:relative;}
   .ch-animal{position:relative;animation:ch-animal 2s 1s infinite alternate;}
@@ -98,6 +107,22 @@ const KF = `
   .ch-walking .ch-legs span:before{animation:ch-foot-a .36s ease-in-out infinite!important;transform-origin:center top;}
   .ch-walking .ch-legs span:first-child:before{animation:ch-foot-b .36s ease-in-out infinite!important;transform-origin:center top;}
   .ch-walking .ch-right-hand{animation-duration:.36s!important;animation-delay:0s!important;}
+  /* Concert dance — quick vertical bounce; feet keep stepping while walking */
+  .ch-dancing .ch-animal{animation:ch-dance-bounce .28s ease-in-out infinite alternate!important;}
+  .ch-dancing:not(.ch-walking) .ch-legs span,.ch-dancing:not(.ch-walking) .ch-legs span:first-child{animation:none!important;}
+  .ch-dancing:not(.ch-walking) .ch-legs span{transform:rotate(5deg)!important;}
+  .ch-dancing:not(.ch-walking) .ch-legs span:first-child{transform:rotate(-5deg)!important;}
+  .ch-dancing .ch-right-hand{animation:none!important;transform:rotate(-47deg)!important;}
+  .ch-dancing .ch-left-hand{animation:ch-dance-left-sway 1.15s ease-in-out infinite alternate!important;transform-origin:88% 12%;}
+  .ch-dancing .ch-heart,.ch-dancing .ch-eyes:before,.ch-dancing .ch-eyes:after{animation:none!important;}
+  @keyframes ch-dance-bounce{
+    from{transform:translateY(0);}
+    to{transform:translateY(-26px);}
+  }
+  @keyframes ch-dance-left-sway{
+    from{transform:rotate(-5deg);}
+    to{transform:rotate(9deg);}
+  }
   /* Leg lifts up then stamps down; small ±10° tilt so it steps, not swings. */
   @keyframes ch-step-a{
     0%{transform:rotate(-9deg) translateY(0);}
@@ -431,10 +456,10 @@ function MidLayer({ worldOff }: { worldOff: number }) {
                       width: 360,
                       transform: `scale(${CINEMA_SCALE})`,
                       transformOrigin: 'top left',
-                      pointerEvents: t === cinemaLive && focus === 'cinema' ? 'auto' : 'none',
+                      pointerEvents: t === cinemaLive ? 'auto' : 'none',
                     }}
                   >
-                    <Cinema live={t === cinemaLive && focus === 'cinema'} />
+                    <Cinema live={t === cinemaLive} />
                   </div>
                 </foreignObject>
               </>
@@ -483,7 +508,7 @@ function GroundLayer({ worldOff }: { worldOff: number }) {
   const vx    = worldOff * GND_F;
   const tiles = nearTiles(vx, GND_TILE);
   const GND   = 685;
-  const TREES = [250,500,780,1050,1340,1620,1900,2180,2460,2740,3020,3280];
+  const TREES = GROUND_TREE_XS;
   const LAMPS = [380,700,1060,1400,1740,2080,2420,2760,3100];
 
   return (
@@ -514,6 +539,7 @@ function GroundLayer({ worldOff }: { worldOff: number }) {
               <StreetTree x={x} y={GND} h={195+i%4*12} sp={88+i%3*8} />
             </g>
           ))}
+          <SleepingCatsGround tile={t} gndY={GND} />
           {LAMPS.map((x,i)=>(<LampPost key={i} x={x} y={GND} />))}
           {[560,1850,3050].map((x,i)=>(
             <g key={i} transform={`translate(${x},${GND})`}>
@@ -543,15 +569,6 @@ function GroundLayer({ worldOff }: { worldOff: number }) {
               <rect x={-28} y={-108} width={56} height={14} rx={2} fill="#2040a0" />
               <rect x={-18} y={-104} width={36} height={2} fill="rgba(255,255,255,.8)" rx={1} />
               <rect x={-18} y={-100} width={28} height={2} fill="rgba(255,255,255,.6)" rx={1} />
-            </g>
-          ))}
-          {[660,1280,1960,2640,3200].map((x,i)=>(
-            <g key={i} transform={`translate(${x},${GND+45})`}>
-              <circle cx={0} cy={0} r={16} fill="#a09878" />
-              <circle cx={0} cy={0} r={14} fill="#988868" />
-              <circle cx={0} cy={0} r={10} fill="none" stroke="#a09878" strokeWidth={2} />
-              <line x1={-10} y1={0} x2={10}  y2={0}  stroke="#a09878" strokeWidth={1.5} />
-              <line x1={0}   y1={-10} x2={0} y2={10} stroke="#a09878" strokeWidth={1.5} />
             </g>
           ))}
         </g>
@@ -614,6 +631,10 @@ export default function SFCity() {
   const [facing,      setFacing]      = useState<'left' | 'right'>('right');
   const [walking,     setWalking]     = useState(false);
   const [jumping,     setJumping]     = useState(false);
+  const [playerDancing, setPlayerDancing] = useState(false);
+  const [npcDancing,  setNpcDancing]  = useState<boolean[]>(() => CHARACTERS.map(() => false));
+  const playerDancingRef = useRef(false);
+  const npcDancingRef    = useRef<boolean[]>(CHARACTERS.map(() => false));
   const [greetingNpc, setGreetingNpc] = useState<number | null>(null);
   const [nearNpc,     setNearNpc]     = useState<number | null>(null);
   const [greetNpcX,   setGreetNpcX]   = useState(50);
@@ -641,6 +662,7 @@ export default function SFCity() {
   const greetingSessionRef = useRef<number | null>(null);
 
   useEffect(() => { setPlayerName(getPlayerName()); }, []);
+  useEffect(() => { loadCinemaVideos(); }, []);
 
   useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
   useEffect(() => { chatHistoryRef.current = chatHistory; }, [chatHistory]);
@@ -928,10 +950,34 @@ export default function SFCity() {
     window.addEventListener('keydown', onDown, true);
     window.addEventListener('keyup',   onUp);
 
+    const updateDanceState = (off: number) => {
+      const width = window.innerWidth;
+      const greeting = greetingRef.current;
+
+      const playerNear = greeting === null && isNearConcert(off, off, width);
+      if (playerNear !== playerDancingRef.current) {
+        playerDancingRef.current = playerNear;
+        setPlayerDancing(playerNear);
+      } else if (greeting !== null && playerDancingRef.current) {
+        playerDancingRef.current = false;
+        setPlayerDancing(false);
+      }
+
+      const next = npcWorldXRefs.current.map((wx, i) =>
+        greeting === i ? false : isNearConcert(wx, off, width),
+      );
+      if (next.some((v, i) => v !== npcDancingRef.current[i])) {
+        npcDancingRef.current = next;
+        setNpcDancing([...next]);
+      }
+    };
+
     const loop = () => {
       // While greeting, freeze the player completely
       if (greetingRef.current !== null) {
         if (walkingRef.current) { walkingRef.current = false; setWalking(false); }
+        updateDanceState(worldRef.current);
+        gameWorldOffRef.current = worldRef.current;
         rafRef.current = requestAnimationFrame(loop);
         return;
       }
@@ -980,6 +1026,8 @@ export default function SFCity() {
         setNearNpc(null);
       }
 
+      updateDanceState(worldRef.current);
+      gameWorldOffRef.current = worldRef.current;
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
@@ -996,9 +1044,12 @@ export default function SFCity() {
       <style>{KF}</style>
 
       <SkyLayer         worldOff={worldOff} />
+      <SkyCreaturesLayer />
       <MidLayer         worldOff={worldOff} />
       <GroundLayer      worldOff={worldOff} />
       <VenueSignsLayer  worldOff={worldOff} />
+
+      <LovingCarLayer />
 
       {/* Autonomous NPCs */}
       {CHARACTERS.map((cfg, i) => (
@@ -1009,7 +1060,13 @@ export default function SFCity() {
           paused={greetingNpc === i}
           greeting={greetingNpc === i}
           greetFacing={greetNpcX < 50 ? 'right' : 'left'}
+          dancing={npcDancing[i]}
           onMove={wx => { npcWorldXRefs.current[i] = wx; }}
+          greetingChat={greetingNpc === i ? {
+            name: cfg.name,
+            npcTyping,
+            npcMessage,
+          } : undefined}
         />
       ))}
 
@@ -1021,30 +1078,30 @@ export default function SFCity() {
         zIndex: greetingNpc !== null ? 200 : 20,
       }}>
         <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
-          <Character walking={walking} facing={facing} />
+          <Character
+            walking={walking}
+            facing={facing}
+            dancing={playerDancing}
+            bubbleSide={playerBubbleSide(greetNpcX)}
+            chatOverlay={greetingNpc !== null ? (
+              <PlayerChatOverlay
+                npcScreenX={greetNpcX}
+                chatMode={chatMode}
+                playerName={playerName}
+                playerMessage={playerMessage}
+                nameDraft={nameDraft}
+                setNameDraft={setNameDraft}
+                chatDraft={chatDraft}
+                setChatDraft={setChatDraft}
+                onSaveName={handleSaveName}
+                onSendMessage={handleSendMessage}
+                chatInputRef={chatInputRef}
+                nameInputRef={nameInputRef}
+              />
+            ) : undefined}
+          />
         </div>
       </div>
-
-      {/* Chat overlay — always on top while connected */}
-      {greetingNpc !== null && (
-        <ConnectChatOverlay
-          greetingNpc={greetingNpc}
-          greetNpcX={greetNpcX}
-          chatMode={chatMode}
-          playerName={playerName}
-          playerMessage={playerMessage}
-          npcTyping={npcTyping}
-          npcMessage={npcMessage}
-          nameDraft={nameDraft}
-          setNameDraft={setNameDraft}
-          chatDraft={chatDraft}
-          setChatDraft={setChatDraft}
-          onSaveName={handleSaveName}
-          onSendMessage={handleSendMessage}
-          chatInputRef={chatInputRef}
-          nameInputRef={nameInputRef}
-        />
-      )}
 
       {/* Proximity hint — touching but not yet connected */}
       {nearNpc !== null && greetingNpc === null && (

@@ -1,136 +1,63 @@
 'use client';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
-export type ChatSide = 'left' | 'right';
+export type BubbleSide = 'left' | 'right';
 
-type Props = {
-  name?: string;
-  message: string;
-  /** Which side of the character the bubble sits on. */
-  side: ChatSide;
-  bottomOffset?: number;
-  spreadPx?: number;
-  animate?: boolean;
-};
+/** Bubble sits above the character's left or right side based on screen position. */
+export function screenXToBubbleSide(screenX: number): BubbleSide {
+  return screenX < 50 ? 'left' : 'right';
+}
 
-/** Shared layout for bubbles and the player input — keeps conversation spacing consistent. */
-export function chatBubbleLayout(
-  side: ChatSide,
-  bottomOffset = 130,
-  /** Extra px pushing the bubble away from the character (and the other speaker). */
-  spreadPx = 0,
-): { style: CSSProperties; tailStyle: CSSProperties; animation: string } {
-  const charInset = 14; // tail anchor — smaller = bubble sits further from character center
-  const tailInset = 22;
-  const outward = spreadPx + charInset;
+/** Player is centred — place bubble on the side away from the NPC. */
+export function playerBubbleSide(npcScreenX: number): BubbleSide {
+  return npcScreenX >= 50 ? 'left' : 'right';
+}
 
-  if (side === 'left') {
-    return {
-      style: {
-        position: 'absolute',
-        bottom: bottomOffset,
-        left: 0,
-        transform: `translateX(calc(-100% - ${spreadPx}px + ${charInset}px))`,
-      },
-      tailStyle: {
-        position: 'absolute',
-        bottom: -7,
-        right: tailInset,
-        width: 0,
-        height: 0,
-        borderLeft: '7px solid transparent',
-        borderRight: '7px solid transparent',
-        borderTop: '7px solid #fff',
-        filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.07))',
-      },
-      animation: 'chat-in-left',
-    };
-  }
-
+function bubbleTailStyle(bubbleSide: BubbleSide): CSSProperties {
   return {
-    style: {
-      position: 'absolute',
-      bottom: bottomOffset,
-      left: 0,
-      transform: `translateX(calc(-${outward}px))`,
-    },
-    tailStyle: {
-      position: 'absolute',
-      bottom: -7,
-      left: tailInset,
-      width: 0,
-      height: 0,
-      borderLeft: '7px solid transparent',
-      borderRight: '7px solid transparent',
-      borderTop: '7px solid #fff',
-      filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.07))',
-    },
-    animation: 'chat-in-right',
+    position: 'absolute',
+    bottom: -7,
+    ...(bubbleSide === 'left' ? { right: 10 } : { left: 18 }),
+    width: 0,
+    height: 0,
+    borderLeft: '7px solid transparent',
+    borderRight: '7px solid transparent',
+    borderTop: '7px solid #fff',
+    filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.07))',
   };
 }
 
-/** Chat always paints above everything in the scene. */
-export const CHAT_Z = 1000;
-export const CHAT_LAYER_Z = 1000;
+const bubbleShell: CSSProperties = {
+  background: '#fff',
+  borderRadius: 14,
+  padding: '8px 13px',
+  minWidth: 130,
+  maxWidth: 260,
+  textAlign: 'left',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+  lineHeight: 1.4,
+  position: 'relative',
+};
 
-/** Minimum horizontal push away from each character center. */
-export const CONVERSATION_SPREAD = 28;
-
-/** Typical bubble width used to compute spread when speakers are close. */
-const BUBBLE_EST_WIDTH = 240;
-
-/**
- * Push bubbles outward so they don't overlap when player (50%) and NPC are nearby.
- * Spread increases as center-to-center distance shrinks.
- */
-export function getConversationSpread(greetNpcX: number, viewportWidth: number): number {
-  const distPx = (Math.abs(50 - greetNpcX) / 100) * viewportWidth;
-  const needed = (BUBBLE_EST_WIDTH - distPx) / 2 + 16;
-  const spread = Math.max(CONVERSATION_SPREAD, Math.round(needed));
-
-  const npcAnchorPx = (greetNpcX / 100) * viewportWidth;
-  const playerAnchorPx = viewportWidth / 2;
-  const npcOnLeft = greetNpcX < 50;
-  const maxForNpc = npcOnLeft
-    ? npcAnchorPx * 0.8
-    : (viewportWidth - npcAnchorPx) * 0.8;
-  const maxForPlayer = npcOnLeft
-    ? (viewportWidth - playerAnchorPx) * 0.8
-    : playerAnchorPx * 0.8;
-
-  return Math.min(spread, maxForNpc, maxForPlayer);
-}
-
-/** Vertical offsets — NPC higher, sent message mid, input lowest. */
-export const NPC_CHAT_BOTTOM    = 200;
-export const PLAYER_SENT_BOTTOM = 128;
-export const PLAYER_CHAT_BOTTOM = 72;
-
-export default function ChatBubble({
+export function AttachedChatBubble({
   name,
   message,
-  side,
-  bottomOffset = 130,
-  spreadPx = CONVERSATION_SPREAD,
   animate = true,
-}: Props) {
-  const { style, tailStyle } = chatBubbleLayout(side, bottomOffset, spreadPx);
-
+  showTail = true,
+  side = 'left',
+}: {
+  name?: string;
+  message: string;
+  animate?: boolean;
+  showTail?: boolean;
+  side?: BubbleSide;
+}) {
   return (
     <div
       style={{
-        ...style,
-        background: '#fff',
-        borderRadius: 14,
+        ...bubbleShell,
         padding: name ? '7px 13px 8px' : '8px 13px',
-        minWidth: 130,
-        maxWidth: 260,
-        textAlign: 'left',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-        pointerEvents: 'none',
-        zIndex: CHAT_Z,
-        animation: animate ? `${side === 'right' ? 'chat-in-right' : 'chat-in-left'} 0.22s ease-out both` : 'none',
-        lineHeight: 1.4,
+        animation: animate ? 'chat-in-left 0.22s ease-out both' : undefined,
       }}
     >
       {name && (
@@ -146,47 +73,20 @@ export default function ChatBubble({
         </div>
       )}
       <div style={{ fontSize: 13, color: '#222' }}>{message}</div>
-      <div style={tailStyle} />
+      {showTail && <div style={bubbleTailStyle(side)} />}
     </div>
   );
 }
 
-const DOT_STYLE: CSSProperties = {
-  width: 6,
-  height: 6,
-  borderRadius: '50%',
-  background: '#999',
-  display: 'inline-block',
-};
-
-/** Animated typing indicator shown while waiting for an NPC reply. */
-export function TypingBubble({
+export function AttachedTypingBubble({
   name,
-  side,
-  bottomOffset = NPC_CHAT_BOTTOM,
-  spreadPx = CONVERSATION_SPREAD,
+  side = 'left',
 }: {
   name?: string;
-  side: ChatSide;
-  bottomOffset?: number;
-  spreadPx?: number;
+  side?: BubbleSide;
 }) {
-  const { style, tailStyle } = chatBubbleLayout(side, bottomOffset, spreadPx);
-
   return (
-    <div
-      style={{
-        ...style,
-        background: '#fff',
-        borderRadius: 14,
-        padding: name ? '7px 13px 8px' : '8px 13px',
-        minWidth: 72,
-        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-        pointerEvents: 'none',
-        zIndex: CHAT_Z,
-        animation: `${side === 'right' ? 'chat-in-right' : 'chat-in-left'} 0.22s ease-out both`,
-      }}
-    >
+    <div style={{ ...bubbleShell, minWidth: 72, animation: 'chat-in-left 0.22s ease-out both' }}>
       <style>{`
         @keyframes chat-typing-dot {
           0%, 70%, 100% { opacity: 0.35; transform: translateY(0); }
@@ -210,13 +110,86 @@ export function TypingBubble({
           <span
             key={i}
             style={{
-              ...DOT_STYLE,
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#999',
+              display: 'inline-block',
               animation: `chat-typing-dot 1.1s ease-in-out ${delay}s infinite`,
             }}
           />
         ))}
       </div>
-      <div style={tailStyle} />
+      <div style={bubbleTailStyle(side)} />
     </div>
   );
 }
+
+export function AttachedInputBubble({
+  children,
+  animate = true,
+  showTail = true,
+  side = 'left',
+}: {
+  children: ReactNode;
+  animate?: boolean;
+  showTail?: boolean;
+  side?: BubbleSide;
+}) {
+  return (
+    <div
+      style={{
+        ...bubbleShell,
+        padding: '7px 10px',
+        display: 'flex',
+        gap: 6,
+        alignItems: 'center',
+        minWidth: 220,
+        maxWidth: 280,
+        animation: animate ? 'chat-in-left 0.22s ease-out both' : undefined,
+      }}
+    >
+      {children}
+      {showTail && <div style={bubbleTailStyle(side)} />}
+    </div>
+  );
+}
+
+export function AttachedHint({
+  children,
+  side = 'left',
+}: {
+  children: ReactNode;
+  side?: BubbleSide;
+}) {
+  return (
+    <div style={{
+      color: 'rgba(255,255,255,0.55)',
+      fontSize: 10,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+      fontFamily: "Georgia,'Times New Roman',serif",
+      whiteSpace: 'nowrap',
+      textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+      animation: 'chat-in-left 0.3s ease-out both',
+    }}>
+      {children}
+    </div>
+  );
+}
+
+/** Extra horizontal nudge when player & NPC are very close (applied to player overlay). */
+export function getConversationSpread(
+  greetNpcX: number,
+  viewportWidth: number,
+  bubbleSide: BubbleSide,
+): CSSProperties | undefined {
+  const distPx = (Math.abs(50 - greetNpcX) / 100) * viewportWidth;
+  if (distPx >= 220) return undefined;
+  const spread = Math.round((220 - distPx) / 2);
+  return bubbleSide === 'left'
+    ? { marginLeft: -spread }
+    : { marginRight: -spread };
+}
+
+export const CHAT_LAYER_Z = 1000;

@@ -5,7 +5,7 @@ export const MID_TILE = 2600;
 /** Mid-layer viewport width (matches SFCity SVG viewBox). */
 export const VIEW_WIDTH = 1400;
 
-const VIEW_CENTER_X = 700;
+export const VIEW_CENTER_X = 700;
 
 /** Matches SFCity mid-layer parallax factor. */
 export const MID_PARALLAX = 0.35;

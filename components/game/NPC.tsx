@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Character from './Character';
+import { NpcChatOverlay } from './ConnectChatOverlay';
 import { CHAR_BOTTOM } from './groundLayout';
+import { screenXToBubbleSide } from './ChatBubble';
 
 // ── Personality ────────────────────────────────────────────────────────────────
 export type Personality = {
@@ -31,8 +33,14 @@ type NPCProps = NPCConfig & {
   paused: boolean;
   greeting: boolean;
   greetFacing: 'left' | 'right';
+  dancing?: boolean;
   /** Reports world-x each frame (for collision detection). */
   onMove: (worldX: number) => void;
+  greetingChat?: {
+    name: string;
+    npcTyping: boolean;
+    npcMessage: string | null;
+  };
 };
 
 function rndBetween(min: number, max: number) {
@@ -61,7 +69,7 @@ export default function NPC({
   balloonColor, scale = 0.34,
   personality,
   worldOff,
-  paused, greeting, greetFacing, onMove,
+  paused, greeting, greetFacing, dancing = false, onMove, greetingChat,
 }: NPCProps) {
   const [screenX,   setScreenX]   = useState(startX);
   const [walking,   setWalking]   = useState(false);
@@ -237,8 +245,18 @@ export default function NPC({
         <Character
           walking={displayWalking}
           facing={displayFacing}
+          dancing={dancing && !greeting}
           balloonColor={balloonColor}
           scale={scale}
+          bubbleSide={screenXToBubbleSide(screenX)}
+          chatOverlay={greeting && greetingChat ? (
+            <NpcChatOverlay
+              name={greetingChat.name}
+              npcTyping={greetingChat.npcTyping}
+              npcMessage={greetingChat.npcMessage}
+              side={screenXToBubbleSide(screenX)}
+            />
+          ) : undefined}
         />
       </div>
     </div>

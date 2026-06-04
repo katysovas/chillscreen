@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { setCinemaNowPlaying } from '@/lib/cinemaNow';
+import { cinemaEmbedSrc, loadCinemaVideos } from '@/lib/cinemaVideoPool';
 
 type CinemaVideo = { id: string; title: string };
 
 const ROTATE_MS = 8 * 60 * 1000;
+const IFRAME_W = 302;
+const IFRAME_H = 170;
 
 // ── SF city palette — gold marquee on Victorian blue-gray ─────────────────────
 const S = `
@@ -316,21 +319,17 @@ export default function Cinema({ live = true }: { live?: boolean }) {
   videosRef.current = videos;
 
   useEffect(() => {
-    if (!live) return;
     let cancelled = false;
 
-    fetch('/api/cinema/videos')
-      .then(r => r.json())
-      .then((data: { videos?: CinemaVideo[] }) => {
-        if (cancelled || !data.videos?.length) return;
-        setVideos(data.videos);
-        setIdx(Math.floor(Math.random() * data.videos.length));
-        setVidKey(k => k + 1);
-      })
-      .catch(() => {});
+    loadCinemaVideos().then(list => {
+      if (cancelled || list.length === 0) return;
+      setVideos(list);
+      setIdx(Math.floor(Math.random() * list.length));
+      setVidKey(k => k + 1);
+    });
 
     return () => { cancelled = true; };
-  }, [live]);
+  }, []);
 
   useEffect(() => {
     if (!live || videos.length === 0) return;
@@ -353,9 +352,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
     };
   }, [live, video?.title]);
 
-  const src = video
-    ? `https://www.youtube.com/embed/${video.id}?autoplay=1&mute=1&rel=0&modestbranding=1&loop=1&playlist=${video.id}`
-    : '';
+  const src = video ? cinemaEmbedSrc(video.id) : '';
   const bulbs = useMemo(() => Array.from({ length: 18 }), []);
   const marqueeTitle = video?.title ?? (live ? 'Loading…' : 'Cute Animals');
 
@@ -380,11 +377,17 @@ export default function Cinema({ live = true }: { live?: boolean }) {
               className="cin-iframe"
               src={src}
               title={video.title}
+              width={IFRAME_W}
+              height={IFRAME_H}
               allow="autoplay; encrypted-media; picture-in-picture"
               allowFullScreen
+              style={{ display: 'block', border: 'none', background: '#000' }}
             />
           ) : (
-            <div className="cin-iframe" style={{ background: '#0a0e18' }} />
+            <div
+              className="cin-iframe"
+              style={{ width: IFRAME_W, height: IFRAME_H, background: '#0a0e18' }}
+            />
           )}
         </div>
       </div>
