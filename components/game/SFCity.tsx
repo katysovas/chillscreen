@@ -19,11 +19,11 @@ const KF = `
   .ch-ears:before,.ch-ears:after{content:"";background:#000;width:15px;height:30px;float:left;border-radius:10px;transform:rotate(-45deg);}
   .ch-ears:after{float:right;transform:rotate(45deg);}
   .ch-ballons{position:absolute;left:84.8%;z-index:99;width:150px;height:150px;top:-70px;animation:ch-ballons 2s 1s infinite alternate;transform:translateX(-50%) scale(1,1.1);}
-  .ch-ballons:before{display:none;}
-  /* String anchored at hand (bottom=96px in ch-animal), top tracks balloon with same timing */
-  .ch-string{position:absolute;left:calc(84.8% + 20px);top:36px;width:2px;height:60px;background:#000;z-index:98;animation:ch-string-top 2s 1s infinite alternate,ch-string-h 2s 1s infinite alternate;}
-  @keyframes ch-string-top{from{top:36px;}to{top:-74px;}}
-  @keyframes ch-string-h{from{height:60px;}to{height:170px;}}
+  /* String stays inside ch-ballons (avoids transform-offset issues).
+     Height animates from 60→170 in sync with ch-ballons so the bottom stays
+     pinned at the hand (y≈96 in ch-animal coords) throughout the cycle. */
+  .ch-ballons:before{content:"";position:absolute;left:20px;top:106px;z-index:99;width:2px;background:#000;height:60px;animation:ch-str-h 2s 1s infinite alternate;}
+  @keyframes ch-str-h{from{height:60px;}to{height:170px;}}
   .ch-heart{position:relative;animation:ch-heart 2s 1s infinite alternate;}
   .ch-heart span{width:60px;height:100px;background:#ef4023;position:absolute;left:5px;top:0;border-radius:50px 50px 0 0;transform:rotate(45deg);}
   .ch-heart span:last-child{right:113px;left:initial;transform:scale(-1,1) rotate(45deg);}
@@ -414,8 +414,6 @@ function Character({ walking, facing }: { walking: boolean; facing: 'left' | 'ri
             <div className="ch-ballons">
               <div className="ch-heart"><span /><span /></div>
             </div>
-            {/* String pinned at hand (bottom), top tracks balloon via synchronized animation */}
-            <div className="ch-string" />
             <div className="ch-ears" />
             <div className="ch-body">
               <div className="ch-eyes" />
