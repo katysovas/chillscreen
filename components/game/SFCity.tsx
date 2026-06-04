@@ -19,7 +19,11 @@ const KF = `
   .ch-ears:before,.ch-ears:after{content:"";background:#000;width:15px;height:30px;float:left;border-radius:10px;transform:rotate(-45deg);}
   .ch-ears:after{float:right;transform:rotate(45deg);}
   .ch-ballons{position:absolute;left:84.8%;z-index:99;width:150px;height:150px;top:-70px;animation:ch-ballons 2s 1s infinite alternate;transform:translateX(-50%) scale(1,1.1);}
-  .ch-ballons:before{content:"";position:absolute;left:20px;top:106px;z-index:99;width:2px;height:60px;background:#000;}
+  .ch-ballons:before{display:none;}
+  /* String anchored at hand (bottom=96px in ch-animal), top tracks balloon with same timing */
+  .ch-string{position:absolute;left:calc(84.8% + 20px);top:36px;width:2px;height:60px;background:#000;z-index:98;animation:ch-string-top 2s 1s infinite alternate,ch-string-h 2s 1s infinite alternate;}
+  @keyframes ch-string-top{from{top:36px;}to{top:-74px;}}
+  @keyframes ch-string-h{from{height:60px;}to{height:170px;}}
   .ch-heart{position:relative;animation:ch-heart 2s 1s infinite alternate;}
   .ch-heart span{width:60px;height:100px;background:#ef4023;position:absolute;left:5px;top:0;border-radius:50px 50px 0 0;transform:rotate(45deg);}
   .ch-heart span:last-child{right:113px;left:initial;transform:scale(-1,1) rotate(45deg);}
@@ -65,6 +69,7 @@ const KF = `
   @keyframes ch-right-hand{from{transform:rotate(-47deg);top:70px;}to{transform:rotate(-80deg);top:50px;}}
   @keyframes ch-left-leg{0%{transform:rotate(-5deg);}100%{transform:rotate(-30deg);}}
   @keyframes ch-right-leg{0%{transform:rotate(5deg);}100%{transform:rotate(30deg);}}
+  @keyframes ch-jump-outer{0%{transform:translateY(0);}35%{transform:translateY(-110px);}65%{transform:translateY(-110px);}100%{transform:translateY(0);}}
 `;
 
 // ─── Parallax factors ─────────────────────────────────────────────────────────
@@ -409,6 +414,8 @@ function Character({ walking, facing }: { walking: boolean; facing: 'left' | 'ri
             <div className="ch-ballons">
               <div className="ch-heart"><span /><span /></div>
             </div>
+            {/* String pinned at hand (bottom), top tracks balloon via synchronized animation */}
+            <div className="ch-string" />
             <div className="ch-ears" />
             <div className="ch-body">
               <div className="ch-eyes" />
@@ -461,17 +468,27 @@ export default function SFCity() {
   const facingRef  = useRef<'left' | 'right'>('right');
   const walkingRef = useRef(false);
   const rafRef     = useRef<number | null>(null);
+  const jumpingRef = useRef(false);
 
   const [worldOff, setWorldOff] = useState(0);
   const [facing,   setFacing]   = useState<'left' | 'right'>('right');
   const [walking,  setWalking]  = useState(false);
+  const [jumping,  setJumping]  = useState(false);
 
   useEffect(() => {
     const SPEED = 3.5;
 
+    const triggerJump = () => {
+      if (jumpingRef.current) return;
+      jumpingRef.current = true;
+      setJumping(true);
+      setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 620);
+    };
+
     const onDown = (e: KeyboardEvent) => {
       if (['ArrowLeft',  'a', 'A'].includes(e.key)) { keysRef.current.left  = true;  e.preventDefault(); }
       if (['ArrowRight', 'd', 'D'].includes(e.key)) { keysRef.current.right = true;  e.preventDefault(); }
+      if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) { triggerJump(); e.preventDefault(); }
     };
     const onUp = (e: KeyboardEvent) => {
       if (['ArrowLeft',  'a', 'A'].includes(e.key)) keysRef.current.left  = false;
@@ -520,7 +537,10 @@ export default function SFCity() {
       <GroundLayer worldOff={worldOff} />
 
       {/* Character — world scrolls, character stays centred */}
-      <div style={{ position: 'absolute', left: '50%', bottom: '18%', zIndex: 20 }}>
+      <div style={{
+        position: 'absolute', left: '50%', bottom: '18%', zIndex: 20,
+        animation: jumping ? 'ch-jump-outer 0.62s cubic-bezier(0.33,0,0.66,1)' : 'none',
+      }}>
         <Character walking={walking} facing={facing} />
       </div>
 
@@ -561,11 +581,20 @@ export default function SFCity() {
       {/* Mobile D-pad — shown only on touch devices */}
       <div className="flex md:hidden" style={{
         position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)',
-        gap: 16, zIndex: 40,
+        gap: 12, zIndex: 40, alignItems: 'center',
       }}>
         <DPadBtn label="←"
           onStart={() => { keysRef.current.left = true; }}
           onEnd={()   => { keysRef.current.left = false; }} />
+        <DPadBtn label="↑"
+          onStart={() => {
+            if (!jumpingRef.current) {
+              jumpingRef.current = true;
+              setJumping(true);
+              setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 620);
+            }
+          }}
+          onEnd={() => {}} />
         <DPadBtn label="→"
           onStart={() => { keysRef.current.right = true; }}
           onEnd={()   => { keysRef.current.right = false; }} />
