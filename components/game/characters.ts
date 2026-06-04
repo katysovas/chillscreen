@@ -9,8 +9,8 @@ export type CharacterDef = {
   entryDelay: number;
   scale?: number;
   personality: Personality;
-  greetings: string[];
-  responses: string[];
+  /** Voice and temperament — fed into the NPC chat prompt. */
+  personalityNotes: string;
 };
 
 const CHARACTERS: CharacterDef[] = [
@@ -24,21 +24,13 @@ const CHARACTERS: CharacterDef[] = [
     personality: {
       speed: 0.10,
       idleMs: [800, 2200],
-      wanderRange: [-10, 90],   // roams widely, drifts off-screen often
+      wanderRange: [-10, 90],
       jumpiness: 0.35,
     },
-    greetings: [
-      "Hey! Haven't seen you here before! 👋",
-      "Oh hi! I love this neighborhood!",
-      "Hello! Want to explore together? 💙",
-      "There you are! I was hoping we'd meet!",
-    ],
-    responses: [
-      "That's so interesting!",
-      "Tell me more! 💙",
-      "I was just thinking the same thing!",
-      "Haha, really? 😄",
-    ],
+    personalityNotes:
+      'Warm, curious explorer who roams the whole city. Upbeat and friendly — ' +
+      'talks like a casual friend you bumped into on the street. Light humor, ' +
+      'genuine interest in people. Sometimes uses 💙.',
   },
   {
     id: 'mochi',
@@ -50,21 +42,12 @@ const CHARACTERS: CharacterDef[] = [
     personality: {
       speed: 0.055,
       idleMs: [2500, 5500],
-      wanderRange: [-25, 35],  // shy — stays left side, often off-screen
+      wanderRange: [-25, 35],
       jumpiness: 0.10,
     },
-    greetings: [
-      "Um... hi... 🌿",
-      "Oh! You noticed me...",
-      "H-hello there 💚",
-      "I don't usually talk to strangers but... hi",
-    ],
-    responses: [
-      "Oh... okay 🌿",
-      "That's... nice",
-      "Mm... I see",
-      "Really? ...cool 💚",
-    ],
+    personalityNotes:
+      'Shy and soft-spoken. Short, gentle sentences — sometimes trails off with "..." ' +
+      'Speaks quietly but sincerely once comfortable. Rarely loud. Uses 🌿 or 💚 sparingly.',
   },
   {
     id: 'ziggy',
@@ -76,21 +59,12 @@ const CHARACTERS: CharacterDef[] = [
     personality: {
       speed: 0.13,
       idleMs: [400, 1200],
-      wanderRange: [5, 125],   // energetic — crosses the whole world
+      wanderRange: [5, 125],
       jumpiness: 0.55,
     },
-    greetings: [
-      "HEYYY!!! 🎉",
-      "Oh oh oh, it's YOU!! HI!!",
-      "Whooa a new friend!! 💜",
-      "FINALLY someone to talk to!!!",
-    ],
-    responses: [
-      "NO WAY!! 🎉",
-      "YESSS!!",
-      "Haha omg 💜",
-      "SAME!! I was just thinking that!!",
-    ],
+    personalityNotes:
+      'Pure chaotic good energy!! Talks fast, lots of exclamation marks, occasionally ALL CAPS ' +
+      'for emphasis. Dramatic and bubbly — every chat feels like a tiny celebration. Uses 💜 🎉.',
   },
 ];
 

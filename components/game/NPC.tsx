@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Character from './Character';
-import ChatBubble, { NPC_CHAT_BOTTOM, CHAT_Z, type ChatSide } from './ChatBubble';
+import { CHAR_BOTTOM } from './groundLayout';
 
 // ── Personality ────────────────────────────────────────────────────────────────
 export type Personality = {
@@ -21,7 +21,6 @@ export type NPCConfig = {
   scale?: number;
   personality: Personality;
   name: string;
-  greetings: string[];
 };
 
 type State = 'idle' | 'wandering';
@@ -32,11 +31,8 @@ type NPCProps = NPCConfig & {
   paused: boolean;
   greeting: boolean;
   greetFacing: 'left' | 'right';
-  bubbleSide?: ChatSide;
   /** Reports world-x each frame (for collision detection). */
   onMove: (worldX: number) => void;
-  playerMessage?: string | null;
-  npcMessage?: string | null;
 };
 
 function rndBetween(min: number, max: number) {
@@ -63,19 +59,15 @@ const SCREEN_MAX = 130;
 export default function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34,
-  name, greetings, npcMessage, bubbleSide = 'left',
   personality,
   worldOff,
   paused, greeting, greetFacing, onMove,
-  playerMessage,
 }: NPCProps) {
   const [screenX,   setScreenX]   = useState(startX);
   const [walking,   setWalking]   = useState(false);
   const [facing,    setFacing]    = useState<'left' | 'right'>(entryDirection);
   const [jumping,   setJumping]   = useState(false);
   const [active,    setActive]    = useState(false);
-  const [bubbleMsg, setBubbleMsg] = useState<string | null>(null);
-  const [bubbleKey, setBubbleKey] = useState(0);
 
   const worldXRef         = useRef(0);
   const targetWorldRef    = useRef(0);
@@ -217,38 +209,12 @@ export default function NPC({
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [active, personality]);
 
-  // ── Chat bubbles ──────────────────────────────────────────────────────────
   const wasGreetingRef = useRef(false);
   useEffect(() => {
-    const justConnected    = !wasGreetingRef.current && greeting;
-    const justDisconnected =  wasGreetingRef.current && !greeting;
+    const justDisconnected = wasGreetingRef.current && !greeting;
     wasGreetingRef.current = greeting;
-
-    if (justConnected) {
-      setBubbleMsg(greetings[Math.floor(Math.random() * greetings.length)]);
-      setBubbleKey(k => k + 1);
-    }
-    if (justDisconnected) {
-      setBubbleMsg(null);
-      fleeFromPlayer();
-    }
-  }, [greeting, greetings]);
-
-  useEffect(() => {
-    if (npcMessage) { setBubbleMsg(npcMessage); setBubbleKey(k => k + 1); }
-  }, [npcMessage]);
-
-  const prevPlayerMsgRef = useRef<string | null | undefined>(null);
-  useEffect(() => {
-    if (playerMessage && playerMessage !== prevPlayerMsgRef.current && greeting) {
-      prevPlayerMsgRef.current = playerMessage;
-      const t = setTimeout(() => {
-        setBubbleMsg('…');
-        setBubbleKey(k => k + 1);
-      }, 800);
-      return () => clearTimeout(t);
-    }
-  }, [playerMessage, greeting]);
+    if (justDisconnected) fleeFromPlayer();
+  }, [greeting]);
 
   useEffect(() => {
     if (greeting) { setWalking(false); setFacing(greetFacing); }
@@ -264,31 +230,16 @@ export default function NPC({
     <div style={{
       position: 'absolute',
       left: `${screenX}%`,
-      bottom: '18%',
-      zIndex: greeting ? 25 : 18,
+      bottom: CHAR_BOTTOM,
+      zIndex: greeting ? 200 : 18,
     }}>
-      <div style={{ position: 'relative' }}>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
-            <Character
-              walking={displayWalking}
-              facing={displayFacing}
-              balloonColor={balloonColor}
-              scale={scale}
-            />
-          </div>
-        </div>
-        {bubbleMsg && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: CHAT_Z, pointerEvents: 'none' }}>
-            <ChatBubble
-              key={bubbleKey}
-              name={name}
-              message={bubbleMsg}
-              side={bubbleSide}
-              bottomOffset={NPC_CHAT_BOTTOM}
-            />
-          </div>
-        )}
+      <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
+        <Character
+          walking={displayWalking}
+          facing={displayFacing}
+          balloonColor={balloonColor}
+          scale={scale}
+        />
       </div>
     </div>
   );

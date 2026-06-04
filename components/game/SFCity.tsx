@@ -2,8 +2,32 @@
 import { useState, useEffect, useRef } from 'react';
 import Character from './Character';
 import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
-import ChatBubble, { chatBubbleLayout, PLAYER_CHAT_BOTTOM, CHAT_Z, type ChatSide } from './ChatBubble';
+import ConnectChatOverlay from './ConnectChatOverlay';
+import { VenueRoadSigns } from './VenueRoadSigns';
+import { CHAR_BOTTOM } from './groundLayout';
+import Cinema, { CINEMA_SCALE, CINEMA_HEIGHT } from './Cinema';
+import Concert, { CONCERT_SCALE, CONCERT_HEIGHT, CONCERT_WIDTH } from './Concert';
+import {
+  cinemaLiveTile,
+  concertLiveTile,
+  venueInFocus,
+  isVenueInView,
+  cinemaMidX,
+  concertMidX,
+  VIEW_WIDTH,
+  START_WORLD_OFF,
+} from '@/lib/venues';
+import { getConcertInView, subscribeConcertInView } from '@/lib/concertNow';
 import CHARACTERS from './characters';
+import {
+  getPlayerName,
+  setPlayerName as savePlayerName,
+  isValidPlayerName,
+} from '@/lib/playerStorage';
+import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
+import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
+import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
+import { getConcertNowPlaying, subscribeConcertNowPlaying } from '@/lib/concertNowPlaying';
 
 // ─── Keyframes & character CSS ───────────────────────────────────────────────
 const KF = `
@@ -260,8 +284,19 @@ function SkyLayer({ worldOff }: { worldOff: number }) {
 }
 
 function MidLayer({ worldOff }: { worldOff: number }) {
-  const vx    = worldOff * MID_F;
-  const tiles = nearTiles(vx, MID_TILE);
+  const vx          = worldOff * MID_F;
+  const tiles       = nearTiles(vx, MID_TILE);
+  const cinemaLive  = cinemaLiveTile(vx);
+  const concertLive = concertLiveTile(vx);
+  const focus       = venueInFocus(vx);
+  const cinemaFoW   = 360 * CINEMA_SCALE;
+  const cinemaFoH   = CINEMA_HEIGHT * CINEMA_SCALE;
+  const cinemaFoY   = 670 - cinemaFoH;
+  const cinemaHalf  = Math.ceil(cinemaFoW / 2) + 24;
+  const concertFoW  = CONCERT_WIDTH * CONCERT_SCALE;
+  const concertFoH  = CONCERT_HEIGHT * CONCERT_SCALE;
+  const concertFoY  = 670 - concertFoH;
+  const concertHalf = Math.ceil(concertFoW / 2) + 24;
   return (
     <svg viewBox={`${vx} 0 1400 900`} width="100%" height="100%"
       preserveAspectRatio="xMidYMid slice"
@@ -339,6 +374,72 @@ function MidLayer({ worldOff }: { worldOff: number }) {
             <ellipse cx={1960} cy={388} rx={26} ry={8} fill="#c8c0b0" />
             <rect x={1952} y={358} width={16} height={32} fill="#c0b8a8" />
           </g>
+          {(() => {
+            const concertX = concertMidX(t);
+            if (concertX == null || !isVenueInView(vx, t, concertX, concertHalf)) return null;
+            const concertFoX = concertX - concertFoW / 2;
+            return (
+              <>
+                <g>
+                  <ellipse cx={concertX} cy={668} rx={145} ry={14} fill="rgba(10,40,24,.25)" />
+                  <rect x={concertX - 145} y={656} width={290} height={14} fill="#7a8a82" rx={3} />
+                  <rect x={concertX - 145} y={656} width={290} height={4} fill="rgba(56,216,128,.1)" rx={2} />
+                </g>
+                <foreignObject
+                  x={concertFoX}
+                  y={concertFoY}
+                  width={concertFoW}
+                  height={concertFoH}
+                  style={{ overflow: 'visible' }}
+                >
+                  <div
+                    {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as React.HTMLAttributes<HTMLDivElement>)}
+                    style={{
+                      width: CONCERT_WIDTH,
+                      transform: `scale(${CONCERT_SCALE})`,
+                      transformOrigin: 'top left',
+                      pointerEvents: t === concertLive && focus === 'concert' ? 'auto' : 'none',
+                    }}
+                  >
+                    <Concert live={t === concertLive && focus === 'concert'} />
+                  </div>
+                </foreignObject>
+              </>
+            );
+          })()}
+          {(() => {
+            const cinemaX = cinemaMidX(t);
+            if (cinemaX == null || !isVenueInView(vx, t, cinemaX, cinemaHalf)) return null;
+            const cinemaFoX = cinemaX - cinemaFoW / 2;
+            return (
+              <>
+                <g>
+                  <ellipse cx={cinemaX} cy={668} rx={105} ry={14} fill="rgba(20,40,80,.2)" />
+                  <rect x={cinemaX - 105} y={656} width={210} height={14} fill="#8a9488" rx={3} />
+                  <rect x={cinemaX - 105} y={656} width={210} height={4} fill="rgba(255,230,140,.08)" rx={2} />
+                </g>
+                <foreignObject
+                  x={cinemaFoX}
+                  y={cinemaFoY}
+                  width={cinemaFoW}
+                  height={cinemaFoH}
+                  style={{ overflow: 'visible' }}
+                >
+                  <div
+                    {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as React.HTMLAttributes<HTMLDivElement>)}
+                    style={{
+                      width: 360,
+                      transform: `scale(${CINEMA_SCALE})`,
+                      transformOrigin: 'top left',
+                      pointerEvents: t === cinemaLive && focus === 'cinema' ? 'auto' : 'none',
+                    }}
+                  >
+                    <Cinema live={t === cinemaLive && focus === 'cinema'} />
+                  </div>
+                </foreignObject>
+              </>
+            );
+          })()}
           {[420,840,1070,1740,1840,2200,2450].map((x,i)=>(
             <g key={i} transform={`translate(${x},660)`}
               style={{animation:`sw${1+i%3} ${5+i*.8}s ease-in-out infinite`,transformOrigin:`0 0`,animationDelay:`${i*.6}s`}}>
@@ -350,6 +451,28 @@ function MidLayer({ worldOff }: { worldOff: number }) {
             </g>
           ))}
           <rect x={0} y={0} width={MID_TILE} height={900} fill="url(#atmo)" />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/** Street signs — ground parallax so they stay fixed on the sidewalk (not mid-layer drift). */
+function VenueSignsLayer({ worldOff }: { worldOff: number }) {
+  const vxGnd = worldOff * GND_F;
+  const tiles = nearTiles(vxGnd, GND_TILE);
+  const GND   = 685;
+  return (
+    <svg
+      viewBox={`${vxGnd} 0 ${VIEW_WIDTH} 900`}
+      width="100%"
+      height="100%"
+      preserveAspectRatio="xMidYMid slice"
+      style={{ position: 'absolute', inset: 0, zIndex: 6, pointerEvents: 'none' }}
+    >
+      {tiles.map(t => (
+        <g key={t} transform={`translate(${t * GND_TILE},0)`}>
+          <VenueRoadSigns y={GND + 12} groundTile={GND_TILE} />
         </g>
       ))}
     </svg>
@@ -466,12 +589,12 @@ function DPadBtn({
 
 // ─── NPC cast ─────────────────────────────────────────────────────────────────
 
-// Characters are defined in characters.ts (names, personalities, greetings).
+// Characters are defined in characters.ts (names, personalities, AI chat).
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function SFCity() {
-  const worldRef   = useRef(0);
+  const worldRef   = useRef(START_WORLD_OFF);
   const keysRef    = useRef({ left: false, right: false });
   const facingRef  = useRef<'left' | 'right'>('right');
   const walkingRef = useRef(false);
@@ -480,21 +603,189 @@ export default function SFCity() {
 
   // ── Greeting / collision ───────────────────────────────────────────────────
   // Each NPC reports its world-x each frame (same coordinate space as worldRef).
-  const npcWorldXRefs     = useRef(CHARACTERS.map(c => screenPctToWorldX(c.startX, 0)));
-  const greetingRef       = useRef<number | null>(null); // index of greeted NPC, or null
-  const disconnectUntil   = useRef(0);                   // cooldown timestamp after greeting ends
+  const npcWorldXRefs     = useRef(
+    CHARACTERS.map(c => screenPctToWorldX(c.startX, START_WORLD_OFF)),
+  );
+  const greetingRef       = useRef<number | null>(null);
+  const nearNpcRef        = useRef<number | null>(null);
+  const disconnectUntil   = useRef(0);
 
-  const [worldOff,    setWorldOff]    = useState(0);
+  const [worldOff,    setWorldOff]    = useState(() => START_WORLD_OFF);
   const [facing,      setFacing]      = useState<'left' | 'right'>('right');
   const [walking,     setWalking]     = useState(false);
   const [jumping,     setJumping]     = useState(false);
-  const [greetingNpc,   setGreetingNpc]   = useState<number | null>(null);
-  const [greetNpcX,     setGreetNpcX]     = useState(50);
+  const [greetingNpc, setGreetingNpc] = useState<number | null>(null);
+  const [nearNpc,     setNearNpc]     = useState<number | null>(null);
+  const [greetNpcX,   setGreetNpcX]   = useState(50);
   // ── Player chat ─────────────────────────────────────────────────────────────
-  const [chatOpen,      setChatOpen]      = useState(false);
+  type ChatMode = null | 'name' | 'chat';
+  const [playerName,    setPlayerName]    = useState<string | null>(null);
+  const [chatMode,      setChatMode]      = useState<ChatMode>(null);
+  const [nameDraft,     setNameDraft]     = useState('');
   const [chatDraft,     setChatDraft]     = useState('');
   const [playerMessage, setPlayerMessage] = useState<string | null>(null);
+  const [npcMessage,    setNpcMessage]    = useState<string | null>(null);
+  const [npcTyping,     setNpcTyping]     = useState(false);
+  const [chatHistory,   setChatHistory]   = useState<ChatTurn[]>([]);
+  const [chatSendTick,  setChatSendTick]  = useState(0);
+  const [cinemaNowPlaying, setCinemaNowPlaying]   = useState<string | null>(null);
+  const [concertNowPlaying, setConcertNowPlaying] = useState<string | null>(null);
   const chatInputRef = useRef<HTMLInputElement | null>(null);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const playerNameRef = useRef<string | null>(null);
+  const chatAbortRef = useRef<AbortController | null>(null);
+  const sentMessageRef = useRef('');
+  const chatHistoryRef = useRef<ChatTurn[]>([]);
+  const cinemaNowRef  = useRef<string | null>(null);
+  const concertNowRef = useRef<string | null>(null);
+  const greetingSessionRef = useRef<number | null>(null);
+
+  useEffect(() => { setPlayerName(getPlayerName()); }, []);
+
+  useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
+  useEffect(() => { chatHistoryRef.current = chatHistory; }, [chatHistory]);
+  useEffect(() => {
+    cinemaNowRef.current = cinemaNowPlaying;
+  }, [cinemaNowPlaying]);
+  useEffect(() => {
+    concertNowRef.current = concertNowPlaying;
+  }, [concertNowPlaying]);
+  useEffect(() => {
+    setCinemaNowPlaying(getCinemaNowPlaying());
+    return subscribeCinemaNowPlaying(() => {
+      setCinemaNowPlaying(getCinemaNowPlaying());
+    });
+  }, []);
+  useEffect(() => {
+    setConcertNowPlaying(getConcertNowPlaying());
+    return subscribeConcertNowPlaying(() => {
+      setConcertNowPlaying(getConcertNowPlaying());
+    });
+  }, []);
+
+  // Clear conversation on disconnect
+  useEffect(() => {
+    if (greetingNpc !== null) return;
+    chatAbortRef.current?.abort();
+    setNpcMessage(null);
+    setNpcTyping(false);
+    setChatHistory([]);
+    setChatSendTick(0);
+    sentMessageRef.current = '';
+    greetingSessionRef.current = null;
+  }, [greetingNpc]);
+
+  // AI greeting when connecting to an NPC
+  useEffect(() => {
+    if (greetingNpc === null) return;
+    if (greetingSessionRef.current === greetingNpc) return;
+    greetingSessionRef.current = greetingNpc;
+
+    chatAbortRef.current?.abort();
+    const controller = new AbortController();
+    chatAbortRef.current = controller;
+
+    const character = CHARACTERS[greetingNpc];
+    setNpcTyping(true);
+    setNpcMessage(null);
+    setChatHistory([]);
+    setPlayerMessage(null);
+    setChatSendTick(0);
+    sentMessageRef.current = '';
+    setChatMode(playerName ? 'chat' : null);
+
+    fetchNpcReplyWithTyping(
+      {
+        characterId: character.id,
+        playerName: playerName ?? 'friend',
+        isGreeting: true,
+        cinemaNowPlaying: cinemaNowRef.current,
+        concertNowPlaying: concertNowRef.current,
+      },
+      controller.signal,
+      () => {
+        setNpcTyping(true);
+        setNpcMessage(null);
+      },
+      reply => {
+        setNpcTyping(false);
+        setNpcMessage(reply);
+        setChatHistory([{ role: 'assistant', content: reply }]);
+      },
+    ).catch(err => {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      setNpcTyping(false);
+      setNpcMessage(`Hey! I'm ${character.name}.`);
+    });
+
+    if (playerName) {
+      setTimeout(() => chatInputRef.current?.focus(), 120);
+    }
+
+    return () => controller.abort();
+  }, [greetingNpc, playerName]);
+
+  // AI reply when the player sends a message
+  useEffect(() => {
+    if (chatSendTick === 0 || greetingNpc === null) return;
+
+    chatAbortRef.current?.abort();
+    const controller = new AbortController();
+    chatAbortRef.current = controller;
+
+    const character = CHARACTERS[greetingNpc];
+    const message = sentMessageRef.current;
+
+    fetchNpcReplyWithTyping(
+      {
+        characterId: character.id,
+        playerName: playerName ?? 'friend',
+        message,
+        history: chatHistoryRef.current,
+        cinemaNowPlaying: cinemaNowRef.current,
+        concertNowPlaying: concertNowRef.current,
+      },
+      controller.signal,
+      () => {
+        setNpcTyping(true);
+        setNpcMessage(null);
+      },
+      reply => {
+        setNpcTyping(false);
+        setNpcMessage(reply);
+        setChatHistory(prev => [
+          ...prev,
+          { role: 'user', content: message },
+          { role: 'assistant', content: reply },
+        ]);
+        setTimeout(() => chatInputRef.current?.focus(), 0);
+      },
+    ).catch(err => {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      setNpcTyping(false);
+      setNpcMessage(pickFallbackReply(character));
+      setTimeout(() => chatInputRef.current?.focus(), 0);
+    });
+
+    return () => controller.abort();
+  }, [chatSendTick, greetingNpc, playerName]);
+
+  const handleSendMessage = (text: string) => {
+    sentMessageRef.current = text;
+    setPlayerMessage(text);
+    setChatDraft('');
+    setChatSendTick(t => t + 1);
+  };
+
+  const handleSaveName = () => {
+    const trimmed = nameDraft.trim();
+    if (!isValidPlayerName(trimmed)) return;
+    savePlayerName(trimmed);
+    setPlayerName(trimmed);
+    setNameDraft('');
+    setChatMode('chat');
+    setTimeout(() => chatInputRef.current?.focus(), 30);
+  };
 
   // ── Audio ──────────────────────────────────────────────────────────────────
   const TRACKS = ['/audio/1.mp3', '/audio/2.mp3', '/audio/3.mp3'];
@@ -528,6 +819,20 @@ export default function SFCity() {
   }, [muted]);
 
   useEffect(() => {
+    const syncBgAudio = () => {
+      const el = audioRef.current;
+      if (!el) return;
+      if (getConcertInView()) {
+        el.pause();
+      } else if (!muted) {
+        el.play().catch(() => {});
+      }
+    };
+    syncBgAudio();
+    return subscribeConcertInView(syncBgAudio);
+  }, [muted]);
+
+  useEffect(() => {
     const SPEED      = 3.5;
     const GREET_DIST = 5; // % of viewport — must be quite close to "touch"
 
@@ -538,16 +843,53 @@ export default function SFCity() {
       setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 560);
     };
 
+    const connectToNpc = (i: number, screenPct: number) => {
+      greetingRef.current = i;
+      setGreetingNpc(i);
+      setGreetNpcX(screenPct);
+      setNearNpc(null);
+      nearNpcRef.current = null;
+      const towardNpc = screenPct < 50 ? 'left' : 'right';
+      facingRef.current = towardNpc;
+      setFacing(towardNpc);
+      setWalking(false);
+      walkingRef.current = false;
+    };
+
     const disconnect = () => {
       greetingRef.current = null;
       setGreetingNpc(null);
       disconnectUntil.current = Date.now() + 2000;
-      setChatOpen(false);
+      setChatMode(null);
+      setNameDraft('');
       setChatDraft('');
       setPlayerMessage(null);
     };
 
+    const openChatPanel = () => {
+      if (!playerNameRef.current) {
+        setChatMode('name');
+        setTimeout(() => nameInputRef.current?.focus(), 30);
+      } else {
+        setChatMode('chat');
+        setTimeout(() => chatInputRef.current?.focus(), 30);
+      }
+    };
+
     const onDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (greetingRef.current !== null) {
+          disconnect();
+          triggerJump();
+        } else {
+          setChatMode(null);
+          setNameDraft('');
+          setChatDraft('');
+        }
+        return;
+      }
+
       // Let the chat input handle its own keys without interference
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
 
@@ -562,21 +904,28 @@ export default function SFCity() {
           triggerJump();
         }
       }
-      if (e.key === 'Enter' && greetingRef.current !== null) {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        setChatOpen(true);
-        setTimeout(() => chatInputRef.current?.focus(), 30);
-      }
-      if (e.key === 'Escape') {
-        setChatOpen(false);
-        setChatDraft('');
+        if (greetingRef.current !== null) {
+          openChatPanel();
+        } else if (
+          nearNpcRef.current !== null
+          && Date.now() > disconnectUntil.current
+        ) {
+          const i = nearNpcRef.current;
+          const width = window.innerWidth;
+          const screenPct = worldXToScreenPct(
+            npcWorldXRefs.current[i], worldRef.current, width,
+          );
+          connectToNpc(i, screenPct);
+        }
       }
     };
     const onUp = (e: KeyboardEvent) => {
       if (['ArrowLeft',  'a', 'A'].includes(e.key)) keysRef.current.left  = false;
       if (['ArrowRight', 'd', 'D'].includes(e.key)) keysRef.current.right = false;
     };
-    window.addEventListener('keydown', onDown);
+    window.addEventListener('keydown', onDown, true);
     window.addEventListener('keyup',   onUp);
 
     const loop = () => {
@@ -606,26 +955,29 @@ export default function SFCity() {
       }
       if (isWalking) setWorldOff(worldRef.current);
 
-      // Collision in world space — walking toward an NPC closes the gap for real.
-      if (Date.now() > disconnectUntil.current) {
+      // Proximity check only — connection requires Enter.
+      if (greetingRef.current === null) {
         const width = window.innerWidth;
         const greetDistPx = (GREET_DIST / 100) * width;
-        for (let i = 0; i < npcWorldXRefs.current.length; i++) {
-          const npcWorldX = npcWorldXRefs.current[i];
-          const screenPct = worldXToScreenPct(npcWorldX, worldRef.current, width);
-          const distPx    = Math.abs(npcWorldX - worldRef.current);
-          if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx) {
-            greetingRef.current = i;
-            setGreetingNpc(i);
-            setGreetNpcX(screenPct);
-            const towardNpc = screenPct < 50 ? 'left' : 'right';
-            facingRef.current = towardNpc;
-            setFacing(towardNpc);
-            setWalking(false);
-            walkingRef.current = false;
-            break;
+        let inRange: number | null = null;
+        if (Date.now() > disconnectUntil.current) {
+          for (let i = 0; i < npcWorldXRefs.current.length; i++) {
+            const npcWorldX = npcWorldXRefs.current[i];
+            const screenPct = worldXToScreenPct(npcWorldX, worldRef.current, width);
+            const distPx    = Math.abs(npcWorldX - worldRef.current);
+            if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx) {
+              inRange = i;
+              break;
+            }
           }
         }
+        if (inRange !== nearNpcRef.current) {
+          nearNpcRef.current = inRange;
+          setNearNpc(inRange);
+        }
+      } else if (nearNpcRef.current !== null) {
+        nearNpcRef.current = null;
+        setNearNpc(null);
       }
 
       rafRef.current = requestAnimationFrame(loop);
@@ -634,7 +986,7 @@ export default function SFCity() {
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keydown', onDown, true);
       window.removeEventListener('keyup',   onUp);
     };
   }, []);
@@ -643,9 +995,10 @@ export default function SFCity() {
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', animation: 'fdi 1.5s ease' }}>
       <style>{KF}</style>
 
-      <SkyLayer    worldOff={worldOff} />
-      <MidLayer    worldOff={worldOff} />
-      <GroundLayer worldOff={worldOff} />
+      <SkyLayer         worldOff={worldOff} />
+      <MidLayer         worldOff={worldOff} />
+      <GroundLayer      worldOff={worldOff} />
+      <VenueSignsLayer  worldOff={worldOff} />
 
       {/* Autonomous NPCs */}
       {CHARACTERS.map((cfg, i) => (
@@ -656,9 +1009,7 @@ export default function SFCity() {
           paused={greetingNpc === i}
           greeting={greetingNpc === i}
           greetFacing={greetNpcX < 50 ? 'right' : 'left'}
-          bubbleSide={greetNpcX < 50 ? 'left' : 'right'}
           onMove={wx => { npcWorldXRefs.current[i] = wx; }}
-          playerMessage={greetingNpc === i ? playerMessage : null}
         />
       ))}
 
@@ -666,80 +1017,53 @@ export default function SFCity() {
       <div style={{
         position: 'absolute',
         left: '50%',
-        bottom: '18%',
-        zIndex: greetingNpc !== null ? 24 : 20,
+        bottom: CHAR_BOTTOM,
+        zIndex: greetingNpc !== null ? 200 : 20,
       }}>
-        <div style={{ position: 'relative' }}>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
-              <Character walking={walking} facing={facing} />
-            </div>
-          </div>
-          {greetingNpc !== null && (
-            <div style={{ position: 'absolute', inset: 0, zIndex: CHAT_Z, pointerEvents: chatOpen ? 'auto' : 'none' }}>
-              {(() => {
-                const playerSide: ChatSide = greetNpcX < 50 ? 'right' : 'left';
-                const playerChat = chatBubbleLayout(playerSide, PLAYER_CHAT_BOTTOM);
-                return chatOpen ? (
-                  <div style={{
-                    ...playerChat.style,
-                    background: '#fff', borderRadius: 14,
-                    padding: '7px 10px',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                    display: 'flex', gap: 6, alignItems: 'center',
-                    animation: `${playerSide === 'right' ? 'chat-in-right' : 'chat-in-left'} 0.22s ease-out both`,
-                    minWidth: 180, maxWidth: 200,
-                    pointerEvents: 'auto',
-                  }}>
-                    <input
-                      ref={chatInputRef}
-                      value={chatDraft}
-                      onChange={e => setChatDraft(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && chatDraft.trim()) {
-                          setPlayerMessage(chatDraft.trim());
-                          setChatDraft('');
-                          setChatOpen(false);
-                        }
-                        if (e.key === 'Escape') { setChatOpen(false); setChatDraft(''); }
-                      }}
-                      placeholder="Say something…"
-                      style={{
-                        border: 'none', outline: 'none', fontSize: 13,
-                        flex: 1, background: 'transparent', color: '#222',
-                        fontFamily: 'inherit',
-                      }}
-                      autoComplete="off"
-                    />
-                    <span style={{ fontSize: 10, color: '#bbb', whiteSpace: 'nowrap' }}>↵ send</span>
-                    <div style={playerChat.tailStyle} />
-                  </div>
-                ) : playerMessage ? (
-                  <ChatBubble
-                    message={playerMessage}
-                    side={playerSide}
-                    bottomOffset={PLAYER_CHAT_BOTTOM}
-                  />
-                ) : (
-                  <div style={{
-                    ...playerChat.style,
-                    color: 'rgba(255,255,255,0.55)', fontSize: 10,
-                    letterSpacing: 1.5, textTransform: 'uppercase',
-                    fontFamily: "Georgia,'Times New Roman',serif",
-                    whiteSpace: 'nowrap',
-                    animation: `${playerSide === 'right' ? 'chat-in-right' : 'chat-in-left'} 0.3s ease-out both`,
-                  }}>
-                    ↵ chat
-                  </div>
-                );
-              })()}
-            </div>
-          )}
+        <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
+          <Character walking={walking} facing={facing} />
         </div>
       </div>
 
+      {/* Chat overlay — always on top while connected */}
+      {greetingNpc !== null && (
+        <ConnectChatOverlay
+          greetingNpc={greetingNpc}
+          greetNpcX={greetNpcX}
+          chatMode={chatMode}
+          playerName={playerName}
+          playerMessage={playerMessage}
+          npcTyping={npcTyping}
+          npcMessage={npcMessage}
+          nameDraft={nameDraft}
+          setNameDraft={setNameDraft}
+          chatDraft={chatDraft}
+          setChatDraft={setChatDraft}
+          onSaveName={handleSaveName}
+          onSendMessage={handleSendMessage}
+          chatInputRef={chatInputRef}
+          nameInputRef={nameInputRef}
+        />
+      )}
+
+      {/* Proximity hint — touching but not yet connected */}
+      {nearNpc !== null && greetingNpc === null && (
+        <div style={{
+          position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 40, pointerEvents: 'none',
+          background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(8px)',
+          borderRadius: 40, padding: '7px 18px',
+          border: '1px solid rgba(255,255,255,0.12)',
+          color: 'rgba(255,255,255,0.7)', fontSize: 11,
+          letterSpacing: 2, textTransform: 'uppercase',
+          fontFamily: "Georgia,'Times New Roman',serif",
+        }}>
+          ↵ connect with {CHARACTERS[nearNpc]?.name}
+        </div>
+      )}
+
       {/* Greeting status bar */}
-      {greetingNpc !== null && !chatOpen && (
+      {greetingNpc !== null && chatMode !== 'chat' && chatMode !== 'name' && (
         <div style={{
           position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
           zIndex: 40, pointerEvents: 'none',
@@ -751,9 +1075,9 @@ export default function SFCity() {
           fontFamily: "Georgia,'Times New Roman',serif",
           display: 'flex', gap: 16,
         }}>
-          <span>↑ say goodbye to {CHARACTERS[greetingNpc]?.name}</span>
+          <span>↑ or esc · say goodbye to {CHARACTERS[greetingNpc]?.name}</span>
           <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
-          <span>↵ chat</span>
+          <span>{playerName ? '↵ chat' : '↵ enter name'}</span>
         </div>
       )}
 
@@ -772,12 +1096,12 @@ export default function SFCity() {
         San Francisco
       </div>
 
-      {/* Keyboard hint + mute — hidden on mobile */}
+      {/* Keyboard hint + mute — hidden on mobile, bottom-right */}
       <div className="hidden md:flex" style={{
-        position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+        position: 'absolute', bottom: 22, right: 22,
         gap: 10, alignItems: 'center', zIndex: 40,
       }}>
-        {['←', '→'].map((k, i) => (
+        {['←', '→', '↑'].map((k, i) => (
           <div key={i} style={{
             width: 30, height: 30, borderRadius: 7,
             border: '1px solid rgba(255,255,255,.2)',
@@ -788,7 +1112,7 @@ export default function SFCity() {
           }}>{k}</div>
         ))}
         <div style={{ color: 'rgba(255,255,255,.2)', fontSize: 9, letterSpacing: 3, fontFamily: 'Georgia,serif', pointerEvents: 'none' }}>
-          or A · D · walk forever
+          A · D · W · walk & jump
         </div>
         <button onClick={() => setMuted(m => !m)} title={muted ? 'Unmute' : 'Mute'} style={{
           width: 30, height: 30, borderRadius: 7,
