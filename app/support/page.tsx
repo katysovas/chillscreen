@@ -31,32 +31,32 @@ export default function SupportPage() {
 
             <details className="rounded-lg border border-slate-200 bg-white p-4">
               <summary className="cursor-pointer font-medium text-slate-700">
-                My Home tab is blank after install.
+                How do I move and jump?
               </summary>
               <p className="mt-2">
-                Close and re-open the ChillScreen app in your sidebar. The first
-                view is published when the tab is opened for the first time.
+                Use ← → or A / D to walk. Press ↑, W, or Space to jump. On mobile,
+                use the on-screen controls at the bottom.
               </p>
             </details>
 
             <details className="rounded-lg border border-slate-200 bg-white p-4">
               <summary className="cursor-pointer font-medium text-slate-700">
-                My scene selection isn&rsquo;t saving.
+                How do I talk to characters?
               </summary>
               <p className="mt-2">
-                Make sure the app is properly installed and the bot token is
-                valid. If the problem persists, try uninstalling and reinstalling
-                the app.
+                Walk up to an NPC until you connect, then press Enter to open the
+                chat bubble. Press ↑ to say goodbye and walk away.
               </p>
             </details>
 
             <details className="rounded-lg border border-slate-200 bg-white p-4">
               <summary className="cursor-pointer font-medium text-slate-700">
-                Can I suggest a new wallpaper?
+                Audio isn&rsquo;t playing.
               </summary>
               <p className="mt-2">
-                Yes! Email us a link to an Unsplash photo and we&rsquo;ll consider
-                adding it to the next curated set.
+                Some browsers block autoplay until you interact with the page. Tap
+                or press any key once, then use the mute button next to the arrow
+                controls if needed.
               </p>
             </details>
           </div>

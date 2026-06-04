@@ -1,5 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import Character from './Character';
+import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
+import ChatBubble, { chatBubbleLayout, PLAYER_CHAT_BOTTOM, CHAT_Z, type ChatSide } from './ChatBubble';
+import CHARACTERS from './characters';
 
 // ─── Keyframes & character CSS ───────────────────────────────────────────────
 const KF = `
@@ -9,7 +13,10 @@ const KF = `
   @keyframes sw1    { 0%,100%{transform:rotate(-1.5deg)} 50%{transform:rotate(1.5deg)} }
   @keyframes sw2    { 0%,100%{transform:rotate(-1deg)}   50%{transform:rotate(1deg)} }
   @keyframes sw3    { 0%,100%{transform:rotate(-2.2deg)} 50%{transform:rotate(2.2deg)} }
-  @keyframes fdi    { from{opacity:0} to{opacity:1} }
+  @keyframes fdi       { from{opacity:0} to{opacity:1} }
+  @keyframes greet-pop { 0%,100%{transform:translateX(-50%) scale(1) translateY(0);} 50%{transform:translateX(-50%) scale(1.18) translateY(-6px);} }
+  @keyframes chat-in-left  { from{opacity:0;} to{opacity:1;} }
+  @keyframes chat-in-right { from{opacity:0;} to{opacity:1;} }
 
   .ch-wrapper{width:500px;height:240px;position:relative;}
   .ch-animal{position:relative;animation:ch-animal 2s 1s infinite alternate;}
@@ -18,12 +25,11 @@ const KF = `
   .ch-ears{position:absolute;top:0;left:50%;right:-10px;height:20px;width:180px;transform:translateX(-50%);}
   .ch-ears:before,.ch-ears:after{content:"";background:#000;width:15px;height:30px;float:left;border-radius:10px;transform:rotate(-45deg);}
   .ch-ears:after{float:right;transform:rotate(45deg);}
-  .ch-ballons{position:absolute;left:84.8%;z-index:99;width:150px;height:150px;top:-70px;animation:ch-ballons 2s 1s infinite alternate;transform:translateX(-50%) scale(1,1.1);}
-  /* String stays inside ch-ballons (avoids transform-offset issues).
-     Height animates from 60→170 in sync with ch-ballons so the bottom stays
-     pinned at the hand (y≈96 in ch-animal coords) throughout the cycle. */
-  .ch-ballons:before{content:"";position:absolute;left:20px;top:106px;z-index:99;width:2px;background:#000;height:60px;animation:ch-str-h 2s 1s infinite alternate;}
-  @keyframes ch-str-h{from{height:60px;}to{height:170px;}}
+  /* ch-ballons has NO animation — only the heart (ch-heart) bounces.
+     The string therefore stays fixed relative to ch-animal and never
+     disconnects from the hand. Only the character and the heart shape bounce. */
+  .ch-ballons{position:absolute;left:84.8%;z-index:1;width:150px;height:150px;top:-70px;transform:translateX(-50%) scale(1,1.1);}
+  .ch-ballons:before{content:"";position:absolute;left:20px;top:106px;z-index:1;width:2px;height:60px;background:#000;}
   .ch-heart{position:relative;animation:ch-heart 2s 1s infinite alternate;}
   .ch-heart span{width:60px;height:100px;background:#ef4023;position:absolute;left:5px;top:0;border-radius:50px 50px 0 0;transform:rotate(45deg);}
   .ch-heart span:last-child{right:113px;left:initial;transform:scale(-1,1) rotate(45deg);}
@@ -49,7 +55,7 @@ const KF = `
   .ch-right-hand:after{content:"";width:19.5px;height:18px;background:rgba(220,220,220,.6);position:absolute;bottom:10px;z-index:9;right:6.4px;transform:rotate(-30deg);}
   .ch-right-hand span{border-left:2px solid #000;width:10px;height:40px;position:absolute;border-radius:50%;right:0;top:0;}
   .ch-right-hand span:first-child:before{content:"";border:2px solid #000;position:absolute;background:#ddd;right:-3px;bottom:-26px;width:20px;height:16px;z-index:10;border-radius:15px 20px 20px 18px;transform:rotate(57deg);}
-  .ch-right-hand span:first-child:after{content:"";position:absolute;bottom:-9px;right:-4px;width:6px;height:9px;border:2px solid #000;border-left:0;border-radius:10px 30px 30px 10px;z-index:99;background:#ddd;transform:rotate(-29deg);}
+  .ch-right-hand span:first-child:after{content:"";position:absolute;bottom:-9px;right:-4px;width:6px;height:9px;border:2px solid #000;border-left:0;border-radius:10px 30px 30px 10px;z-index:10;background:#ddd;transform:rotate(-29deg);}
   .ch-right-hand span:last-child{right:20px;top:5px;}
   .ch-right-hand span:last-child:before{content:"";position:absolute;left:0;right:5px;top:0;background:rgba(220,220,220,.5);height:5px;}
   .ch-right-hand span:last-child:after{content:"";position:absolute;left:0;top:2px;width:18.7px;height:35px;background:rgba(220,220,220,.5);border-radius:0 0 10px 10px;}
@@ -59,17 +65,49 @@ const KF = `
   .ch-legs span:after{content:"";background:rgba(200,200,200,.4);right:0;left:0;position:absolute;bottom:-2px;height:7px;}
   .ch-legs span:first-child{animation:ch-left-leg 2s 1s infinite alternate;transform:rotate(-5deg);}
   .ch-legs span:first-child:before{right:-2px;left:inherit;border-radius:20px 0 20px 20px;}
-  .ch-walking .ch-animal{animation-duration:.45s!important;}
-  .ch-walking .ch-legs span{animation-duration:.45s!important;animation-delay:0s!important;}
-  .ch-walking .ch-right-hand{animation-duration:.45s!important;animation-delay:0s!important;}
+  .ch-walking .ch-animal{animation-duration:.36s!important;}
+  /* Cute quick march: each leg does a small lift-and-plant (mostly vertical),
+     a tiny forward tilt, half a cycle out of phase. Fast tempo, little swing. */
+  .ch-walking .ch-legs span{animation:ch-step-a .36s ease-in-out infinite!important;transform-origin:top center!important;}
+  .ch-walking .ch-legs span:first-child{animation:ch-step-b .36s ease-in-out infinite!important;transform-origin:top center!important;}
+  /* Foot stays flat to the ground with just a tiny tip, keeping it cute not floppy. */
+  .ch-walking .ch-legs span:before{animation:ch-foot-a .36s ease-in-out infinite!important;transform-origin:center top;}
+  .ch-walking .ch-legs span:first-child:before{animation:ch-foot-b .36s ease-in-out infinite!important;transform-origin:center top;}
+  .ch-walking .ch-right-hand{animation-duration:.36s!important;animation-delay:0s!important;}
+  /* Leg lifts up then stamps down; small ±10° tilt so it steps, not swings. */
+  @keyframes ch-step-a{
+    0%{transform:rotate(-9deg) translateY(0);}
+    50%{transform:rotate(9deg) translateY(-11px);}
+    100%{transform:rotate(-9deg) translateY(0);}
+  }
+  @keyframes ch-step-b{
+    0%{transform:rotate(9deg) translateY(-11px);}
+    50%{transform:rotate(-9deg) translateY(0);}
+    100%{transform:rotate(9deg) translateY(-11px);}
+  }
+  /* Tiny toe tip on the lift, flat on the plant. */
+  @keyframes ch-foot-a{
+    0%{transform:rotate(0deg);}
+    50%{transform:rotate(-14deg);}
+    100%{transform:rotate(0deg);}
+  }
+  @keyframes ch-foot-b{
+    0%{transform:rotate(-14deg);}
+    50%{transform:rotate(0deg);}
+    100%{transform:rotate(-14deg);}
+  }
   @keyframes ch-heart{0%{transform:scale(.8);top:22px;right:11px;}to{transform:scale(1.2);top:-21px;right:-11px;}}
   @keyframes ch-eyes{from{width:10px;height:10px;}to{width:15px;height:15px;}}
-  @keyframes ch-ballons{from{top:-70px;}to{top:-180px;}}
   @keyframes ch-animal{from{bottom:0;}to{bottom:22px;}}
   @keyframes ch-right-hand{from{transform:rotate(-47deg);top:70px;}to{transform:rotate(-80deg);top:50px;}}
   @keyframes ch-left-leg{0%{transform:rotate(-5deg);}100%{transform:rotate(-30deg);}}
   @keyframes ch-right-leg{0%{transform:rotate(5deg);}100%{transform:rotate(30deg);}}
-  @keyframes ch-jump-outer{0%{transform:translateY(0);}35%{transform:translateY(-110px);}65%{transform:translateY(-110px);}100%{transform:translateY(0);}}
+  /* Natural jump arc: fast up (decelerate), then gravity-fall back down (accelerate). */
+  @keyframes ch-jump-outer{
+    0%  { transform:translateY(0);      animation-timing-function:cubic-bezier(0.215,0.61,0.355,1); }
+    42% { transform:translateY(-100px); animation-timing-function:cubic-bezier(0.55,0.055,0.675,0.19); }
+    100%{ transform:translateY(0); }
+  }
 `;
 
 // ─── Parallax factors ─────────────────────────────────────────────────────────
@@ -399,38 +437,6 @@ function GroundLayer({ worldOff }: { worldOff: number }) {
   );
 }
 
-// ─── Character ────────────────────────────────────────────────────────────────
-
-function Character({ walking, facing }: { walking: boolean; facing: 'left' | 'right' }) {
-  return (
-    <div style={{
-      transform: `translateX(-50%) scaleX(${facing === 'left' ? -1 : 1})`,
-      transformOrigin: 'center bottom',
-      transition: 'transform 0.1s ease',
-    }}>
-      <div style={{ transform: 'scale(0.34)', transformOrigin: 'bottom center' }}>
-        <div className={`ch-wrapper${walking ? ' ch-walking' : ''}`}>
-          <div className="ch-animal">
-            <div className="ch-ballons">
-              <div className="ch-heart"><span /><span /></div>
-            </div>
-            <div className="ch-ears" />
-            <div className="ch-body">
-              <div className="ch-eyes" />
-              <div className="ch-nose"><span /><span /></div>
-              <div className="ch-hands">
-                <div className="ch-left-hand"><span /><span /></div>
-                <div className="ch-right-hand"><span /><span /></div>
-              </div>
-            </div>
-            <div className="ch-legs"><span /><span /></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Mobile D-pad button ──────────────────────────────────────────────────────
 
 function DPadBtn({
@@ -458,6 +464,10 @@ function DPadBtn({
   );
 }
 
+// ─── NPC cast ─────────────────────────────────────────────────────────────────
+
+// Characters are defined in characters.ts (names, personalities, greetings).
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function SFCity() {
@@ -468,25 +478,99 @@ export default function SFCity() {
   const rafRef     = useRef<number | null>(null);
   const jumpingRef = useRef(false);
 
-  const [worldOff, setWorldOff] = useState(0);
-  const [facing,   setFacing]   = useState<'left' | 'right'>('right');
-  const [walking,  setWalking]  = useState(false);
-  const [jumping,  setJumping]  = useState(false);
+  // ── Greeting / collision ───────────────────────────────────────────────────
+  // Each NPC reports its world-x each frame (same coordinate space as worldRef).
+  const npcWorldXRefs     = useRef(CHARACTERS.map(c => screenPctToWorldX(c.startX, 0)));
+  const greetingRef       = useRef<number | null>(null); // index of greeted NPC, or null
+  const disconnectUntil   = useRef(0);                   // cooldown timestamp after greeting ends
+
+  const [worldOff,    setWorldOff]    = useState(0);
+  const [facing,      setFacing]      = useState<'left' | 'right'>('right');
+  const [walking,     setWalking]     = useState(false);
+  const [jumping,     setJumping]     = useState(false);
+  const [greetingNpc,   setGreetingNpc]   = useState<number | null>(null);
+  const [greetNpcX,     setGreetNpcX]     = useState(50);
+  // ── Player chat ─────────────────────────────────────────────────────────────
+  const [chatOpen,      setChatOpen]      = useState(false);
+  const [chatDraft,     setChatDraft]     = useState('');
+  const [playerMessage, setPlayerMessage] = useState<string | null>(null);
+  const chatInputRef = useRef<HTMLInputElement | null>(null);
+
+  // ── Audio ──────────────────────────────────────────────────────────────────
+  const TRACKS = ['/audio/1.mp3', '/audio/2.mp3', '/audio/3.mp3'];
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [muted,  setMuted] = useState(false);
 
   useEffect(() => {
-    const SPEED = 3.5;
+    const src = TRACKS[Math.floor(Math.random() * TRACKS.length)];
+    const el  = new Audio(src);
+    el.loop   = true;
+    el.volume = 0.35;
+    el.muted  = muted;
+    audioRef.current = el;
+
+    const tryPlay = () => el.play().catch(() => {});
+    tryPlay();
+    // Fallback: play on first interaction if autoplay is blocked
+    window.addEventListener('keydown',     tryPlay, { once: true });
+    window.addEventListener('pointerdown', tryPlay, { once: true });
+
+    return () => {
+      el.pause();
+      window.removeEventListener('keydown',     tryPlay);
+      window.removeEventListener('pointerdown', tryPlay);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.muted = muted;
+  }, [muted]);
+
+  useEffect(() => {
+    const SPEED      = 3.5;
+    const GREET_DIST = 5; // % of viewport — must be quite close to "touch"
 
     const triggerJump = () => {
       if (jumpingRef.current) return;
       jumpingRef.current = true;
       setJumping(true);
-      setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 620);
+      setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 560);
+    };
+
+    const disconnect = () => {
+      greetingRef.current = null;
+      setGreetingNpc(null);
+      disconnectUntil.current = Date.now() + 2000;
+      setChatOpen(false);
+      setChatDraft('');
+      setPlayerMessage(null);
     };
 
     const onDown = (e: KeyboardEvent) => {
+      // Let the chat input handle its own keys without interference
+      if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
+
       if (['ArrowLeft',  'a', 'A'].includes(e.key)) { keysRef.current.left  = true;  e.preventDefault(); }
       if (['ArrowRight', 'd', 'D'].includes(e.key)) { keysRef.current.right = true;  e.preventDefault(); }
-      if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) { triggerJump(); e.preventDefault(); }
+      if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) {
+        e.preventDefault();
+        if (greetingRef.current !== null) {
+          disconnect();
+          triggerJump();
+        } else {
+          triggerJump();
+        }
+      }
+      if (e.key === 'Enter' && greetingRef.current !== null) {
+        e.preventDefault();
+        setChatOpen(true);
+        setTimeout(() => chatInputRef.current?.focus(), 30);
+      }
+      if (e.key === 'Escape') {
+        setChatOpen(false);
+        setChatDraft('');
+      }
     };
     const onUp = (e: KeyboardEvent) => {
       if (['ArrowLeft',  'a', 'A'].includes(e.key)) keysRef.current.left  = false;
@@ -496,6 +580,13 @@ export default function SFCity() {
     window.addEventListener('keyup',   onUp);
 
     const loop = () => {
+      // While greeting, freeze the player completely
+      if (greetingRef.current !== null) {
+        if (walkingRef.current) { walkingRef.current = false; setWalking(false); }
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
+
       const { left, right } = keysRef.current;
       let isWalking = false;
 
@@ -514,6 +605,28 @@ export default function SFCity() {
         setWalking(isWalking);
       }
       if (isWalking) setWorldOff(worldRef.current);
+
+      // Collision in world space — walking toward an NPC closes the gap for real.
+      if (Date.now() > disconnectUntil.current) {
+        const width = window.innerWidth;
+        const greetDistPx = (GREET_DIST / 100) * width;
+        for (let i = 0; i < npcWorldXRefs.current.length; i++) {
+          const npcWorldX = npcWorldXRefs.current[i];
+          const screenPct = worldXToScreenPct(npcWorldX, worldRef.current, width);
+          const distPx    = Math.abs(npcWorldX - worldRef.current);
+          if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx) {
+            greetingRef.current = i;
+            setGreetingNpc(i);
+            setGreetNpcX(screenPct);
+            const towardNpc = screenPct < 50 ? 'left' : 'right';
+            facingRef.current = towardNpc;
+            setFacing(towardNpc);
+            setWalking(false);
+            walkingRef.current = false;
+            break;
+          }
+        }
+      }
 
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -534,13 +647,115 @@ export default function SFCity() {
       <MidLayer    worldOff={worldOff} />
       <GroundLayer worldOff={worldOff} />
 
-      {/* Character — world scrolls, character stays centred */}
+      {/* Autonomous NPCs */}
+      {CHARACTERS.map((cfg, i) => (
+        <NPC
+          key={cfg.id}
+          {...cfg}
+          worldOff={worldOff}
+          paused={greetingNpc === i}
+          greeting={greetingNpc === i}
+          greetFacing={greetNpcX < 50 ? 'right' : 'left'}
+          bubbleSide={greetNpcX < 50 ? 'left' : 'right'}
+          onMove={wx => { npcWorldXRefs.current[i] = wx; }}
+          playerMessage={greetingNpc === i ? playerMessage : null}
+        />
+      ))}
+
+      {/* Player — world scrolls, character stays centred */}
       <div style={{
-        position: 'absolute', left: '50%', bottom: '18%', zIndex: 20,
-        animation: jumping ? 'ch-jump-outer 0.62s cubic-bezier(0.33,0,0.66,1)' : 'none',
+        position: 'absolute',
+        left: '50%',
+        bottom: '18%',
+        zIndex: greetingNpc !== null ? 24 : 20,
       }}>
-        <Character walking={walking} facing={facing} />
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
+              <Character walking={walking} facing={facing} />
+            </div>
+          </div>
+          {greetingNpc !== null && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: CHAT_Z, pointerEvents: chatOpen ? 'auto' : 'none' }}>
+              {(() => {
+                const playerSide: ChatSide = greetNpcX < 50 ? 'right' : 'left';
+                const playerChat = chatBubbleLayout(playerSide, PLAYER_CHAT_BOTTOM);
+                return chatOpen ? (
+                  <div style={{
+                    ...playerChat.style,
+                    background: '#fff', borderRadius: 14,
+                    padding: '7px 10px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                    display: 'flex', gap: 6, alignItems: 'center',
+                    animation: `${playerSide === 'right' ? 'chat-in-right' : 'chat-in-left'} 0.22s ease-out both`,
+                    minWidth: 180, maxWidth: 200,
+                    pointerEvents: 'auto',
+                  }}>
+                    <input
+                      ref={chatInputRef}
+                      value={chatDraft}
+                      onChange={e => setChatDraft(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && chatDraft.trim()) {
+                          setPlayerMessage(chatDraft.trim());
+                          setChatDraft('');
+                          setChatOpen(false);
+                        }
+                        if (e.key === 'Escape') { setChatOpen(false); setChatDraft(''); }
+                      }}
+                      placeholder="Say something…"
+                      style={{
+                        border: 'none', outline: 'none', fontSize: 13,
+                        flex: 1, background: 'transparent', color: '#222',
+                        fontFamily: 'inherit',
+                      }}
+                      autoComplete="off"
+                    />
+                    <span style={{ fontSize: 10, color: '#bbb', whiteSpace: 'nowrap' }}>↵ send</span>
+                    <div style={playerChat.tailStyle} />
+                  </div>
+                ) : playerMessage ? (
+                  <ChatBubble
+                    message={playerMessage}
+                    side={playerSide}
+                    bottomOffset={PLAYER_CHAT_BOTTOM}
+                  />
+                ) : (
+                  <div style={{
+                    ...playerChat.style,
+                    color: 'rgba(255,255,255,0.55)', fontSize: 10,
+                    letterSpacing: 1.5, textTransform: 'uppercase',
+                    fontFamily: "Georgia,'Times New Roman',serif",
+                    whiteSpace: 'nowrap',
+                    animation: `${playerSide === 'right' ? 'chat-in-right' : 'chat-in-left'} 0.3s ease-out both`,
+                  }}>
+                    ↵ chat
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Greeting status bar */}
+      {greetingNpc !== null && !chatOpen && (
+        <div style={{
+          position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 40, pointerEvents: 'none',
+          background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(8px)',
+          borderRadius: 40, padding: '7px 18px',
+          border: '1px solid rgba(255,255,255,0.12)',
+          color: 'rgba(255,255,255,0.7)', fontSize: 11,
+          letterSpacing: 2, textTransform: 'uppercase',
+          fontFamily: "Georgia,'Times New Roman',serif",
+          display: 'flex', gap: 16,
+        }}>
+          <span>↑ say goodbye to {CHARACTERS[greetingNpc]?.name}</span>
+          <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
+          <span>↵ chat</span>
+        </div>
+      )}
 
       {/* Vignette */}
       <div style={{
@@ -557,10 +772,10 @@ export default function SFCity() {
         San Francisco
       </div>
 
-      {/* Keyboard hint — hidden on mobile */}
+      {/* Keyboard hint + mute — hidden on mobile */}
       <div className="hidden md:flex" style={{
         position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
-        gap: 10, alignItems: 'center', zIndex: 40, pointerEvents: 'none',
+        gap: 10, alignItems: 'center', zIndex: 40,
       }}>
         {['←', '→'].map((k, i) => (
           <div key={i} style={{
@@ -569,14 +784,25 @@ export default function SFCity() {
             background: 'rgba(0,0,0,.3)', backdropFilter: 'blur(4px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'rgba(255,255,255,.45)', fontSize: 14,
+            pointerEvents: 'none',
           }}>{k}</div>
         ))}
-        <div style={{ color: 'rgba(255,255,255,.2)', fontSize: 9, letterSpacing: 3, fontFamily: 'Georgia,serif' }}>
+        <div style={{ color: 'rgba(255,255,255,.2)', fontSize: 9, letterSpacing: 3, fontFamily: 'Georgia,serif', pointerEvents: 'none' }}>
           or A · D · walk forever
         </div>
+        <button onClick={() => setMuted(m => !m)} title={muted ? 'Unmute' : 'Mute'} style={{
+          width: 30, height: 30, borderRadius: 7,
+          border: '1px solid rgba(255,255,255,.2)',
+          background: 'rgba(0,0,0,.3)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: muted ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.6)',
+          fontSize: 14, cursor: 'pointer',
+        }}>
+          {muted ? '🔇' : '🔊'}
+        </button>
       </div>
 
-      {/* Mobile D-pad — shown only on touch devices */}
+      {/* Mobile D-pad + mute — shown only on touch devices */}
       <div className="flex md:hidden" style={{
         position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)',
         gap: 12, zIndex: 40, alignItems: 'center',
@@ -589,14 +815,25 @@ export default function SFCity() {
             if (!jumpingRef.current) {
               jumpingRef.current = true;
               setJumping(true);
-              setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 620);
+              setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 560);
             }
           }}
           onEnd={() => {}} />
         <DPadBtn label="→"
           onStart={() => { keysRef.current.right = true; }}
           onEnd={()   => { keysRef.current.right = false; }} />
+        <button onClick={() => setMuted(m => !m)} style={{
+          width: 56, height: 56, borderRadius: 12,
+          border: '1px solid rgba(255,255,255,.2)',
+          background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(6px)',
+          color: muted ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.6)',
+          fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer',
+        }}>
+          {muted ? '🔇' : '🔊'}
+        </button>
       </div>
+
     </div>
   );
 }
