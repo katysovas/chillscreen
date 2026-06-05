@@ -10,7 +10,8 @@ export type CharacterAccessory =
   | { type: 'compass'; color: string }
   | { type: 'microphone'; color: string }
   | { type: 'dj'; headphoneColor?: string; speakerColor?: string }
-  | { type: 'necklace'; symbol?: string; color: string; chainColor?: string; balloonColor?: string };
+  | { type: 'necklace'; symbol?: string; color: string; chainColor?: string; balloonColor?: string }
+  | { type: 'vendorCart'; color: string; emoji?: string };
 
 export type AccessoryType = CharacterAccessory['type'];
 
@@ -148,6 +149,31 @@ export function LightsaberAccessory({
   );
 }
 
+export function VendorCartAccessory({
+  color = '#e8520a',
+  emoji = '🛍️',
+}: {
+  color?: string;
+  emoji?: string;
+}) {
+  return (
+    <div
+      className="ch-vcart-wrap"
+      style={{ ['--cart-awning' as string]: color }}
+    >
+      <div className="ch-vcart-pole" />
+      <div className="ch-vcart-awning" />
+      <div className="ch-vcart-body">
+        <div className="ch-vcart-display" aria-hidden>{emoji}</div>
+      </div>
+      <div className="ch-vcart-shelf" />
+      <div className="ch-vcart-handle" />
+      <div className="ch-vcart-wheel ch-vcart-wheel-l" />
+      <div className="ch-vcart-wheel ch-vcart-wheel-r" />
+    </div>
+  );
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
  * Accessory library (registry)
  * Each item declares which body "slots" it occupies and how to render each.
@@ -220,6 +246,12 @@ export const ACCESSORY_LIBRARY: Record<AccessoryType, AccessoryDefinition> = {
     slots: {
       head: a => <NecklaceAccessory symbol={a.symbol} color={a.color} chainColor={a.chainColor} />,
       float: a => (a.balloonColor ? <BalloonAccessory color={a.balloonColor} /> : null),
+    },
+  }),
+  vendorCart: define<'vendorCart'>({
+    holdSide: 'right',
+    slots: {
+      float: a => <VendorCartAccessory color={a.color} emoji={a.emoji} />,
     },
   }),
 };

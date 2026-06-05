@@ -59,6 +59,31 @@ export const CHARACTER_STYLES = `
   .ch-boom-tape:before{content:"";position:absolute;left:4px;top:4px;width:10px;height:10px;border-radius:50%;background:#444;box-shadow:12px 0 0 #444;}
   .ch-boom-panel{position:absolute;left:4px;right:4px;bottom:5px;height:10px;border-radius:2px;background:repeating-linear-gradient(90deg,#c44 0 2px,#3a3 2px 4px,#fc4 4px 6px,#3a3 6px 8px);}
   .ch-boom-grip{position:absolute;bottom:0;left:50%;width:18px;height:20px;margin-left:-9px;border:2px solid #222;border-radius:0 0 6px 6px;background:linear-gradient(90deg,#666,#999 50%,#666);}
+  /* ── Vendor cart ─────────────────────────────────────────────────────────
+     Floats inside .ch-animal, absolutely positioned to the right of the body.
+     The handle bar visually connects the character's right hand to the cart. */
+  .ch-vcart-wrap{position:absolute;left:330px;top:55px;width:130px;height:165px;z-index:3;pointer-events:none;}
+  /* Awning pole */
+  .ch-vcart-pole{position:absolute;left:50%;top:0;width:5px;height:44px;margin-left:-2px;background:linear-gradient(90deg,#7a5c10,#d4a830,#7a5c10);}
+  /* Striped awning body */
+  .ch-vcart-awning{position:absolute;top:0;left:-8px;right:-8px;height:28px;background:repeating-linear-gradient(90deg,var(--cart-awning,#e8520a) 0 18px,#fff5e0 18px 36px);border-radius:3px 3px 0 0;box-shadow:0 2px 0 rgba(0,0,0,.12);}
+  /* Scalloped fringe below awning */
+  .ch-vcart-awning:after{content:"";position:absolute;bottom:-12px;left:0;right:0;height:14px;background:radial-gradient(circle at 10px -1px,transparent 10px,var(--cart-awning,#e8520a) 11px) 0 0/20px 100%,radial-gradient(circle at 10px -1px,transparent 10px,#fff5e0 11px) 10px 0/20px 100%;}
+  /* Cart body */
+  .ch-vcart-body{position:absolute;top:40px;left:10px;right:10px;height:76px;background:linear-gradient(180deg,#f7f0d8,#e0d4a8);border:2.5px solid #6b5a2a;border-radius:5px 5px 2px 2px;}
+  /* Display/window on the cart front */
+  .ch-vcart-display{position:absolute;top:8px;left:8px;right:8px;height:34px;background:#fffbf0;border:2px solid #6b5a2a;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;}
+  /* Bottom shelf/frame */
+  .ch-vcart-shelf{position:absolute;top:112px;left:6px;right:6px;height:10px;background:#6b5a2a;border-radius:2px;}
+  /* Handle bar connecting character's right hand to the cart */
+  .ch-vcart-handle{position:absolute;top:88px;left:-36px;width:46px;height:9px;background:linear-gradient(180deg,#c4a420,#8b6914);border-radius:4px;border:1px solid rgba(0,0,0,.18);}
+  /* Wheels */
+  .ch-vcart-wheel{position:absolute;top:118px;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 38% 38%,#aaa,#555 55%,#2a2a2a);border:3px solid #1a1a1a;}
+  .ch-vcart-wheel:before{content:"";position:absolute;inset:5px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);}
+  .ch-vcart-wheel:after{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:#ccc;border:1px solid #555;}
+  .ch-vcart-wheel-l{left:8px;}
+  .ch-vcart-wheel-r{right:8px;}
+
   /* Lightsaber — mounted on the right fist */
   .ch-right-hand .ch-saber{position:absolute;left:4px;top:-18px;width:30px;height:130px;transform:rotate(47deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
   .ch-saber-hilt{position:absolute;bottom:0;left:50%;width:16px;height:38px;margin-left:-8px;border:2px solid #222;border-radius:4px;background:#5a5a62;box-shadow:inset 0 -6px 0 rgba(0,0,0,.25);}
@@ -76,7 +101,7 @@ export const CHARACTER_STYLES = `
   .ch-nose span{width:6px;height:8px;border:2px solid #938E8F;border-radius:50%;position:absolute;left:0;bottom:0;transform:rotate(-10deg);}
   .ch-nose span:last-child{right:0;left:inherit;transform:rotate(10deg);}
   .ch-nose span:before{content:"";background:#fff;position:absolute;left:-3px;right:-3px;bottom:3px;top:-3px;}
-  .ch-left-hand{position:absolute;left:5px;top:70px;width:35px;height:60px;}
+  .ch-left-hand{position:absolute;left:25px;top:55px;width:35px;height:60px;}
   .ch-left-hand:before{content:"";position:absolute;left:0;top:-10px;right:0;background:#fff;height:13px;z-index:9;}
   .ch-left-hand:after{content:"";border:2px solid #000;position:absolute;left:5px;right:4px;bottom:-18px;height:30px;z-index:0;border-radius:19px;box-shadow:inset 25px 0 0 rgba(0,0,0,.2);transform:rotate(-20deg);}
   .ch-left-hand span{background:#fff;border-left:2px solid #000;width:15px;height:65px;position:absolute;border-radius:50%;left:0;top:0;}
@@ -108,42 +133,81 @@ export const CHARACTER_STYLES = `
   .ch-walking .ch-legs span:before{animation:ch-foot-a .36s ease-in-out infinite!important;transform-origin:center top;}
   .ch-walking .ch-legs span:first-child:before{animation:ch-foot-b .36s ease-in-out infinite!important;transform-origin:center top;}
   .ch-walking .ch-right-hand{animation-duration:.36s!important;animation-delay:0s!important;}
-  /* Concert dance — quick vertical bounce; feet keep stepping while walking */
+  /* ── Concert dance ────────────────────────────────────────────────────────
+     Five layers of motion so the character looks like it's actually having fun:
+     1. ch-animal bounce  — fast up/down (unchanged, 0.28s)
+     2. ch-wrapper sway   — ±3° body rock synced to 2× bounce period (0.56s)
+     3. Leg stomp         — alternating lifts when standing still
+     4. Arm raise         — wider arc (36°) + raised higher; secondary bob on held hand
+     5. Happy eyes        — periodic ^^ squint
+  */
   .ch-dancing .ch-animal{animation:ch-dance-bounce .28s ease-in-out infinite alternate!important;}
-  .ch-dancing:not(.ch-walking) .ch-legs span,.ch-dancing:not(.ch-walking) .ch-legs span:first-child{animation:none!important;}
-  .ch-dancing:not(.ch-walking) .ch-legs span{transform:rotate(5deg)!important;}
-  .ch-dancing:not(.ch-walking) .ch-legs span:first-child{transform:rotate(-5deg)!important;}
+  /* 2. Whole-body sway — rotates around feet so the character leans L/R */
+  .ch-dancing{animation:ch-dance-sway .56s ease-in-out infinite;transform-origin:bottom center;}
+  /* 3. Alternating leg stomp when standing; walk cycle takes over when moving */
+  .ch-dancing:not(.ch-walking) .ch-legs span{
+    animation:ch-dance-stomp .56s ease-in-out infinite!important;
+    transform-origin:top center!important;
+  }
+  .ch-dancing:not(.ch-walking) .ch-legs span:first-child{
+    animation:ch-dance-stomp-l .56s ease-in-out .28s infinite!important;
+    transform-origin:top center!important;
+  }
+  /* 4a. Free hand — wider, higher arc */
   .ch-dancing.ch-free-hand-left .ch-left-hand,
   .ch-dancing.ch-free-hand-left.ch-walking .ch-left-hand{
     animation:ch-dance-party-sway-left 1.15s ease-in-out infinite alternate!important;
     transform-origin:88% 8%;
-  }
-  .ch-dancing.ch-free-hand-left .ch-right-hand,
-  .ch-dancing.ch-free-hand-left.ch-walking .ch-right-hand{
-    animation:none!important;
-    transform:rotate(-47deg)!important;
   }
   .ch-dancing.ch-free-hand-right .ch-right-hand,
   .ch-dancing.ch-free-hand-right.ch-walking .ch-right-hand{
     animation:ch-dance-party-sway-right 1.15s ease-in-out infinite alternate!important;
     transform-origin:12% 8%;
   }
+  /* 4b. Held hand — subtle secondary bob instead of frozen solid */
+  .ch-dancing.ch-free-hand-left .ch-right-hand,
+  .ch-dancing.ch-free-hand-left.ch-walking .ch-right-hand{
+    animation:ch-dance-held-bob .56s ease-in-out infinite alternate!important;
+  }
   .ch-dancing.ch-free-hand-right .ch-left-hand,
   .ch-dancing.ch-free-hand-right.ch-walking .ch-left-hand{
-    animation:none!important;
+    animation:ch-dance-held-bob .56s ease-in-out infinite alternate!important;
   }
-  .ch-dancing .ch-heart,.ch-dancing .ch-eyes:before,.ch-dancing .ch-eyes:after{animation:none!important;}
+  /* 5. Happy squint every ~1.4 s */
+  .ch-dancing .ch-eyes:before,.ch-dancing .ch-eyes:after{
+    animation:ch-dance-happy-eyes 1.4s ease-in-out infinite!important;
+  }
   @keyframes ch-dance-bounce{
     from{transform:translateY(0);}
     to{transform:translateY(-26px);}
   }
+  @keyframes ch-dance-sway{
+    0%,100%{transform:rotate(-3deg);}
+    50%{transform:rotate(3deg);}
+  }
+  @keyframes ch-dance-stomp{
+    0%,55%,100%{transform:rotate(5deg) translateY(0);}
+    25%{transform:rotate(8deg) translateY(-9px);}
+  }
+  @keyframes ch-dance-stomp-l{
+    0%,55%,100%{transform:rotate(-5deg) translateY(0);}
+    25%{transform:rotate(-8deg) translateY(-9px);}
+  }
   @keyframes ch-dance-party-sway-left{
-    from{transform:rotate(172deg) translate(30px,-15px);}
-    to{transform:rotate(188deg) translate(30px,-15px);}
+    from{transform:rotate(162deg) translate(34px,-24px);}
+    to{transform:rotate(198deg) translate(34px,-24px);}
   }
   @keyframes ch-dance-party-sway-right{
-    from{transform:rotate(-172deg) translate(-30px,-15px);}
-    to{transform:rotate(-188deg) translate(-30px,-15px);}
+    from{transform:rotate(-162deg) translate(-34px,-24px);}
+    to{transform:rotate(-198deg) translate(-34px,-24px);}
+  }
+  @keyframes ch-dance-held-bob{
+    from{transform:rotate(-47deg) translateY(0);}
+    to{transform:rotate(-47deg) translateY(-8px);}
+  }
+  @keyframes ch-dance-happy-eyes{
+    0%,60%,100%{height:10px;width:10px;border-radius:50%;}
+    75%{height:4px;width:12px;border-radius:50% 50% 0 0;}
   }
   /* Leg lifts up then stamps down; small ±10° tilt so it steps, not swings. */
   @keyframes ch-step-a{

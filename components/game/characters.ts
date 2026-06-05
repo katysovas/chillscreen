@@ -168,6 +168,29 @@ const CHARACTERS: CharacterDef[] = [
       'or focus on a specific movie/era if you ask. ' +
       'Uses ⚔️ for correct answers, 🤔 for stumping you. Never condescending — just loves sharing the galaxy.',
   },
+
+  {
+    id: 'buz',
+    name: 'Buz',
+    balloonColor: '#d4893a',
+    accessory: { type: 'vendorCart', color: '#e8520a', emoji: '🛍️' },
+    startX: 30,
+    entryDirection: 'right',
+    entryDelay: 0,
+    personality: {
+      speed: 0.02,                  // barely moves — pushing a heavy cart
+      idleMs: [6000, 14000],        // long stands — vendor working his spot
+      wanderRange: [18, 42],        // stays left of center, near stage entrances
+      jumpiness: 0,
+    },
+    personalityNotes:
+      'Festival vendor who always seems to have exactly what you didn\'t know you needed. ' +
+      'Warm and a little theatrical — more excited about the goods than the sale. ' +
+      'Knows the best food stalls at every festival, which merch is actually worth it, ' +
+      'hidden shortcuts, and which sets are worth the crowd. Gives tips like a friend ' +
+      'passing on a secret. Has a pitch for everything but it never feels like a pitch. ' +
+      'Uses 🛍️ or ✨ when unveiling something good.',
+  },
   
   {
     id: 'atlas',

@@ -5,6 +5,8 @@ import { setConcertInView } from '@/lib/concertNow';
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
 import { currentSchedule, useStageChannel } from '@/lib/stageClock';
 import type { StageChannel } from '@/lib/stageVideos';
+import { gameWorldOffRef } from '@/lib/gameWorldRef';
+import { anyStageInView } from '@/lib/venues';
 
 export type { StageVideo } from '@/lib/stageVideos';
 
@@ -179,6 +181,26 @@ export function useStagePlayer({
       postCommand(f, 'setVolume', [55]);
     }
   }, [siteMuted, iframeRef]);
+
+  // Stop stage video audio when the player walks off screen from the stage.
+  // The Concert component can stay mounted (stale vx in MidLayer's memoized
+  // renderTile closure), so we poll the live world offset directly and mute
+  // the iframe whenever the stage footprint is no longer visible.
+  useEffect(() => {
+    if (!live) return;
+    const syncVideoToView = () => {
+      const f = iframeRef.current;
+      if (!f) return;
+      if (!anyStageInView(gameWorldOffRef.current)) {
+        postCommand(f, 'mute');
+      } else if (!siteMutedRef.current) {
+        postCommand(f, 'unMute');
+        postCommand(f, 'setVolume', [55]);
+      }
+    };
+    const id = setInterval(syncVideoToView, 200);
+    return () => clearInterval(id);
+  }, [live, iframeRef]);
 
   return { video, src, vidKey, onIframeLoad, playerVisible };
 }

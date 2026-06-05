@@ -62,7 +62,7 @@ export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
 
     { id: 'iqQvfMi4UIk', title: 'AURORA', durationSec: 4251 },
     { id: 'SDHXMAxVe5Q', title: 'Elliott Smith', durationSec: 4148 },
-    { id: '0rkjl7oJfLc', title: 'Fishbone', durationSec: 3838 },
+    { id: '0rkjl7oJfLc', title: 'st', durationSec: 3838 },
 
 
 
@@ -74,6 +74,7 @@ export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
     { id: 'PeMr2TQEObc', title: 'Jhon Summit ', durationSec: 4776 },
     { id: 'KDVQA5oL7sQ', title: 'GRYFFIN', durationSec: 4477 },
     { id: 'Ca2XXPfWdqU', title: 'flipturn', durationSec: 2755 },
+    { id: '3NyGf1X_gFA', title: 'Kaytranada', durationSec: 3838 },
   ],
   coachella: [
     { id: 'EkIfxAHlgJA', title: 'TV' },

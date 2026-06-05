@@ -26,6 +26,9 @@ import type { PlayerProfile } from '@/lib/multiplayer/protocol';
 
 /** Set to an NPC id to spawn only that character immediately (testing). */
 const TEST_SPAWN_NPC_ID: string | null = null;
+
+/** Force all characters into dance mode regardless of stage proximity (testing). */
+const TEST_FORCE_DANCE = false;
 import {
   getPlayerName,
   setPlayerName as savePlayerName,
@@ -742,7 +745,7 @@ export default function SFCity() {
           paused={greetingNpc === i}
           greeting={greetingNpc === i}
           greetFacing={greetNpcX < 50 ? 'right' : 'left'}
-          dancing={npcDancing[i]}
+          dancing={TEST_FORCE_DANCE || npcDancing[i]}
           onMove={wx => { npcWorldXRefs.current[i] = wx; }}
           greetingChat={greetingNpc === i ? {
             name: cfg.name,
@@ -779,7 +782,7 @@ export default function SFCity() {
           <Character
             walking={walking}
             facing={facing}
-            dancing={playerDancing}
+            dancing={TEST_FORCE_DANCE || playerDancing}
             balloonColor={myColor}
             bubbleSide={playerBubbleSide(greetNpcX)}
             chatOverlay={inConversation ? (
