@@ -2,6 +2,7 @@ import {
   CINEMA_SIGN_MID_X,
   CONCERT_SIGN_MID_X,
   MID_TILE,
+  VIEW_CENTER_X,
   cinemaMidX,
   concertLabel,
   concertMidX,
@@ -12,6 +13,8 @@ import {
   isSeattleTile,
   isSouthernCaliforniaTile,
 } from '@/lib/worldTiles';
+import { MID_F } from '@/lib/parallax';
+import { gndOriginForTile, midOriginForTile } from '@/lib/worldTileGeometry';
 import { COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
 
 /** Ground-tile x — locked to sidewalk scroll (GND_F). */
@@ -294,11 +297,18 @@ type TileRoadSignsProps = {
 };
 
 /**
- * A venue sign that always points at its venue: placed a fixed distance to the
- * LEFT of the venue's ground position with the arrow facing right, so the
- * direction is correct regardless of where the (randomly-placed) venue sits.
+ * Walk-direction-accurate venue sign.
+ *
+ * Signs live on the GROUND layer (parallax 1.0) but venues live on the MID
+ * layer (parallax 0.35), so comparing their on-screen x positions gives the
+ * wrong answer. The only coordinate both share is `worldOff` (the master
+ * travel offset). We compute the worldOff at which the venue centers vs. the
+ * worldOff at which the sign centers; if the venue centers further right
+ * (larger worldOff) the player must walk right, otherwise left. This is correct
+ * no matter which side the player approaches from.
  */
 function VenueArrowSign({
+  tileIndex,
   venueMidX,
   label,
   accent,
@@ -306,6 +316,7 @@ function VenueArrowSign({
   groundTile,
   y,
 }: {
+  tileIndex: number;
   venueMidX: number;
   label: string;
   accent: string;
@@ -313,9 +324,18 @@ function VenueArrowSign({
   groundTile: number;
   y: number;
 }) {
+  // Place the sign near the venue's ground-equivalent x (clamped clear of the
+  // tile edges / city exit sign). Placement is cosmetic; direction is exact.
   const venueGround = venueSignGroundX(venueMidX, groundTile);
-  const signX = Math.max(90, venueGround - 320);
-  const dir: 'left' | 'right' = venueGround >= signX ? 'right' : 'left';
+  const signX = Math.min(Math.max(90, venueGround - 300), groundTile - 700);
+
+  const worldOffVenueCenters =
+    (midOriginForTile(tileIndex) + venueMidX - VIEW_CENTER_X) / MID_F;
+  const worldOffSignCenters =
+    gndOriginForTile(tileIndex) + signX - VIEW_CENTER_X;
+  const dir: 'left' | 'right' =
+    worldOffVenueCenters >= worldOffSignCenters ? 'right' : 'left';
+
   return <StreetSign x={signX} y={y} dir={dir} label={label} accent={accent} icon={icon} />;
 }
 
@@ -348,6 +368,7 @@ export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSigns
       )}
       {isSeattleTile(tileIndex) && concertMidX(tileIndex) != null && (
         <VenueArrowSign
+          tileIndex={tileIndex}
           venueMidX={concertMidX(tileIndex)!}
           label={concertLabel(tileIndex) ?? 'Bumbleshoot'}
           accent="#1a9a52"
@@ -360,6 +381,7 @@ export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSigns
         <>
           {concertMidX(tileIndex) != null && (
             <VenueArrowSign
+              tileIndex={tileIndex}
               venueMidX={concertMidX(tileIndex)!}
               label={concertLabel(tileIndex) ?? 'Outside Hands'}
               accent="#1a9a52"
@@ -369,6 +391,7 @@ export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSigns
             />
           )}
           <VenueArrowSign
+            tileIndex={tileIndex}
             venueMidX={cinemaMidX(tileIndex) ?? CINEMA_SIGN_MID_X}
             label="Cinema"
             accent="#b8860b"
@@ -380,6 +403,7 @@ export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSigns
       )}
       {isSouthernCaliforniaTile(tileIndex) && (
         <VenueArrowSign
+          tileIndex={tileIndex}
           venueMidX={COACHELLA_STAGE_MID_X}
           label="Couchella"
           accent="#e85074"

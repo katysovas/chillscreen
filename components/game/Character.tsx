@@ -3,13 +3,8 @@ import { forwardRef, useImperativeHandle, useRef, type ReactNode } from 'react';
 import type { BubbleSide } from './ChatBubble';
 import type { CharacterAccessory } from './characterAccessories';
 import {
-  DjHeadphones,
-  DjSpeaker,
-  LightsaberAccessory,
-  MicrophoneAccessory,
-  NecklaceAccessory,
   accessoryHoldSide,
-  renderAccessory,
+  renderAccessorySlot,
 } from './characterAccessories';
 
 export type CharacterProps = {
@@ -125,37 +120,17 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
           className={`ch-wrapper${walking ? ' ch-walking' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
         >
           <div className="ch-animal">
-            {renderAccessory(accessory, balloonColor)}
+            {renderAccessorySlot('float', accessory, balloonColor)}
             <div className="ch-ears" />
             <div className="ch-body">
-              {accessory?.type === 'dj' && (
-                <DjHeadphones color={accessory.headphoneColor} />
-              )}
-              {accessory?.type === 'necklace' && (
-                <NecklaceAccessory
-                  symbol={accessory.symbol}
-                  color={accessory.color}
-                  chainColor={accessory.chainColor}
-                />
-              )}
+              {renderAccessorySlot('head', accessory, balloonColor)}
               <div className="ch-eyes" />
               <div className="ch-nose"><span /><span /></div>
               <div className="ch-hands">
                 <div className="ch-left-hand"><span /><span /></div>
                 <div className="ch-right-hand">
                   <span /><span />
-                  {accessory?.type === 'lightsaber' && (
-                    <LightsaberAccessory
-                      bladeColor={accessory.bladeColor}
-                      hiltColor={accessory.hiltColor}
-                    />
-                  )}
-                  {accessory?.type === 'microphone' && (
-                    <MicrophoneAccessory color={accessory.color} />
-                  )}
-                  {accessory?.type === 'dj' && (
-                    <DjSpeaker color={accessory.speakerColor} />
-                  )}
+                  {renderAccessorySlot('hand', accessory, balloonColor)}
                 </div>
               </div>
             </div>

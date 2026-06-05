@@ -195,6 +195,20 @@ export function isConcertTileInView(vx: number) {
   return concertLiveTile(vx) === viewportCenterTile(vx);
 }
 
+/** Approximate venue footprint halves for the "any stage visible" check. */
+const CINEMA_VIEW_HALF = 240;
+const CONCERT_VIEW_HALF = 280;
+
+/**
+ * True when ANY stage/venue footprint is currently on screen (not just the
+ * focused one). Used to pause the website's background music so the stage's
+ * YouTube audio always takes over with no overlap.
+ */
+export function anyStageInView(worldOff: number): boolean {
+  const vx = worldOff * MID_PARALLAX;
+  return anyVenueInView(vx, CINEMA_VIEW_HALF, CONCERT_VIEW_HALF);
+}
+
 /** @deprecated use DEFAULT_CINEMA_MID_X */
 export const CINEMA_MID_X = DEFAULT_CINEMA_MID_X;
 

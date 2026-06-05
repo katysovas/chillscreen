@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useLayoutEffect, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect, useSyncExternalStore } from 'react';
 import Character from './Character';
 import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
 import { NpcChatOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
@@ -12,7 +12,17 @@ import {
   subscribeSpawnWorldOff,
 } from '@/lib/spawn';
 import { getConcertInView, subscribeConcertInView } from '@/lib/concertNow';
+import { anyStageInView } from '@/lib/venues';
+import { setAudioMuted } from '@/lib/audioMute';
 import CHARACTERS from './characters';
+import RemotePlayer from './RemotePlayer';
+import { useMultiplayer } from '@/lib/multiplayer/useMultiplayer';
+import {
+  getSessionBalloonColor,
+  getServerBalloonColor,
+  subscribeBalloonColor,
+} from '@/lib/identity';
+import type { PlayerProfile } from '@/lib/multiplayer/protocol';
 
 /** Set to an NPC id to spawn only that character immediately (testing). */
 const TEST_SPAWN_NPC_ID: string | null = null;
@@ -128,6 +138,111 @@ export default function SFCity() {
   const cinemaNowRef  = useRef<string | null>(null);
   const concertNowRef = useRef<string | null>(null);
   const greetingSessionRef = useRef<number | null>(null);
+
+  // ── Multiplayer (PartyKit) ──────────────────────────────────────────────────
+  // Random per-session balloon color. useSyncExternalStore gives a stable value
+  // from the first client render (no SSR mismatch), so the join packet always
+  // carries the real color rather than the default.
+  const myColor = useSyncExternalStore(
+    subscribeBalloonColor,
+    getSessionBalloonColor,
+    getServerBalloonColor,
+  );
+
+  // Peer (real human) 1:1 chat — mirrors the NPC greeting flow.
+  const [peerChatId,  setPeerChatId]  = useState<string | null>(null);
+  const [peerMessage, setPeerMessage] = useState<string | null>(null);
+  const [peerTyping,  setPeerTyping]  = useState(false);
+  const [nearPeer,    setNearPeer]    = useState<string | null>(null);
+  const peerChatRef = useRef<string | null>(null);
+  const nearPeerRef = useRef<string | null>(null);
+  const lastSentRef = useRef<{ worldX: number; facing: 'left' | 'right'; walking: boolean }>(
+    { worldX: NaN, facing: 'right', walking: false },
+  );
+  const beginPeerChatRef = useRef<((peerId: string, announce: boolean) => void) | null>(null);
+  const endPeerChatRef   = useRef<((announce: boolean) => void) | null>(null);
+
+  const profileRef = useRef<PlayerProfile>({ name: null, balloonColor: myColor });
+  profileRef.current = { name: playerName, balloonColor: myColor };
+
+  const mp = useMultiplayer({
+    profileRef,
+    // The live camera offset doubles as the local player's world-x.
+    spawnWorldOffRef: gameWorldOffRef,
+    onPeerOpen:   pid => beginPeerChatRef.current?.(pid, false),
+    onPeerClose:  pid => { if (peerChatRef.current === pid) endPeerChatRef.current?.(false); },
+    onPeerLeft:   pid => { if (peerChatRef.current === pid) endPeerChatRef.current?.(false); },
+    onPeerTyping: (pid, typing) => {
+      if (peerChatRef.current !== pid) return;
+      setPeerTyping(typing);
+      if (typing) setPeerMessage(null);
+    },
+    onPeerMessage: (pid, text) => {
+      if (peerChatRef.current !== pid) return;
+      setPeerTyping(false);
+      setPeerMessage(text);
+    },
+  });
+  const mpRef = useRef(mp);
+  mpRef.current = mp;
+  const { sendProfile, sendPeerTyping } = mp;
+
+  const beginPeerChat = useCallback((peerId: string, announce: boolean) => {
+    // One conversation at a time — ignore if already talking to an NPC or peer.
+    if (greetingRef.current !== null || peerChatRef.current !== null) return;
+    const st = mpRef.current?.remoteStateRef.current?.get(peerId);
+    const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const screenPct = st ? worldXToScreenPct(st.worldX, worldRef.current, width) : 50;
+    peerChatRef.current = peerId;
+    setPeerChatId(peerId);
+    setGreetNpcX(screenPct);
+    setPeerMessage(null);
+    setPeerTyping(false);
+    setPlayerMessage(null);
+    const toward = screenPct < 50 ? 'left' : 'right';
+    facingRef.current = toward; setFacing(toward);
+    walkingRef.current = false; setWalking(false);
+    nearPeerRef.current = null; setNearPeer(null);
+    nearNpcRef.current = null;  setNearNpc(null);
+    if (announce) mpRef.current?.openPeerChat(peerId);
+    if (playerNameRef.current) {
+      setChatMode('chat');
+      setTimeout(() => chatInputRef.current?.focus(), 120);
+    } else {
+      setChatMode('name');
+      setTimeout(() => nameInputRef.current?.focus(), 120);
+    }
+  }, []);
+  beginPeerChatRef.current = beginPeerChat;
+
+  const endPeerChat = useCallback((announce: boolean) => {
+    const peer = peerChatRef.current;
+    if (peer === null) return;
+    if (announce) mpRef.current?.closePeerChat(peer);
+    peerChatRef.current = null;
+    setPeerChatId(null);
+    setPeerMessage(null);
+    setPeerTyping(false);
+    setChatMode(null);
+    setNameDraft('');
+    setChatDraft('');
+    setPlayerMessage(null);
+    disconnectUntil.current = Date.now() + 2000;
+  }, []);
+  endPeerChatRef.current = endPeerChat;
+
+  // Broadcast identity (name/color) whenever it changes.
+  useEffect(() => {
+    sendProfile({ name: playerName, balloonColor: myColor });
+  }, [playerName, myColor, sendProfile]);
+
+  // Relay "typing…" to the peer while the local player composes a message.
+  useEffect(() => {
+    if (peerChatId === null || chatDraft.length === 0) return;
+    sendPeerTyping(peerChatId, true);
+    const t = setTimeout(() => sendPeerTyping(peerChatId, false), 1500);
+    return () => clearTimeout(t);
+  }, [chatDraft, peerChatId, sendPeerTyping]);
 
   useLayoutEffect(() => {
     worldRef.current = spawnWorldOff;
@@ -272,9 +387,15 @@ export default function SFCity() {
   }, [chatSendTick, greetingNpc, playerName]);
 
   const handleSendMessage = (text: string) => {
-    sentMessageRef.current = text;
     setPlayerMessage(text);
     setChatDraft('');
+    if (peerChatRef.current !== null) {
+      // Real human on the other end — relay over the wire, no AI.
+      mpRef.current?.sendPeerMessage(peerChatRef.current, text);
+      mpRef.current?.sendPeerTyping(peerChatRef.current, false);
+      return;
+    }
+    sentMessageRef.current = text;
     setChatSendTick(t => t + 1);
   };
 
@@ -322,23 +443,34 @@ export default function SFCity() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.muted = muted;
-  }, [muted]);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+
+  // Single authority for background music: pause whenever a stage is focused OR
+  // merely on screen, so the stage's YouTube audio always takes over with no
+  // overlap. Resumes only when no stage is in view and the user isn't muted.
+  const syncBgAudio = useCallback(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    const stageActive = getConcertInView() || anyStageInView(gameWorldOffRef.current);
+    if (stageActive) {
+      if (!el.paused) el.pause();
+    } else if (!mutedRef.current) {
+      el.play().catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
-    const syncBgAudio = () => {
-      const el = audioRef.current;
-      if (!el) return;
-      if (getConcertInView()) {
-        el.pause();
-      } else if (!muted) {
-        el.play().catch(() => {});
-      }
-    };
+    if (audioRef.current) audioRef.current.muted = muted;
+    // Broadcast to the concert player so the mute button silences it too.
+    setAudioMuted(muted);
+    syncBgAudio();
+  }, [muted, syncBgAudio]);
+
+  useEffect(() => {
     syncBgAudio();
     return subscribeConcertInView(syncBgAudio);
-  }, [muted]);
+  }, [syncBgAudio]);
 
   useEffect(() => {
     const SPEED      = 3.5;
@@ -370,6 +502,10 @@ export default function SFCity() {
     };
 
     const disconnect = () => {
+      if (peerChatRef.current !== null) {
+        endPeerChatRef.current?.(true);
+        return;
+      }
       greetingRef.current = null;
       setGreetingNpc(null);
       disconnectUntil.current = Date.now() + 2000;
@@ -392,7 +528,7 @@ export default function SFCity() {
     const onDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (greetingRef.current !== null) {
+        if (greetingRef.current !== null || peerChatRef.current !== null) {
           disconnect();
           triggerJump();
         } else {
@@ -410,7 +546,7 @@ export default function SFCity() {
       if (['ArrowRight', 'd', 'D'].includes(e.key)) { keysRef.current.right = true;  e.preventDefault(); }
       if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) {
         e.preventDefault();
-        if (greetingRef.current !== null) {
+        if (greetingRef.current !== null || peerChatRef.current !== null) {
           disconnect();
           triggerJump();
         } else {
@@ -419,7 +555,7 @@ export default function SFCity() {
       }
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (greetingRef.current !== null) {
+        if (greetingRef.current !== null || peerChatRef.current !== null) {
           openChatPanel();
         } else if (
           nearNpcRef.current !== null
@@ -431,6 +567,11 @@ export default function SFCity() {
             npcWorldXRefs.current[i], worldRef.current, width,
           );
           connectToNpc(i, screenPct);
+        } else if (
+          nearPeerRef.current !== null
+          && Date.now() > disconnectUntil.current
+        ) {
+          beginPeerChatRef.current?.(nearPeerRef.current, true);
         }
       }
     };
@@ -463,12 +604,24 @@ export default function SFCity() {
       }
     };
 
+    // Stream the local player's position to the room (~15 Hz, only on change).
+    const broadcastMove = () => {
+      const last = lastSentRef.current;
+      const wx = worldRef.current;
+      const f  = facingRef.current;
+      const w  = walkingRef.current;
+      if (Math.abs(wx - last.worldX) > 1 || f !== last.facing || w !== last.walking) {
+        last.worldX = wx; last.facing = f; last.walking = w;
+        mpRef.current?.sendMove(wx, f, w);
+      }
+    };
+
     const loop = () => {
-      // While greeting, freeze the player completely
-      if (greetingRef.current !== null) {
+      // While in any conversation (NPC or peer), freeze the player completely
+      if (greetingRef.current !== null || peerChatRef.current !== null) {
         if (walkingRef.current) { walkingRef.current = false; setWalking(false); }
         frameCountRef.current++;
-        if (frameCountRef.current % 4 === 0) updateDanceState(worldRef.current);
+        if (frameCountRef.current % 4 === 0) { updateDanceState(worldRef.current); broadcastMove(); }
         gameWorldOffRef.current = worldRef.current;
         rafRef.current = requestAnimationFrame(loop);
         return;
@@ -508,32 +661,52 @@ export default function SFCity() {
       // These don't need 60 Hz precision — 15 Hz is imperceptibly snappy.
       frameCountRef.current++;
       if (frameCountRef.current % 4 === 0) {
-        // Proximity check only — connection requires Enter.
-        if (greetingRef.current === null) {
+        broadcastMove();
+
+        // Proximity check only — connection requires Enter. Picks the single
+        // closest interactable (NPC or real player) within touch range.
+        if (greetingRef.current === null && peerChatRef.current === null) {
           const width = window.innerWidth;
           const greetDistPx = (GREET_DIST / 100) * width;
-          let inRange: number | null = null;
+          let nextNpc: number | null = null;
+          let nextPeer: string | null = null;
+          let bestDist = Infinity;
           if (Date.now() > disconnectUntil.current) {
             for (let i = 0; i < npcWorldXRefs.current.length; i++) {
-              const npcWorldX = npcWorldXRefs.current[i];
-              const screenPct = worldXToScreenPct(npcWorldX, worldRef.current, width);
-              const distPx    = Math.abs(npcWorldX - worldRef.current);
-              if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx) {
-                inRange = i;
-                break;
+              const wx = npcWorldXRefs.current[i];
+              const screenPct = worldXToScreenPct(wx, worldRef.current, width);
+              const distPx    = Math.abs(wx - worldRef.current);
+              if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx && distPx < bestDist) {
+                bestDist = distPx; nextNpc = i; nextPeer = null;
+              }
+            }
+            const roster = mpRef.current?.remoteStateRef.current;
+            if (roster) {
+              for (const [pid, st] of roster) {
+                const screenPct = worldXToScreenPct(st.worldX, worldRef.current, width);
+                const distPx    = Math.abs(st.worldX - worldRef.current);
+                if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx && distPx < bestDist) {
+                  bestDist = distPx; nextPeer = pid; nextNpc = null;
+                }
               }
             }
           }
-          if (inRange !== nearNpcRef.current) {
-            nearNpcRef.current = inRange;
-            setNearNpc(inRange);
+          if (nextNpc !== nearNpcRef.current) {
+            nearNpcRef.current = nextNpc;
+            setNearNpc(nextNpc);
           }
-        } else if (nearNpcRef.current !== null) {
-          nearNpcRef.current = null;
-          setNearNpc(null);
+          if (nextPeer !== nearPeerRef.current) {
+            nearPeerRef.current = nextPeer;
+            setNearPeer(nextPeer);
+          }
+        } else {
+          if (nearNpcRef.current !== null)  { nearNpcRef.current = null;  setNearNpc(null); }
+          if (nearPeerRef.current !== null) { nearPeerRef.current = null; setNearPeer(null); }
         }
 
         updateDanceState(worldRef.current);
+        // Keep bg music paused whenever a stage is on screen (tracks scroll).
+        syncBgAudio();
       }
 
       gameWorldOffRef.current = worldRef.current;
@@ -548,6 +721,14 @@ export default function SFCity() {
       window.removeEventListener('keyup',   onUp);
     };
   }, []);
+
+  const inConversation = greetingNpc !== null || peerChatId !== null;
+  const conversationPartnerName = peerChatId !== null
+    ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
+    : greetingNpc !== null ? CHARACTERS[greetingNpc]?.name : null;
+  const nearPeerName = nearPeer !== null
+    ? (mp.remoteStateRef.current.get(nearPeer)?.name ?? 'Wanderer')
+    : null;
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', animation: 'fdi 1.5s ease' }}>
@@ -585,20 +766,36 @@ export default function SFCity() {
         );
       })}
 
+      {/* Remote human players (PartyKit presence) */}
+      {mp.remoteIds.map(pid => (
+        <RemotePlayer
+          key={pid}
+          id={pid}
+          stateRef={mp.remoteStateRef}
+          greeting={peerChatId === pid}
+          greetingChat={peerChatId === pid ? {
+            name: mp.remoteStateRef.current.get(pid)?.name ?? 'Wanderer',
+            npcTyping: peerTyping,
+            npcMessage: peerMessage,
+          } : undefined}
+        />
+      ))}
+
       {/* Player — world scrolls, character stays centred */}
       <div style={{
         position: 'absolute',
         left: '50%',
         bottom: CHAR_BOTTOM,
-        zIndex: greetingNpc !== null ? 200 : 20,
+        zIndex: inConversation ? 200 : 20,
       }}>
         <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
           <Character
             walking={walking}
             facing={facing}
             dancing={playerDancing}
+            balloonColor={myColor}
             bubbleSide={playerBubbleSide(greetNpcX)}
-            chatOverlay={greetingNpc !== null ? (
+            chatOverlay={inConversation ? (
               <PlayerChatOverlay
                 npcScreenX={greetNpcX}
                 chatMode={chatMode}
@@ -619,7 +816,7 @@ export default function SFCity() {
       </div>
 
       {/* Proximity hint — touching but not yet connected */}
-      {nearNpc !== null && greetingNpc === null && (
+      {!inConversation && (nearNpc !== null || nearPeer !== null) && (
         <div style={{
           position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
           zIndex: 40, pointerEvents: 'none',
@@ -630,12 +827,12 @@ export default function SFCity() {
           letterSpacing: 2, textTransform: 'uppercase',
           fontFamily: "Georgia,'Times New Roman',serif",
         }}>
-          ↵ connect with {CHARACTERS[nearNpc]?.name}
+          ↵ connect with {nearNpc !== null ? CHARACTERS[nearNpc]?.name : nearPeerName}
         </div>
       )}
 
       {/* Greeting status bar */}
-      {greetingNpc !== null && chatMode !== 'chat' && chatMode !== 'name' && (
+      {inConversation && chatMode !== 'chat' && chatMode !== 'name' && (
         <div style={{
           position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
           zIndex: 40, pointerEvents: 'none',
@@ -647,7 +844,7 @@ export default function SFCity() {
           fontFamily: "Georgia,'Times New Roman',serif",
           display: 'flex', gap: 16,
         }}>
-          <span>↑ or esc · say goodbye to {CHARACTERS[greetingNpc]?.name}</span>
+          <span>↑ or esc · say goodbye to {conversationPartnerName}</span>
           <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
           <span>{playerName ? '↵ chat' : '↵ enter name'}</span>
         </div>

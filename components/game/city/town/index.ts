@@ -1,1 +1,1 @@
-export { SmallTownTile } from './SmallTownTile';
+export { SmallTownTile, SmallTownTerrain } from './SmallTownTile';

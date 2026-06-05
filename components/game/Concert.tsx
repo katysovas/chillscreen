@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useId } from 'react';
-import { setConcertInView } from '@/lib/concertNow';
+import { useMemo, useRef, useId } from 'react';
 import { setConcertNowPlaying } from '@/lib/concertNowPlaying';
+import { useStagePlayer, STAGE_IFRAME_STYLE, type StageVideo } from './useStagePlayer';
 
-type ConcertVideo = { id: string; title: string };
-
-const ROTATE_MS = 8 * 60 * 1000;
+type ConcertVideo = StageVideo;
 
 const FALLBACK: ConcertVideo[] = [
   { id: 'jfKfPfyJRdk', title: 'Lo-Fi Girl Radio' },
@@ -98,14 +96,6 @@ function makeCrowd(w: number) {
   return d;
 }
 
-function pickRandomIndex(videos: ConcertVideo[], exclude?: number) {
-  if (videos.length <= 1) return 0;
-  let next: number;
-  do { next = Math.floor(Math.random() * videos.length); }
-  while (next === exclude);
-  return next;
-}
-
 /** Native SVG design size before stage scale. */
 const BASE_W = 520;
 const BASE_H = 450;
@@ -115,11 +105,6 @@ const STAGE_SCALE = 1.55;
 export const CONCERT_WIDTH = Math.round(BASE_W * STAGE_SCALE);
 export const CONCERT_HEIGHT = Math.round(BASE_H * STAGE_SCALE);
 export const CONCERT_SCALE = 0.74;
-
-function embedSrc(id: string, live: boolean) {
-  const mute = live ? '0' : '1';
-  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=${mute}&rel=0&modestbranding=1&controls=0&iv_load_policy=3&loop=1&playlist=${id}`;
-}
 
 export default function Concert({
   live = false,
@@ -133,68 +118,16 @@ export default function Concert({
   apiPath?: string;
 }) {
   const uid = useId().replace(/:/g, '');
-  const [videos, setVideos] = useState<ConcertVideo[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [vidKey, setVidKey] = useState(0);
-  const videosRef = useRef(videos);
-  videosRef.current = videos;
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  useEffect(() => {
-    setConcertInView(live);
-    return () => {
-      if (live) setConcertInView(false);
-    };
-  }, [live]);
+  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
+    live,
+    apiPath,
+    iframeRef,
+    fallback: FALLBACK,
+    onNowPlaying: setConcertNowPlaying,
+  });
 
-  const pool = videos.length ? videos : FALLBACK;
-  const video = pool[idx];
-
-  useEffect(() => {
-    if (live && video?.title) setConcertNowPlaying(video.title);
-    else if (live) setConcertNowPlaying(null);
-    return () => {
-      if (live) setConcertNowPlaying(null);
-    };
-  }, [live, video?.title]);
-
-  useEffect(() => {
-    if (!live) return;
-    let cancelled = false;
-
-    fetch(apiPath)
-      .then(r => r.json())
-      .then((data: { videos?: ConcertVideo[] }) => {
-        if (cancelled) return;
-        const pool = data.videos?.length ? data.videos : FALLBACK;
-        setVideos(pool);
-        setIdx(Math.floor(Math.random() * pool.length));
-        setVidKey(k => k + 1);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setVideos(FALLBACK);
-          setIdx(Math.floor(Math.random() * FALLBACK.length));
-          setVidKey(k => k + 1);
-        }
-      });
-
-    return () => { cancelled = true; };
-  // apiPath is stable per mount (tile-specific) — treating it like live is fine
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live, apiPath]);
-
-  useEffect(() => {
-    if (!live || videos.length === 0) return;
-    const id = setInterval(() => {
-      const pool = videosRef.current;
-      if (pool.length === 0) return;
-      setIdx(prev => pickRandomIndex(pool, prev));
-      setVidKey(k => k + 1);
-    }, ROTATE_MS);
-    return () => clearInterval(id);
-  }, [live, videos.length]);
-
-  const src = video ? embedSrc(video.id, live) : '';
   const crowdD = useMemo(() => makeCrowd(BASE_W), []);
   const spkCones = useMemo(() => speakerCones(6, 2), []);
   const marqueeTitle = video?.title ?? (live ? 'Loading…' : label ?? 'Live Concert');
@@ -337,22 +270,24 @@ export default function Concert({
         <rect x="103" y="126" width="314" height="192" rx="2" fill="none" stroke="rgba(56,216,128,.15)" strokeWidth="1" />
 
         <foreignObject x="105" y="127" width="310" height="190">
-          {live && video ? (
-            <iframe
-              key={vidKey}
-              src={src}
-              title={video.title}
-              width="310"
-              height="190"
-              frameBorder="0"
-              loading="lazy"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              style={{ display: 'block', border: 'none', background: '#000' }}
-            />
-          ) : (
-            <div style={{ width: 310, height: 190, background: '#000' }} />
-          )}
+          {/* The API replaces a child node with the player iframe; the host div
+              stays React-managed while the iframe lives inside it. overflow
+              hidden + the cropIframe() oversize hides YouTube's chrome. */}
+          <div style={{ width: 310, height: 190, overflow: 'hidden', position: 'relative', background: '#000' }}>
+            {src && (
+              <iframe
+                key={vidKey}
+                ref={iframeRef}
+                src={src}
+                title={video?.title ?? 'Live'}
+                onLoad={onIframeLoad}
+                loading="lazy"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                style={STAGE_IFRAME_STYLE}
+              />
+            )}
+          </div>
         </foreignObject>
 
         <path d="M25,310 L495,310 L510,370 L10,370 Z" fill="#0c1610" stroke="rgba(56,216,128,.15)" strokeWidth="1" />

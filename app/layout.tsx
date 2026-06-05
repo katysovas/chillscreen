@@ -17,7 +17,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-black overflow-hidden`}>{children}</body>
+      {/* Browser extensions (Grammarly, etc.) inject attributes onto <body>
+          before hydration; suppress the resulting attribute-mismatch warning. */}
+      <body
+        className={`${inter.className} bg-black overflow-hidden`}
+        suppressHydrationWarning
+      >
+        {children}
+      </body>
     </html>
   );
 }

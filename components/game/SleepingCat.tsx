@@ -377,19 +377,22 @@ export function SleepingCatGroundMarker({
   );
 }
 
-/** Cats beside trees inside a ground tile — scrolls with GroundLayer SVG. */
-export function SleepingCatsGround({ tile, gndY }: { tile: number; gndY: number }) {
+/** Cats beside trees inside a ground tile — scrolls with GroundLayer SVG.
+ *  `maxX` culls cats that would fall outside a narrow (town) tile. */
+export function SleepingCatsGround({ tile, gndY, maxX }: { tile: number; gndY: number; maxX?: number }) {
   return (
     <>
-      {catsForTile(tile).map(cat => (
-        <SleepingCatGroundMarker
-          key={cat.id}
-          x={cat.x}
-          gndY={gndY}
-          scale={cat.scale}
-          flip={cat.flip}
-        />
-      ))}
+      {catsForTile(tile)
+        .filter(cat => maxX === undefined || cat.x <= maxX)
+        .map(cat => (
+          <SleepingCatGroundMarker
+            key={cat.id}
+            x={cat.x}
+            gndY={gndY}
+            scale={cat.scale}
+            flip={cat.flip}
+          />
+        ))}
     </>
   );
 }

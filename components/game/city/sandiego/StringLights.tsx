@@ -28,9 +28,22 @@ export function StringLights({ xs = [1560, 1780, 2000, 2240] }: { xs?: number[] 
               stroke="rgba(60,50,40,.5)"
               strokeWidth={1}
             />
-            {bulbs.map((bl, j) => (
-              <circle key={j} cx={bl.bx} cy={bl.by} r={2.4} fill="#ffe6a0" opacity={0.9} />
-            ))}
+            {bulbs.map((bl, j) => {
+              const dur = 1.6 + ((i + j) % 5) * 0.4;
+              const begin = ((i * 3 + j) % 7) * 0.25;
+              return (
+                <g key={j}>
+                  <circle cx={bl.bx} cy={bl.by} r={4.5} fill="#ffe6a0" opacity={0.25}>
+                    <animate attributeName="opacity"
+                      values="0.1;0.5;0.1" dur={`${dur}s`} begin={`${begin}s`} repeatCount="indefinite" />
+                  </circle>
+                  <circle cx={bl.bx} cy={bl.by} r={2.4} fill="#fff3c8">
+                    <animate attributeName="opacity"
+                      values="0.6;1;0.6" dur={`${dur}s`} begin={`${begin}s`} repeatCount="indefinite" />
+                  </circle>
+                </g>
+              );
+            })}
           </g>
         );
       })}

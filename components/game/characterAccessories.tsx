@@ -1,4 +1,6 @@
-/** Held item rendered in the character's right hand (replaces default balloon). */
+import type { ReactNode } from 'react';
+
+/** Held / worn item rendered on a character (replaces the default balloon). */
 export type CharacterAccessory =
   | { type: 'balloon'; color: string }
   | { type: 'lightsaber'; bladeColor?: string; hiltColor?: string }
@@ -10,23 +12,19 @@ export type CharacterAccessory =
   | { type: 'dj'; headphoneColor?: string; speakerColor?: string }
   | { type: 'necklace'; symbol?: string; color: string; chainColor?: string; balloonColor?: string };
 
+export type AccessoryType = CharacterAccessory['type'];
+
 type ColoredProp = Exclude<CharacterAccessory, { type: 'lightsaber' }>['type'];
 
 export function defaultAccessory(balloonColor: string): CharacterAccessory {
   return { type: 'balloon', color: balloonColor };
 }
 
-/** Side that holds the visible accessory (party mode animates the other hand). */
-export function accessoryHoldSide(accessory: CharacterAccessory | undefined): 'left' | 'right' {
-  if (accessory?.type === 'lightsaber' || accessory?.type === 'microphone' || accessory?.type === 'dj') return 'right';
-  return 'right'; // default balloon floats on the character's right
-}
-
-export function isHandMountedAccessory(
-  accessory: CharacterAccessory | undefined,
-): accessory is Extract<CharacterAccessory, { type: 'lightsaber' | 'microphone' | 'dj' }> {
-  return accessory?.type === 'lightsaber' || accessory?.type === 'microphone' || accessory?.type === 'dj';
-}
+/* ──────────────────────────────────────────────────────────────────────────
+ * Accessory primitives
+ * Reusable visual building blocks. New items in the future library should be
+ * authored here (or imported) and then registered in ACCESSORY_LIBRARY below.
+ * ────────────────────────────────────────────────────────────────────────── */
 
 export function BalloonAccessory({ color }: { color: string }) {
   return (
@@ -39,7 +37,7 @@ export function BalloonAccessory({ color }: { color: string }) {
   );
 }
 
-function ColoredPropAccessory({ type, color }: { type: ColoredProp; color: string }) {
+export function ColoredPropAccessory({ type, color }: { type: ColoredProp; color: string }) {
   if (type === 'balloon') return <BalloonAccessory color={color} />;
   return (
     <div className={`ch-prop-wrap ch-prop-${type}`}>
@@ -145,17 +143,108 @@ export function LightsaberAccessory({
   );
 }
 
-export function renderAccessory(
+/* ──────────────────────────────────────────────────────────────────────────
+ * Accessory library (registry)
+ * Each item declares which body "slots" it occupies and how to render each.
+ * A single item can fill multiple slots (e.g. the DJ kit = headphones on the
+ * head + boombox in the hand). Adding a new item is one entry here — no
+ * if/else chains scattered through the Character component.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Mount points on the character body that an accessory can render into. */
+export type AccessorySlot = 'float' | 'head' | 'hand';
+
+type RenderCtx = { balloonColor: string };
+
+type AccessoryDefinition = {
+  /** Hand that visibly holds the item (party mode animates the other hand). */
+  holdSide: 'left' | 'right';
+  /** True when the item occupies a hand (vs. a floating / worn item). */
+  handMounted: boolean;
+  /** Per-slot renderers. Slots omitted here simply render nothing. */
+  slots: Partial<Record<AccessorySlot, (accessory: CharacterAccessory, ctx: RenderCtx) => ReactNode>>;
+};
+
+/** Authoring helper — narrows `accessory` to the concrete variant per entry. */
+function define<T extends AccessoryType>(def: {
+  holdSide?: 'left' | 'right';
+  handMounted?: boolean;
+  slots: Partial<
+    Record<AccessorySlot, (accessory: Extract<CharacterAccessory, { type: T }>, ctx: RenderCtx) => ReactNode>
+  >;
+}): AccessoryDefinition {
+  return {
+    holdSide: def.holdSide ?? 'right',
+    handMounted: def.handMounted ?? false,
+    slots: def.slots as AccessoryDefinition['slots'],
+  };
+}
+
+export const ACCESSORY_LIBRARY: Record<AccessoryType, AccessoryDefinition> = {
+  balloon: define<'balloon'>({
+    slots: { float: a => <BalloonAccessory color={a.color} /> },
+  }),
+  globe: define<'globe'>({
+    slots: { float: a => <ColoredPropAccessory type="globe" color={a.color} /> },
+  }),
+  guitar: define<'guitar'>({
+    slots: { float: a => <ColoredPropAccessory type="guitar" color={a.color} /> },
+  }),
+  chefHat: define<'chefHat'>({
+    slots: { float: a => <ColoredPropAccessory type="chefHat" color={a.color} /> },
+  }),
+  compass: define<'compass'>({
+    slots: { float: a => <ColoredPropAccessory type="compass" color={a.color} /> },
+  }),
+  lightsaber: define<'lightsaber'>({
+    handMounted: true,
+    slots: { hand: a => <LightsaberAccessory bladeColor={a.bladeColor} hiltColor={a.hiltColor} /> },
+  }),
+  microphone: define<'microphone'>({
+    handMounted: true,
+    slots: { hand: a => <MicrophoneAccessory color={a.color} /> },
+  }),
+  dj: define<'dj'>({
+    handMounted: true,
+    slots: {
+      head: a => <DjHeadphones color={a.headphoneColor} />,
+      hand: a => <DjSpeaker color={a.speakerColor} />,
+    },
+  }),
+  necklace: define<'necklace'>({
+    slots: {
+      head: a => <NecklaceAccessory symbol={a.symbol} color={a.color} chainColor={a.chainColor} />,
+      float: a => (a.balloonColor ? <BalloonAccessory color={a.balloonColor} /> : null),
+    },
+  }),
+};
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Public API used by <Character />
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function resolve(accessory: CharacterAccessory | undefined, balloonColor: string) {
+  const item = accessory ?? defaultAccessory(balloonColor);
+  return { item, def: ACCESSORY_LIBRARY[item.type] };
+}
+
+/** Render whatever a character's accessory contributes to the given slot. */
+export function renderAccessorySlot(
+  slot: AccessorySlot,
   accessory: CharacterAccessory | undefined,
   balloonColor: string,
-) {
-  const item = accessory ?? defaultAccessory(balloonColor);
-  if (item.type === 'lightsaber' || item.type === 'microphone' || item.type === 'dj') {
-    return null;
-  }
-  if (item.type === 'necklace') {
-    if (item.balloonColor) return <BalloonAccessory color={item.balloonColor} />;
-    return null;
-  }
-  return <ColoredPropAccessory type={item.type} color={item.color} />;
+): ReactNode {
+  const { item, def } = resolve(accessory, balloonColor);
+  const render = def?.slots[slot];
+  return render ? render(item, { balloonColor }) : null;
+}
+
+/** Side that holds the visible accessory (party mode animates the other). */
+export function accessoryHoldSide(accessory: CharacterAccessory | undefined): 'left' | 'right' {
+  return accessory ? ACCESSORY_LIBRARY[accessory.type]?.holdSide ?? 'right' : 'right';
+}
+
+/** True when the accessory is held in a hand (lightsaber / mic / dj boombox). */
+export function isHandMountedAccessory(accessory: CharacterAccessory | undefined): boolean {
+  return !!accessory && (ACCESSORY_LIBRARY[accessory.type]?.handMounted ?? false);
 }

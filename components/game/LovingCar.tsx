@@ -5,6 +5,9 @@ import { gameWorldOffRef, worldXToScreenPct } from '@/lib/gameWorldRef';
 import { LVC_CSS } from './lovingCarStyles';
 
 const DRIVE_MS = 12_000;
+// Idle gap between passes so the truck recurs instead of crossing only once.
+const GAP_MS_MIN = 9_000;
+const GAP_MS_RANGE = 9_000;
 const CAR_SCALE = 0.35;
 const CAR_WIDTH = 500 * CAR_SCALE;
 
@@ -149,34 +152,54 @@ const LovingCarPass = memo(function LovingCarPass() {
     if (!el) return;
 
     const vw = () => window.innerWidth;
-    const off0 = gameWorldOffRef.current;
-    const startX = off0 - vw() * 0.55;
-    const endX = off0 + vw() * 1.05;
-    const travel = endX - startX;
-    const speed = travel / DRIVE_MS;
-
-    let truckX = startX;
-    let last = performance.now();
     let raf = 0;
+    let gapTimer = 0;
+    let cancelled = false;
 
-    const tick = (now: number) => {
-      const dt = Math.min(now - last, 50);
-      last = now;
-      truckX += speed * dt;
+    // One left→right crossing, anchored to the current world offset so it always
+    // drives across whatever stretch of road the player is looking at.
+    const startPass = () => {
+      if (cancelled || !el) return;
+      const off0 = gameWorldOffRef.current;
+      const startX = off0 - vw() * 0.55;
+      const endX = off0 + vw() * 1.05;
+      const speed = (endX - startX) / DRIVE_MS;
 
-      const pct = worldXToScreenPct(truckX, gameWorldOffRef.current, vw());
-      el.style.left = `${pct}%`;
-      el.style.transform = 'translateX(-50%)';
+      let truckX = startX;
+      let last = performance.now();
+      el.style.visibility = 'visible';
 
-      if (truckX < endX) {
-        raf = requestAnimationFrame(tick);
-      } else {
-        el.style.visibility = 'hidden';
-      }
+      const tick = (now: number) => {
+        if (cancelled) return;
+        const dt = Math.min(now - last, 50);
+        last = now;
+        truckX += speed * dt;
+
+        const pct = worldXToScreenPct(truckX, gameWorldOffRef.current, vw());
+        el.style.left = `${pct}%`;
+        el.style.transform = 'translateX(-50%)';
+
+        if (truckX < endX) {
+          raf = requestAnimationFrame(tick);
+        } else {
+          // Park off-screen, then make another pass after a short gap.
+          el.style.visibility = 'hidden';
+          gapTimer = window.setTimeout(
+            startPass,
+            GAP_MS_MIN + Math.random() * GAP_MS_RANGE,
+          );
+        }
+      };
+
+      raf = requestAnimationFrame(tick);
     };
 
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    startPass();
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      clearTimeout(gapTimer);
+    };
   }, []);
 
   return (

@@ -1,15 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import { useRef } from 'react';
+import type { HTMLAttributes, ReactElement } from 'react';
 import { SD_GND, FEST_COLORS, COACHELLA_STAGE_MID_X, COACHELLA_STAGE_SCALE } from './constants';
 import { setCoachellaNowPlaying } from '@/lib/coachellaNowPlaying';
+import { useStagePlayer, STAGE_IFRAME_STYLE, type StageVideo } from '../../useStagePlayer';
 
-type CoachellaVideo = { id: string; title: string };
-
-const ROTATE_MS = 8 * 60 * 1000;
-
-const FALLBACK: CoachellaVideo[] = [
+const FALLBACK: StageVideo[] = [
   { id: 'jfKfPfyJRdk', title: 'Lo-Fi Girl Radio' },
   { id: '5qap5aO4i9A', title: 'Lo-Fi Beats 24/7' },
   { id: 'MVPTGNGiI-4', title: 'Jazz Café' },
@@ -17,19 +14,16 @@ const FALLBACK: CoachellaVideo[] = [
   { id: 'DWcJFNfaw9c', title: 'Rain & Chill' },
 ];
 
-function pickRandomIndex(videos: CoachellaVideo[], exclude?: number) {
-  if (videos.length <= 1) return 0;
-  let next: number;
-  do {
-    next = Math.floor(Math.random() * videos.length);
-  } while (next === exclude);
-  return next;
-}
-
-function embedSrc(id: string, live: boolean) {
-  const mute = live ? '0' : '1';
-  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=${mute}&rel=0&modestbranding=1&controls=0&iv_load_policy=3&loop=1&playlist=${id}`;
-}
+const STAGE_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&display=swap');
+  @keyframes sdc-beam-a { 0%,100%{transform:rotate(-16deg)} 50%{transform:rotate(14deg)} }
+  @keyframes sdc-beam-b { 0%,100%{transform:rotate(12deg)}  50%{transform:rotate(-18deg)} }
+  @keyframes sdc-beam-c { 0%,100%{transform:rotate(-10deg)} 50%{transform:rotate(20deg)} }
+  @keyframes sdc-beam-d { 0%,100%{transform:rotate(18deg)}  50%{transform:rotate(-12deg)} }
+  @keyframes sdc-shine  { 0%,100%{opacity:.35} 50%{opacity:1} }
+  @keyframes sdc-glow   { 0%,100%{opacity:.5} 50%{opacity:.95} }
+  @keyframes sdc-marquee{ 0%,100%{opacity:.7} 50%{opacity:1} }
+`;
 
 /** Stage center x — used for venue focus / in-view checks. */
 export { COACHELLA_STAGE_MID_X };
@@ -49,61 +43,14 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
   const iframeW = screenW - 12;
   const iframeH = screenH - 12;
 
-  const [videos, setVideos] = useState<CoachellaVideo[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [vidKey, setVidKey] = useState(0);
-  const videosRef = useRef(videos);
-  videosRef.current = videos;
-
-  const pool = videos.length ? videos : FALLBACK;
-  const video = pool[idx];
-
-  useEffect(() => {
-    if (live && video?.title) setCoachellaNowPlaying(video.title);
-    else if (live) setCoachellaNowPlaying(null);
-    return () => {
-      if (live) setCoachellaNowPlaying(null);
-    };
-  }, [live, video?.title]);
-
-  useEffect(() => {
-    if (!live) return;
-    let cancelled = false;
-
-    fetch('/api/coachella/videos')
-      .then(r => r.json())
-      .then((data: { videos?: CoachellaVideo[] }) => {
-        if (cancelled) return;
-        const next = data.videos?.length ? data.videos : FALLBACK;
-        setVideos(next);
-        setIdx(Math.floor(Math.random() * next.length));
-        setVidKey(k => k + 1);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setVideos(FALLBACK);
-          setIdx(Math.floor(Math.random() * FALLBACK.length));
-          setVidKey(k => k + 1);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [live]);
-
-  useEffect(() => {
-    if (!live || videos.length === 0) return;
-    const id = setInterval(() => {
-      const nextPool = videosRef.current;
-      if (nextPool.length === 0) return;
-      setIdx(prev => pickRandomIndex(nextPool, prev));
-      setVidKey(k => k + 1);
-    }, ROTATE_MS);
-    return () => clearInterval(id);
-  }, [live, videos.length]);
-
-  const src = video ? embedSrc(video.id, live) : '';
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
+    live,
+    apiPath: '/api/coachella/videos',
+    iframeRef,
+    fallback: FALLBACK,
+    onNowPlaying: setCoachellaNowPlaying,
+  });
 
   const lattice = (x: number, y: number, w: number, h: number) => {
     const lines: ReactElement[] = [];
@@ -122,133 +69,183 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
   const ox = COACHELLA_STAGE_MID_X;
   const oy = deck;
   const midX = (L + R) / 2;
+  const marquee = video?.title ?? (live ? 'LOADING…' : 'COUCHELLA');
+
+  // Spotlights mounted along the truss header — each sweeps a colored beam.
+  const beams = [
+    { x: L + 34,  color: '#7a3ad0', anim: 'sdc-beam-a', dur: 4.3 },
+    { x: L + 150, color: '#e8506a', anim: 'sdc-beam-b', dur: 3.7 },
+    { x: R - 150, color: '#22c7e0', anim: 'sdc-beam-c', dur: 4.9 },
+    { x: R - 34,  color: '#f0a840', anim: 'sdc-beam-d', dur: 4.1 },
+  ];
+
+  // Footlights along the front of the deck — pulse/shine.
+  const footlights = Array.from({ length: 13 }, (_, i) => ({
+    x: L + 26 + i * ((R - L - 32) / 12),
+    color: FEST_COLORS[i % FEST_COLORS.length],
+    dur: 1.4 + (i % 5) * 0.35,
+    del: (i % 7) * 0.18,
+  }));
+
+  // Video rect in the SVG-scaled stage coords, projected into the UNSCALED tile
+  // space so the player can render via the same foreignObject + XHTML-div +
+  // CSS-scale pattern used by Concert / Cinema (the only reliable embed path).
+  const S = COACHELLA_STAGE_SCALE;
+  const videoFoX = ox + S * (iframeX - ox);
+  const videoFoY = oy + S * (iframeY - oy);
+  const videoFoW = iframeW * S;
+  const videoFoH = iframeH * S;
 
   return (
+    <>
     <g transform={`translate(${ox},${oy}) scale(${COACHELLA_STAGE_SCALE}) translate(${-ox},${-oy})`}>
-      {/* Header sign above the roof */}
       <defs>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700&display=swap');`}</style>
+        <style>{STAGE_CSS}</style>
+        <linearGradient id="sdc-roof" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#33333d" />
+          <stop offset="100%" stopColor="#1d1d25" />
+        </linearGradient>
+        <linearGradient id="sdc-led" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#7a3ad0">
+            <animate attributeName="stop-color"
+              values="#7a3ad0;#e8506a;#f0a840;#22c7e0;#7a3ad0" dur="12s" repeatCount="indefinite" />
+          </stop>
+          <stop offset="100%" stopColor="#22c7e0">
+            <animate attributeName="stop-color"
+              values="#22c7e0;#7a3ad0;#e8506a;#f0a840;#22c7e0" dur="12s" repeatCount="indefinite" />
+          </stop>
+        </linearGradient>
+        <linearGradient id="sdc-beamgrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fff" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <radialGradient id="sdc-foot" cx="50%" cy="100%" r="80%">
+          <stop offset="0%" stopColor="#fff" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
+        <filter id="sdc-blur" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" />
+        </filter>
+        <filter id="sdc-blur6" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="7" />
+        </filter>
       </defs>
+
+      {/* ── Animated spotlight beams (behind the screen, in front of truss) ── */}
+      {beams.map((b, i) => (
+        <g key={`beam${i}`} transform={`translate(${b.x},${top + 12})`}>
+          <polygon
+            points="-30,210 0,0 30,210"
+            fill="url(#sdc-beamgrad)"
+            opacity={0.5}
+            style={{
+              transformOrigin: '0px 0px',
+              animation: `${b.anim} ${b.dur}s ease-in-out infinite`,
+              mixBlendMode: 'screen',
+            }}
+          />
+          <polygon
+            points="-16,210 0,0 16,210"
+            fill={b.color}
+            opacity={0.32}
+            style={{
+              transformOrigin: '0px 0px',
+              animation: `${b.anim} ${b.dur}s ease-in-out infinite`,
+              mixBlendMode: 'screen',
+            }}
+          />
+        </g>
+      ))}
+
+      {/* Header sign above the roof */}
       <rect
-        x={midX - 118}
-        y={top - 62}
-        width={236}
-        height={30}
-        rx={3}
-        fill="#1a1a22"
-        stroke="#e85074"
-        strokeWidth={1.5}
+        x={midX - 130} y={top - 64} width={260} height={32} rx={4}
+        fill="#15151c" stroke="#e85074" strokeWidth={1.5}
+        style={{ animation: 'sdc-glow 3.4s ease-in-out infinite' }}
       />
       <text
-        x={midX}
-        y={top - 41}
-        textAnchor="middle"
-        fontFamily="'Big Shoulders Display', sans-serif"
-        fontWeight="700"
-        fontSize="13"
-        letterSpacing="6"
-        fill="#e85074"
+        x={midX} y={top - 41} textAnchor="middle"
+        fontFamily="'Big Shoulders Display', sans-serif" fontWeight="900"
+        fontSize="16" letterSpacing="7" fill="#ff7a98"
+        style={{ animation: 'sdc-shine 3s ease-in-out infinite' }}
       >
         COUCHELLA
       </text>
+
+      {/* Roof / canopy */}
       <path
         d={`M${L - 26},${top} L${R + 26},${top} L${R - 6},${top - 40} L${L + 6},${top - 40} Z`}
-        fill="#26262e"
+        fill="url(#sdc-roof)"
       />
       <path
         d={`M${L - 26},${top} L${R + 26},${top} L${R + 26},${top + 6} L${L - 26},${top + 6} Z`}
-        fill="#1a1a22"
+        fill="#141019"
       />
 
+      {/* Truss towers */}
       <rect x={L} y={top} width={20} height={deck - top} fill="#2c2c34" />
       <rect x={R} y={top} width={20} height={deck - top} fill="#2c2c34" />
       <rect x={L} y={top} width={R - L + 20} height={20} fill="#2c2c34" />
       {lattice(L, top + 20, 20, deck - top - 20)}
       {lattice(R, top + 20, 20, deck - top - 20)}
 
-      <defs>
-        <linearGradient id="sdc-led" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#7a3ad0" />
-          <stop offset="50%" stopColor="#e8506a" />
-          <stop offset="100%" stopColor="#f0a840" />
-        </linearGradient>
-      </defs>
-      <rect x={screenX} y={screenY} width={screenW} height={screenH} fill="#101018" />
-      <rect
-        x={screenX + 6}
-        y={screenY + 6}
-        width={screenW - 12}
-        height={screenH - 12}
-        fill="url(#sdc-led)"
-        opacity={live ? 0.15 : 0.5}
-      />
-
-      <foreignObject
-        x={iframeX}
-        y={iframeY}
-        width={iframeW}
-        height={iframeH}
-        style={{ pointerEvents: live ? 'auto' : 'none' }}
-      >
-        {live && video ? (
-          <iframe
-            key={vidKey}
-            src={src}
-            title={video.title}
-            width={iframeW}
-            height={iframeH}
-            frameBorder="0"
-            loading="lazy"
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowFullScreen
-            style={{ display: 'block', border: 'none', background: '#000' }}
-          />
-        ) : (
-          <div style={{ width: iframeW, height: iframeH, background: '#000' }} />
-        )}
-      </foreignObject>
-
-      {Array.from({ length: 6 }, (_, i) => (
-        <rect
-          key={i}
-          x={screenX + 6}
-          y={screenY + 14 + i * 26}
-          width={screenW - 12}
-          height={3}
-          fill="rgba(255,255,255,.12)"
-          pointerEvents="none"
-        />
+      {/* Spotlight fixtures on the header */}
+      {beams.map((b, i) => (
+        <g key={`fix${i}`}>
+          <rect x={b.x - 7} y={top + 4} width={14} height={12} rx={3} fill="#101016" />
+          <circle cx={b.x} cy={top + 14} r={5} fill={b.color}
+            style={{ animation: 'sdc-shine 2.6s ease-in-out infinite' }} />
+          <circle cx={b.x} cy={top + 14} r={10} fill={b.color} opacity={0.4}
+            filter="url(#sdc-blur)" style={{ animation: 'sdc-shine 2.6s ease-in-out infinite' }} />
+        </g>
       ))}
 
+      {/* LED wall + glowing frame */}
+      <rect x={screenX - 6} y={screenY - 6} width={screenW + 12} height={screenH + 12}
+        rx={4} fill="url(#sdc-led)" opacity={0.55} filter="url(#sdc-blur6)"
+        style={{ animation: 'sdc-glow 4s ease-in-out infinite' }} />
+      <rect x={screenX} y={screenY} width={screenW} height={screenH} rx={3} fill="#0b0b12"
+        stroke="url(#sdc-led)" strokeWidth={2.5} />
+      <rect
+        x={screenX + 6} y={screenY + 6} width={screenW - 12} height={screenH - 12}
+        fill="url(#sdc-led)" opacity={live ? 0.12 : 0.5}
+      />
+
+      {/* Scanlines */}
+      {!live && Array.from({ length: 6 }, (_, i) => (
+        <rect key={i} x={screenX + 6} y={screenY + 14 + i * 26} width={screenW - 12} height={3}
+          fill="rgba(255,255,255,.12)" pointerEvents="none" />
+      ))}
+
+      {/* PA speaker stacks */}
       {[L + 30, R - 14].map((sx, i) => (
         <g key={i}>
           {Array.from({ length: 6 }, (_, j) => (
-            <polygon
-              key={j}
+            <polygon key={j}
               points={`${sx},${top + 26 + j * 17} ${sx + 22},${top + 28 + j * 17} ${sx + 22},${top + 40 + j * 17} ${sx},${top + 42 + j * 17}`}
-              fill="#1c1c24"
-              stroke="#34343c"
-              strokeWidth={0.8}
-            />
+              fill="#1c1c24" stroke="#34343c" strokeWidth={0.8} />
           ))}
         </g>
       ))}
 
-      {Array.from({ length: 11 }, (_, i) => {
-        const lx = L + 36 + i * ((R - L - 52) / 10);
-        const c = FEST_COLORS[i % FEST_COLORS.length];
-        return (
-          <g key={i}>
-            <rect x={lx - 4} y={top + 20} width={8} height={9} rx={1} fill="#222" />
-            <ellipse cx={lx} cy={top + 40} rx={9} ry={26} fill={c} opacity={0.16} />
-            <circle cx={lx} cy={top + 30} r={2.4} fill={c} />
-          </g>
-        );
-      })}
-
+      {/* Stage deck + glow */}
       <rect x={L - 26} y={deck - 6} width={R - L + 72} height={12} fill="#1a1a22" />
-      <ellipse cx={(L + R) / 2} cy={deck - 6} rx={(R - L) / 2} ry={20} fill="rgba(240,168,64,.16)" />
+      <ellipse cx={midX} cy={deck - 6} rx={(R - L) / 2} ry={22} fill="rgba(240,168,64,.18)"
+        style={{ animation: 'sdc-glow 5s ease-in-out infinite' }} />
 
+      {/* Footlights — shine up off the deck */}
+      {footlights.map((f, i) => (
+        <g key={`foot${i}`}>
+          <ellipse cx={f.x} cy={deck - 18} rx={11} ry={30} fill={f.color} opacity={0.18}
+            style={{ animation: `sdc-shine ${f.dur}s ease-in-out infinite`, animationDelay: `${f.del}s`, mixBlendMode: 'screen' }} />
+          <ellipse cx={f.x} cy={deck - 8} rx={9} ry={9} fill="url(#sdc-foot)"
+            style={{ animation: `sdc-shine ${f.dur}s ease-in-out infinite`, animationDelay: `${f.del}s` }} />
+          <circle cx={f.x} cy={deck - 8} r={3} fill={f.color}
+            style={{ animation: `sdc-shine ${f.dur}s ease-in-out infinite`, animationDelay: `${f.del}s` }} />
+        </g>
+      ))}
+
+      {/* Crowd silhouette */}
       <g fill="#23202a">
         <path
           d={`M${L - 120},${deck + 22}
@@ -259,6 +256,48 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
           <circle key={i} cx={L - 110 + i * 24} cy={deck + 14 + (i % 4) * 3} r={4.5} />
         ))}
       </g>
+
+      {/* Now-playing marquee */}
+      <rect x={midX - 96} y={deck + 30} width={192} height={20} rx={3}
+        fill="#15151c" stroke="rgba(232,80,116,.4)" strokeWidth={1} />
+      <text x={midX} y={deck + 44} textAnchor="middle"
+        fontFamily="'Big Shoulders Display', sans-serif" fontWeight="700" fontSize="10"
+        letterSpacing="3" fill="rgba(255,140,170,.85)"
+        style={{ animation: 'sdc-marquee 3s ease-in-out infinite' }}>
+        {marquee.toUpperCase().slice(0, 30)}
+      </text>
     </g>
+
+    {/* YouTube player — identical embed path to Concert / Cinema: an unscaled
+        foreignObject holding an XHTML div that's scaled with a CSS transform,
+        with the hook mounting the iframe into the inner host. */}
+    <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>
+      <div
+        {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
+        style={{
+          width: iframeW,
+          transform: `scale(${S})`,
+          transformOrigin: 'top left',
+          pointerEvents: 'none',
+        }}
+      >
+        <div style={{ width: iframeW, height: iframeH, overflow: 'hidden', position: 'relative', background: '#000' }}>
+          {src && (
+            <iframe
+              key={vidKey}
+              ref={iframeRef}
+              src={src}
+              title={video?.title ?? 'Couchella'}
+              onLoad={onIframeLoad}
+              loading="lazy"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+              style={STAGE_IFRAME_STYLE}
+            />
+          )}
+        </div>
+      </div>
+    </foreignObject>
+    </>
   );
 }

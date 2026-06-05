@@ -17,8 +17,10 @@ export type TreeCatPlacement = {
 /** Fixed cat spots — one on load, others further along the street. */
 const CAT_SPOTS: { id: string; tile: number; treeIndex: number }[] = [
   { id: 'slc-home', tile: 0, treeIndex: 1 },       // ~x500 — visible on init
-  { id: 'slc-east', tile: 1, treeIndex: 5 },       // walk right one block
-  { id: 'slc-west', tile: -1, treeIndex: 9 },      // walk left one block
+  // Tiles ±1 are short town connectors (~1160 wide); keep cats at a low tree
+  // index so they sit inside the tile rather than being culled past its edge.
+  { id: 'slc-east', tile: 1, treeIndex: 2 },       // walk right one block (~x780)
+  { id: 'slc-west', tile: -1, treeIndex: 2 },      // walk left one block (~x780)
   { id: 'slc-far-east', tile: 3, treeIndex: 2 },   // farther east
 ];
 

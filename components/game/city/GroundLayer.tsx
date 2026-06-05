@@ -23,14 +23,19 @@ type GroundLayerProps = {
 };
 
 function groundTileContent(tile: number) {
+  // Draw the road/sidewalk at the tile's natural width and show only the props
+  // that fit. Short town tiles previously squeezed everything with a non-uniform
+  // scale(scale,1), distorting trees, hydrants, benches and cats — never scale
+  // discrete art; just render fewer pieces in narrow tiles.
   const w = gndWidthForTile(tile);
-  const scale = w / CITY_GND_W;
+  // Keep a prop fully inside the tile (account for its art half-width).
+  const fits = (x: number, halfW: number) => x <= w - halfW;
 
   return (
-    <g transform={scale === 1 ? undefined : `scale(${scale},1)`}>
-      <rect x={0} y={GND_Y + 25} width={CITY_GND_W} height={215} fill="#b0a878" />
-      <rect x={0} y={GND_Y + 25} width={CITY_GND_W} height={12} fill="rgba(0,0,0,.08)" />
-      {Array.from({ length: Math.ceil(CITY_GND_W / 80) }, (_, i) => (
+    <g>
+      <rect x={0} y={GND_Y + 25} width={w} height={215} fill="#b0a878" />
+      <rect x={0} y={GND_Y + 25} width={w} height={12} fill="rgba(0,0,0,.08)" />
+      {Array.from({ length: Math.ceil(w / 80) }, (_, i) => (
         <rect
           key={i}
           x={i * 80}
@@ -41,9 +46,9 @@ function groundTileContent(tile: number) {
           fill="rgba(220,210,160,.45)"
         />
       ))}
-      <rect x={0} y={GND_Y - 5} width={CITY_GND_W} height={30} fill="#c8b882" />
-      <rect x={0} y={GND_Y + 22} width={CITY_GND_W} height={6} fill="#a89870" />
-      {Array.from({ length: Math.ceil(CITY_GND_W / 62) }, (_, i) => (
+      <rect x={0} y={GND_Y - 5} width={w} height={30} fill="#c8b882" />
+      <rect x={0} y={GND_Y + 22} width={w} height={6} fill="#a89870" />
+      {Array.from({ length: Math.ceil(w / 62) }, (_, i) => (
         <line
           key={i}
           x1={i * 62}
@@ -54,10 +59,10 @@ function groundTileContent(tile: number) {
           strokeWidth={2}
         />
       ))}
-      <line x1={0} y1={GND_Y + 8} x2={CITY_GND_W} y2={GND_Y + 8} stroke="rgba(0,0,0,.05)" strokeWidth={1.5} />
-      <line x1={0} y1={GND_Y + 55} x2={CITY_GND_W} y2={GND_Y + 55} stroke="#706850" strokeWidth={4} />
-      <line x1={0} y1={GND_Y + 68} x2={CITY_GND_W} y2={GND_Y + 68} stroke="#706850" strokeWidth={4} />
-      {Array.from({ length: Math.ceil(CITY_GND_W / 40) }, (_, i) => (
+      <line x1={0} y1={GND_Y + 8} x2={w} y2={GND_Y + 8} stroke="rgba(0,0,0,.05)" strokeWidth={1.5} />
+      <line x1={0} y1={GND_Y + 55} x2={w} y2={GND_Y + 55} stroke="#706850" strokeWidth={4} />
+      <line x1={0} y1={GND_Y + 68} x2={w} y2={GND_Y + 68} stroke="#706850" strokeWidth={4} />
+      {Array.from({ length: Math.ceil(w / 40) }, (_, i) => (
         <rect
           key={i}
           x={i * 40}
@@ -69,25 +74,30 @@ function groundTileContent(tile: number) {
         />
       ))}
       {GROUND_TREE_XS.map((x, i) => (
-        <ellipse key={`sh${i}`} cx={x + 28} cy={GND_Y + 8} rx={50} ry={11} fill="rgba(20,50,0,.2)" />
+        fits(x, 90) ? (
+          <ellipse key={`sh${i}`} cx={x + 28} cy={GND_Y + 8} rx={50} ry={11} fill="rgba(20,50,0,.2)" />
+        ) : null
       ))}
       {GROUND_TREE_XS.map((x, i) => (
-        <g
-          key={i}
-          style={{
-            animation: `sw${1 + (i % 3)} ${5 + i * 0.4}s ease-in-out infinite`,
-            transformOrigin: `${x}px ${GND_Y}px`,
-            animationDelay: `${i * 0.45}s`,
-          }}
-        >
-          <StreetTree x={x} y={GND_Y} h={195 + (i % 4) * 12} sp={88 + (i % 3) * 8} />
-        </g>
+        fits(x, 90) ? (
+          <g
+            key={i}
+            style={{
+              animation: `sw${1 + (i % 3)} ${5 + i * 0.4}s ease-in-out infinite`,
+              transformOrigin: `${x}px ${GND_Y}px`,
+              animationDelay: `${i * 0.45}s`,
+            }}
+          >
+            <StreetTree x={x} y={GND_Y} h={195 + (i % 4) * 12} sp={88 + (i % 3) * 8} />
+          </g>
+        ) : null
       ))}
-      <SleepingCatsGround tile={tile} gndY={GND_Y} />
+      <SleepingCatsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
       {LAMP_XS.map((x, i) => (
-        <LampPost key={i} x={x} y={GND_Y} />
+        fits(x, 30) ? <LampPost key={i} x={x} y={GND_Y} /> : null
       ))}
       {HYDRANTS.map((x, i) => (
+        fits(x, 24) ? (
         <g key={`h${i}`} transform={`translate(${x},${GND_Y})`}>
           <ellipse cx={8} cy={6} rx={10} ry={4} fill="rgba(20,40,80,.18)" />
           <rect x={2} y={-30} width={12} height={30} rx={3} fill="#c83028" />
@@ -96,8 +106,10 @@ function groundTileContent(tile: number) {
           <rect x={-2} y={-20} width={6} height={5} rx={1} fill="#b82820" />
           <rect x={12} y={-20} width={6} height={5} rx={1} fill="#b82820" />
         </g>
+        ) : null
       ))}
       {BENCHES.map((x, i) => (
+        fits(x, 70) ? (
         <g key={`b${i}`} transform={`translate(${x},${GND_Y})`}>
           <ellipse cx={32} cy={6} rx={38} ry={7} fill="rgba(20,40,80,.16)" />
           <rect x={4} y={-28} width={5} height={28} rx={2} fill="#6a5038" />
@@ -108,14 +120,17 @@ function groundTileContent(tile: number) {
           <rect x={8} y={-50} width={5} height={22} rx={2} fill="#6a5038" />
           <rect x={50} y={-50} width={5} height={22} rx={2} fill="#6a5038" />
         </g>
+        ) : null
       ))}
       {BUS_STOPS.map((x, i) => (
+        fits(x, 40) ? (
         <g key={`bs${i}`} transform={`translate(${x},${GND_Y})`}>
           <rect x={-2} y={-105} width={4} height={105} fill="#5a5848" />
           <rect x={-28} y={-108} width={56} height={14} rx={2} fill="#2040a0" />
           <rect x={-18} y={-104} width={36} height={2} fill="rgba(255,255,255,.8)" rx={1} />
           <rect x={-18} y={-100} width={28} height={2} fill="rgba(255,255,255,.6)" rx={1} />
         </g>
+        ) : null
       ))}
     </g>
   );

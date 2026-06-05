@@ -20,7 +20,7 @@ import { MidBushes } from './MidBushes';
 import { SfMidFeatures } from './SfMidFeatures';
 import { SeattleBuildingsTile, SeattleMidFeatures } from './seattle';
 import { SouthernCaliforniaTile } from './sandiego';
-import { SmallTownTile } from './town';
+import { SmallTownTile, SmallTownTerrain } from './town';
 import { TransitionWater } from './transition';
 
 type MidLayerProps = {
@@ -66,6 +66,10 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
           <g transform={scale === 1 ? undefined : `scale(${scale},1)`}>
             <GradientMidTerrain tileIndex={t} />
             <TransitionWater tileIndex={t} />
+            {/* Continuous town ground/desert blend stays scaled (gradients fill
+                the tile imperceptibly); only the discrete cottages below escape
+                the squeeze. */}
+            {kind === 'town' && <SmallTownTerrain tileIndex={t} />}
             {kind === 'seattle' && <SeattleMidFeatures tileIndex={t} />}
             {/* City buildings must render BEFORE the venues so the stage sits in
                 front of the skyline (Seattle's tall glass towers were covering it). */}
@@ -106,8 +110,11 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
                 isVenueInView(vx, t, lx, COACHELLA_STAGE_HALF);
               return <SouthernCaliforniaTile tileIndex={t} coachellaLive={live} />;
             })()}
-            {kind === 'town' && <SmallTownTile tileIndex={t} />}
           </g>
+          {/* Town cottages render OUTSIDE the horizontal scale so their buildings
+              and trees keep natural proportions in the short town tiles (the
+              scaled group only carries the continuous hills/terrain). */}
+          {kind === 'town' && <SmallTownTile tileIndex={t} tileWidth={w} />}
           {/* Atmospheric haze — drawn OUTSIDE the scaled group, so it lives in
               unscaled tile-local coords where the tile spans 0..w. Width MUST be
               `w` (the real tile width), not `w/scale`: the latter always equals

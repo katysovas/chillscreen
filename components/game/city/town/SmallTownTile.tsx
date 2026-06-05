@@ -26,9 +26,9 @@ type Building = {
   kind: 'simple' | 'victorian';
 };
 
-function townLayout(tileIndex: number, compact: boolean): Building[] {
+function townLayout(tileIndex: number, compact: boolean, width: number): Building[] {
   const count = compact ? 10 : 42;
-  const xMax = compact ? 880 : MID_W - 120;
+  const xMax = compact ? width - 70 : MID_W - 120;
   const out: Building[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -58,10 +58,10 @@ function townLayout(tileIndex: number, compact: boolean): Building[] {
 
 type Tree = { x: number; y: number; r: number };
 
-function townTrees(tileIndex: number, compact: boolean): Tree[] {
+function townTrees(tileIndex: number, compact: boolean, width: number): Tree[] {
   const trees: Tree[] = [];
   const max = compact ? 6 : 14;
-  const xMax = compact ? 880 : MID_W - 160;
+  const xMax = compact ? width - 110 : MID_W - 160;
 
   for (let i = 0; i < max; i++) {
     const t = tileRand(tileIndex, `tr${i}`);
@@ -77,15 +77,14 @@ function townTrees(tileIndex: number, compact: boolean): Tree[] {
   return trees;
 }
 
-type SmallTownTileProps = {
-  tileIndex: number;
-};
-
-/** Full tile of small-town cottages and low-rise blocks between major cities. */
-export function SmallTownTile({ tileIndex }: SmallTownTileProps) {
+/**
+ * Continuous town ground/desert blend. Stays INSIDE the mid layer's horizontal
+ * tile scale (authored across MID_W) so the gradients fill the short town tile
+ * and blend smoothly into the neighbouring city — scaling a gradient is
+ * imperceptible, unlike scaling discrete buildings.
+ */
+export function SmallTownTerrain({ tileIndex }: { tileIndex: number }) {
   const compact = isSfToSdTown(tileIndex) || isTownTile(tileIndex);
-  const buildings = townLayout(tileIndex, compact);
-  const trees = townTrees(tileIndex, compact);
 
   return (
     <g>
@@ -108,6 +107,29 @@ export function SmallTownTile({ tileIndex }: SmallTownTileProps) {
           shapeRendering="optimizeSpeed"
         />
       )}
+      {compact && isSfToSdTown(tileIndex) && <TownDesertEdge tileIndex={tileIndex} />}
+    </g>
+  );
+}
+
+type SmallTownTileProps = {
+  tileIndex: number;
+  /** Natural tile width (town tiles are short); props are laid out to fit. */
+  tileWidth?: number;
+};
+
+/**
+ * Discrete small-town cottages and trees — rendered at NATURAL proportions
+ * (no horizontal squeeze). Laid out within the tile's real width so short town
+ * connectors simply show fewer buildings rather than squashed ones.
+ */
+export function SmallTownTile({ tileIndex, tileWidth = MID_W }: SmallTownTileProps) {
+  const compact = isSfToSdTown(tileIndex) || isTownTile(tileIndex);
+  const buildings = townLayout(tileIndex, compact, tileWidth);
+  const trees = townTrees(tileIndex, compact, tileWidth);
+
+  return (
+    <g>
       {buildings.map((b, i) =>
         b.kind === 'victorian' ? (
           <Victorian key={i} x={b.x} y={b.y} col={b.color} w={b.w + 18} h={b.h + 20} />
@@ -129,7 +151,6 @@ export function SmallTownTile({ tileIndex }: SmallTownTileProps) {
           <circle cx={tr.x - tr.r * 0.45} cy={tr.y - tr.r * 1.5} r={tr.r * 0.65} fill="#427040" />
         </g>
       ))}
-      {compact && isSfToSdTown(tileIndex) && <TownDesertEdge tileIndex={tileIndex} />}
     </g>
   );
 }
