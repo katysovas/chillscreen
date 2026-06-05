@@ -1,34 +1,21 @@
 'use client';
 
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
+import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 
 // ─── Keyframes (injected via <style> in SFCity) ───────────────────────────────
-// "sky-ltr / sky-rtl": entity crosses in the first 28% of its period,
-// then waits off-screen for the remaining 72% — creating a natural "rarely appears" rhythm.
-// Negative animation-delay pre-seeds each entity into a different phase of its cycle
-// so they don't all appear at the same time on load.
 export const SKY_CREATURES_KF = `
   @keyframes sky-ltr {
-    0%        { transform: translateX(-380px); }
-    28%, 100% { transform: translateX(calc(100vw + 380px)); }
+    0%        { transform: translate3d(-380px, 0, 0); }
+    28%, 100% { transform: translate3d(calc(100vw + 380px), 0, 0); }
   }
   @keyframes sky-rtl {
-    0%        { transform: translateX(calc(100vw + 380px)); }
-    28%, 100% { transform: translateX(-380px); }
+    0%        { transform: translate3d(calc(100vw + 380px), 0, 0); }
+    28%, 100% { transform: translate3d(-380px, 0, 0); }
   }
-  /* UFO crosses fast (8% of a longer period) so it zips across then disappears for ages */
   @keyframes sky-ufo-ltr {
-    0%      { transform: translateX(-200px); }
-    8%, 100% { transform: translateX(calc(100vw + 200px)); }
-  }
-  /* Wing-flap via CSS d-property animation (Chrome 88+, FF 72+, Safari 15.4+) */
-  @keyframes bird-wl {
-    0%,100% { d: path('M-13,2 Q-6,-5 0,0'); }
-    50%     { d: path('M-13,-7 Q-6,-13 0,0'); }
-  }
-  @keyframes bird-wr {
-    0%,100% { d: path('M13,2 Q6,-5 0,0'); }
-    50%     { d: path('M13,-7 Q6,-13 0,0'); }
+    0%      { transform: translate3d(-200px, 0, 0); }
+    8%, 100% { transform: translate3d(calc(100vw + 200px), 0, 0); }
   }
   @keyframes ufo-bob {
     0%,100% { transform: translateY(0px) rotate(-2deg); }
@@ -53,22 +40,46 @@ function Bird({
   const sw = 2.2 * s;
   return (
     <g transform={`translate(${x},${y}) scale(${s})`}>
-      <path
-        d="M-13,2 Q-6,-5 0,0"
-        fill="none"
-        stroke={stroke}
-        strokeWidth={sw}
-        strokeLinecap="round"
-        style={{ animation: `bird-wl ${flapDur}s ${ph}s ease-in-out infinite` }}
-      />
-      <path
-        d="M13,2 Q6,-5 0,0"
-        fill="none"
-        stroke={stroke}
-        strokeWidth={sw}
-        strokeLinecap="round"
-        style={{ animation: `bird-wr ${flapDur}s ${ph}s ease-in-out infinite` }}
-      />
+      <g>
+        <animateTransform
+          attributeName="transform"
+          type="rotate"
+          values="8 0 0;-32 0 0;8 0 0"
+          dur={`${flapDur}s`}
+          begin={`${ph}s`}
+          repeatCount="indefinite"
+          calcMode="spline"
+          keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+          keyTimes="0; 0.5; 1"
+        />
+        <path
+          d="M-13,2 Q-6,-5 0,0"
+          fill="none"
+          stroke={stroke}
+          strokeWidth={sw}
+          strokeLinecap="round"
+        />
+      </g>
+      <g>
+        <animateTransform
+          attributeName="transform"
+          type="rotate"
+          values="-8 0 0;32 0 0;-8 0 0"
+          dur={`${flapDur}s`}
+          begin={`${ph}s`}
+          repeatCount="indefinite"
+          calcMode="spline"
+          keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+          keyTimes="0; 0.5; 1"
+        />
+        <path
+          d="M13,2 Q6,-5 0,0"
+          fill="none"
+          stroke={stroke}
+          strokeWidth={sw}
+          strokeLinecap="round"
+        />
+      </g>
     </g>
   );
 }
@@ -200,8 +211,13 @@ function UFOShape() {
   );
 }
 
+type SkyCreaturesLayerProps = {
+  period?: SkyPeriod;
+  worldOff: number;
+};
+
 // ─── Layer ────────────────────────────────────────────────────────────────────
-export function SkyCreaturesLayer({ period = 'day' }: { period?: SkyPeriod }) {
+export function SkyCreaturesLayer({ period = 'day', worldOff }: SkyCreaturesLayerProps) {
   const fly = (dir: 'ltr' | 'rtl', period: number, delay: number) =>
     `${dir === 'ltr' ? 'sky-ltr' : 'sky-rtl'} ${period}s ${delay}s linear infinite`;
 
@@ -213,52 +229,58 @@ export function SkyCreaturesLayer({ period = 'day' }: { period?: SkyPeriod }) {
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        zIndex: 3,
+        zIndex: 8,
         overflow: 'hidden',
       }}
     >
-      {showBirdsAndPlanes && (
-        <>
-      <div style={{ position: 'absolute', top: '9%', animation: fly('ltr', 62, -5) }}>
-        <BirdFlock birds={LARGE_FLOCK} opacity={0.82} />
-      </div>
+      <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+        {showBirdsAndPlanes && (
+          <>
+            <div style={{ position: 'absolute', top: '9%', animation: fly('ltr', 62, -5) }}>
+              <BirdFlock birds={LARGE_FLOCK} opacity={0.82} />
+            </div>
 
-      <div style={{ position: 'absolute', top: '17%', animation: fly('rtl', 75, -28) }}>
-        <BirdFlock birds={SMALL_FLOCK} opacity={0.65} />
-      </div>
+            <div style={{ position: 'absolute', top: '17%', animation: fly('rtl', 75, -28) }}>
+              <BirdFlock birds={SMALL_FLOCK} opacity={0.65} />
+            </div>
 
-      <div style={{ position: 'absolute', top: '13%', animation: fly('ltr', 55, -42) }}>
-        <BirdFlock birds={SMALL_FLOCK} opacity={0.72} />
-      </div>
+            <div style={{ position: 'absolute', top: '13%', animation: fly('ltr', 55, -42) }}>
+              <BirdFlock birds={SMALL_FLOCK} opacity={0.72} />
+            </div>
 
-      <div style={{ position: 'absolute', top: '23%', animation: fly('ltr', 80, -15) }}>
-        <BirdFlock birds={LARGE_FLOCK} opacity={0.55} />
-      </div>
+            <div style={{ position: 'absolute', top: '23%', animation: fly('ltr', 80, -15) }}>
+              <BirdFlock birds={LARGE_FLOCK} opacity={0.55} />
+            </div>
 
-      <div style={{ position: 'absolute', top: '8%', animation: fly('rtl', 68, -52) }}>
-        <BirdFlock birds={SMALL_FLOCK} opacity={0.60} />
-      </div>
+            <div style={{ position: 'absolute', top: '8%', animation: fly('rtl', 68, -52) }}>
+              <BirdFlock birds={SMALL_FLOCK} opacity={0.60} />
+            </div>
 
-      <div style={{ position: 'absolute', top: '6%', animation: fly('ltr', 95, -75) }}>
-        <PlaneShape flip={false} />
-      </div>
+            <div style={{ position: 'absolute', top: '6%', animation: fly('ltr', 95, -75) }}>
+              <PlaneShape flip={false} />
+            </div>
 
-      <div style={{ position: 'absolute', top: '14%', animation: fly('rtl', 115, -58) }}>
-        <PlaneShape flip={true} />
-      </div>
-        </>
-      )}
+            <div style={{ position: 'absolute', top: '14%', animation: fly('rtl', 115, -58) }}>
+              <PlaneShape flip={true} />
+            </div>
+          </>
+        )}
 
-      <div
-        style={{
-          position: 'absolute',
-          top: '10%',
-          animation: 'sky-ufo-ltr 160s -45s linear infinite',
-        }}
-      >
-        <div style={{ animation: 'ufo-bob 3.2s ease-in-out infinite' }}>
-          <UFOShape />
+        <div
+          style={{
+            position: 'absolute',
+            top: '10%',
+            animation: 'sky-ufo-ltr 160s -45s linear infinite',
+          }}
+        >
+          <div style={{ animation: 'ufo-bob 3.2s ease-in-out infinite' }}>
+            <UFOShape />
+          </div>
         </div>
+      </div>
+
+      <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
+        <SkyCloudsLayer worldOff={worldOff} period={period} />
       </div>
     </div>
   );

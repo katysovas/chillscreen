@@ -478,8 +478,8 @@ export default function SFCity() {
       <style>{KF}</style>
 
       <SkyLayer         worldOff={worldOff} period={skyPeriod} />
-      <SkyCreaturesLayer period={skyPeriod} />
       <MidLayer         worldOff={worldOff} />
+      <SkyCreaturesLayer period={skyPeriod} worldOff={worldOff} />
       <GroundLayer      worldOff={worldOff} />
       <VenueSignsLayer  worldOff={worldOff} />
 

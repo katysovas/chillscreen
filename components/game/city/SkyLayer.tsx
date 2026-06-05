@@ -1,19 +1,8 @@
 import { SKY_F, SKY_TILE } from '@/lib/parallax';
 import { skyTheme, STAR_FIELD, type SkyPeriod } from '@/lib/skyTimeOfDay';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
-import { Cloud } from './sky/Cloud';
 import { Sun } from './sky/Sun';
 import { Moon } from './sky/Moon';
-
-const CLOUDS = [
-  { x: 80, y: 95, s: 1.1, anim: 'cloud2', del: 0 },
-  { x: 360, y: 68, s: 1.4, anim: 'cloud1', del: 3 },
-  { x: 660, y: 110, s: 0.9, anim: 'cloud3', del: 5 },
-  { x: 960, y: 72, s: 1.2, anim: 'cloud2', del: 2 },
-  { x: 1250, y: 100, s: 1.0, anim: 'cloud1', del: 7 },
-  { x: 1540, y: 78, s: 1.3, anim: 'cloud3', del: 4 },
-  { x: 1780, y: 112, s: 0.85, anim: 'cloud2', del: 6 },
-] as const;
 
 type SkyLayerProps = {
   worldOff: number;
@@ -64,18 +53,6 @@ export function SkyLayer({ worldOff, period }: SkyLayerProps) {
             d="M0,665 Q300,618 600,638 Q900,655 1200,615 Q1600,580 2000,605 L2000,730 L0,730 Z"
             fill={theme.horizon}
           />
-          {theme.showClouds &&
-            CLOUDS.map((c, i) => (
-              <Cloud
-                key={i}
-                x={c.x}
-                y={c.y}
-                s={c.s}
-                anim={c.anim}
-                del={c.del}
-                variant={theme.cloudVariant}
-              />
-            ))}
           <g
             transform="translate(500,255)"
             opacity={period === 'night' ? 0.15 : 0.55}
