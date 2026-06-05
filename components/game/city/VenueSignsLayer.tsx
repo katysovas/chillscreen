@@ -1,5 +1,5 @@
 import { GND_F, GND_TILE } from '@/lib/parallax';
-import { VenueRoadSigns } from '../VenueRoadSigns';
+import { TileRoadSigns } from '../VenueRoadSigns';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
 
 const GND_Y = 685;
@@ -18,7 +18,7 @@ export function VenueSignsLayer({ worldOff }: VenueSignsLayerProps) {
       tileWidth={GND_TILE}
       style={{ zIndex: 6, pointerEvents: 'none' }}
     >
-      {() => <VenueRoadSigns y={GND_Y + 12} groundTile={GND_TILE} />}
+      {t => <TileRoadSigns tileIndex={t} y={GND_Y + 12} groundTile={GND_TILE} />}
     </ParallaxSvgLayer>
   );
 }
