@@ -1,16 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { setConcertInView } from '@/lib/concertNow';
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
-import { useStageChannel } from '@/lib/stageClock';
+import { currentSchedule, useStageChannel } from '@/lib/stageClock';
 import type { StageChannel } from '@/lib/stageVideos';
 
 export type { StageVideo } from '@/lib/stageVideos';
 
-/** Hidden-chrome, muted-autoplay embed (autoplay is always allowed when muted,
- *  so the big center play button never shows and the frame never sits black). */
-function embedSrc(id: string): string {
+/** Hidden-chrome, muted-autoplay embed.
+ *  `startSec` is baked into the URL so the video loads from the synced
+ *  position on the very first frame — no postMessage race needed. */
+function embedSrc(id: string, startSec = 0): string {
   const params = new URLSearchParams({
     autoplay: '1',
     mute: '1',
@@ -25,6 +26,7 @@ function embedSrc(id: string): string {
     playlist: id,
     enablejsapi: '1',
   });
+  if (startSec > 2) params.set('start', String(Math.floor(startSec)));
   return `https://www.youtube-nocookie.com/embed/${id}?${params}`;
 }
 
@@ -60,27 +62,72 @@ type UseStagePlayerResult = {
   src: string;
   /** Forces a fresh iframe element on each video change. */
   vidKey: number;
-  /** Wire to the iframe's onLoad — kicks playback, seeks to the shared
-   *  position, and applies mute state. */
+  /** Wire to the iframe's onLoad — kicks playback and applies mute state. */
   onIframeLoad: () => void;
+  /**
+   * False while YouTube's player is still initializing (controls / branding
+   * flash may be visible). Flips to true the moment YouTube fires playerState=1
+   * (playing), or after a 5 s safety timeout. Use this to drive an overlay that
+   * hides the iframe until it is cleanly playing.
+   */
+  playerVisible: boolean;
 };
 
 /**
  * Shared concert/festival YouTube logic. Renders a plain (declarative) iframe
  * — reliable inside SVG <foreignObject> — that autoplays muted so it never
- * sits black or shows the center play button, then seeks to the synchronized
- * position and unmutes via postMessage once loaded (unless the site is muted).
+ * sits black or shows the center play button.
  *
- * The video + position come from the shared, server-pinned schedule
- * (`@/lib/stageClock`), so every connected user sees the same video at the same
- * time. The stage also marks itself "in view" so website + stage audio never
- * overlap.
+ * The current synced position is baked into the embed URL (`start=N`) when the
+ * iframe is mounted, so every user who loads the page sees the video at the
+ * same timestamp with no postMessage race conditions. The video + schedule come
+ * from the shared, server-pinned playlist (`@/lib/stageClock`).
  */
 export function useStagePlayer({
   live, channel, iframeRef, onNowPlaying,
 }: UseStagePlayerOptions): UseStagePlayerResult {
   const { video, vidKey } = useStageChannel(channel, live);
-  const src = video ? embedSrc(video.id) : '';
+
+  // ── Overlay: hide until YouTube fires playerState=1 (playing) ─────────────
+  const [playerVisible, setPlayerVisible] = useState(false);
+
+  useEffect(() => {
+    if (!live) return;
+    // Reset overlay whenever the video slot changes.
+    setPlayerVisible(false);
+
+    const onMessage = (e: MessageEvent) => {
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        // YouTube IFrame API: {"event":"infoDelivery","info":{"playerState":1}}
+        if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
+          setPlayerVisible(true);
+        }
+      } catch { /* non-JSON message from another frame — ignore */ }
+    };
+
+    window.addEventListener('message', onMessage);
+    // Safety fallback: reveal after 5 s even if the API message never arrives
+    // (e.g. autoplay blocked, slow connection, restricted embed).
+    const fallback = setTimeout(() => setPlayerVisible(true), 5000);
+
+    return () => {
+      window.removeEventListener('message', onMessage);
+      clearTimeout(fallback);
+    };
+  }, [vidKey, live]);
+
+  // Bake the current synced offset into the URL when the iframe is (re)mounted.
+  // Recomputes only when the video or vidKey changes (i.e. on rotation), so the
+  // same `src` string is stable across unrelated re-renders and won't reload the
+  // iframe unnecessarily.
+  const src = useMemo(() => {
+    if (!video) return '';
+    const sched = currentSchedule(channel);
+    return embedSrc(video.id, sched?.offsetSec ?? 0);
+  // vidKey bumps on each rotation — that's when we want a fresh start offset.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [video?.id, vidKey, channel]);
 
   const [siteMuted, setSiteMuted] = useState(false);
   const siteMutedRef = useRef(siteMuted);
@@ -110,6 +157,8 @@ export function useStagePlayer({
 
   const onIframeLoad = useCallback(() => {
     const f = iframeRef.current;
+    // Belt-and-suspenders: ensure the player is playing and apply mute state.
+    // The start position is already handled by the `start=N` URL param.
     postCommand(f, 'playVideo');
     if (siteMutedRef.current) {
       postCommand(f, 'mute');
@@ -131,5 +180,5 @@ export function useStagePlayer({
     }
   }, [siteMuted, iframeRef]);
 
-  return { video, src, vidKey, onIframeLoad };
+  return { video, src, vidKey, onIframeLoad, playerVisible };
 }

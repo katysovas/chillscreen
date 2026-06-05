@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { setCinemaNowPlaying } from '@/lib/cinemaNow';
 import { cinemaEmbedSrc } from '@/lib/cinemaVideoPool';
-import { useStageChannel } from '@/lib/stageClock';
+import { currentSchedule, useStageChannel } from '@/lib/stageClock';
 
 const IFRAME_W = 400;
 const IFRAME_H = 225;
@@ -318,16 +318,40 @@ export default function Cinema({ live = true }: { live?: boolean }) {
   useEffect(() => {
     if (live && video?.title) setCinemaNowPlaying(video.title);
     else if (live) setCinemaNowPlaying(null);
-    return () => {
-      if (live) setCinemaNowPlaying(null);
-    };
+    return () => { if (live) setCinemaNowPlaying(null); };
   }, [live, video?.title]);
+
+  // Bake the current synced offset into the embed URL so the video loads at
+  // the right position from the first frame — no postMessage race needed.
+  const src = useMemo(() => {
+    if (!video) return '';
+    const sched = currentSchedule('cinema');
+    return cinemaEmbedSrc(video.id, sched?.offsetSec ?? 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [video?.id, vidKey]);
 
   const onIframeLoad = () => {
     postCommand(iframeRef.current, 'playVideo');
   };
 
-  const src = video ? cinemaEmbedSrc(video.id) : '';
+  // Hide the iframe overlay until YouTube fires playerState=1 (playing).
+  const [playerVisible, setPlayerVisible] = useState(false);
+  useEffect(() => {
+    if (!live) return;
+    setPlayerVisible(false);
+    const onMessage = (e: MessageEvent) => {
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
+          setPlayerVisible(true);
+        }
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('message', onMessage);
+    const fallback = setTimeout(() => setPlayerVisible(true), 5000);
+    return () => { window.removeEventListener('message', onMessage); clearTimeout(fallback); };
+  }, [vidKey, live]);
+
   const bulbs = useMemo(() => Array.from({ length: 18 }), []);
   const marqueeTitle = video?.title ?? (live ? 'Loading…' : 'Cute Animals');
 
@@ -347,20 +371,32 @@ export default function Cinema({ live = true }: { live?: boolean }) {
         <div className="cin-mist-top" />
         <div className="cin-screen-frame">
           {live && video ? (
-            <iframe
-              key={vidKey}
-              ref={iframeRef}
-              className="cin-iframe"
-              src={src}
-              title={video.title}
-              width={IFRAME_W}
-              height={IFRAME_H}
-              onLoad={onIframeLoad}
-              loading="lazy"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              style={{ display: 'block', border: 'none', background: '#000' }}
-            />
+            <>
+              <iframe
+                key={vidKey}
+                ref={iframeRef}
+                className="cin-iframe"
+                src={src}
+                title={video.title}
+                width={IFRAME_W}
+                height={IFRAME_H}
+                onLoad={onIframeLoad}
+                loading="lazy"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                style={{ display: 'block', border: 'none', background: '#000' }}
+              />
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 10,
+                background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                opacity: playerVisible ? 0 : 1,
+                transition: playerVisible ? 'opacity 0.8s' : 'none',
+              }}>
+                <span style={{ fontFamily: 'sans-serif', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
+                {video?.title && <span style={{ fontFamily: 'sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 16px', lineHeight: 1.3 }}>{video.title}</span>}
+              </div>
+            </>
           ) : (
             <div
               className="cin-iframe"

@@ -101,7 +101,12 @@ export function NecklaceAccessory({
     >
       <div className="ch-necklace-chain" />
       <div className="ch-necklace-link" />
-      <div className="ch-necklace-pendant" aria-hidden>
+      {/* Counter-flip the text symbol so it never mirrors with the character. */}
+      <div
+        className="ch-necklace-pendant"
+        aria-hidden
+        style={{ transform: 'scaleX(var(--ch-mirror, 1))' }}
+      >
         {symbol}
       </div>
     </div>

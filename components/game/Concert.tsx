@@ -95,18 +95,18 @@ export const CONCERT_SCALE = 0.74;
 export default function Concert({
   live = false,
   label,
-  channel = 'concert',
+  channel = 'outside-lands' as StageChannel,
 }: {
   live?: boolean;
   /** Permanent festival name shown on the marquee banner (e.g. "Bumbershoot"). */
   label?: string;
-  /** Synchronized playback channel for this stage. Defaults to 'concert'. */
+  /** Synchronized playback channel for this stage. */
   channel?: StageChannel;
 }) {
   const uid = useId().replace(/:/g, '');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
+  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
     live,
     channel,
     iframeRef,
@@ -258,7 +258,7 @@ export default function Concert({
           {/* The API replaces a child node with the player iframe; the host div
               stays React-managed while the iframe lives inside it. overflow
               hidden + the cropIframe() oversize hides YouTube's chrome. */}
-          <div style={{ width: 310, height: 190, background: '#000' }}>
+          <div style={{ width: 310, height: 190, background: '#000', position: 'relative' }}>
             {src && (
               <iframe
                 key={vidKey}
@@ -271,6 +271,18 @@ export default function Concert({
                 allowFullScreen
                 style={STAGE_IFRAME_STYLE}
               />
+            )}
+            {src && (
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 10,
+                background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
+                opacity: playerVisible ? 0 : 1,
+                transition: playerVisible ? 'opacity 0.8s' : 'none',
+              }}>
+                <span style={{ fontFamily: 'sans-serif', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
+                {video?.title && <span style={{ fontFamily: 'sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 10px', lineHeight: 1.3 }}>{video.title}</span>}
+              </div>
             )}
           </div>
         </foreignObject>

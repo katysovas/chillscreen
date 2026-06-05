@@ -93,8 +93,8 @@ export function concertLabel(tile: number): string | null {
 /** Synchronized playback channel (pinned playlist) for each city's stage. */
 export function concertChannel(tile: number): StageChannel {
   if (isSeattleTile(tile)) return 'bumbershoot';
-  if (isSanFranciscoTile(tile)) return 'outside-lands';
-  return 'concert';
+  // SF tiles and any future stage city default to outside-lands.
+  return 'outside-lands';
 }
 
 /** Coachella stage x (Coachella tiles only). */

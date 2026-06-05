@@ -1,5 +1,5 @@
 'use client';
-import { forwardRef, useImperativeHandle, useRef, type ReactNode } from 'react';
+import { forwardRef, useImperativeHandle, useRef, type CSSProperties, type ReactNode } from 'react';
 import type { BubbleSide } from './ChatBubble';
 import type { CharacterAccessory } from './characterAccessories';
 import {
@@ -79,20 +79,39 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   bubbleSide = 'left',
   chatOverlay,
 }, ref) {
-  const outerRef   = useRef<HTMLDivElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const outerRef       = useRef<HTMLDivElement>(null);
+  const wrapperRef     = useRef<HTMLDivElement>(null);
+  const chatAnchorRef  = useRef<HTMLDivElement>(null);
+  // Always-current copies of props used inside the imperative handle.
+  const bubbleSideRef  = useRef(bubbleSide);
+  bubbleSideRef.current = bubbleSide;
+  const scaleRef       = useRef(scale);
+  scaleRef.current     = scale;
 
   useImperativeHandle(ref, () => ({
     setFacing(f) {
       if (!outerRef.current) return;
       const m = f === 'left';
       outerRef.current.style.transform = `translateX(-50%) scaleX(${m ? -1 : 1})`;
+      // CSS variable picked up by any descendant that should never flip
+      // (e.g. text/symbol pendants): transform: scaleX(var(--ch-mirror, 1))
+      outerRef.current.style.setProperty('--ch-mirror', m ? '-1' : '1');
+      // Keep the chat-bubble counter-mirror in sync without a React re-render.
+      if (chatAnchorRef.current) {
+        const sc = scaleRef.current;
+        const s  = bubbleSideRef.current ?? 'left';
+        const counterScale = `scale(${1 / sc}) scaleX(${m ? -1 : 1})`;
+        chatAnchorRef.current.style.transform = s === 'right'
+          ? `translate(0, -100%) ${counterScale}`
+          : `translate(-100%, -100%) ${counterScale}`;
+      }
     },
     setWalking(w) {
       if (!wrapperRef.current) return;
       wrapperRef.current.classList.toggle('ch-walking', w);
     },
-  }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), []);
 
   const mirrored = facing === 'left';
   const partyHandClass = dancing
@@ -106,9 +125,10 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
       ref={outerRef}
       style={{
         transform: `translateX(-50%) scaleX(${mirrored ? -1 : 1})`,
+        ['--ch-mirror' as string]: mirrored ? '-1' : '1',
         transformOrigin: 'center bottom',
         transition: dancing ? undefined : 'transform 0.1s ease',
-      }}
+      } as CSSProperties}
     >
       <div style={{
         transform: `scale(${scale})`,
@@ -139,7 +159,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
         </div>
 
         {chatOverlay && (
-          <div style={chatAnchorStyle(bubbleSide, scale, mirrored)}>
+          <div ref={chatAnchorRef} style={chatAnchorStyle(bubbleSide, scale, mirrored)}>
             {chatOverlay}
           </div>
         )}

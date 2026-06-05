@@ -36,7 +36,7 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
   const iframeH = screenH - 12;
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
+  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
     live,
     channel: 'coachella',
     iframeRef,
@@ -272,7 +272,7 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
           pointerEvents: 'none',
         }}
       >
-        <div style={{ width: iframeW, height: iframeH, background: '#000' }}>
+        <div style={{ width: iframeW, height: iframeH, background: '#000', position: 'relative' }}>
           {src && (
             <iframe
               key={vidKey}
@@ -285,6 +285,18 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
               allowFullScreen
               style={STAGE_IFRAME_STYLE}
             />
+          )}
+          {src && (
+            <div style={{
+              position: 'absolute', inset: 0, zIndex: 10,
+              background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
+              opacity: playerVisible ? 0 : 1,
+              transition: playerVisible ? 'opacity 0.8s' : 'none',
+            }}>
+              <span style={{ fontFamily: 'sans-serif', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
+              {video?.title && <span style={{ fontFamily: 'sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 10px', lineHeight: 1.3 }}>{video.title}</span>}
+            </div>
           )}
         </div>
       </div>

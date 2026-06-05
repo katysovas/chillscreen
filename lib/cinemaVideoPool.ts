@@ -3,7 +3,9 @@
  * server-pinned schedule (`@/lib/stageVideos` + `@/lib/stageClock`), so there
  * is no per-client fetch or randomness here anymore.
  */
-export function cinemaEmbedSrc(id: string) {
+/** `startSec` is baked in as `start=N` so the video loads from the synced
+ *  position immediately — no postMessage race condition. */
+export function cinemaEmbedSrc(id: string, startSec = 0) {
   const params = new URLSearchParams({
     autoplay: '1',
     mute: '1',
@@ -14,9 +16,9 @@ export function cinemaEmbedSrc(id: string) {
     loop: '1',
     playlist: id,
     playsinline: '1',
-    // Enables IFrame API postMessage so we can seek to the shared position.
     enablejsapi: '1',
   });
+  if (startSec > 2) params.set('start', String(Math.floor(startSec)));
   if (typeof window !== 'undefined') {
     params.set('origin', window.location.origin);
   }

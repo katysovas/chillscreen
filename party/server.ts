@@ -5,7 +5,7 @@ import {
   type PlayerState,
   type ServerMessage,
 } from '../lib/multiplayer/protocol';
-import { ROTATE_MS, STAGE_EPOCH, STAGE_PLAYLISTS } from '../lib/stageVideos';
+import { DEFAULT_DURATION_MS, STAGE_EPOCH, STAGE_PLAYLISTS } from '../lib/stageVideos';
 
 /**
  * Chillscreen presence room.
@@ -30,7 +30,7 @@ export default class ChillscreenServer implements Party.Server {
       selfId: conn.id,
       players: [...this.players.values()],
       serverNow: Date.now(),
-      stage: { epoch: STAGE_EPOCH, rotateMs: ROTATE_MS, playlists: STAGE_PLAYLISTS },
+      stage: { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists: STAGE_PLAYLISTS },
     };
     conn.send(encode(welcome));
   }
