@@ -2,6 +2,7 @@ import {
   isCoachellaTile,
   isSanFranciscoTile,
   isSeattleTile,
+  nearestStageCityTile,
   nearestTileOfKind,
 } from '@/lib/worldTiles';
 import { midCycleWidth, midOriginForTile, midTileAtX } from '@/lib/worldTileGeometry';
@@ -65,11 +66,34 @@ export function cinemaMidX(tile: number): number | null {
   return Math.round(CINEMA_X_MIN + t * (CINEMA_X_MAX - CINEMA_X_MIN));
 }
 
-/** Per-tile concert x (Seattle tiles only). */
+/**
+ * Per-tile concert-stage x. Every stage city (Seattle + San Francisco) hosts a
+ * concert stage on the WEST band, clear of San Francisco's east-band cinema.
+ */
 export function concertMidX(tile: number): number | null {
-  if (!isSeattleTile(tile)) return null;
-  const t = tileRand(tile, 'concert');
-  return Math.round(CONCERT_X_MIN + t * (CONCERT_X_MAX - CONCERT_X_MIN));
+  if (isSeattleTile(tile)) {
+    const t = tileRand(tile, 'concert');
+    return Math.round(CONCERT_X_MIN + t * (CONCERT_X_MAX - CONCERT_X_MIN));
+  }
+  if (isSanFranciscoTile(tile)) {
+    const t = tileRand(tile, 'sfstage');
+    return Math.round(CONCERT_X_MIN + t * (CONCERT_X_MAX - CONCERT_X_MIN));
+  }
+  return null;
+}
+
+/** Unique festival name for each city's concert stage. */
+export function concertLabel(tile: number): string | null {
+  if (isSeattleTile(tile)) return 'Bumbleshoot';
+  if (isSanFranciscoTile(tile)) return 'Outside Hands';
+  return null;
+}
+
+/** API route to fetch the correct playlist for each city's stage. */
+export function concertApiPath(tile: number): string {
+  if (isSeattleTile(tile)) return '/api/concert/bumbershoot/videos';
+  if (isSanFranciscoTile(tile)) return '/api/concert/outside-lands/videos';
+  return '/api/concert/videos';
 }
 
 /** Coachella stage x (Coachella tiles only). */
@@ -95,9 +119,9 @@ export function cinemaLiveTile(vx: number) {
   return nearestTileOfKind(viewportCenterTile(vx), 'sf');
 }
 
-/** Tile whose concert anchor is nearest the viewport center. */
+/** Tile whose concert stage is nearest the viewport center (SF or Seattle). */
 export function concertLiveTile(vx: number) {
-  return nearestTileOfKind(viewportCenterTile(vx), 'seattle');
+  return nearestStageCityTile(viewportCenterTile(vx));
 }
 
 /** Tile whose Coachella stage is nearest the viewport center. */

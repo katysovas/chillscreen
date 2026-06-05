@@ -149,7 +149,7 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
         letterSpacing="6"
         fill="#e85074"
       >
-        COACHELLA
+        COUCHELLA
       </text>
       <path
         d={`M${L - 26},${top} L${R + 26},${top} L${R - 6},${top - 40} L${L + 6},${top - 40} Z`}

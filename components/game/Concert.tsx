@@ -121,7 +121,17 @@ function embedSrc(id: string, live: boolean) {
   return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=${mute}&rel=0&modestbranding=1&controls=0&iv_load_policy=3&loop=1&playlist=${id}`;
 }
 
-export default function Concert({ live = false }: { live?: boolean }) {
+export default function Concert({
+  live = false,
+  label,
+  apiPath = '/api/concert/videos',
+}: {
+  live?: boolean;
+  /** Permanent festival name shown on the marquee banner (e.g. "Bumbershoot"). */
+  label?: string;
+  /** API route to fetch the video playlist from. Defaults to /api/concert/videos. */
+  apiPath?: string;
+}) {
   const uid = useId().replace(/:/g, '');
   const [videos, setVideos] = useState<ConcertVideo[]>([]);
   const [idx, setIdx] = useState(0);
@@ -151,7 +161,7 @@ export default function Concert({ live = false }: { live?: boolean }) {
     if (!live) return;
     let cancelled = false;
 
-    fetch('/api/concert/videos')
+    fetch(apiPath)
       .then(r => r.json())
       .then((data: { videos?: ConcertVideo[] }) => {
         if (cancelled) return;
@@ -169,7 +179,9 @@ export default function Concert({ live = false }: { live?: boolean }) {
       });
 
     return () => { cancelled = true; };
-  }, [live]);
+  // apiPath is stable per mount (tile-specific) — treating it like live is fine
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live, apiPath]);
 
   useEffect(() => {
     if (!live || videos.length === 0) return;
@@ -185,7 +197,7 @@ export default function Concert({ live = false }: { live?: boolean }) {
   const src = video ? embedSrc(video.id, live) : '';
   const crowdD = useMemo(() => makeCrowd(BASE_W), []);
   const spkCones = useMemo(() => speakerCones(6, 2), []);
-  const marqueeTitle = video?.title ?? (live ? 'Loading…' : 'Live Concert');
+  const marqueeTitle = video?.title ?? (live ? 'Loading…' : label ?? 'Live Concert');
 
   const motes = useMemo(() => Array.from({ length: 14 }, (_, i) => ({
     left: `${5 + (i * 79) % 90}%`,
@@ -244,6 +256,24 @@ export default function Concert({ live = false }: { live?: boolean }) {
             <stop offset="100%" stopColor="transparent" />
           </linearGradient>
         </defs>
+
+        {/* Permanent festival banner — unique per city, sits above the roof peak */}
+        {label && (
+          <g>
+            <line x1={150} y1={-6} x2={166} y2={14} stroke="#16241a" strokeWidth="3" />
+            <line x1={370} y1={-6} x2={354} y2={14} stroke="#16241a" strokeWidth="3" />
+            <rect x={84} y={-46} width={352} height={38} rx={5}
+              fill="#0a1610" stroke="rgba(56,216,128,.55)" strokeWidth="1.5" />
+            <rect x={84} y={-46} width={352} height={38} rx={5}
+              fill={`url(#${gid('scrGlow')})`} opacity={0.6} />
+            <text x={260} y={-20} textAnchor="middle"
+              fontFamily="'Big Shoulders Display', sans-serif" fontWeight="900"
+              fontSize="20" letterSpacing="5" fill="#62f2a6"
+              style={{ animation: 'glow-b 3.2s ease-in-out infinite' }}>
+              {label.toUpperCase()}
+            </text>
+          </g>
+        )}
 
         <path d="M0,62 L0,58 L260,4 L520,58 L520,62 Z" fill="#0c1810" />
         <path d="M0,58 L260,4 L520,58 Z" fill="#0e1c12" />

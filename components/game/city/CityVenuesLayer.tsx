@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from 'react';
 import Cinema, { CINEMA_SCALE, CINEMA_WIDTH } from '../Cinema';
 import Concert, { CONCERT_SCALE, CONCERT_WIDTH } from '../Concert';
-import { cinemaMidX, concertMidX, isVenueInView, type VenueKind } from '@/lib/venues';
+import { cinemaMidX, concertApiPath, concertLabel, concertMidX, isVenueInView, type VenueKind } from '@/lib/venues';
 
 export type VenueFocus = VenueKind;
 
@@ -78,7 +78,11 @@ export function CityVenuesTile({
               pointerEvents: t === concertLive && focus === 'concert' ? 'auto' : 'none',
             }}
           >
-            <Concert live={t === concertLive && focus === 'concert'} />
+            <Concert
+              live={t === concertLive && focus === 'concert'}
+              label={concertLabel(t) ?? undefined}
+              apiPath={concertApiPath(t)}
+            />
           </div>
         </foreignObject>
       </>

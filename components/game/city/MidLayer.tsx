@@ -67,6 +67,9 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             <GradientMidTerrain tileIndex={t} />
             <TransitionWater tileIndex={t} />
             {kind === 'seattle' && <SeattleMidFeatures tileIndex={t} />}
+            {/* City buildings must render BEFORE the venues so the stage sits in
+                front of the skyline (Seattle's tall glass towers were covering it). */}
+            {kind === 'seattle' && <SeattleBuildingsTile />}
             {kind === 'sf' && (
               <>
                 <CityBuildingsTile />
@@ -74,8 +77,9 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
                 <SfMidFeatures />
               </>
             )}
-            {/* Cinema (SF tiles) + Concert (Seattle tiles) — cinemaMidX/concertMidX
-                each return null for tiles they don't own, so this is safe for all kinds. */}
+            {/* Concert stage on every stage city (SF "Outside Hands", Seattle
+                "Bumbleshoot") + cinema on SF. concertMidX/cinemaMidX return null
+                for tiles they don't own, so this is safe for all kinds. */}
             {(kind === 'sf' || kind === 'seattle') && (
               <CityVenuesTile
                 tileIndex={t}
@@ -93,7 +97,6 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
                 concertFoY={concertFoY}
               />
             )}
-            {kind === 'seattle' && <SeattleBuildingsTile />}
             {isSouthernCaliforniaTile(t) && (() => {
               const lx   = coachellaMidX(t);
               const live =

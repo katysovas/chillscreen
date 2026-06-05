@@ -2,12 +2,17 @@ import {
   CINEMA_SIGN_MID_X,
   CONCERT_SIGN_MID_X,
   MID_TILE,
+  cinemaMidX,
+  concertLabel,
+  concertMidX,
 } from '@/lib/venues';
 import { citySignsForTile } from '@/lib/citySigns';
 import {
   isSanFranciscoTile,
   isSeattleTile,
+  isSouthernCaliforniaTile,
 } from '@/lib/worldTiles';
+import { COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
 
 /** Ground-tile x — locked to sidewalk scroll (GND_F). */
 export function venueSignGroundX(midX: number, groundTile: number) {
@@ -288,6 +293,32 @@ type TileRoadSignsProps = {
   groundTile?: number;
 };
 
+/**
+ * A venue sign that always points at its venue: placed a fixed distance to the
+ * LEFT of the venue's ground position with the arrow facing right, so the
+ * direction is correct regardless of where the (randomly-placed) venue sits.
+ */
+function VenueArrowSign({
+  venueMidX,
+  label,
+  accent,
+  icon,
+  groundTile,
+  y,
+}: {
+  venueMidX: number;
+  label: string;
+  accent: string;
+  icon: string;
+  groundTile: number;
+  y: number;
+}) {
+  const venueGround = venueSignGroundX(venueMidX, groundTile);
+  const signX = Math.max(90, venueGround - 320);
+  const dir: 'left' | 'right' = venueGround >= signX ? 'right' : 'left';
+  return <StreetSign x={signX} y={y} dir={dir} label={label} accent={accent} icon={icon} />;
+}
+
 /** City direction signs + venue signs (only in their home city). */
 export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSignsProps) {
   const citySigns = citySignsForTile(tileIndex);
@@ -315,24 +346,46 @@ export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSigns
           />
         ),
       )}
-      {isSeattleTile(tileIndex) && (
-        <StreetSign
-          x={concertSignGroundX(groundTile)}
-          y={y}
-          dir="left"
-          label="Concert"
+      {isSeattleTile(tileIndex) && concertMidX(tileIndex) != null && (
+        <VenueArrowSign
+          venueMidX={concertMidX(tileIndex)!}
+          label={concertLabel(tileIndex) ?? 'Bumbleshoot'}
           accent="#1a9a52"
           icon="♪"
+          groundTile={groundTile}
+          y={y}
         />
       )}
       {isSanFranciscoTile(tileIndex) && (
-        <StreetSign
-          x={cinemaSignGroundX(groundTile)}
+        <>
+          {concertMidX(tileIndex) != null && (
+            <VenueArrowSign
+              venueMidX={concertMidX(tileIndex)!}
+              label={concertLabel(tileIndex) ?? 'Outside Hands'}
+              accent="#1a9a52"
+              icon="♪"
+              groundTile={groundTile}
+              y={y}
+            />
+          )}
+          <VenueArrowSign
+            venueMidX={cinemaMidX(tileIndex) ?? CINEMA_SIGN_MID_X}
+            label="Cinema"
+            accent="#b8860b"
+            icon="🎬"
+            groundTile={groundTile}
+            y={y}
+          />
+        </>
+      )}
+      {isSouthernCaliforniaTile(tileIndex) && (
+        <VenueArrowSign
+          venueMidX={COACHELLA_STAGE_MID_X}
+          label="Couchella"
+          accent="#e85074"
+          icon="🎡"
+          groundTile={groundTile}
           y={y}
-          dir="right"
-          label="Cinema"
-          accent="#b8860b"
-          icon="🎬"
         />
       )}
     </g>

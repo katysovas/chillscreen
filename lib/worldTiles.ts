@@ -72,6 +72,22 @@ export function nearestTileOfKind(tileIndex: number, kind: WorldTileKind): numbe
   return tileIndex;
 }
 
+/** Cities that host a music stage (concert venue): San Francisco + Seattle. */
+function isStageCityTile(tileIndex: number): boolean {
+  const k = worldTileKind(tileIndex);
+  return k === 'sf' || k === 'seattle';
+}
+
+/** Nearest SF-or-Seattle tile — the concert stage lives on both. */
+export function nearestStageCityTile(tileIndex: number): number {
+  if (isStageCityTile(tileIndex)) return tileIndex;
+  for (let d = 1; d <= WORLD_TILE_CYCLE; d++) {
+    if (isStageCityTile(tileIndex - d)) return tileIndex - d;
+    if (isStageCityTile(tileIndex + d)) return tileIndex + d;
+  }
+  return tileIndex;
+}
+
 /** Deterministic 0..1 jitter per tile (stable across sessions). */
 export function tileRand(tile: number, salt: string) {
   let h = tile * 2654435761;

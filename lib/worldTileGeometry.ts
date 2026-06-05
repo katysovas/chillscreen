@@ -4,9 +4,9 @@ import { WORLD_TILE_CYCLE, worldTileSlot } from './worldTiles';
 export const CITY_MID_W = 2600;
 export const CITY_GND_W = 3600;
 
-/** Compact town connectors — less walking between cities. */
-export const TOWN_MID_W = 1200;
-export const TOWN_GND_W = 1700;
+/** Compact town connectors — short hops between cities (content scales to fit). */
+export const TOWN_MID_W = 820;
+export const TOWN_GND_W = 1160;
 
 const MID_W_BY_SLOT = [CITY_MID_W, TOWN_MID_W, CITY_MID_W, TOWN_MID_W, CITY_MID_W, TOWN_MID_W] as const;
 const GND_W_BY_SLOT = [CITY_GND_W, TOWN_GND_W, CITY_GND_W, TOWN_GND_W, CITY_GND_W, TOWN_GND_W] as const;

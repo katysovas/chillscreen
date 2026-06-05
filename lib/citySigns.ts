@@ -51,17 +51,22 @@ const TOWN_CENTER = 0.5;
 export function citySignsForTile(tileIndex: number): RoadSignDef[] {
   const slot = worldTileSlot(tileIndex);
 
+  // Single "exit" signs sit near the right edge of each city tile, clearly
+  // separated from the centrally-placed venue signs, and point to the next
+  // city in the +x (walk-right) direction.
+  const EXIT = 0.9;
+
   switch (slot) {
     case 0:
-      return [{ type: 'single', ...SAN_DIEGO, dir: 'right', xFrac: 0.72 }];
+      return [{ type: 'single', ...SAN_DIEGO, dir: 'right', xFrac: EXIT }];
     case 1:
       return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: SF, rightCity: SAN_DIEGO }];
     case 2:
-      return [{ type: 'single', ...SEATTLE, dir: 'right', xFrac: 0.72 }];
+      return [{ type: 'single', ...SEATTLE, dir: 'right', xFrac: EXIT }];
     case 3:
       return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: COACHELLA, rightCity: SEATTLE }];
     case 4:
-      return [{ type: 'single', ...SF, dir: 'right', xFrac: 0.72 }];
+      return [{ type: 'single', ...SF, dir: 'right', xFrac: EXIT }];
     case 5:
       return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: SEATTLE, rightCity: SF }];
     default:

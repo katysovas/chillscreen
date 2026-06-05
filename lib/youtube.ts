@@ -69,6 +69,14 @@ export function searchConcertVideos() {
   return searchYouTube('live concert');
 }
 
+export function searchBumbershootVideos() {
+  return searchYouTube('Bumbershoot live');
+}
+
+export function searchOutsideLandsVideos() {
+  return searchYouTube('outside lands live');
+}
+
 export function searchCoachellaVideos() {
   return searchYouTube('coachella live');
 }
