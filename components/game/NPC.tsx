@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Character from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
+import type { CharacterAccessory } from './characterAccessories';
 import { CHAR_BOTTOM } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 
@@ -21,6 +22,7 @@ export type NPCConfig = {
   entryDelay: number;
   balloonColor: string;
   scale?: number;
+  accessory?: CharacterAccessory;
   personality: Personality;
   name: string;
 };
@@ -66,7 +68,7 @@ const SCREEN_MAX = 130;
 
 export default function NPC({
   startX, entryDirection, entryDelay,
-  balloonColor, scale = 0.34,
+  balloonColor, scale = 0.34, accessory,
   personality,
   worldOff,
   paused, greeting, greetFacing, dancing = false, onMove, greetingChat,
@@ -247,6 +249,7 @@ export default function NPC({
           facing={displayFacing}
           dancing={dancing && !greeting}
           balloonColor={balloonColor}
+          accessory={accessory}
           scale={scale}
           bubbleSide={screenXToBubbleSide(screenX)}
           chatOverlay={greeting && greetingChat ? (

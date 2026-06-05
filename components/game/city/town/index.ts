@@ -1,0 +1,1 @@
+export { SmallTownTile } from './SmallTownTile';

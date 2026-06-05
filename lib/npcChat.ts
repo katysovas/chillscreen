@@ -1,4 +1,5 @@
 import CHARACTERS, { type CharacterDef } from '@/components/game/characters';
+import { bitcoinWorldNote, formatBitcoinUsd, type BitcoinSnapshot } from '@/lib/bitcoinPrice';
 
 export type ChatTurn = { role: 'user' | 'assistant'; content: string };
 
@@ -51,21 +52,41 @@ export function buildNpcSystemPrompt(
   character: CharacterDef,
   cinemaNowPlaying?: string | null,
   concertNowPlaying?: string | null,
+  bitcoinSnapshot?: BitcoinSnapshot | null,
 ): string {
+  const btcNote =
+    character.id === 'satosh' ? `\n${bitcoinWorldNote(bitcoinSnapshot ?? null)}` : '';
+
   return `${BASE_NPC_PROMPT}
 
 Your name is ${character.name}.
 Personality: ${character.personalityNotes}
 How you move through the world: ${movementVibe(character)}.
 ${cinemaWorldNote(cinemaNowPlaying)}
-${concertWorldNote(concertNowPlaying)}`;
+${concertWorldNote(concertNowPlaying)}${btcNote}`;
 }
 
-export function pickFallbackReply(_character: CharacterDef): string {
+export function pickFallbackReply(
+  character: CharacterDef,
+  bitcoinSnapshot?: BitcoinSnapshot | null,
+): string {
+  if (character.id === 'satosh' && bitcoinSnapshot) {
+    return `${formatBitcoinUsd(bitcoinSnapshot.usd)} right now — say that again?`;
+  }
   return 'Hmm, lost my train of thought — say that again?';
 }
 
-export function pickFallbackGreeting(character: CharacterDef): string {
+export function pickFallbackGreeting(
+  character: CharacterDef,
+  bitcoinSnapshot?: BitcoinSnapshot | null,
+): string {
+  if (character.id === 'satosh' && bitcoinSnapshot) {
+    const change =
+      bitcoinSnapshot.change24hPct != null
+        ? `, ${bitcoinSnapshot.change24hPct >= 0 ? 'up' : 'down'} ${Math.abs(bitcoinSnapshot.change24hPct).toFixed(1)}% today`
+        : '';
+    return `₿ ${formatBitcoinUsd(bitcoinSnapshot.usd)}${change} — what's good?`;
+  }
   return `Hey! I'm ${character.name}.`;
 }
 
@@ -74,11 +95,12 @@ export function buildGreetingMessages(
   playerName: string,
   cinemaNowPlaying?: string | null,
   concertNowPlaying?: string | null,
+  bitcoinSnapshot?: BitcoinSnapshot | null,
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   return [
     {
       role: 'system',
-      content: `${buildNpcSystemPrompt(character, cinemaNowPlaying, concertNowPlaying)}
+      content: `${buildNpcSystemPrompt(character, cinemaNowPlaying, concertNowPlaying, bitcoinSnapshot)}
 
 The player just walked up to you on the street to connect. Give a warm in-character greeting — one very short sentence (under 12 words if possible). This is the very start of the conversation.`,
     },
@@ -96,10 +118,14 @@ export function buildChatMessages(
   history: ChatTurn[],
   cinemaNowPlaying?: string | null,
   concertNowPlaying?: string | null,
+  bitcoinSnapshot?: BitcoinSnapshot | null,
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   const trimmed = history.slice(-8);
   return [
-    { role: 'system', content: buildNpcSystemPrompt(character, cinemaNowPlaying, concertNowPlaying) },
+    {
+      role: 'system',
+      content: buildNpcSystemPrompt(character, cinemaNowPlaying, concertNowPlaying, bitcoinSnapshot),
+    },
     ...trimmed.map(t => ({ role: t.role, content: t.content })),
     {
       role: 'user',

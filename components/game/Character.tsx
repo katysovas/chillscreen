@@ -1,11 +1,22 @@
 'use client';
 import type { ReactNode } from 'react';
 import type { BubbleSide } from './ChatBubble';
+import type { CharacterAccessory } from './characterAccessories';
+import {
+  DjHeadphones,
+  DjSpeaker,
+  LightsaberAccessory,
+  MicrophoneAccessory,
+  NecklaceAccessory,
+  accessoryHoldSide,
+  renderAccessory,
+} from './characterAccessories';
 
 export type CharacterProps = {
   walking: boolean;
   facing: 'left' | 'right';
   balloonColor?: string;
+  accessory?: CharacterAccessory;
   scale?: number;
   dancing?: boolean;
   /** Which side of the character the chat stack sits on (screen position). */
@@ -59,12 +70,18 @@ export default function Character({
   walking,
   facing,
   balloonColor = '#ef4023',
+  accessory,
   scale = 0.34,
   dancing = false,
   bubbleSide = 'left',
   chatOverlay,
 }: CharacterProps) {
   const mirrored = facing === 'left';
+  const partyHandClass = dancing
+    ? accessoryHoldSide(accessory) === 'right'
+      ? ' ch-free-hand-left'
+      : ' ch-free-hand-right'
+    : '';
 
   return (
     <div style={{
@@ -77,21 +94,40 @@ export default function Character({
         transformOrigin: 'bottom center',
         position: 'relative',
       }}>
-        <div className={`ch-wrapper${walking ? ' ch-walking' : ''}${dancing ? ' ch-dancing' : ''}`}>
+        <div className={`ch-wrapper${walking ? ' ch-walking' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}>
           <div className="ch-animal">
-            <div className="ch-ballons">
-              <div className="ch-heart">
-                <span style={{ background: balloonColor }} />
-                <span style={{ background: balloonColor }} />
-              </div>
-            </div>
+            {renderAccessory(accessory, balloonColor)}
             <div className="ch-ears" />
             <div className="ch-body">
+              {accessory?.type === 'dj' && (
+                <DjHeadphones color={accessory.headphoneColor} />
+              )}
+              {accessory?.type === 'necklace' && (
+                <NecklaceAccessory
+                  symbol={accessory.symbol}
+                  color={accessory.color}
+                  chainColor={accessory.chainColor}
+                />
+              )}
               <div className="ch-eyes" />
               <div className="ch-nose"><span /><span /></div>
               <div className="ch-hands">
                 <div className="ch-left-hand"><span /><span /></div>
-                <div className="ch-right-hand"><span /><span /></div>
+                <div className="ch-right-hand">
+                  <span /><span />
+                  {accessory?.type === 'lightsaber' && (
+                    <LightsaberAccessory
+                      bladeColor={accessory.bladeColor}
+                      hiltColor={accessory.hiltColor}
+                    />
+                  )}
+                  {accessory?.type === 'microphone' && (
+                    <MicrophoneAccessory color={accessory.color} />
+                  )}
+                  {accessory?.type === 'dj' && (
+                    <DjSpeaker color={accessory.speakerColor} />
+                  )}
+                </div>
               </div>
             </div>
             <div className="ch-legs"><span /><span /></div>

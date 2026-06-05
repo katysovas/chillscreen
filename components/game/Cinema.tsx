@@ -7,8 +7,9 @@ import { cinemaEmbedSrc, loadCinemaVideos } from '@/lib/cinemaVideoPool';
 type CinemaVideo = { id: string; title: string };
 
 const ROTATE_MS = 8 * 60 * 1000;
-const IFRAME_W = 302;
-const IFRAME_H = 170;
+const IFRAME_W = 350;
+const IFRAME_H = 197;
+const CIN_W = 400;
 
 // ── SF city palette — gold marquee on Victorian blue-gray ─────────────────────
 const S = `
@@ -24,15 +25,15 @@ const S = `
 
   .cin-street-glow {
     position: absolute; bottom: -6px;
-    width: 420px; height: 44px;
+    width: 460px; height: 44px;
     background: radial-gradient(ellipse 80% 100% at 50% 100%, rgba(212,168,48,.14) 0%, transparent 70%);
     pointer-events: none;
   }
 
-  .cin-crown { width: 360px; display: block; }
+  .cin-crown { width: ${CIN_W}px; display: block; }
 
   .cin-sign-band {
-    width: 360px; height: 58px;
+    width: ${CIN_W}px; height: 58px;
     background: #3d4870;
     border-left: 2px solid rgba(212,168,48,.28);
     border-right: 2px solid rgba(212,168,48,.28);
@@ -71,7 +72,7 @@ const S = `
   }
 
   .cin-film {
-    width: 360px; height: 18px;
+    width: ${CIN_W}px; height: 18px;
     background: #1a2038;
     border-left: 2px solid rgba(212,168,48,.28);
     border-right: 2px solid rgba(212,168,48,.28);
@@ -82,7 +83,7 @@ const S = `
   }
 
   .cin-screen-section {
-    width: 360px;
+    width: ${CIN_W}px;
     background: #3d4870;
     border-left: 2px solid rgba(212,168,48,.28);
     border-right: 2px solid rgba(212,168,48,.28);
@@ -105,7 +106,7 @@ const S = `
   }
 
   .cin-screen-frame {
-    width: 302px; position: relative;
+    width: ${IFRAME_W}px; position: relative;
     border: 1.5px solid rgba(212,168,48,.5);
     box-shadow:
       0 0 0 1px #1a2038,
@@ -128,7 +129,7 @@ const S = `
   }
 
   .cin-marquee {
-    width: 380px;
+    width: 420px;
     background: #4a5688;
     border: 1.5px solid rgba(212,168,48,.32);
     border-top: none;
@@ -174,7 +175,7 @@ const S = `
   @keyframes cin-title-in { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
 
   .cin-facade {
-    width: 360px; height: 88px;
+    width: ${CIN_W}px; height: 88px;
     background: #4a5688;
     border-left: 2px solid rgba(212,168,48,.28);
     border-right: 2px solid rgba(212,168,48,.28);
@@ -239,7 +240,7 @@ const S = `
   .cin-door-light:nth-child(3) { animation-duration: 1.8s; }
 
   .cin-base {
-    width: 360px; height: 14px;
+    width: ${CIN_W}px; height: 14px;
     background: #3d4870;
     border-left: 2px solid rgba(212,168,48,.28);
     border-right: 2px solid rgba(212,168,48,.28);
@@ -256,9 +257,9 @@ const S = `
     border-top: 1px solid rgba(212,168,48,.1);
     border-bottom: 1px solid rgba(0,0,0,.35);
   }
-  .cin-step:nth-child(1) { width: 390px; }
-  .cin-step:nth-child(2) { width: 416px; }
-  .cin-step:nth-child(3) { width: 442px; }
+  .cin-step:nth-child(1) { width: 430px; }
+  .cin-step:nth-child(2) { width: 456px; }
+  .cin-step:nth-child(3) { width: 482px; }
 `;
 
 function Crown() {
@@ -267,7 +268,7 @@ function Crown() {
   const d  = '#3d4870';
   const dk = '#1a2038';
   return (
-    <svg viewBox="0 0 360 70" width="360" height="70" className="cin-crown" style={{ display: 'block' }}>
+    <svg viewBox="0 0 360 70" width={CIN_W} height="70" className="cin-crown" style={{ display: 'block' }}>
       <defs>
         <filter id="cfglow"><feGaussianBlur stdDeviation="2" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
       </defs>
@@ -430,5 +431,6 @@ export default function Cinema({ live = true }: { live?: boolean }) {
 }
 
 export { CINEMA_MID_X } from '@/lib/venues';
-export const CINEMA_SCALE = 0.54;
-export const CINEMA_HEIGHT = 565;
+export const CINEMA_WIDTH = CIN_W;
+export const CINEMA_SCALE = 0.58;
+export const CINEMA_HEIGHT = 593;

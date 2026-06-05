@@ -1,3 +1,9 @@
+import {
+  isSanFranciscoTile,
+  isSeattleTile,
+  nearestTileOfKind,
+} from '@/lib/worldTiles';
+
 /** Mid-layer venues — one type per tile, revealed as you scroll past the screen edge. */
 
 export const MID_TILE = 2600;
@@ -33,25 +39,25 @@ function tileRand(tile: number, salt: string) {
   return ((h >>> 0) % 10000) / 10000;
 }
 
-/** Even/odd tile index (JS `%` breaks for negative tiles). */
+/** @deprecated Use isSanFranciscoTile — kept for older callers. */
 export function isEvenTile(tile: number) {
-  return (tile & 1) === 0;
+  return isSanFranciscoTile(tile);
 }
 
 export function tileKind(tile: number): 'cinema' | 'concert' {
-  return isEvenTile(tile) ? 'cinema' : 'concert';
+  return isSanFranciscoTile(tile) ? 'cinema' : 'concert';
 }
 
-/** Per-tile cinema x (even tiles only). */
+/** Per-tile cinema x (San Francisco tiles only). */
 export function cinemaMidX(tile: number): number | null {
-  if (!isEvenTile(tile)) return null;
+  if (!isSanFranciscoTile(tile)) return null;
   const t = tileRand(tile, 'cinema');
   return Math.round(CINEMA_X_MIN + t * (CINEMA_X_MAX - CINEMA_X_MIN));
 }
 
-/** Per-tile concert x (odd tiles only). */
+/** Per-tile concert x (Seattle tiles only). */
 export function concertMidX(tile: number): number | null {
-  if (isEvenTile(tile)) return null;
+  if (!isSeattleTile(tile)) return null;
   const t = tileRand(tile, 'concert');
   return Math.round(CONCERT_X_MIN + t * (CONCERT_X_MAX - CONCERT_X_MIN));
 }
@@ -63,13 +69,13 @@ export function midVxFromWorldOff(worldOff: number) {
 /** Tile whose cinema anchor is nearest the viewport center. */
 export function cinemaLiveTile(vx: number) {
   const t = Math.round((vx + VIEW_CENTER_X) / MID_TILE);
-  return isEvenTile(t) ? t : t + (t > 0 ? -1 : 1);
+  return nearestTileOfKind(t, 'sf');
 }
 
 /** Tile whose concert anchor is nearest the viewport center. */
 export function concertLiveTile(vx: number) {
   const t = Math.round((vx + VIEW_CENTER_X) / MID_TILE);
-  return isEvenTile(t) ? t + 1 : t;
+  return nearestTileOfKind(t, 'seattle');
 }
 
 function venueWorldX(tile: number, midX: number) {

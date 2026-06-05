@@ -7,12 +7,13 @@ import {
   isVenueInView,
   midVxFromWorldOff,
 } from './venues';
+import { CONCERT_SCALE, CONCERT_WIDTH } from '@/components/game/Concert';
 
 /** Screen-% distance from concert stage to start dancing. */
 export const CONCERT_DANCE_RADIUS_PCT = 24;
 
 /** Concert footprint half-width in mid-layer units (matches SFCity MidLayer). */
-const CONCERT_HALF_MID = Math.ceil(Math.round(420 * 0.54) / 2) + 24;
+const CONCERT_HALF_MID = Math.ceil(Math.round(CONCERT_WIDTH * CONCERT_SCALE) / 2) + 24;
 
 export function liveConcertMidWorldX(worldOff: number): number | null {
   const vx = midVxFromWorldOff(worldOff);

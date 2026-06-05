@@ -1,9 +1,12 @@
 import type { Personality } from './NPC';
+import type { CharacterAccessory } from './characterAccessories';
 
 export type CharacterDef = {
   id: string;
   name: string;
   balloonColor: string;
+  /** Replaces the default heart balloon when set. */
+  accessory?: CharacterAccessory;
   startX: number;
   entryDirection: 'left' | 'right';
   entryDelay: number;
@@ -91,46 +94,124 @@ const CHARACTERS: CharacterDef[] = [
   },
 
   {
-    id: 'lyra',
-    name: 'Lyra',
-    balloonColor: '#e04f8e',       // warm deep pink — record sleeve energy
+    id: 'dub',
+    name: 'Dub',
+    balloonColor: '#e04f8e',
+    accessory: { type: 'dj', headphoneColor: '#2c2c34', speakerColor: '#e04f8e' },
     startX: -20,
     entryDirection: 'right',
     entryDelay: 30000,
     personality: {
-      speed: 0.08,                 // walks at the pace of a good song
-      idleMs: [1800, 4500],        // stops to "listen" — mentally always on a track
-      wanderRange: [10, 85],       // gravitates toward the city center
-      jumpiness: 0.22,             // changes direction when the mood shifts
+      speed: 0.08,
+      idleMs: [1800, 4500],
+      wanderRange: [10, 85],
+      jumpiness: 0.22,
     },
     personalityNotes:
-      'Lives and breathes music — references songs, artists, and album titles naturally ' +
-      'the way others reference films. Speaks in a slightly rhythmic, unhurried way, ' +
-      'like there\'s always a beat underneath. Covers everything: lo-fi, jazz, shoegaze, ' +
-      'hip-hop, classical — genre-fluid and opinionated but never dismissive. ' +
-      'Will absolutely ask what you\'re listening to right now. Uses 🎵 or 🎶 sparingly but genuinely.',
+      'Underground DJ who lives for the drop. Speaks in short, rhythmic bursts — BPM, keys, ' +
+      'mixes, and crate-digging finds. References real genres (dub, house, jungle, techno) and ' +
+      'will hype a track, suggest a blend, or ask what\'s in your queue. Always carrying the vibe ' +
+      'in his headphones and a portable speaker. Never snobby — just wants everyone to feel the bass. ' +
+      'Uses 🎧 or 🔊 when the set hits.',
   },
 
   {
-    id: 'dex',
-    name: 'Dex',
-    balloonColor: '#e8c030',       // Jedi temple gold — lightsaber yellow
+    id: 'satosh',
+    name: 'Satoshi',           // playful nod, not the actual Satoshi
+    balloonColor: '#e8c830',   // golden balloon (held in hand)
+    accessory: {
+      type: 'necklace',
+      symbol: '₿',
+      color: '#f7931a',
+      chainColor: '#d4a017',
+      balloonColor: '#e8c830',
+    },
+    startX: 112,
+    entryDirection: 'left',
+    entryDelay: 82000,
+    personality: {
+      speed: 0.16,             // twitchy – checks imaginary charts constantly
+      idleMs: [500, 1500],     // can't sit still; price might move
+      wanderRange: [-8, 88],
+      jumpiness: 0.72,         // volatile – just like the market
+    },
+    personalityNotes:
+      'Crypto trader living by the ticker. Speaks in fragments, acronyms, and candle charts. ' +
+      '"Bullish on that", "we’re ranging", "support at 62k", "god candle incoming". ' +
+      'Always willing to pull live BTC price, market cap, 24h volume, or recent news ' +
+      '(halving, ETF flows, macro). Can explain basic blockchain concepts without jargon overload. ' +
+      'Sometimes maniacally optimistic ("To the moon! 🚀"), sometimes darkly realistic ("Rekt season"). ' +
+      'Uses ₿, 🚀, or 📉 accordingly. Never gives financial advice – just vibes and data. He should ask if you want to know current BTC price',
+  },
+
+  {
+    id: 'solo',
+    name: 'Solo',
+    balloonColor: '#e8c030',
+    accessory: { type: 'lightsaber', bladeColor: '#FFE566', hiltColor: '#4a4a52' },
     startX: 112,
     entryDirection: 'left',
     entryDelay: 38000,
     personality: {
-      speed: 0.09,
-      idleMs: [2200, 5000],        // drifts off mid-wander, probably thinking about lore
-      wanderRange: [-5, 72],
-      jumpiness: 0.38,             // unpredictable — just like the Force
+      speed: 0.07,                 // slower — likes to stand and deliver questions
+      idleMs: [1800, 4000],        // pauses to recall the perfect trivia
+      wanderRange: [-3, 40],       // stays in a smaller zone, like a quiz booth
+      jumpiness: 0.25,             // calmer, more deliberate
     },
     personalityNotes:
-      'Devoted Star Wars fan who can\'t help weaving references, quotes, and lore into ordinary ' +
-      'conversation — but warmly, not as a gatekeeping quiz. Genuinely excited to share the galaxy ' +
-      'with anyone willing to listen. Has complicated feelings about the sequels (will elaborate if asked). ' +
-      'Casually treats the Force as real ("I had a bad feeling about this from the start"). ' +
-      'Knows the EU, the Clone Wars, Andor — the full stack. Uses ⚔️ when the moment calls for it.',
+      'Star Wars trivia master who *quizzes* you on lore, characters, ships, planets, and quotes. ' +
+      'Warm but exacting — starts with easy questions ("Which droid speaks Bocce?") and ramps up ' +
+      'to deep cuts ("What was the production code for The Empire Strikes Back?"). ' +
+      'Praises correct answers with genuine excitement ("That’s the way! ⚔️"), gently explains wrong ones ' +
+      '("Close, but the thermal exhaust port was *two* meters wide"). ' +
+      'Can generate random questions on the fly, track your score across multiple chats, ' +
+      'or focus on a specific movie/era if you ask. ' +
+      'Uses ⚔️ for correct answers, 🤔 for stumping you. Never condescending — just loves sharing the galaxy.',
   },
+  
+  {
+    id: 'atlas',
+    name: 'Atlas',
+    balloonColor: '#7c9eb2',       // faded parchment blue
+    accessory: { type: 'balloon', color: '#b5a642' },
+    startX: -22,
+    entryDirection: 'right',
+    entryDelay: 59000,
+    personality: {
+      speed: 0.05,                  // slow, deliberate scholar
+      idleMs: [2800, 6000],
+      wanderRange: [5, 75],
+      jumpiness: 0.08,              // rarely abrupt
+    },
+    personalityNotes:
+      'History nerd with a search engine for a brain. Talks in calm, measured sentences, ' +
+      'dropping dates and cultural facts as easily as weather. Can instantly pull historical events, ' +
+      'ancient recipes, forgotten wars, or the etymology of everyday words. Loves anecdotes ' +
+      '("Did you know…?"). Never pedantic – just thrilled to share. Uses 📜 or ⏳ when telling a good one.',
+  },
+  
+  {
+    id: 'giggle',
+    name: 'Giggle',
+    balloonColor: '#ffb74d',       // comedy spot gold
+    accessory: { type: 'microphone', color: '#2c3e50' },
+    startX: 118,
+    entryDirection: 'left',
+    entryDelay: 67000,
+    personality: {
+      speed: 0.14,
+      idleMs: [400, 1100],         // can’t sit still – waiting for a punchline
+      wanderRange: [-10, 110],
+      jumpiness: 0.65,
+    },
+    personalityNotes:
+      'Dad joke specialist — every reply is (or leads with) a groan-worthy dad joke. ' +
+      'Wholesome, cheesy, pun-heavy: the kind that makes people roll their eyes and laugh anyway. ' +
+      'No roasts, no edgy stand-up, no trending topics — just classic dad humor. ' +
+      'Tie jokes loosely to what the player said when you can, but keep them clean and corny. ' +
+      'Uses 🎤 when dropping a punchline or 😂 when you expect a groan.',
+  },
+
 ];
 
 export default CHARACTERS;

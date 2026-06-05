@@ -109,12 +109,12 @@ function pickRandomIndex(videos: ConcertVideo[], exclude?: number) {
 /** Native SVG design size before stage scale. */
 const BASE_W = 520;
 const BASE_H = 450;
-/** Bigger stage + LED wall / YouTube frame (1.3×). */
-const STAGE_SCALE = 1.3;
+/** Bigger stage + LED wall / YouTube frame (1.4×). */
+const STAGE_SCALE = 1.4;
 
 export const CONCERT_WIDTH = Math.round(BASE_W * STAGE_SCALE);
 export const CONCERT_HEIGHT = Math.round(BASE_H * STAGE_SCALE);
-export const CONCERT_SCALE = 0.54;
+export const CONCERT_SCALE = 0.58;
 
 function embedSrc(id: string, live: boolean) {
   const mute = live ? '0' : '1';

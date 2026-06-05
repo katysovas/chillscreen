@@ -1,3 +1,4 @@
+import { fetchBitcoinUsdSnapshot } from '@/lib/bitcoinPrice';
 import {
   buildChatMessages,
   buildGreetingMessages,
@@ -42,16 +43,35 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Unknown character' }, { status: 404 });
   }
 
+  const bitcoinSnapshot =
+    character.id === 'satosh' ? await fetchBitcoinUsdSnapshot() : null;
+
   const key = process.env.OPENAI_API_KEY;
   if (!key) {
     return Response.json({
-      reply: isGreeting ? pickFallbackGreeting(character) : pickFallbackReply(character),
+      reply: isGreeting
+        ? pickFallbackGreeting(character, bitcoinSnapshot)
+        : pickFallbackReply(character, bitcoinSnapshot),
     });
   }
 
   const messages = isGreeting
-    ? buildGreetingMessages(character, playerName, cinemaNowPlaying, concertNowPlaying)
-    : buildChatMessages(character, playerName, body.message!.trim(), history, cinemaNowPlaying, concertNowPlaying);
+    ? buildGreetingMessages(
+        character,
+        playerName,
+        cinemaNowPlaying,
+        concertNowPlaying,
+        bitcoinSnapshot,
+      )
+    : buildChatMessages(
+        character,
+        playerName,
+        body.message!.trim(),
+        history,
+        cinemaNowPlaying,
+        concertNowPlaying,
+        bitcoinSnapshot,
+      );
 
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -71,7 +91,9 @@ export async function POST(req: Request) {
     if (!res.ok) {
       console.error('OpenAI error', res.status, await res.text());
       return Response.json({
-        reply: isGreeting ? pickFallbackGreeting(character) : pickFallbackReply(character),
+        reply: isGreeting
+          ? pickFallbackGreeting(character, bitcoinSnapshot)
+          : pickFallbackReply(character, bitcoinSnapshot),
       });
     }
 
@@ -80,7 +102,9 @@ export async function POST(req: Request) {
 
     if (!reply) {
       return Response.json({
-        reply: isGreeting ? pickFallbackGreeting(character) : pickFallbackReply(character),
+        reply: isGreeting
+          ? pickFallbackGreeting(character, bitcoinSnapshot)
+          : pickFallbackReply(character, bitcoinSnapshot),
       });
     }
 
@@ -88,7 +112,9 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error('NPC chat failed', err);
     return Response.json({
-      reply: isGreeting ? pickFallbackGreeting(character) : pickFallbackReply(character),
+      reply: isGreeting
+        ? pickFallbackGreeting(character, bitcoinSnapshot)
+        : pickFallbackReply(character, bitcoinSnapshot),
     });
   }
 }

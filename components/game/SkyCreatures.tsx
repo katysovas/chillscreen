@@ -1,5 +1,7 @@
 'use client';
 
+import type { SkyPeriod } from '@/lib/skyTimeOfDay';
+
 // ─── Keyframes (injected via <style> in SFCity) ───────────────────────────────
 // "sky-ltr / sky-rtl": entity crosses in the first 28% of its period,
 // then waits off-screen for the remaining 72% — creating a natural "rarely appears" rhythm.
@@ -199,9 +201,11 @@ function UFOShape() {
 }
 
 // ─── Layer ────────────────────────────────────────────────────────────────────
-export function SkyCreaturesLayer() {
+export function SkyCreaturesLayer({ period = 'day' }: { period?: SkyPeriod }) {
   const fly = (dir: 'ltr' | 'rtl', period: number, delay: number) =>
     `${dir === 'ltr' ? 'sky-ltr' : 'sky-rtl'} ${period}s ${delay}s linear infinite`;
+
+  const showBirdsAndPlanes = period !== 'night';
 
   return (
     <div
@@ -213,6 +217,8 @@ export function SkyCreaturesLayer() {
         overflow: 'hidden',
       }}
     >
+      {showBirdsAndPlanes && (
+        <>
       <div style={{ position: 'absolute', top: '9%', animation: fly('ltr', 62, -5) }}>
         <BirdFlock birds={LARGE_FLOCK} opacity={0.82} />
       </div>
@@ -240,6 +246,8 @@ export function SkyCreaturesLayer() {
       <div style={{ position: 'absolute', top: '14%', animation: fly('rtl', 115, -58) }}>
         <PlaneShape flip={true} />
       </div>
+        </>
+      )}
 
       <div
         style={{
