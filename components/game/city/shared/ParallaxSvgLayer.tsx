@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { forwardRef, memo, type CSSProperties, type ReactNode, type SVGProps } from 'react';
 import { nearTiles } from '@/lib/parallax';
 
 type ParallaxSvgLayerProps = {
@@ -8,34 +8,69 @@ type ParallaxSvgLayerProps = {
   style?: CSSProperties;
   className?: string;
   defs?: ReactNode;
+  /** Variable-width tiles: origin x per tile index. */
+  tileOrigin?: (tileIndex: number) => number;
+  /** Variable-width tiles: which indices to draw (defaults to uniform nearTiles). */
+  nearTileIndices?: (viewBoxX: number) => number[];
+  /**
+   * SVG shape-rendering hint. Use "optimizeSpeed" for purely decorative
+   * background layers (sky, clouds, terrain) where aliasing is imperceptible.
+   */
+  shapeRendering?: SVGProps<SVGSVGElement>['shapeRendering'];
 };
 
-/** Full-screen SVG layer with repeating world tiles. */
-export function ParallaxSvgLayer({
-  viewBoxX,
-  tileWidth,
-  children,
-  style,
-  className,
-  defs,
-}: ParallaxSvgLayerProps) {
-  const tiles = nearTiles(viewBoxX, tileWidth);
-
+// ─── Memoized tile slot ────────────────────────────────────────────────────────
+// Defined at module level so the component identity is stable across renders.
+// Re-renders only when tileIndex, origin, or the render function reference changes.
+const TileSlot = memo(function TileSlot({
+  render,
+  tileIndex,
+  origin,
+}: {
+  render: (t: number) => ReactNode;
+  tileIndex: number;
+  origin: number;
+}) {
   return (
-    <svg
-      className={className}
-      viewBox={`${viewBoxX} 0 1400 900`}
-      width="100%"
-      height="100%"
-      preserveAspectRatio="xMidYMid slice"
-      style={{ position: 'absolute', inset: 0, ...style }}
-    >
-      {defs}
-      {tiles.map(t => (
-        <g key={t} transform={`translate(${t * tileWidth},0)`}>
-          {children(t)}
-        </g>
-      ))}
-    </svg>
+    <g transform={`translate(${origin},0)`}>
+      {render(tileIndex)}
+    </g>
   );
-}
+});
+
+// ─── Layer ────────────────────────────────────────────────────────────────────
+/** Full-screen SVG layer with repeating world tiles. Exactly 3 tiles are drawn. */
+export const ParallaxSvgLayer = forwardRef<SVGSVGElement, ParallaxSvgLayerProps>(
+  function ParallaxSvgLayer(
+    { viewBoxX, tileWidth, children, style, className, defs, tileOrigin, nearTileIndices, shapeRendering },
+    ref,
+  ) {
+    // nearTiles / nearMidTiles / nearGndTiles all return exactly [t-1, t, t+1] — 3 tiles.
+    const tiles = nearTileIndices?.(viewBoxX) ?? nearTiles(viewBoxX, tileWidth);
+    const origin = tileOrigin ?? (t => t * tileWidth);
+
+    return (
+      <svg
+        ref={ref}
+        className={className}
+        viewBox={`${viewBoxX} 0 1400 900`}
+        width="100%"
+        height="100%"
+        preserveAspectRatio="xMidYMid slice"
+        shapeRendering={shapeRendering}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          willChange: 'transform',
+          contain: 'layout style paint',
+          ...style,
+        }}
+      >
+        {defs}
+        {tiles.map(t => (
+          <TileSlot key={t} render={children} tileIndex={t} origin={origin(t)} />
+        ))}
+      </svg>
+    );
+  },
+);

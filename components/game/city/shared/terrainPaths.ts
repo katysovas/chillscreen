@@ -9,7 +9,7 @@ export const SKY_PATH = `M0,448
   C880,438 1100,462 1320,438
   C1580,412 1840,428 2100,448
   C2350,452 ${MID_W},448
-  L${MID_W},900 L0,900 Z`;
+  L${MID_W + 2},900 L-2,900 Z`;
 
 /** Main hill crest — y=504 at both tile edges; gentle bay slope west of the bridge. */
 export const HILL_MAIN_PATH = `M0,504
@@ -18,7 +18,7 @@ export const HILL_MAIN_PATH = `M0,504
   C860,562 1000,548 1140,530
   C1320,512 1500,498 1720,488
   C1950,492 2200,500 ${MID_W},504
-  L${MID_W},900 L0,900 Z`;
+  L${MID_W + 2},900 L-2,900 Z`;
 
 /** Shore band along the waterfront curve. */
 export const SHORE_PATH = `M320,728

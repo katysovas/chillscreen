@@ -1,0 +1,101 @@
+---
+description: Asset loading and memory-leak rules for all game components
+globs: components/game/**/*.tsx
+alwaysApply: false
+---
+
+# Game Assets & Memory-Leak Rules
+
+## 1 · Audio — defer until first interaction
+
+Never create an `Audio` element at component mount time.
+Create it only inside the first `keydown` / `pointerdown` handler, and set `preload = 'none'`.
+
+```tsx
+// ❌ BAD — fetches audio on cold page load
+useEffect(() => {
+  const el = new Audio('/audio/track.mp3');
+  el.play().catch(() => {});
+}, []);
+
+// ✅ GOOD — deferred, no network request until the user acts
+useEffect(() => {
+  let el: HTMLAudioElement | null = null;
+  const start = () => {
+    if (el) { el.play().catch(() => {}); return; }
+    el = new Audio('/audio/track.mp3');
+    el.preload = 'none';
+    el.loop    = true;
+    el.play().catch(() => {});
+  };
+  window.addEventListener('keydown',     start, { once: true });
+  window.addEventListener('pointerdown', start, { once: true });
+  return () => {
+    el?.pause();
+    window.removeEventListener('keydown',     start);
+    window.removeEventListener('pointerdown', start);
+  };
+}, []);
+```
+
+## 2 · Future sprite assets
+
+Any new sprite, icon, or texture file must be **WebP** format.
+PNG/JPEG are not acceptable for new assets added to `/public`.
+
+## 3 · useEffect cleanup — mandatory checklist
+
+Every `useEffect` that registers an async resource **must** return a cleanup function.
+
+| Resource | Cleanup |
+|---|---|
+| `requestAnimationFrame` | `cancelAnimationFrame(id)` |
+| `setInterval` | `clearInterval(id)` |
+| `setTimeout` (> ~100 ms) | track in a ref → `clearTimeout(ref.current)` |
+| `window.addEventListener` | `window.removeEventListener(…)` |
+| `AbortController` | `return () => controller.abort()` |
+
+For short jump/animation timeouts (e.g. 560 ms), always store the id in a ref so it can be cancelled if the component unmounts mid-animation:
+
+```tsx
+const jumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+const triggerJump = () => {
+  if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
+  jumpTimerRef.current = setTimeout(() => {
+    jumpTimerRef.current = null;
+    setJumping(false);
+  }, 560);
+};
+
+// In effect cleanup:
+return () => {
+  if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
+};
+```
+
+## 4 · AbortController — abort on every exit path
+
+Create a new `AbortController` at the start of each fetch effect and pass `controller.signal`.
+The `return` cleanup **must** call `controller.abort()`.
+Also abort immediately at the top of the effect whenever the previous fetch should be cancelled (e.g. new NPC greeting):
+
+```tsx
+useEffect(() => {
+  if (!shouldFetch) return;
+  prevAbortRef.current?.abort();
+  const controller = new AbortController();
+  prevAbortRef.current = controller;
+  fetchSomething(controller.signal).catch(err => {
+    if (err.name === 'AbortError') return;
+    // handle real errors
+  });
+  return () => controller.abort(); // covers unmount AND dep-change
+}, [dep]);
+```
+
+## 5 · Tiny decorative elements
+
+Do not add SVG elements that are invisible at game scale (e.g. < 3 px on the 1400 px viewport).
+Common offenders: individual window `<rect>` grids, sub-1px stroke lines with opacity < 0.2.
+Replace window grids with a **single tint overlay rect** per building face.

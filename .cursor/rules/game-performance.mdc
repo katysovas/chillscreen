@@ -1,0 +1,83 @@
+---
+description: Performance rules for all game components (SVG layers, NPCs, venues, parallax)
+globs: components/game/**/*.tsx
+alwaysApply: false
+---
+
+# Game Performance Rules
+
+## 1 · Scroll / RAF loop — no React state per frame
+
+Never call `setState` / `useState` setter inside a `requestAnimationFrame` loop.
+Drive scroll, position, and viewBox entirely through direct DOM writes.
+
+```tsx
+// ❌ BAD — triggers React re-render every frame
+const [worldOff, setWorldOff] = useState(0);
+const loop = () => { setWorldOff(prev => prev + speed); raf = requestAnimationFrame(loop); };
+
+// ✅ GOOD — direct attribute write, zero React overhead
+const svgRef = useRef<SVGSVGElement>(null);
+const loop = () => {
+  svgRef.current?.setAttribute('viewBox', `${off} 0 1400 900`);
+  raf = requestAnimationFrame(loop);
+};
+```
+
+Only `facing`, `walking`, and `jumping` belong in React state (they change rarely and drive CSS classes).
+
+## 2 · SVG layer CSS
+
+Every parallax SVG layer must have these two CSS properties:
+
+```tsx
+style={{ willChange: 'transform', contain: 'layout style paint' }}
+```
+
+Non-critical decorative `<path>` elements (terrain fills, building shapes, etc.) should use `shapeRendering="optimizeSpeed"`.
+
+## 3 · Tiling — render only the 3 nearest tiles
+
+`ParallaxSvgLayer` already enforces 3 tiles. **Never** add a fourth tile or render outside the `[-1, 0, 1]` window.
+Memoize tile render functions with `useCallback` (deps = tile index + period/theme only).
+Wrap layer components in `React.memo` so they re-render only when their props change.
+
+## 4 · NPCs — imperative DOM, throttled checks
+
+NPC position and facing/walking must use the same direct-DOM pattern as the scroll loop:
+- `divRef.current.style.left = …` for position
+- `characterRef.current?.setFacing(…)` / `setWalking(…)` via `useImperativeHandle`
+
+Proximity and dance-state checks run **every 4 frames** (`frameCount % 4 === 0`), not every frame.
+
+## 5 · YouTube iframes
+
+```tsx
+// Always add loading="lazy"
+<iframe loading="lazy" src={embedSrc} … />
+
+// Use youtube-nocookie.com + suppress chrome
+function embedSrc(id: string) {
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0&modestbranding=1&controls=0&iv_load_policy=3&loop=1&playlist=${id}`;
+}
+```
+
+Iframe lifecycle is controlled by the `live` prop from `isVenueInView` — do **not** add a second `IntersectionObserver` inside an SVG `foreignObject` (it won't fire reliably).
+
+## 6 · SVG path strings — pre-compute at module load
+
+Paths whose coordinates are constants must be pre-computed **outside** the component.
+Template literals with constant variables recompute on every render — extract them.
+
+```tsx
+// ❌ BAD — recomputed on every render
+const PEAK_X = 1855, PEAK_Y = 268;
+<path d={`M1235,578 Q1500,508 ${PEAK_X},${PEAK_Y} Z`} />
+
+// ✅ GOOD — static string, zero allocation per render
+const SNOW_PATH = 'M1235,578 Q1500,508 1855,268 Z';
+<path d={SNOW_PATH} />
+```
+
+Avoid `Array.from(…).map(…)` inside JSX for window grids, mullion lines, pier geometry, etc.
+Replace with a **single pre-computed path string** or a module-level static array.

@@ -23,6 +23,8 @@ export type SkyTheme = {
   moon?: { cx: number; cy: number };
 };
 
+// cx/cy are in sky-tile space (0..2000 × 0..900) used by SkyCloudsLayer.
+// At most one sun/moon is visible at a time — tile width (2000) > viewport (1400).
 const SKY_THEMES: Record<SkyPeriod, SkyTheme> = {
   night: {
     gradient: [
@@ -36,7 +38,7 @@ const SKY_THEMES: Record<SkyPeriod, SkyTheme> = {
     birdStroke: '#1a2848',
     showClouds: false,
     showStars: true,
-    moon: { cx: 1420, cy: 98 },
+    moon: { cx: 1160, cy: 98 },
   },
   morning: {
     gradient: [
@@ -51,7 +53,7 @@ const SKY_THEMES: Record<SkyPeriod, SkyTheme> = {
     birdStroke: '#4a5878',
     showClouds: true,
     showStars: false,
-    sun: { cx: 420, cy: 260, core: '#ffe8a0', glow: 'rgba(255,210,120,.28)' },
+    sun: { cx: 360, cy: 255, core: '#ffe8a0', glow: 'rgba(255,210,120,.28)' },
   },
   day: {
     gradient: [
@@ -66,7 +68,7 @@ const SKY_THEMES: Record<SkyPeriod, SkyTheme> = {
     birdStroke: '#2a4070',
     showClouds: true,
     showStars: false,
-    sun: { cx: 1500, cy: 108, core: '#ffe760', glow: 'rgba(255,240,80,.24)' },
+    sun: { cx: 1100, cy: 105, core: '#ffe760', glow: 'rgba(255,240,80,.24)' },
   },
   evening: {
     gradient: [
@@ -81,7 +83,7 @@ const SKY_THEMES: Record<SkyPeriod, SkyTheme> = {
     birdStroke: '#3a2858',
     showClouds: true,
     showStars: true,
-    sun: { cx: 1680, cy: 310, core: '#ffb050', glow: 'rgba(255,140,60,.22)' },
+    sun: { cx: 1240, cy: 305, core: '#ffb050', glow: 'rgba(255,140,60,.22)' },
   },
 };
 
@@ -89,10 +91,10 @@ export function skyTheme(period: SkyPeriod): SkyTheme {
   return SKY_THEMES[period];
 }
 
-/** Fixed star field (tile-local coords). */
+/** Fixed star field — screen-space coords (1400 × 620 upper sky area). */
 export const STAR_FIELD = Array.from({ length: 88 }, (_, i) => ({
-  x: (i * 173 + 47) % 2000,
-  y: 12 + (i * 89) % 360,
+  x: (i * 173 + 47) % 1400,
+  y: 8 + (i * 89) % 580,
   r: 0.55 + (i % 4) * 0.5,
   opacity: 0.32 + (i % 6) * 0.11,
 }));

@@ -1,5 +1,5 @@
 'use client';
-import type { ReactNode } from 'react';
+import { forwardRef, useImperativeHandle, useRef, type ReactNode } from 'react';
 import type { BubbleSide } from './ChatBubble';
 import type { CharacterAccessory } from './characterAccessories';
 import {
@@ -23,6 +23,14 @@ export type CharacterProps = {
   bubbleSide?: BubbleSide;
   /** Chat UI — pinned above the head on `bubbleSide`. */
   chatOverlay?: ReactNode;
+};
+
+/** Imperative handle for the direct-DOM updates used by the NPC RAF loop. */
+export type CharacterHandle = {
+  /** Flip direction — updates style.transform directly, zero React re-render. */
+  setFacing: (f: 'left' | 'right') => void;
+  /** Toggle walk animation — updates classList directly, zero React re-render. */
+  setWalking: (w: boolean) => void;
 };
 
 /** Artboard coords (500×240) — above the head, aligned to the sprite body. */
@@ -66,7 +74,7 @@ function chatAnchorStyle(side: BubbleSide, scale: number, mirrored: boolean) {
   };
 }
 
-export default function Character({
+const Character = forwardRef<CharacterHandle, CharacterProps>(function Character({
   walking,
   facing,
   balloonColor = '#ef4023',
@@ -75,7 +83,22 @@ export default function Character({
   dancing = false,
   bubbleSide = 'left',
   chatOverlay,
-}: CharacterProps) {
+}, ref) {
+  const outerRef   = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    setFacing(f) {
+      if (!outerRef.current) return;
+      const m = f === 'left';
+      outerRef.current.style.transform = `translateX(-50%) scaleX(${m ? -1 : 1})`;
+    },
+    setWalking(w) {
+      if (!wrapperRef.current) return;
+      wrapperRef.current.classList.toggle('ch-walking', w);
+    },
+  }));
+
   const mirrored = facing === 'left';
   const partyHandClass = dancing
     ? accessoryHoldSide(accessory) === 'right'
@@ -84,17 +107,23 @@ export default function Character({
     : '';
 
   return (
-    <div style={{
-      transform: `translateX(-50%) scaleX(${mirrored ? -1 : 1})`,
-      transformOrigin: 'center bottom',
-      transition: dancing ? undefined : 'transform 0.1s ease',
-    }}>
+    <div
+      ref={outerRef}
+      style={{
+        transform: `translateX(-50%) scaleX(${mirrored ? -1 : 1})`,
+        transformOrigin: 'center bottom',
+        transition: dancing ? undefined : 'transform 0.1s ease',
+      }}
+    >
       <div style={{
         transform: `scale(${scale})`,
         transformOrigin: 'bottom center',
         position: 'relative',
       }}>
-        <div className={`ch-wrapper${walking ? ' ch-walking' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}>
+        <div
+          ref={wrapperRef}
+          className={`ch-wrapper${walking ? ' ch-walking' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
+        >
           <div className="ch-animal">
             {renderAccessory(accessory, balloonColor)}
             <div className="ch-ears" />
@@ -142,4 +171,6 @@ export default function Character({
       </div>
     </div>
   );
-}
+});
+
+export default Character;

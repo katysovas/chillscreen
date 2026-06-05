@@ -1,4 +1,11 @@
-import { GND_F, GND_TILE } from '@/lib/parallax';
+import { forwardRef, memo } from 'react';
+import {
+  CITY_GND_W,
+  GND_F,
+  gndOriginForTile,
+  gndWidthForTile,
+  nearGndTiles,
+} from '@/lib/parallax';
 import { TileRoadSigns } from '../VenueRoadSigns';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
 
@@ -8,17 +15,26 @@ type VenueSignsLayerProps = {
   worldOff: number;
 };
 
-/** Sidewalk venue signs on ground parallax (no mid-layer drift). */
-export function VenueSignsLayer({ worldOff }: VenueSignsLayerProps) {
-  const vxGnd = worldOff * GND_F;
-
-  return (
-    <ParallaxSvgLayer
-      viewBoxX={vxGnd}
-      tileWidth={GND_TILE}
-      style={{ zIndex: 6, pointerEvents: 'none' }}
-    >
-      {t => <TileRoadSigns tileIndex={t} y={GND_Y + 12} groundTile={GND_TILE} />}
-    </ParallaxSvgLayer>
-  );
+// Module-level: pure function of tile index — always the same reference.
+function renderSignTile(t: number) {
+  return <TileRoadSigns tileIndex={t} y={GND_Y + 12} groundTile={gndWidthForTile(t)} />;
 }
+
+/** Sidewalk venue signs on ground parallax (no mid-layer drift). */
+export const VenueSignsLayer = memo(forwardRef<SVGSVGElement, VenueSignsLayerProps>(
+  function VenueSignsLayer({ worldOff }, ref) {
+    const vxGnd = worldOff * GND_F;
+
+    return (
+      <ParallaxSvgLayer
+        ref={ref}
+        viewBoxX={vxGnd}
+        tileWidth={CITY_GND_W}
+        tileOrigin={gndOriginForTile}
+        nearTileIndices={nearGndTiles}
+        style={{ zIndex: 6, pointerEvents: 'none' }}
+        children={renderSignTile}
+      />
+    );
+  },
+));

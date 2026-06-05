@@ -1,7 +1,8 @@
 import { MID_GND, MID_W } from '../shared/terrainPaths';
 import { SimpleBuilding } from '../buildings/SimpleBuilding';
 import { Victorian } from '../buildings/Victorian';
-import { tileRand } from '@/lib/worldTiles';
+import { isSfToSdTown, isTownTile, tileRand } from '@/lib/worldTiles';
+import { TownDesertEdge } from './TownDesertEdge';
 
 const PALETTE = [
   '#a8b0b8',
@@ -25,17 +26,20 @@ type Building = {
   kind: 'simple' | 'victorian';
 };
 
-function townLayout(tileIndex: number): Building[] {
-  const count = 42;
+function townLayout(tileIndex: number, compact: boolean): Building[] {
+  const count = compact ? 10 : 42;
+  const xMax = compact ? 880 : MID_W - 120;
   const out: Building[] = [];
 
   for (let i = 0; i < count; i++) {
     const rx = tileRand(tileIndex, `tx${i}`);
     const ry = tileRand(tileIndex, `ty${i}`);
     const rs = tileRand(tileIndex, `ts${i}`);
-    const x = 48 + rx * (MID_W - 120);
+    const x = 48 + rx * (xMax - 48);
     const w = 30 + Math.floor(rs * 5) * 5;
-    const h = 52 + Math.floor(ry * 6) * 12;
+    const h = compact
+      ? 44 + Math.floor(ry * 4) * 10
+      : 52 + Math.floor(ry * 6) * 12;
     const color = PALETTE[Math.floor(tileRand(tileIndex, `tc${i}`) * PALETTE.length)];
     const kind = rs > 0.82 ? 'victorian' : 'simple';
 
@@ -54,15 +58,20 @@ function townLayout(tileIndex: number): Building[] {
 
 type Tree = { x: number; y: number; r: number };
 
-function townTrees(tileIndex: number): Tree[] {
+function townTrees(tileIndex: number, compact: boolean): Tree[] {
   const trees: Tree[] = [];
-  for (let i = 0; i < 14; i++) {
+  const max = compact ? 6 : 14;
+  const xMax = compact ? 880 : MID_W - 160;
+
+  for (let i = 0; i < max; i++) {
     const t = tileRand(tileIndex, `tr${i}`);
     if (t < 0.35) continue;
     trees.push({
-      x: 80 + tileRand(tileIndex, `trx${i}`) * (MID_W - 160),
+      x: 80 + tileRand(tileIndex, `trx${i}`) * xMax,
       y: MID_GND,
-      r: 14 + Math.floor(tileRand(tileIndex, `trr${i}`) * 3) * 4,
+      r: compact
+        ? 11 + Math.floor(tileRand(tileIndex, `trr${i}`) * 2) * 3
+        : 14 + Math.floor(tileRand(tileIndex, `trr${i}`) * 3) * 4,
     });
   }
   return trees;
@@ -74,18 +83,31 @@ type SmallTownTileProps = {
 
 /** Full tile of small-town cottages and low-rise blocks between major cities. */
 export function SmallTownTile({ tileIndex }: SmallTownTileProps) {
-  const buildings = townLayout(tileIndex);
-  const trees = townTrees(tileIndex);
+  const compact = isSfToSdTown(tileIndex) || isTownTile(tileIndex);
+  const buildings = townLayout(tileIndex, compact);
+  const trees = townTrees(tileIndex, compact);
 
   return (
     <g>
-      <path
-        d={`M0,${MID_GND + 8} Q${MID_W * 0.25},${MID_GND - 6} ${MID_W * 0.5},${MID_GND + 4}
+      {!compact && (
+        <path
+          d={`M-2,${MID_GND + 8} Q${MID_W * 0.25},${MID_GND - 6} ${MID_W * 0.5},${MID_GND + 4}
             Q${MID_W * 0.78},${MID_GND + 12} ${MID_W},${MID_GND + 6}
-            L${MID_W},900 L0,900 Z`}
-        fill="#8a9880"
-        opacity={0.28}
-      />
+            L${MID_W + 2},900 L-2,900 Z`}
+          fill="#8a9880"
+          opacity={0.28}
+          shapeRendering="optimizeSpeed"
+        />
+      )}
+      {compact && (
+        <path
+          d={`M0,${MID_GND + 8} Q${MID_W * 0.18},${MID_GND - 4} ${MID_W * 0.36},${MID_GND + 2}
+            L${980},${MID_GND + 4} L980,900 L0,900 Z`}
+          fill="#8a9880"
+          opacity={0.28}
+          shapeRendering="optimizeSpeed"
+        />
+      )}
       {buildings.map((b, i) =>
         b.kind === 'victorian' ? (
           <Victorian key={i} x={b.x} y={b.y} col={b.color} w={b.w + 18} h={b.h + 20} />
@@ -107,6 +129,7 @@ export function SmallTownTile({ tileIndex }: SmallTownTileProps) {
           <circle cx={tr.x - tr.r * 0.45} cy={tr.y - tr.r * 1.5} r={tr.r * 0.65} fill="#427040" />
         </g>
       ))}
+      {compact && isSfToSdTown(tileIndex) && <TownDesertEdge tileIndex={tileIndex} />}
     </g>
   );
 }

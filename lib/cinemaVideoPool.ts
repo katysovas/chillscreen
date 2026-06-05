@@ -40,6 +40,8 @@ export function cinemaEmbedSrc(id: string) {
     mute: '1',
     rel: '0',
     modestbranding: '1',
+    controls: '0',
+    iv_load_policy: '3',
     loop: '1',
     playlist: id,
     playsinline: '1',
@@ -47,5 +49,5 @@ export function cinemaEmbedSrc(id: string) {
   if (typeof window !== 'undefined') {
     params.set('origin', window.location.origin);
   }
-  return `https://www.youtube.com/embed/${id}?${params}`;
+  return `https://www.youtube-nocookie.com/embed/${id}?${params}`;
 }

@@ -12,9 +12,7 @@ export type SingleCitySignDef = {
 export type CombinedTownSignDef = {
   type: 'combined';
   xFrac: number;
-  /** City on the top row — arrow points left. */
   leftCity: { label: string; icon: string; accent: string };
-  /** City on the bottom row — arrow points right. */
   rightCity: { label: string; icon: string; accent: string };
 };
 
@@ -32,40 +30,40 @@ const SEATTLE = {
   accent: '#3d6b8a',
 } as const;
 
+const SAN_DIEGO = {
+  label: 'San Diego',
+  icon: '🌴',
+  accent: '#4a90b8',
+} as const;
+
+const COACHELLA = {
+  label: 'Coachella',
+  icon: '🎡',
+  accent: '#e85074',
+} as const;
+
 const TOWN_CENTER = 0.5;
 
 /**
- * Direction signs per world tile — never label the city you're already in.
- * SF (0) → town (1,2) → Seattle (3) → town (4,5) → SF …
+ * SF → town → San Diego+Coachella → town → Seattle → town
+ * Never label the city you're already on.
  */
 export function citySignsForTile(tileIndex: number): RoadSignDef[] {
   const slot = worldTileSlot(tileIndex);
 
   switch (slot) {
     case 0:
+      return [{ type: 'single', ...SAN_DIEGO, dir: 'right', xFrac: 0.72 }];
+    case 1:
+      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: SF, rightCity: SAN_DIEGO }];
+    case 2:
       return [{ type: 'single', ...SEATTLE, dir: 'right', xFrac: 0.72 }];
     case 3:
-      return [{ type: 'single', ...SF, dir: 'left', xFrac: 0.28 }];
-    case 1:
-    case 2:
-      return [
-        {
-          type: 'combined',
-          xFrac: TOWN_CENTER,
-          leftCity: SF,
-          rightCity: SEATTLE,
-        },
-      ];
+      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: COACHELLA, rightCity: SEATTLE }];
     case 4:
+      return [{ type: 'single', ...SF, dir: 'right', xFrac: 0.72 }];
     case 5:
-      return [
-        {
-          type: 'combined',
-          xFrac: TOWN_CENTER,
-          leftCity: SEATTLE,
-          rightCity: SF,
-        },
-      ];
+      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: SEATTLE, rightCity: SF }];
     default:
       return [];
   }

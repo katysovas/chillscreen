@@ -68,3 +68,7 @@ export function searchCinemaVideos() {
 export function searchConcertVideos() {
   return searchYouTube('live concert');
 }
+
+export function searchCoachellaVideos() {
+  return searchYouTube('coachella live');
+}

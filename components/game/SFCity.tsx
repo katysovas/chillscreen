@@ -1,11 +1,16 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect, useSyncExternalStore } from 'react';
 import Character from './Character';
 import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
 import { NpcChatOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
 import { CHAR_BOTTOM } from './groundLayout';
-import { START_WORLD_OFF } from '@/lib/venues';
+import { SKY_F, MID_F, GND_F } from '@/lib/parallax';
+import {
+  getClientSpawnWorldOff,
+  serverSpawnWorldOff,
+  subscribeSpawnWorldOff,
+} from '@/lib/spawn';
 import { getConcertInView, subscribeConcertInView } from '@/lib/concertNow';
 import CHARACTERS from './characters';
 
@@ -21,7 +26,7 @@ import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
 import { getConcertNowPlaying, subscribeConcertNowPlaying } from '@/lib/concertNowPlaying';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
-import { isNearConcert } from '@/lib/concertDance';
+import { isNearStage } from '@/lib/concertDance';
 import { loadCinemaVideos } from '@/lib/cinemaVideoPool';
 import { LovingCarLayer } from './LovingCar';
 import { SkyCreaturesLayer } from './SkyCreatures';
@@ -45,26 +50,55 @@ const KF = `${CITY_SCENE_KEYFRAMES}\n${CHARACTER_STYLES}`;
 
 export default function SFCity() {
   const skyPeriod  = useSkyPeriod();
-  const worldRef   = useRef(START_WORLD_OFF);
-  const keysRef    = useRef({ left: false, right: false });
-  const facingRef  = useRef<'left' | 'right'>('right');
-  const walkingRef = useRef(false);
-  const rafRef     = useRef<number | null>(null);
-  const jumpingRef = useRef(false);
+  const spawnWorldOff = useSyncExternalStore(
+    subscribeSpawnWorldOff,
+    getClientSpawnWorldOff,
+    serverSpawnWorldOff,
+  );
+  const worldRef        = useRef(spawnWorldOff);
+  const keysRef         = useRef({ left: false, right: false });
+  const facingRef       = useRef<'left' | 'right'>('right');
+  const walkingRef      = useRef(false);
+  const rafRef          = useRef<number | null>(null);
+  const jumpingRef      = useRef(false);
+  const jumpTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const frameCountRef   = useRef(0);
+
+  // ── SVG refs for imperative viewBox updates ────────────────────────────────
+  const skyRef    = useRef<SVGSVGElement>(null);
+  const midRef    = useRef<SVGSVGElement>(null);
+  const groundRef = useRef<SVGSVGElement>(null);
+  const signsRef  = useRef<SVGSVGElement>(null);
+  const cloudsRef = useRef<SVGSVGElement>(null);
+  const lastScrollBucketRef = useRef(0);
+
+  /** Update scrolling SVG viewBoxes directly — zero React overhead. */
+  const updateViewBoxes = (off: number) => {
+    const skyVx = off * SKY_F;
+    const midVx = off * MID_F;
+    const gndVx = off * GND_F;
+    const vb    = (x: number) => `${x} 0 1400 900`;
+    skyRef.current?.setAttribute('viewBox', vb(skyVx));
+    midRef.current?.setAttribute('viewBox', vb(midVx));
+    groundRef.current?.setAttribute('viewBox', vb(gndVx));
+    signsRef.current?.setAttribute('viewBox', vb(gndVx));
+    cloudsRef.current?.setAttribute('viewBox', vb(skyVx));
+  };
 
   // ── Greeting / collision ───────────────────────────────────────────────────
   // Each NPC reports its world-x each frame (same coordinate space as worldRef).
   const npcWorldXRefs     = useRef(
-    CHARACTERS.map(c => screenPctToWorldX(c.startX, START_WORLD_OFF)),
+    CHARACTERS.map(c => screenPctToWorldX(c.startX, serverSpawnWorldOff())),
   );
   const greetingRef       = useRef<number | null>(null);
   const nearNpcRef        = useRef<number | null>(null);
   const disconnectUntil   = useRef(0);
 
-  const [worldOff,    setWorldOff]    = useState(() => START_WORLD_OFF);
-  const [facing,      setFacing]      = useState<'left' | 'right'>('right');
-  const [walking,     setWalking]     = useState(false);
-  const [jumping,     setJumping]     = useState(false);
+  // scrollWorldOff only updates at tile boundaries — drives React content renders
+  const [scrollWorldOff, setScrollWorldOff] = useState(serverSpawnWorldOff);
+  const [facing,    setFacing]    = useState<'left' | 'right'>('right');
+  const [walking,   setWalking]   = useState(false);
+  const [jumping,   setJumping]   = useState(false);
   const [playerDancing, setPlayerDancing] = useState(false);
   const [npcDancing,  setNpcDancing]  = useState<boolean[]>(() => CHARACTERS.map(() => false));
   const playerDancingRef = useRef(false);
@@ -95,6 +129,17 @@ export default function SFCity() {
   const concertNowRef = useRef<string | null>(null);
   const greetingSessionRef = useRef<number | null>(null);
 
+  useLayoutEffect(() => {
+    worldRef.current = spawnWorldOff;
+    setScrollWorldOff(spawnWorldOff);
+    gameWorldOffRef.current = spawnWorldOff;
+    updateViewBoxes(spawnWorldOff);
+    npcWorldXRefs.current = CHARACTERS.map(c =>
+      screenPctToWorldX(c.startX, spawnWorldOff),
+    );
+  // updateViewBoxes is stable (no deps); spawnWorldOff is the only meaningful dep
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spawnWorldOff]);
   useEffect(() => { setPlayerName(getPlayerName()); }, []);
   useEffect(() => { loadCinemaVideos(); }, []);
 
@@ -249,23 +294,30 @@ export default function SFCity() {
   const [muted,  setMuted] = useState(false);
 
   useEffect(() => {
-    const src = TRACKS[Math.floor(Math.random() * TRACKS.length)];
-    const el  = new Audio(src);
-    el.loop   = true;
-    el.volume = 0.35;
-    el.muted  = muted;
-    audioRef.current = el;
+    // Defer audio element creation until the first user interaction so the
+    // browser never fetches the audio file on a cold page load.
+    let el: HTMLAudioElement | null = null;
 
-    const tryPlay = () => el.play().catch(() => {});
-    tryPlay();
-    // Fallback: play on first interaction if autoplay is blocked
-    window.addEventListener('keydown',     tryPlay, { once: true });
-    window.addEventListener('pointerdown', tryPlay, { once: true });
+    const startAudio = () => {
+      if (el) { el.play().catch(() => {}); return; }
+      const src = TRACKS[Math.floor(Math.random() * TRACKS.length)];
+      el = new Audio(src);
+      el.preload = 'none';
+      el.loop    = true;
+      el.volume  = 0.35;
+      el.muted   = muted;
+      audioRef.current = el;
+      el.play().catch(() => {});
+    };
+
+    window.addEventListener('keydown',     startAudio, { once: true });
+    window.addEventListener('pointerdown', startAudio, { once: true });
 
     return () => {
-      el.pause();
-      window.removeEventListener('keydown',     tryPlay);
-      window.removeEventListener('pointerdown', tryPlay);
+      el?.pause();
+      audioRef.current = null;
+      window.removeEventListener('keydown',     startAudio);
+      window.removeEventListener('pointerdown', startAudio);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -296,7 +348,12 @@ export default function SFCity() {
       if (jumpingRef.current) return;
       jumpingRef.current = true;
       setJumping(true);
-      setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 560);
+      if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
+      jumpTimerRef.current = setTimeout(() => {
+        jumpTimerRef.current = null;
+        jumpingRef.current   = false;
+        setJumping(false);
+      }, 560);
     };
 
     const connectToNpc = (i: number, screenPct: number) => {
@@ -388,7 +445,7 @@ export default function SFCity() {
       const width = window.innerWidth;
       const greeting = greetingRef.current;
 
-      const playerNear = greeting === null && isNearConcert(off, off, width);
+      const playerNear = greeting === null && isNearStage(off, off, width);
       if (playerNear !== playerDancingRef.current) {
         playerDancingRef.current = playerNear;
         setPlayerDancing(playerNear);
@@ -398,7 +455,7 @@ export default function SFCity() {
       }
 
       const next = npcWorldXRefs.current.map((wx, i) =>
-        greeting === i ? false : isNearConcert(wx, off, width),
+        greeting === i ? false : isNearStage(wx, off, width),
       );
       if (next.some((v, i) => v !== npcDancingRef.current[i])) {
         npcDancingRef.current = next;
@@ -410,7 +467,8 @@ export default function SFCity() {
       // While greeting, freeze the player completely
       if (greetingRef.current !== null) {
         if (walkingRef.current) { walkingRef.current = false; setWalking(false); }
-        updateDanceState(worldRef.current);
+        frameCountRef.current++;
+        if (frameCountRef.current % 4 === 0) updateDanceState(worldRef.current);
         gameWorldOffRef.current = worldRef.current;
         rafRef.current = requestAnimationFrame(loop);
         return;
@@ -433,41 +491,59 @@ export default function SFCity() {
         walkingRef.current = isWalking;
         setWalking(isWalking);
       }
-      if (isWalking) setWorldOff(worldRef.current);
 
-      // Proximity check only — connection requires Enter.
-      if (greetingRef.current === null) {
-        const width = window.innerWidth;
-        const greetDistPx = (GREET_DIST / 100) * width;
-        let inRange: number | null = null;
-        if (Date.now() > disconnectUntil.current) {
-          for (let i = 0; i < npcWorldXRefs.current.length; i++) {
-            const npcWorldX = npcWorldXRefs.current[i];
-            const screenPct = worldXToScreenPct(npcWorldX, worldRef.current, width);
-            const distPx    = Math.abs(npcWorldX - worldRef.current);
-            if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx) {
-              inRange = i;
-              break;
-            }
-          }
+      // Always update viewBoxes imperatively — no React re-render
+      updateViewBoxes(worldRef.current);
+
+      // Update React state only when mid-tile bucket changes (very infrequent)
+      if (isWalking) {
+        const bucket = Math.round(worldRef.current * MID_F / 100);
+        if (bucket !== lastScrollBucketRef.current) {
+          lastScrollBucketRef.current = bucket;
+          setScrollWorldOff(worldRef.current);
         }
-        if (inRange !== nearNpcRef.current) {
-          nearNpcRef.current = inRange;
-          setNearNpc(inRange);
-        }
-      } else if (nearNpcRef.current !== null) {
-        nearNpcRef.current = null;
-        setNearNpc(null);
       }
 
-      updateDanceState(worldRef.current);
+      // Throttle proximity + dance checks to every 4 frames (~15 Hz).
+      // These don't need 60 Hz precision — 15 Hz is imperceptibly snappy.
+      frameCountRef.current++;
+      if (frameCountRef.current % 4 === 0) {
+        // Proximity check only — connection requires Enter.
+        if (greetingRef.current === null) {
+          const width = window.innerWidth;
+          const greetDistPx = (GREET_DIST / 100) * width;
+          let inRange: number | null = null;
+          if (Date.now() > disconnectUntil.current) {
+            for (let i = 0; i < npcWorldXRefs.current.length; i++) {
+              const npcWorldX = npcWorldXRefs.current[i];
+              const screenPct = worldXToScreenPct(npcWorldX, worldRef.current, width);
+              const distPx    = Math.abs(npcWorldX - worldRef.current);
+              if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx) {
+                inRange = i;
+                break;
+              }
+            }
+          }
+          if (inRange !== nearNpcRef.current) {
+            nearNpcRef.current = inRange;
+            setNearNpc(inRange);
+          }
+        } else if (nearNpcRef.current !== null) {
+          nearNpcRef.current = null;
+          setNearNpc(null);
+        }
+
+        updateDanceState(worldRef.current);
+      }
+
       gameWorldOffRef.current = worldRef.current;
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
 
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (rafRef.current)     cancelAnimationFrame(rafRef.current);
+      if (jumpTimerRef.current) { clearTimeout(jumpTimerRef.current); jumpTimerRef.current = null; }
       window.removeEventListener('keydown', onDown, true);
       window.removeEventListener('keyup',   onUp);
     };
@@ -477,11 +553,11 @@ export default function SFCity() {
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', animation: 'fdi 1.5s ease' }}>
       <style>{KF}</style>
 
-      <SkyLayer         worldOff={worldOff} period={skyPeriod} />
-      <MidLayer         worldOff={worldOff} />
-      <SkyCreaturesLayer period={skyPeriod} worldOff={worldOff} />
-      <GroundLayer      worldOff={worldOff} />
-      <VenueSignsLayer  worldOff={worldOff} />
+      <SkyLayer ref={skyRef} worldOff={scrollWorldOff} period={skyPeriod} />
+      <MidLayer         ref={midRef}    worldOff={scrollWorldOff} />
+      <SkyCreaturesLayer period={skyPeriod} worldOff={scrollWorldOff} cloudsSvgRef={cloudsRef} />
+      <GroundLayer      ref={groundRef} worldOff={scrollWorldOff} />
+      <VenueSignsLayer  ref={signsRef}  worldOff={scrollWorldOff} />
 
       <LovingCarLayer />
 
@@ -495,7 +571,6 @@ export default function SFCity() {
           {...cfg}
           startX={testing ? 55 : cfg.startX}
           entryDelay={testing ? 0 : cfg.entryDelay}
-          worldOff={worldOff}
           paused={greetingNpc === i}
           greeting={greetingNpc === i}
           greetFacing={greetNpcX < 50 ? 'right' : 'left'}

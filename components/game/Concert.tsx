@@ -109,16 +109,16 @@ function pickRandomIndex(videos: ConcertVideo[], exclude?: number) {
 /** Native SVG design size before stage scale. */
 const BASE_W = 520;
 const BASE_H = 450;
-/** Bigger stage + LED wall / YouTube frame (1.4×). */
-const STAGE_SCALE = 1.4;
+/** Bigger stage + LED wall / YouTube frame. */
+const STAGE_SCALE = 1.55;
 
 export const CONCERT_WIDTH = Math.round(BASE_W * STAGE_SCALE);
 export const CONCERT_HEIGHT = Math.round(BASE_H * STAGE_SCALE);
-export const CONCERT_SCALE = 0.58;
+export const CONCERT_SCALE = 0.74;
 
 function embedSrc(id: string, live: boolean) {
   const mute = live ? '0' : '1';
-  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=${mute}&rel=0&modestbranding=1&loop=1&playlist=${id}`;
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=${mute}&rel=0&modestbranding=1&controls=0&iv_load_policy=3&loop=1&playlist=${id}`;
 }
 
 export default function Concert({ live = false }: { live?: boolean }) {
@@ -315,6 +315,7 @@ export default function Concert({ live = false }: { live?: boolean }) {
               width="310"
               height="190"
               frameBorder="0"
+              loading="lazy"
               allow="autoplay; encrypted-media; picture-in-picture"
               allowFullScreen
               style={{ display: 'block', border: 'none', background: '#000' }}

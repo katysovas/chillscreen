@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import Character from './Character';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import { CHAR_BOTTOM } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
+import { gameWorldOffRef } from '@/lib/gameWorldRef';
 
 // ── Personality ────────────────────────────────────────────────────────────────
 export type Personality = {
@@ -30,8 +31,6 @@ export type NPCConfig = {
 type State = 'idle' | 'wandering';
 
 type NPCProps = NPCConfig & {
-  /** Player world scroll offset — NPCs are anchored in world space, not the viewport. */
-  worldOff: number;
   paused: boolean;
   greeting: boolean;
   greetFacing: 'left' | 'right';
@@ -70,37 +69,69 @@ export default function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory,
   personality,
-  worldOff,
   paused, greeting, greetFacing, dancing = false, onMove, greetingChat,
 }: NPCProps) {
-  const [screenX,   setScreenX]   = useState(startX);
-  const [walking,   setWalking]   = useState(false);
-  const [facing,    setFacing]    = useState<'left' | 'right'>(entryDirection);
-  const [jumping,   setJumping]   = useState(false);
-  const [active,    setActive]    = useState(false);
+  // ── React state: only for infrequent visual changes ─────────────────────────
+  const [jumping,   setJumping]  = useState(false);
+  const [active,    setActive]   = useState(false);
+  // screenX state only needed for bubbleSide — updated when greeting starts.
+  const [screenX,   setScreenX]  = useState(startX);
 
-  const worldXRef         = useRef(0);
-  const targetWorldRef    = useRef(0);
-  const stateRef          = useRef<State>('idle');
-  const pausedRef         = useRef(paused);
-  const jumpingRef        = useRef(false);
-  const avoidPlayerUntil  = useRef(0);
-  const worldOffRef       = useRef(worldOff);
-  const rafRef            = useRef<number | null>(null);
-  const onMoveRef         = useRef(onMove);
+  // ── Imperative animation state — updated directly to DOM, zero React cost ───
+  const characterRef  = useRef<CharacterHandle>(null);
+  const facingRef     = useRef<'left' | 'right'>(entryDirection);
+  const walkingRef    = useRef(false);
 
-  worldOffRef.current = worldOff;
+  // ── World / movement refs ──────────────────────────────────────────────────
+  const divRef              = useRef<HTMLDivElement>(null);
+  const screenXRef          = useRef(startX);
+  const worldXRef           = useRef(0);
+  const targetWorldRef      = useRef(0);
+  const stateRef            = useRef<State>('idle');
+  const pausedRef           = useRef(paused);
+  const jumpingRef          = useRef(false);
+  const avoidPlayerUntil    = useRef(0);
+  const rafRef              = useRef<number | null>(null);
+  const jumpTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onMoveRef           = useRef(onMove);
+
   useEffect(() => { pausedRef.current = paused; }, [paused]);
   useEffect(() => { onMoveRef.current = onMove; }, [onMove]);
 
+  // Sync screenX state when greeting starts (needed for bubble side only).
+  useEffect(() => {
+    if (greeting) setScreenX(screenXRef.current);
+  }, [greeting]);
+
+  // ── Re-sync Character DOM after any React render of NPC ────────────────────
+  // Runs before paint on every NPC render (jump, active, screenX, etc.).
+  // Ensures facing/walking DOM state survives React reconciliation.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    characterRef.current?.setFacing(greeting ? greetFacing : facingRef.current);
+    characterRef.current?.setWalking(!greeting && !paused && walkingRef.current);
+  });
+
+  // ── Imperative helpers — update ref + Character DOM together ────────────────
+  const applyFacing = (f: 'left' | 'right') => {
+    if (f === facingRef.current) return;
+    facingRef.current = f;
+    characterRef.current?.setFacing(f);
+  };
+  const applyWalking = (w: boolean) => {
+    if (w === walkingRef.current) return;
+    walkingRef.current = w;
+    characterRef.current?.setWalking(w);
+  };
+
   const speedPx = () => (personality.speed / 100) * vw();
 
-  /** Screen-% target → world-x (anchored to current player position). */
-  const pctToWorld = (pct: number) => screenPctToWorldX(pct, worldOffRef.current);
+  const pctToWorld = (pct: number) =>
+    screenPctToWorldX(pct, gameWorldOffRef.current);
 
   const pickWanderTarget = (curWorldX: number) => {
     const [prefLo, prefHi] = personality.wanderRange;
-    const curPct = worldXToScreenPct(curWorldX, worldOffRef.current);
+    const curPct = worldXToScreenPct(curWorldX, gameWorldOffRef.current);
     const avoiding = Date.now() < avoidPlayerUntil.current;
 
     if (avoiding) {
@@ -123,29 +154,32 @@ export default function NPC({
 
   const fleeFromPlayer = () => {
     avoidPlayerUntil.current = Date.now() + rndBetween(25_000, 45_000);
-    const curPct = worldXToScreenPct(worldXRef.current, worldOffRef.current);
+    const curPct = worldXToScreenPct(worldXRef.current, gameWorldOffRef.current);
     const fleeTarget = curPct <= 50
       ? pctToWorld(rndBetween(SCREEN_MIN, 5))
       : pctToWorld(rndBetween(95, SCREEN_MAX));
     targetWorldRef.current = fleeTarget;
     stateRef.current = 'wandering';
-    setFacing(fleeTarget > worldXRef.current ? 'right' : 'left');
-    setWalking(true);
+    applyFacing(fleeTarget > worldXRef.current ? 'right' : 'left');
+    applyWalking(true);
   };
 
   // ── Entry ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     const t = setTimeout(() => {
       worldXRef.current = pctToWorld(startX);
-      setActive(true);
+      // Always pick an on-screen entry target so the NPC walks into view.
+      const entryTargetPct = rndBetween(25, 75);
+      targetWorldRef.current = pctToWorld(entryTargetPct);
+      facingRef.current = entryTargetPct > startX ? 'right' : 'left';
+      walkingRef.current = true;
       stateRef.current = 'wandering';
-      targetWorldRef.current = pickWanderTarget(worldXRef.current);
-      setWalking(true);
-      setFacing(entryDirection);
+      // setActive triggers a render → useLayoutEffect will sync facing/walking.
+      setActive(true);
     }, entryDelay);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entryDelay, entryDirection]);
+  }, [entryDelay, startX]);
 
   // ── Decision loop ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -161,14 +195,14 @@ export default function NPC({
       if (stateRef.current === 'idle') {
         stateRef.current = 'wandering';
         targetWorldRef.current = pickWanderTarget(worldXRef.current);
-        setFacing(targetWorldRef.current > worldXRef.current ? 'right' : 'left');
-        setWalking(true);
+        applyFacing(targetWorldRef.current > worldXRef.current ? 'right' : 'left');
+        applyWalking(true);
         timer = setTimeout(decide, rndBetween(4000, 10_000));
         return;
       }
 
       stateRef.current = 'idle';
-      setWalking(false);
+      applyWalking(false);
       timer = setTimeout(decide, rndBetween(...personality.idleMs));
     };
 
@@ -178,20 +212,29 @@ export default function NPC({
       if (!pausedRef.current && Math.random() < personality.jumpiness && !jumpingRef.current) {
         jumpingRef.current = true;
         setJumping(true);
-        setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 560);
+        if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
+        jumpTimerRef.current = setTimeout(() => {
+          jumpTimerRef.current = null;
+          jumpingRef.current   = false;
+          setJumping(false);
+        }, 560);
       }
     }, rndBetween(2500, 6000));
 
-    return () => { clearTimeout(timer); clearInterval(jumpInterval); };
+    return () => {
+      clearTimeout(timer);
+      clearInterval(jumpInterval);
+      if (jumpTimerRef.current) { clearTimeout(jumpTimerRef.current); jumpTimerRef.current = null; }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, personality]);
 
-  // ── Movement RAF — updates world-x; screen position derived from worldOff ─
+  // ── Movement RAF — position via divRef, facing/walking via CharacterHandle ──
   useEffect(() => {
     if (!active) return;
 
     const loop = () => {
-      const off = worldOffRef.current;
+      const off = gameWorldOffRef.current;
 
       if (!pausedRef.current && stateRef.current === 'wandering') {
         const target = targetWorldRef.current;
@@ -202,15 +245,18 @@ export default function NPC({
         if (Math.abs(diff) < spd) {
           worldXRef.current = target;
           stateRef.current = 'idle';
-          setWalking(false);
+          applyWalking(false);
         } else {
           worldXRef.current += diff > 0 ? spd : -spd;
-          setFacing(diff > 0 ? 'right' : 'left');
-          setWalking(true);
+          applyFacing(diff > 0 ? 'right' : 'left');
+          applyWalking(true);
         }
       }
 
-      setScreenX(worldXToScreenPct(worldXRef.current, off));
+      // Position — direct DOM, no React state.
+      const pct = worldXToScreenPct(worldXRef.current, off);
+      screenXRef.current = pct;
+      if (divRef.current) divRef.current.style.left = `${pct}%`;
       onMoveRef.current(worldXRef.current);
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -219,6 +265,7 @@ export default function NPC({
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [active, personality]);
 
+  // ── Flee on disconnect ─────────────────────────────────────────────────────
   const wasGreetingRef = useRef(false);
   useEffect(() => {
     const justDisconnected = wasGreetingRef.current && !greeting;
@@ -226,27 +273,24 @@ export default function NPC({
     if (justDisconnected) fleeFromPlayer();
   }, [greeting]);
 
-  useEffect(() => {
-    if (greeting) { setWalking(false); setFacing(greetFacing); }
-    else if (paused) setWalking(false);
-  }, [paused, greeting, greetFacing]);
-
   if (!active) return null;
 
-  const displayFacing  = greeting ? greetFacing : facing;
-  const displayWalking = greeting || paused ? false : walking;
-
   return (
-    <div style={{
-      position: 'absolute',
-      left: `${screenX}%`,
-      bottom: CHAR_BOTTOM,
-      zIndex: greeting ? 200 : 18,
-    }}>
+    <div
+      ref={divRef}
+      style={{
+        position: 'absolute',
+        left: `${startX}%`,
+        bottom: CHAR_BOTTOM,
+        zIndex: greeting ? 200 : 18,
+      }}
+    >
       <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
         <Character
-          walking={displayWalking}
-          facing={displayFacing}
+          ref={characterRef}
+          // Initial values only — imperative setFacing/setWalking take over after mount.
+          walking={walkingRef.current}
+          facing={facingRef.current}
           dancing={dancing && !greeting}
           balloonColor={balloonColor}
           accessory={accessory}

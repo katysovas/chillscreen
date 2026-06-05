@@ -1,9 +1,9 @@
 import type { HTMLAttributes } from 'react';
-import Cinema, { CINEMA_SCALE } from '../Cinema';
+import Cinema, { CINEMA_SCALE, CINEMA_WIDTH } from '../Cinema';
 import Concert, { CONCERT_SCALE, CONCERT_WIDTH } from '../Concert';
-import { cinemaMidX, concertMidX, isVenueInView } from '@/lib/venues';
+import { cinemaMidX, concertMidX, isVenueInView, type VenueKind } from '@/lib/venues';
 
-export type VenueFocus = 'cinema' | 'concert';
+export type VenueFocus = VenueKind;
 
 export type CityVenuesTileProps = {
   tileIndex: number;
@@ -44,9 +44,23 @@ export function CityVenuesTile({
     concertX != null && isVenueInView(vx, t, concertX, concertHalf) ? (
       <>
         <g>
-          <ellipse cx={concertX} cy={668} rx={145} ry={14} fill="rgba(10,40,24,.25)" />
-          <rect x={concertX - 145} y={656} width={290} height={14} fill="#7a8a82" rx={3} />
-          <rect x={concertX - 145} y={656} width={290} height={4} fill="rgba(56,216,128,.1)" rx={2} />
+          <ellipse cx={concertX} cy={668} rx={concertFoW / 2 + 18} ry={16} fill="rgba(10,40,24,.25)" />
+          <rect
+            x={concertX - concertFoW / 2 - 18}
+            y={656}
+            width={concertFoW + 36}
+            height={14}
+            fill="#7a8a82"
+            rx={3}
+          />
+          <rect
+            x={concertX - concertFoW / 2 - 18}
+            y={656}
+            width={concertFoW + 36}
+            height={4}
+            fill="rgba(56,216,128,.1)"
+            rx={2}
+          />
         </g>
         <foreignObject
           x={concertX - concertFoW / 2}
@@ -74,9 +88,23 @@ export function CityVenuesTile({
     cinemaX != null && isVenueInView(vx, t, cinemaX, cinemaHalf) ? (
       <>
         <g>
-          <ellipse cx={cinemaX} cy={668} rx={105} ry={14} fill="rgba(20,40,80,.2)" />
-          <rect x={cinemaX - 105} y={656} width={210} height={14} fill="#8a9488" rx={3} />
-          <rect x={cinemaX - 105} y={656} width={210} height={4} fill="rgba(255,230,140,.08)" rx={2} />
+          <ellipse cx={cinemaX} cy={668} rx={cinemaFoW / 2 + 14} ry={16} fill="rgba(20,40,80,.2)" />
+          <rect
+            x={cinemaX - cinemaFoW / 2 - 14}
+            y={656}
+            width={cinemaFoW + 28}
+            height={14}
+            fill="#8a9488"
+            rx={3}
+          />
+          <rect
+            x={cinemaX - cinemaFoW / 2 - 14}
+            y={656}
+            width={cinemaFoW + 28}
+            height={4}
+            fill="rgba(255,230,140,.08)"
+            rx={2}
+          />
         </g>
         <foreignObject
           x={cinemaX - cinemaFoW / 2}
@@ -88,7 +116,7 @@ export function CityVenuesTile({
           <div
             {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
             style={{
-              width: 360,
+              width: CINEMA_WIDTH,
               transform: `scale(${CINEMA_SCALE})`,
               transformOrigin: 'top left',
               pointerEvents: t === cinemaLive ? 'auto' : 'none',

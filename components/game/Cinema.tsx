@@ -7,9 +7,9 @@ import { cinemaEmbedSrc, loadCinemaVideos } from '@/lib/cinemaVideoPool';
 type CinemaVideo = { id: string; title: string };
 
 const ROTATE_MS = 8 * 60 * 1000;
-const IFRAME_W = 350;
-const IFRAME_H = 197;
-const CIN_W = 400;
+const IFRAME_W = 400;
+const IFRAME_H = 225;
+const CIN_W = 460;
 
 // ── SF city palette — gold marquee on Victorian blue-gray ─────────────────────
 const S = `
@@ -316,6 +316,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
   const [videos, setVideos] = useState<CinemaVideo[]>([]);
   const [idx, setIdx] = useState(0);
   const [vidKey, setVidKey] = useState(0);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const videosRef = useRef(videos);
   videosRef.current = videos;
 
@@ -358,7 +359,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
   const marqueeTitle = video?.title ?? (live ? 'Loading…' : 'Cute Animals');
 
   return (
-    <div className="cin-wrap">
+    <div ref={wrapRef} className="cin-wrap">
       <style>{S}</style>
 
       <Crown />
@@ -380,6 +381,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
               title={video.title}
               width={IFRAME_W}
               height={IFRAME_H}
+              loading="lazy"
               allow="autoplay; encrypted-media; picture-in-picture"
               allowFullScreen
               style={{ display: 'block', border: 'none', background: '#000' }}
@@ -432,5 +434,5 @@ export default function Cinema({ live = true }: { live?: boolean }) {
 
 export { CINEMA_MID_X } from '@/lib/venues';
 export const CINEMA_WIDTH = CIN_W;
-export const CINEMA_SCALE = 0.58;
+export const CINEMA_SCALE = 0.74;
 export const CINEMA_HEIGHT = 593;
