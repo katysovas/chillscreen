@@ -321,14 +321,16 @@ export default function Cinema({ live = true }: { live?: boolean }) {
     return () => { if (live) setCinemaNowPlaying(null); };
   }, [live, video?.title]);
 
-  // Bake the current synced offset into the embed URL so the video loads at
-  // the right position from the first frame — no postMessage race needed.
-  const src = useMemo(() => {
-    if (!video) return '';
+  // Embed URL depends on syncedNow() — set after mount to avoid SSR/client mismatch.
+  const [src, setSrc] = useState('');
+  useEffect(() => {
+    if (!live || !video) {
+      setSrc('');
+      return;
+    }
     const sched = currentSchedule('cinema');
-    return cinemaEmbedSrc(video.id, sched?.offsetSec ?? 0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [video?.id, vidKey]);
+    setSrc(cinemaEmbedSrc(video.id, sched?.offsetSec ?? 0));
+  }, [live, video?.id, vidKey]);
 
   const onIframeLoad = () => {
     postCommand(iframeRef.current, 'playVideo');
@@ -370,7 +372,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
       <div className="cin-screen-section">
         <div className="cin-mist-top" />
         <div className="cin-screen-frame">
-          {live && video ? (
+          {live && video && src ? (
             <>
               <iframe
                 key={vidKey}

@@ -85,7 +85,7 @@ export function concertMidX(tile: number): number | null {
 
 /** Unique festival name for each city's concert stage. */
 export function concertLabel(tile: number): string | null {
-  if (isSeattleTile(tile)) return 'Bumbleshoot';
+  if (isSeattleTile(tile)) return 'Seattle Concerts';
   if (isSanFranciscoTile(tile)) return 'Outside Hands';
   return null;
 }

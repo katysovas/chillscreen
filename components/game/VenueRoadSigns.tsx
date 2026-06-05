@@ -370,7 +370,7 @@ export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSigns
         <VenueArrowSign
           tileIndex={tileIndex}
           venueMidX={concertMidX(tileIndex)!}
-          label={concertLabel(tileIndex) ?? 'Bumbleshoot'}
+          label={concertLabel(tileIndex) ?? 'Seattle Concerts'}
           accent="#1a9a52"
           icon="♪"
           groundTile={groundTile}

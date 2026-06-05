@@ -19,8 +19,5 @@ export function cinemaEmbedSrc(id: string, startSec = 0) {
     enablejsapi: '1',
   });
   if (startSec > 2) params.set('start', String(Math.floor(startSec)));
-  if (typeof window !== 'undefined') {
-    params.set('origin', window.location.origin);
-  }
   return `https://www.youtube-nocookie.com/embed/${id}?${params}`;
 }

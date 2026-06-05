@@ -1,18 +1,15 @@
 import type { HTMLAttributes } from 'react';
 import Cinema, { CINEMA_SCALE, CINEMA_WIDTH } from '../Cinema';
 import Concert, { CONCERT_SCALE, CONCERT_WIDTH } from '../Concert';
-import { cinemaMidX, concertChannel, concertLabel, concertMidX, isVenueInView, type VenueKind } from '@/lib/venues';
+import { cinemaMidX, concertChannel, concertLabel, concertMidX, type VenueKind } from '@/lib/venues';
 
 export type VenueFocus = VenueKind;
 
 export type CityVenuesTileProps = {
   tileIndex: number;
-  vx: number;
   cinemaLive: number;
   concertLive: number;
   focus: VenueFocus;
-  cinemaHalf: number;
-  concertHalf: number;
   cinemaFoW: number;
   cinemaFoH: number;
   cinemaFoY: number;
@@ -24,12 +21,9 @@ export type CityVenuesTileProps = {
 /** Cinema and concert venues for one mid-layer tile. */
 export function CityVenuesTile({
   tileIndex: t,
-  vx,
   cinemaLive,
   concertLive,
   focus,
-  cinemaHalf,
-  concertHalf,
   cinemaFoW,
   cinemaFoH,
   cinemaFoY,
@@ -40,8 +34,10 @@ export function CityVenuesTile({
   const concertX = concertMidX(t);
   const cinemaX = cinemaMidX(t);
 
+  // Always render on the tile — parallax viewBox scrolling slides them in from
+  // the edge. Gating on isVenueInView used stale scroll state and made venues pop in.
   const concertBlock =
-    concertX != null && isVenueInView(vx, t, concertX, concertHalf) ? (
+    concertX != null ? (
       <>
         <g>
           <ellipse cx={concertX} cy={668} rx={concertFoW / 2 + 18} ry={16} fill="rgba(10,40,24,.25)" />
@@ -89,7 +85,7 @@ export function CityVenuesTile({
     ) : null;
 
   const cinemaBlock =
-    cinemaX != null && isVenueInView(vx, t, cinemaX, cinemaHalf) ? (
+    cinemaX != null ? (
       <>
         <g>
           <ellipse cx={cinemaX} cy={668} rx={cinemaFoW / 2 + 14} ry={16} fill="rgba(20,40,80,.2)" />

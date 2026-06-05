@@ -37,14 +37,23 @@ type Options = PeerEvents & {
 };
 
 // Host of the deployed PartyKit room (e.g. "chillscreen.<user>.partykit.dev").
-// Falls back to the local `partykit dev` server. Accepts a bare host or a full
-// URL — PartySocket only wants the host[:port], and auto-selects ws/wss.
-const PARTYKIT_HOST = (
-  process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? '127.0.0.1:1999'
-)
-  .trim()
-  .replace(/^[a-z]+:\/\//i, '')
-  .replace(/\/+$/, '');
+// On localhost we always use the local `partykit dev` server so `.env.local`
+// can keep the production host for deploys. Accepts a bare host or a full URL —
+// PartySocket only wants the host[:port], and auto-selects ws/wss.
+function partyKitHost(): string {
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return '127.0.0.1:1999';
+    }
+  }
+  return (
+    process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? '127.0.0.1:1999'
+  )
+    .trim()
+    .replace(/^[a-z]+:\/\//i, '')
+    .replace(/\/+$/, '');
+}
 
 export type Multiplayer = {
   selfId: string | null;
@@ -87,7 +96,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   }, []);
 
   useEffect(() => {
-    const socket = new PartySocket({ host: PARTYKIT_HOST, room: ROOM_ID });
+    const socket = new PartySocket({ host: partyKitHost(), room: ROOM_ID });
     socketRef.current = socket;
 
     const announceJoin = () => {

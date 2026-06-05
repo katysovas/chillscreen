@@ -98,7 +98,7 @@ export default function Concert({
   channel = 'outside-lands' as StageChannel,
 }: {
   live?: boolean;
-  /** Permanent festival name shown on the marquee banner (e.g. "Bumbershoot"). */
+  /** Permanent festival name shown on the marquee banner (e.g. "Seattle Concerts"). */
   label?: string;
   /** Synchronized playback channel for this stage. */
   channel?: StageChannel;

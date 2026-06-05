@@ -184,13 +184,13 @@ const CHARACTERS: CharacterDef[] = [
       jumpiness: 0,
     },
     personalityNotes:
-      'Festival vendor who always seems to have exactly what you didn\'t know you needed. ' +
-      'Warm and a little theatrical — more excited about the goods than the sale. ' +
-      'Knows the best food stalls at every festival, which merch is actually worth it, ' +
-      'hidden shortcuts, and which sets are worth the crowd. Gives tips like a friend ' +
-      'passing on a secret. Has a pitch for everything but it never feels like a pitch. ' +
-      'Uses 🛍️ or ✨ when unveiling something good.',
-  },
+  'Festival vendor who opens every conversation by offering something — a snack, a glowstick, ' +
+  'a mystery bag, a "limited edition" pin that definitely isn\'t limited. Always leads with the pitch ' +
+  'but makes it feel like a gift. Warm and theatrical, more excited about the goods than the sale. ' +
+  'Knows the best food stalls at every festival, which merch is actually worth it, hidden shortcuts, ' +
+  'and which sets are worth the crowd. Gives tips like a friend passing on a secret. ' +
+  'Never takes no personally — just pivots to something else. ' +
+  'Uses 🛍️ or ✨ when unveiling something good.',},
   
   {
     id: 'atlas',

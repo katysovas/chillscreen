@@ -2,14 +2,11 @@ import { forwardRef, memo, useCallback } from 'react';
 import { CINEMA_SCALE, CINEMA_HEIGHT, CINEMA_WIDTH } from '../Cinema';
 import { CONCERT_SCALE, CONCERT_HEIGHT, CONCERT_WIDTH } from '../Concert';
 import {
-  coachellaMidX,
   cinemaLiveTile,
   coachellaLiveTile,
   concertLiveTile,
-  isVenueInView,
   venueInFocus,
 } from '@/lib/venues';
-import { COACHELLA_STAGE_HALF } from './sandiego/constants';
 import { isSouthernCaliforniaTile, worldTileKind } from '@/lib/worldTiles';
 import { CITY_MID_W, MID_F, midOriginForTile, midWidthForTile, nearMidTiles } from '@/lib/parallax';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
@@ -47,15 +44,11 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
     const cinemaFoW  = CINEMA_WIDTH * CINEMA_SCALE;
     const cinemaFoH  = CINEMA_HEIGHT * CINEMA_SCALE;
     const cinemaFoY  = 670 - cinemaFoH;
-    const cinemaHalf = Math.ceil(cinemaFoW / 2) + 24;
     const concertFoW = CONCERT_WIDTH * CONCERT_SCALE;
     const concertFoH = CONCERT_HEIGHT * CONCERT_SCALE;
     const concertFoY = 670 - concertFoH;
-    const concertHalf = Math.ceil(concertFoW / 2) + 24;
 
     // Render callback is only recreated when venue-focus state changes.
-    // vx is intentionally omitted: isVenueInView is a secondary pixel check —
-    // a slightly stale vx value is imperceptible and keeps 2 of 3 tiles stable.
     const renderTile = useCallback((t: number) => {
       const kind  = worldTileKind(t);
       const w     = midWidthForTile(t);
@@ -82,17 +75,14 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
               </>
             )}
             {/* Concert stage on every stage city (SF "Outside Hands", Seattle
-                "Bumbleshoot") + cinema on SF. concertMidX/cinemaMidX return null
+                "Seattle Concerts") + cinema on SF. concertMidX/cinemaMidX return null
                 for tiles they don't own, so this is safe for all kinds. */}
             {(kind === 'sf' || kind === 'seattle') && (
               <CityVenuesTile
                 tileIndex={t}
-                vx={vx}
                 cinemaLive={cinemaLive}
                 concertLive={concertLive}
                 focus={focus}
-                cinemaHalf={cinemaHalf}
-                concertHalf={concertHalf}
                 cinemaFoW={cinemaFoW}
                 cinemaFoH={cinemaFoH}
                 cinemaFoY={cinemaFoY}
@@ -101,15 +91,12 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
                 concertFoY={concertFoY}
               />
             )}
-            {isSouthernCaliforniaTile(t) && (() => {
-              const lx   = coachellaMidX(t);
-              const live =
-                t === coachellaLive &&
-                focus === 'coachella' &&
-                lx != null &&
-                isVenueInView(vx, t, lx, COACHELLA_STAGE_HALF);
-              return <SouthernCaliforniaTile tileIndex={t} coachellaLive={live} />;
-            })()}
+            {isSouthernCaliforniaTile(t) && (
+              <SouthernCaliforniaTile
+                tileIndex={t}
+                coachellaLive={t === coachellaLive && focus === 'coachella'}
+              />
+            )}
           </g>
           {/* Town cottages render OUTSIDE the horizontal scale so their buildings
               and trees keep natural proportions in the short town tiles (the
@@ -125,8 +112,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
         </>
       );
     // Tile content re-renders when venue focus/live state changes.
-    // vx, cinemaHalf/concertHalf are excluded — they're either derived from the
-    // above deps or are build-time constants.
+    // worldOff / vx are excluded — viewBox scrolls imperatively every frame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cinemaLive, concertLive, coachellaLive, focus]);
 

@@ -60,13 +60,19 @@ const KF = `${CITY_SCENE_KEYFRAMES}\n${CHARACTER_STYLES}`;
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function SFCity() {
+type SFCityProps = {
+  /** When set (venue deep link), spawn centered on that stage instead of random. */
+  spawnWorldOff?: number;
+};
+
+export default function SFCity({ spawnWorldOff: spawnOverride }: SFCityProps = {}) {
   const skyPeriod  = useSkyPeriod();
-  const spawnWorldOff = useSyncExternalStore(
+  const randomSpawn = useSyncExternalStore(
     subscribeSpawnWorldOff,
     getClientSpawnWorldOff,
     serverSpawnWorldOff,
   );
+  const spawnWorldOff = spawnOverride ?? randomSpawn;
   const worldRef        = useRef(spawnWorldOff);
   const keysRef         = useRef({ left: false, right: false });
   const facingRef       = useRef<'left' | 'right'>('right');

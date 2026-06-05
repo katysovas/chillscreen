@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { setConcertInView } from '@/lib/concertNow';
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
 import { currentSchedule, useStageChannel } from '@/lib/stageClock';
@@ -119,17 +119,16 @@ export function useStagePlayer({
     };
   }, [vidKey, live]);
 
-  // Bake the current synced offset into the URL when the iframe is (re)mounted.
-  // Recomputes only when the video or vidKey changes (i.e. on rotation), so the
-  // same `src` string is stable across unrelated re-renders and won't reload the
-  // iframe unnecessarily.
-  const src = useMemo(() => {
-    if (!video) return '';
+  // Embed URL depends on syncedNow() — set after mount to avoid SSR/client mismatch.
+  const [src, setSrc] = useState('');
+  useEffect(() => {
+    if (!live || !video) {
+      setSrc('');
+      return;
+    }
     const sched = currentSchedule(channel);
-    return embedSrc(video.id, sched?.offsetSec ?? 0);
-  // vidKey bumps on each rotation — that's when we want a fresh start offset.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [video?.id, vidKey, channel]);
+    setSrc(embedSrc(video.id, sched?.offsetSec ?? 0));
+  }, [live, video?.id, vidKey, channel]);
 
   const [siteMuted, setSiteMuted] = useState(false);
   const siteMutedRef = useRef(siteMuted);
