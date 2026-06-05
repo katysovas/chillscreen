@@ -9,6 +9,7 @@ import {
   type Facing,
   type PlayerProfile,
 } from './protocol';
+import { applyServerStageSync } from '@/lib/stageClock';
 
 /** What a remote avatar needs to render — kept in a ref, mutated without rerenders. */
 export type RemotePlayerState = {
@@ -114,6 +115,11 @@ export function useMultiplayer(opts: Options): Multiplayer {
       switch (msg.t) {
         case 'welcome': {
           setSelfId(msg.selfId);
+          // Align our clock + adopt the pinned playlists so every venue plays
+          // the same synchronized video for everyone in the room.
+          if (msg.serverNow != null && msg.stage) {
+            applyServerStageSync(msg.serverNow, msg.stage);
+          }
           roster.clear();
           for (const p of msg.players) {
             roster.set(p.id, {

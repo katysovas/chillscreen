@@ -4,15 +4,7 @@ import { useRef } from 'react';
 import type { HTMLAttributes, ReactElement } from 'react';
 import { SD_GND, FEST_COLORS, COACHELLA_STAGE_MID_X, COACHELLA_STAGE_SCALE } from './constants';
 import { setCoachellaNowPlaying } from '@/lib/coachellaNowPlaying';
-import { useStagePlayer, STAGE_IFRAME_STYLE, type StageVideo } from '../../useStagePlayer';
-
-const FALLBACK: StageVideo[] = [
-  { id: 'jfKfPfyJRdk', title: 'Lo-Fi Girl Radio' },
-  { id: '5qap5aO4i9A', title: 'Lo-Fi Beats 24/7' },
-  { id: 'MVPTGNGiI-4', title: 'Jazz Café' },
-  { id: 'lTRiuFIWV54', title: 'Ocean Waves' },
-  { id: 'DWcJFNfaw9c', title: 'Rain & Chill' },
-];
+import { useStagePlayer, STAGE_IFRAME_STYLE } from '../../useStagePlayer';
 
 const STAGE_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&display=swap');
@@ -46,9 +38,8 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live,
-    apiPath: '/api/coachella/videos',
+    channel: 'coachella',
     iframeRef,
-    fallback: FALLBACK,
     onNowPlaying: setCoachellaNowPlaying,
   });
 
@@ -281,7 +272,7 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
           pointerEvents: 'none',
         }}
       >
-        <div style={{ width: iframeW, height: iframeH, overflow: 'hidden', position: 'relative', background: '#000' }}>
+        <div style={{ width: iframeW, height: iframeH, background: '#000' }}>
           {src && (
             <iframe
               key={vidKey}

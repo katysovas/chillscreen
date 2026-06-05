@@ -36,7 +36,6 @@ import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow'
 import { getConcertNowPlaying, subscribeConcertNowPlaying } from '@/lib/concertNowPlaying';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import { isNearStage } from '@/lib/concertDance';
-import { loadCinemaVideos } from '@/lib/cinemaVideoPool';
 import { LovingCarLayer } from './LovingCar';
 import { WelcomePopup } from './WelcomePopup';
 import { SkyCreaturesLayer } from './SkyCreatures';
@@ -256,7 +255,6 @@ export default function SFCity() {
       setShowWelcome(true);
     }
   }, []);
-  useEffect(() => { loadCinemaVideos(); }, []);
 
   useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
   useEffect(() => { chatHistoryRef.current = chatHistory; }, [chatHistory]);

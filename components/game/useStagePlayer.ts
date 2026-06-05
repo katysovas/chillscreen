@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { setConcertInView } from '@/lib/concertNow';
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
+import { useStageChannel } from '@/lib/stageClock';
+import type { StageChannel } from '@/lib/stageVideos';
 
-export type StageVideo = { id: string; title: string };
-
-const ROTATE_MS = 8 * 60 * 1000;
+export type { StageVideo } from '@/lib/stageVideos';
 
 /** Hidden-chrome, muted-autoplay embed (autoplay is always allowed when muted,
  *  so the big center play button never shows and the frame never sits black). */
@@ -36,68 +36,55 @@ function postCommand(iframe: HTMLIFrameElement | null, func: string, args: unkno
   );
 }
 
-function pickRandomIndex(videos: StageVideo[], exclude?: number) {
-  if (videos.length <= 1) return 0;
-  let next: number;
-  do { next = Math.floor(Math.random() * videos.length); }
-  while (next === exclude);
-  return next;
-}
-
-/** Oversize + crop styles so YouTube's chrome is pushed outside the window. */
 export const STAGE_IFRAME_STYLE: React.CSSProperties = {
-  position: 'absolute',
-  top: '-12%',
-  left: '-12%',
-  width: '124%',
-  height: '124%',
+  width: '100%',
+  height: '100%',
   border: 'none',
   pointerEvents: 'none',
+  display: 'block',
 };
 
 type UseStagePlayerOptions = {
   live: boolean;
-  apiPath: string;
+  /** Synchronized playback channel — picks the shared, pinned playlist. */
+  channel: StageChannel;
   /** The player <iframe> (rendered declaratively by the caller). */
   iframeRef: RefObject<HTMLIFrameElement | null>;
-  fallback: StageVideo[];
   /** Called with the current video title (or null) while this stage is live. */
   onNowPlaying?: (title: string | null) => void;
 };
 
 type UseStagePlayerResult = {
-  video: StageVideo | undefined;
+  video: import('@/lib/stageVideos').StageVideo | undefined;
   /** iframe src — empty string when nothing should be mounted. */
   src: string;
   /** Forces a fresh iframe element on each video change. */
   vidKey: number;
-  /** Wire to the iframe's onLoad — kicks playback + applies mute state. */
+  /** Wire to the iframe's onLoad — kicks playback, seeks to the shared
+   *  position, and applies mute state. */
   onIframeLoad: () => void;
 };
 
 /**
  * Shared concert/festival YouTube logic. Renders a plain (declarative) iframe
  * — reliable inside SVG <foreignObject> — that autoplays muted so it never
- * sits black or shows the center play button, then unmutes via postMessage
- * once loaded (unless the site is muted). Fetches + rotates the playlist and
- * marks the stage "in view" so website audio and stage audio never overlap.
+ * sits black or shows the center play button, then seeks to the synchronized
+ * position and unmutes via postMessage once loaded (unless the site is muted).
+ *
+ * The video + position come from the shared, server-pinned schedule
+ * (`@/lib/stageClock`), so every connected user sees the same video at the same
+ * time. The stage also marks itself "in view" so website + stage audio never
+ * overlap.
  */
 export function useStagePlayer({
-  live, apiPath, iframeRef, fallback, onNowPlaying,
+  live, channel, iframeRef, onNowPlaying,
 }: UseStagePlayerOptions): UseStagePlayerResult {
-  const [videos, setVideos] = useState<StageVideo[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [vidKey, setVidKey] = useState(0);
-  const videosRef = useRef(videos);
-  videosRef.current = videos;
+  const { video, vidKey } = useStageChannel(channel, live);
+  const src = video ? embedSrc(video.id) : '';
 
   const [siteMuted, setSiteMuted] = useState(false);
   const siteMutedRef = useRef(siteMuted);
   siteMutedRef.current = siteMuted;
-
-  const pool = videos.length ? videos : fallback;
-  const video = live ? pool[idx] : undefined;
-  const src = video ? embedSrc(video.id) : '';
 
   useEffect(() => {
     setSiteMuted(getAudioMuted());
@@ -120,45 +107,6 @@ export function useStagePlayer({
   useEffect(() => {
     if (live) onNowPlayingRef.current?.(video?.title ?? null);
   }, [live, video?.title]);
-
-  // Fetch the playlist when the stage goes live.
-  useEffect(() => {
-    if (!live) return;
-    let cancelled = false;
-
-    fetch(apiPath)
-      .then(r => r.json())
-      .then((data: { videos?: StageVideo[] }) => {
-        if (cancelled) return;
-        const next = data.videos?.length ? data.videos : fallback;
-        setVideos(next);
-        setIdx(Math.floor(Math.random() * next.length));
-        setVidKey(k => k + 1);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setVideos(fallback);
-          setIdx(Math.floor(Math.random() * fallback.length));
-          setVidKey(k => k + 1);
-        }
-      });
-
-    return () => { cancelled = true; };
-  // apiPath/fallback are stable per mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live]);
-
-  // Rotate videos periodically.
-  useEffect(() => {
-    if (!live || videos.length === 0) return;
-    const id = setInterval(() => {
-      const next = videosRef.current;
-      if (next.length === 0) return;
-      setIdx(prev => pickRandomIndex(next, prev));
-      setVidKey(k => k + 1);
-    }, ROTATE_MS);
-    return () => clearInterval(id);
-  }, [live, videos.length]);
 
   const onIframeLoad = useCallback(() => {
     const f = iframeRef.current;

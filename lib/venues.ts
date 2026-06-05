@@ -7,6 +7,7 @@ import {
 } from '@/lib/worldTiles';
 import { midCycleWidth, midOriginForTile, midTileAtX } from '@/lib/worldTileGeometry';
 import { COACHELLA_STAGE_HALF, COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
+import type { StageChannel } from '@/lib/stageVideos';
 
 /** Mid-layer venues — one type per tile, revealed as you scroll past the screen edge. */
 
@@ -89,11 +90,11 @@ export function concertLabel(tile: number): string | null {
   return null;
 }
 
-/** API route to fetch the correct playlist for each city's stage. */
-export function concertApiPath(tile: number): string {
-  if (isSeattleTile(tile)) return '/api/concert/bumbershoot/videos';
-  if (isSanFranciscoTile(tile)) return '/api/concert/outside-lands/videos';
-  return '/api/concert/videos';
+/** Synchronized playback channel (pinned playlist) for each city's stage. */
+export function concertChannel(tile: number): StageChannel {
+  if (isSeattleTile(tile)) return 'bumbershoot';
+  if (isSanFranciscoTile(tile)) return 'outside-lands';
+  return 'concert';
 }
 
 /** Coachella stage x (Coachella tiles only). */

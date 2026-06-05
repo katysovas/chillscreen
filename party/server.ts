@@ -5,6 +5,7 @@ import {
   type PlayerState,
   type ServerMessage,
 } from '../lib/multiplayer/protocol';
+import { ROTATE_MS, STAGE_EPOCH, STAGE_PLAYLISTS } from '../lib/stageVideos';
 
 /**
  * Chillscreen presence room.
@@ -20,16 +21,34 @@ export default class ChillscreenServer implements Party.Server {
   constructor(readonly room: Party.Room) {}
 
   onConnect(conn: Party.Connection) {
-    // Hand the newcomer the current roster so it can render everyone already here.
+    // Hand the newcomer the current roster + the synchronized-playback bootstrap:
+    // our wall-clock (so it can correct clock skew) and the pinned playlists +
+    // epoch every client schedules against. The schedule is fully deterministic,
+    // so no further per-tick messages are needed (survives room hibernation).
     const welcome: ServerMessage = {
       t: 'welcome',
       selfId: conn.id,
       players: [...this.players.values()],
+      serverNow: Date.now(),
+      stage: { epoch: STAGE_EPOCH, rotateMs: ROTATE_MS, playlists: STAGE_PLAYLISTS },
     };
     conn.send(encode(welcome));
   }
 
   onMessage(raw: string, sender: Party.Connection) {
+    try {
+      this.handleMessage(raw, sender);
+    } catch (err) {
+      // Surface handler crashes in Workers Logs / `partykit tail` instead of
+      // letting an unhandled rejection take down the room.
+      console.error(
+        `[chillscreen] onMessage failed room=${this.room.id} conn=${sender.id}`,
+        err,
+      );
+    }
+  }
+
+  private handleMessage(raw: string, sender: Party.Connection) {
     const msg = decodeClient(raw);
     if (!msg) return;
 
@@ -98,7 +117,11 @@ export default class ChillscreenServer implements Party.Server {
     }
   }
 
-  onError(conn: Party.Connection) {
+  onError(conn: Party.Connection, err: Error) {
+    console.error(
+      `[chillscreen] connection error room=${this.room.id} conn=${conn.id}`,
+      err,
+    );
     this.onClose(conn);
   }
 

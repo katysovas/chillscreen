@@ -2,5 +2,9 @@
   "$schema": "https://www.partykit.io/schema.json",
   "name": "chillscreen",
   "main": "party/server.ts",
-  "compatibilityDate": "2025-06-01"
+  "compatibilityDate": "2025-06-01",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
 }

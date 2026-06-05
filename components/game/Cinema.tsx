@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { setCinemaNowPlaying } from '@/lib/cinemaNow';
-import { cinemaEmbedSrc, loadCinemaVideos } from '@/lib/cinemaVideoPool';
+import { cinemaEmbedSrc } from '@/lib/cinemaVideoPool';
+import { useStageChannel } from '@/lib/stageClock';
 
-type CinemaVideo = { id: string; title: string };
-
-const ROTATE_MS = 8 * 60 * 1000;
 const IFRAME_W = 400;
 const IFRAME_H = 225;
 const CIN_W = 460;
@@ -304,47 +302,18 @@ function Crown() {
   );
 }
 
-function pickRandomIndex(videos: CinemaVideo[], exclude?: number) {
-  if (videos.length <= 1) return 0;
-  let next: number;
-  do { next = Math.floor(Math.random() * videos.length); }
-  while (next === exclude);
-  return next;
+/** Send a command to a YouTube embed via the IFrame API postMessage protocol. */
+function postCommand(iframe: HTMLIFrameElement | null, func: string, args: unknown[] = []) {
+  iframe?.contentWindow?.postMessage(
+    JSON.stringify({ event: 'command', func, args }),
+    '*',
+  );
 }
 
 export default function Cinema({ live = true }: { live?: boolean }) {
-  const [videos, setVideos] = useState<CinemaVideo[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [vidKey, setVidKey] = useState(0);
+  const { video, vidKey } = useStageChannel('cinema', live);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const videosRef = useRef(videos);
-  videosRef.current = videos;
-
-  useEffect(() => {
-    let cancelled = false;
-
-    loadCinemaVideos().then(list => {
-      if (cancelled || list.length === 0) return;
-      setVideos(list);
-      setIdx(Math.floor(Math.random() * list.length));
-      setVidKey(k => k + 1);
-    });
-
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    if (!live || videos.length === 0) return;
-    const id = setInterval(() => {
-      const pool = videosRef.current;
-      if (pool.length === 0) return;
-      setIdx(prev => pickRandomIndex(pool, prev));
-      setVidKey(k => k + 1);
-    }, ROTATE_MS);
-    return () => clearInterval(id);
-  }, [live, videos.length]);
-
-  const video = videos[idx];
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (live && video?.title) setCinemaNowPlaying(video.title);
@@ -353,6 +322,10 @@ export default function Cinema({ live = true }: { live?: boolean }) {
       if (live) setCinemaNowPlaying(null);
     };
   }, [live, video?.title]);
+
+  const onIframeLoad = () => {
+    postCommand(iframeRef.current, 'playVideo');
+  };
 
   const src = video ? cinemaEmbedSrc(video.id) : '';
   const bulbs = useMemo(() => Array.from({ length: 18 }), []);
@@ -376,11 +349,13 @@ export default function Cinema({ live = true }: { live?: boolean }) {
           {live && video ? (
             <iframe
               key={vidKey}
+              ref={iframeRef}
               className="cin-iframe"
               src={src}
               title={video.title}
               width={IFRAME_W}
               height={IFRAME_H}
+              onLoad={onIframeLoad}
               loading="lazy"
               allow="autoplay; encrypted-media; picture-in-picture"
               allowFullScreen
@@ -402,7 +377,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
           {bulbs.map((_, i) => <div key={i} className="cin-bulb" />)}
         </div>
         <div className="cin-now">Now Playing</div>
-        <div key={idx} className="cin-title">{marqueeTitle}</div>
+        <div key={vidKey} className="cin-title">{marqueeTitle}</div>
       </div>
 
       <div className="cin-facade">

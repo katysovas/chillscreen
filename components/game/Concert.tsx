@@ -2,22 +2,8 @@
 
 import { useMemo, useRef, useId } from 'react';
 import { setConcertNowPlaying } from '@/lib/concertNowPlaying';
-import { useStagePlayer, STAGE_IFRAME_STYLE, type StageVideo } from './useStagePlayer';
-
-type ConcertVideo = StageVideo;
-
-const FALLBACK: ConcertVideo[] = [
-  { id: 'jfKfPfyJRdk', title: 'Lo-Fi Girl Radio' },
-  { id: '5qap5aO4i9A', title: 'Lo-Fi Beats 24/7' },
-  { id: 'MVPTGNGiI-4', title: 'Jazz Café' },
-  { id: 'lTRiuFIWV54', title: 'Ocean Waves' },
-  { id: 'DWcJFNfaw9c', title: 'Rain & Chill' },
-  { id: 'q76bMs-NwRk', title: 'Coffee Shop Ambience' },
-  { id: 'n61ULEU7CO0', title: 'Midnight Jazz' },
-  { id: 'kgx4WGK0oNU', title: 'Piano in the Rain' },
-  { id: '7NOSDKb0HlU', title: 'Classical Vibes' },
-  { id: 'HuFYqnbVbzY', title: 'City Sounds' },
-];
+import { useStagePlayer, STAGE_IFRAME_STYLE } from './useStagePlayer';
+import type { StageChannel } from '@/lib/stageVideos';
 
 const S = `
   @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@300;400;700;900&family=Cormorant+Garamond:ital,wght@1,300&display=swap');
@@ -109,22 +95,21 @@ export const CONCERT_SCALE = 0.74;
 export default function Concert({
   live = false,
   label,
-  apiPath = '/api/concert/videos',
+  channel = 'concert',
 }: {
   live?: boolean;
   /** Permanent festival name shown on the marquee banner (e.g. "Bumbershoot"). */
   label?: string;
-  /** API route to fetch the video playlist from. Defaults to /api/concert/videos. */
-  apiPath?: string;
+  /** Synchronized playback channel for this stage. Defaults to 'concert'. */
+  channel?: StageChannel;
 }) {
   const uid = useId().replace(/:/g, '');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live,
-    apiPath,
+    channel,
     iframeRef,
-    fallback: FALLBACK,
     onNowPlaying: setConcertNowPlaying,
   });
 
@@ -273,7 +258,7 @@ export default function Concert({
           {/* The API replaces a child node with the player iframe; the host div
               stays React-managed while the iframe lives inside it. overflow
               hidden + the cropIframe() oversize hides YouTube's chrome. */}
-          <div style={{ width: 310, height: 190, overflow: 'hidden', position: 'relative', background: '#000' }}>
+          <div style={{ width: 310, height: 190, background: '#000' }}>
             {src && (
               <iframe
                 key={vidKey}
