@@ -63,15 +63,17 @@ export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
     { id: 'iqQvfMi4UIk', title: 'AURORA', durationSec: 4251 },
     { id: 'SDHXMAxVe5Q', title: 'Elliott Smith', durationSec: 4148 },
     { id: '0rkjl7oJfLc', title: 'Fishbone', durationSec: 3838 },
-    { id: 'Yysc6zA1lUY', title: 'Hozier', durationSec: 5773 },
-    { id: 'Ca2XXPfWdqU', title: 'flipturn', durationSec: 2755 },
-    { id: 'KDVQA5oL7sQ', title: 'GRYFFIN', durationSec: 4477 },
-    { id: 'PeMr2TQEObc', title: 'Jhon Summit ', durationSec: 4776 },
+
+
 
   ],
   'outside-lands': [
     { id: 'uQ588C9Ecp4', title: 'Fisher', durationSec: 4381 },
     { id: 'fauxnAUc-c4', title: 'Phoebe Bridgers', durationSec: 4214 },
+    { id: 'Yysc6zA1lUY', title: 'Hozier', durationSec: 5773 },
+    { id: 'PeMr2TQEObc', title: 'Jhon Summit ', durationSec: 4776 },
+    { id: 'KDVQA5oL7sQ', title: 'GRYFFIN', durationSec: 4477 },
+    { id: 'Ca2XXPfWdqU', title: 'flipturn', durationSec: 2755 },
   ],
   coachella: [
     { id: 'EkIfxAHlgJA', title: 'TV' },
