@@ -29,7 +29,6 @@ const TEST_SPAWN_NPC_ID: string | null = null;
 import {
   getPlayerName,
   setPlayerName as savePlayerName,
-  isValidPlayerName,
 } from '@/lib/playerStorage';
 import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
@@ -39,6 +38,7 @@ import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import { isNearStage } from '@/lib/concertDance';
 import { loadCinemaVideos } from '@/lib/cinemaVideoPool';
 import { LovingCarLayer } from './LovingCar';
+import { WelcomePopup } from './WelcomePopup';
 import { SkyCreaturesLayer } from './SkyCreatures';
 import { CITY_SCENE_KEYFRAMES } from './city/citySceneKeyframes';
 import { CHARACTER_STYLES } from './characterStyles';
@@ -117,10 +117,10 @@ export default function SFCity() {
   const [nearNpc,     setNearNpc]     = useState<number | null>(null);
   const [greetNpcX,   setGreetNpcX]   = useState(50);
   // ── Player chat ─────────────────────────────────────────────────────────────
-  type ChatMode = null | 'name' | 'chat';
+  type ChatMode = null | 'chat';
+  const [showWelcome,   setShowWelcome]   = useState(false);
   const [playerName,    setPlayerName]    = useState<string | null>(null);
   const [chatMode,      setChatMode]      = useState<ChatMode>(null);
-  const [nameDraft,     setNameDraft]     = useState('');
   const [chatDraft,     setChatDraft]     = useState('');
   const [playerMessage, setPlayerMessage] = useState<string | null>(null);
   const [npcMessage,    setNpcMessage]    = useState<string | null>(null);
@@ -130,7 +130,6 @@ export default function SFCity() {
   const [cinemaNowPlaying, setCinemaNowPlaying]   = useState<string | null>(null);
   const [concertNowPlaying, setConcertNowPlaying] = useState<string | null>(null);
   const chatInputRef = useRef<HTMLInputElement | null>(null);
-  const nameInputRef = useRef<HTMLInputElement | null>(null);
   const playerNameRef = useRef<string | null>(null);
   const chatAbortRef = useRef<AbortController | null>(null);
   const sentMessageRef = useRef('');
@@ -205,13 +204,8 @@ export default function SFCity() {
     nearPeerRef.current = null; setNearPeer(null);
     nearNpcRef.current = null;  setNearNpc(null);
     if (announce) mpRef.current?.openPeerChat(peerId);
-    if (playerNameRef.current) {
-      setChatMode('chat');
-      setTimeout(() => chatInputRef.current?.focus(), 120);
-    } else {
-      setChatMode('name');
-      setTimeout(() => nameInputRef.current?.focus(), 120);
-    }
+    setChatMode('chat');
+    setTimeout(() => chatInputRef.current?.focus(), 120);
   }, []);
   beginPeerChatRef.current = beginPeerChat;
 
@@ -224,7 +218,6 @@ export default function SFCity() {
     setPeerMessage(null);
     setPeerTyping(false);
     setChatMode(null);
-    setNameDraft('');
     setChatDraft('');
     setPlayerMessage(null);
     disconnectUntil.current = Date.now() + 2000;
@@ -255,7 +248,14 @@ export default function SFCity() {
   // updateViewBoxes is stable (no deps); spawnWorldOff is the only meaningful dep
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spawnWorldOff]);
-  useEffect(() => { setPlayerName(getPlayerName()); }, []);
+  useEffect(() => {
+    const stored = getPlayerName();
+    if (stored) {
+      setPlayerName(stored);
+    } else {
+      setShowWelcome(true);
+    }
+  }, []);
   useEffect(() => { loadCinemaVideos(); }, []);
 
   useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
@@ -399,14 +399,10 @@ export default function SFCity() {
     setChatSendTick(t => t + 1);
   };
 
-  const handleSaveName = () => {
-    const trimmed = nameDraft.trim();
-    if (!isValidPlayerName(trimmed)) return;
-    savePlayerName(trimmed);
-    setPlayerName(trimmed);
-    setNameDraft('');
-    setChatMode('chat');
-    setTimeout(() => chatInputRef.current?.focus(), 30);
+  const handleWelcomeName = (name: string) => {
+    savePlayerName(name);
+    setPlayerName(name);
+    setShowWelcome(false);
   };
 
   // ── Audio ──────────────────────────────────────────────────────────────────
@@ -510,19 +506,13 @@ export default function SFCity() {
       setGreetingNpc(null);
       disconnectUntil.current = Date.now() + 2000;
       setChatMode(null);
-      setNameDraft('');
       setChatDraft('');
       setPlayerMessage(null);
     };
 
     const openChatPanel = () => {
-      if (!playerNameRef.current) {
-        setChatMode('name');
-        setTimeout(() => nameInputRef.current?.focus(), 30);
-      } else {
-        setChatMode('chat');
-        setTimeout(() => chatInputRef.current?.focus(), 30);
-      }
+      setChatMode('chat');
+      setTimeout(() => chatInputRef.current?.focus(), 30);
     };
 
     const onDown = (e: KeyboardEvent) => {
@@ -533,7 +523,6 @@ export default function SFCity() {
           triggerJump();
         } else {
           setChatMode(null);
-          setNameDraft('');
           setChatDraft('');
         }
         return;
@@ -801,14 +790,10 @@ export default function SFCity() {
                 chatMode={chatMode}
                 playerName={playerName}
                 playerMessage={playerMessage}
-                nameDraft={nameDraft}
-                setNameDraft={setNameDraft}
                 chatDraft={chatDraft}
                 setChatDraft={setChatDraft}
-                onSaveName={handleSaveName}
                 onSendMessage={handleSendMessage}
                 chatInputRef={chatInputRef}
-                nameInputRef={nameInputRef}
               />
             ) : undefined}
           />
@@ -832,7 +817,7 @@ export default function SFCity() {
       )}
 
       {/* Greeting status bar */}
-      {inConversation && chatMode !== 'chat' && chatMode !== 'name' && (
+      {inConversation && chatMode !== 'chat' && (
         <div style={{
           position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
           zIndex: 40, pointerEvents: 'none',
@@ -846,7 +831,7 @@ export default function SFCity() {
         }}>
           <span>↑ or esc · say goodbye to {conversationPartnerName}</span>
           <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
-          <span>{playerName ? '↵ chat' : '↵ enter name'}</span>
+          <span>↵ chat</span>
         </div>
       )}
 
@@ -855,6 +840,14 @@ export default function SFCity() {
         position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30,
         background: 'radial-gradient(ellipse 92% 90% at 50% 46%, transparent 38%, rgba(0,0,0,.5) 100%)',
       }} />
+
+      {/* Welcome popup — shown on first visit (no stored name). */}
+      {showWelcome && (
+        <WelcomePopup
+          balloonColor={myColor}
+          onEnter={handleWelcomeName}
+        />
+      )}
 
      
 

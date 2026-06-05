@@ -41,6 +41,7 @@ type Options = PeerEvents & {
 const PARTYKIT_HOST = (
   process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? '127.0.0.1:1999'
 )
+  .trim()
   .replace(/^[a-z]+:\/\//i, '')
   .replace(/\/+$/, '');
 

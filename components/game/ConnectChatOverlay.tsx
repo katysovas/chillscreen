@@ -10,9 +10,8 @@ import {
   playerBubbleSide,
   type BubbleSide,
 } from './ChatBubble';
-import { isValidPlayerName, sanitizePlayerNameInput } from '@/lib/playerStorage';
 
-type ChatMode = null | 'name' | 'chat';
+type ChatMode = null | 'chat';
 
 export function NpcChatOverlay({
   name,
@@ -39,27 +38,19 @@ export function PlayerChatOverlay({
   chatMode,
   playerName,
   playerMessage,
-  nameDraft,
-  setNameDraft,
   chatDraft,
   setChatDraft,
-  onSaveName,
   onSendMessage,
   chatInputRef,
-  nameInputRef,
 }: {
   npcScreenX: number;
   chatMode: ChatMode;
   playerName: string | null;
   playerMessage: string | null;
-  nameDraft: string;
-  setNameDraft: (v: string) => void;
   chatDraft: string;
   setChatDraft: (v: string) => void;
-  onSaveName: () => void;
   onSendMessage: (text: string) => void;
   chatInputRef: React.RefObject<HTMLInputElement | null>;
-  nameInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
   const [vw, setVw] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200,
@@ -73,42 +64,6 @@ export function PlayerChatOverlay({
   const spread = getConversationSpread(npcScreenX, vw, playerBubbleSide(npcScreenX));
   const side = playerBubbleSide(npcScreenX);
   const stackAlign = side === 'left' ? 'flex-end' : 'flex-start';
-
-  if (chatMode === 'name') {
-    return (
-      <div style={spread}>
-        <AttachedInputBubble side={side}>
-          <input
-            ref={nameInputRef}
-            value={nameDraft}
-            onChange={e => setNameDraft(sanitizePlayerNameInput(e.target.value))}
-            onKeyDown={e => { if (e.key === 'Enter') onSaveName(); }}
-            placeholder="Your name…"
-            style={{
-              border: 'none', outline: 'none', fontSize: 13,
-              flex: 1, background: 'transparent', color: '#222',
-              fontFamily: 'inherit',
-            }}
-            autoComplete="off"
-          />
-          <button
-            type="button"
-            onClick={onSaveName}
-            disabled={!isValidPlayerName(nameDraft)}
-            style={{
-              border: 'none', borderRadius: 8, padding: '4px 10px',
-              fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
-              cursor: isValidPlayerName(nameDraft) ? 'pointer' : 'default',
-              background: isValidPlayerName(nameDraft) ? '#222' : '#ddd',
-              color: isValidPlayerName(nameDraft) ? '#fff' : '#999',
-            }}
-          >
-            Save
-          </button>
-        </AttachedInputBubble>
-      </div>
-    );
-  }
 
   if (chatMode === 'chat') {
     return (
@@ -157,7 +112,7 @@ export function PlayerChatOverlay({
   return (
     <div style={spread}>
       <AttachedHint side={side}>
-        {playerName ? '↵ chat' : '↵ enter name'}
+        ↵ chat
       </AttachedHint>
     </div>
   );
