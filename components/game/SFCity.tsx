@@ -48,6 +48,7 @@ import { SkyLayer } from './city/SkyLayer';
 import { MidLayer } from './city/MidLayer';
 import { GroundLayer } from './city/GroundLayer';
 import { VenueSignsLayer } from './city/VenueSignsLayer';
+import { WelcomeSignLayer } from './city/WelcomeSignLayer';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { DPadBtn } from './DPadBtn';
 import type { VenueRoute } from '@/lib/venueRoutes';
@@ -91,6 +92,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const midRef    = useRef<SVGSVGElement>(null);
   const groundRef = useRef<SVGSVGElement>(null);
   const signsRef  = useRef<SVGSVGElement>(null);
+  const welcomeRef = useRef<SVGSVGElement>(null);
   const cloudsRef = useRef<SVGSVGElement>(null);
   const lastScrollBucketRef = useRef(0);
 
@@ -104,6 +106,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     midRef.current?.setAttribute('viewBox', vb(midVx));
     groundRef.current?.setAttribute('viewBox', vb(gndVx));
     signsRef.current?.setAttribute('viewBox', vb(gndVx));
+    welcomeRef.current?.setAttribute('viewBox', vb(gndVx));
     cloudsRef.current?.setAttribute('viewBox', vb(skyVx));
   };
 
@@ -745,6 +748,13 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       <SkyCreaturesLayer period={skyPeriod} worldOff={scrollWorldOff} cloudsSvgRef={cloudsRef} />
       <GroundLayer      ref={groundRef} worldOff={scrollWorldOff} />
       <VenueSignsLayer  ref={signsRef}  worldOff={scrollWorldOff} />
+      {!venueRoute && (
+        <WelcomeSignLayer
+          ref={welcomeRef}
+          worldOff={scrollWorldOff}
+          spawnWorldOff={spawnWorldOff}
+        />
+      )}
 
       <LovingCarLayer />
 

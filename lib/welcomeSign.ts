@@ -1,0 +1,91 @@
+import { COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
+import { EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
+import { MID_F } from '@/lib/parallax';
+import {
+  CINEMA_SIGN_MID_X,
+  cinemaMidX,
+  concertLabel,
+  concertMidX,
+  VIEW_CENTER_X,
+} from '@/lib/venues';
+import { cityTileIndex } from '@/lib/spawn';
+import { midOriginForTile } from '@/lib/worldTileGeometry';
+
+/** Ground-x offset from spawn center (player at 50%) — sign sits to the right. */
+export const WELCOME_SIGN_OFFSET_X = 300;
+
+export type WelcomeStageEntry = {
+  id: string;
+  label: string;
+  icon: string;
+  accent: string;
+  tileIndex: number;
+  venueMidX: number;
+};
+
+/** All stages a new player can walk to, in west-to-east world order. */
+export function welcomeStageEntries(): WelcomeStageEntry[] {
+  const sf = cityTileIndex('sf');
+  const vegas = cityTileIndex('vegas');
+  const socal = cityTileIndex('san_diego');
+  const seattle = cityTileIndex('seattle');
+
+  return [
+    {
+      id: 'outside-hands',
+      label: concertLabel(sf) ?? 'Outside Hands',
+      icon: '♪',
+      accent: '#1a9a52',
+      tileIndex: sf,
+      venueMidX: concertMidX(sf) ?? 880,
+    },
+    {
+      id: 'cinema',
+      label: 'Cinema',
+      icon: '🎬',
+      accent: '#b8860b',
+      tileIndex: sf,
+      venueMidX: cinemaMidX(sf) ?? CINEMA_SIGN_MID_X,
+    },
+    {
+      id: 'edc',
+      label: 'Electric Daze',
+      icon: '🦉',
+      accent: '#00e5ff',
+      tileIndex: vegas,
+      venueMidX: EDC_STAGE_MID_X,
+    },
+    {
+      id: 'coachella',
+      label: 'Couchella',
+      icon: '🎡',
+      accent: '#e85074',
+      tileIndex: socal,
+      venueMidX: COACHELLA_STAGE_MID_X,
+    },
+    {
+      id: 'seattle',
+      label: concertLabel(seattle) ?? 'Seattle Concerts',
+      icon: '♪',
+      accent: '#1a9a52',
+      tileIndex: seattle,
+      venueMidX: concertMidX(seattle) ?? 880,
+    },
+  ];
+}
+
+/** Walk direction from a ground-layer x to a mid-layer venue (same math as venue signs). */
+export function walkDirectionFromGroundX(
+  signGroundX: number,
+  tileIndex: number,
+  venueMidX: number,
+): 'left' | 'right' {
+  const worldOffVenueCenters =
+    (midOriginForTile(tileIndex) + venueMidX - VIEW_CENTER_X) / MID_F;
+  const worldOffSignCenters = signGroundX - VIEW_CENTER_X;
+  return worldOffVenueCenters >= worldOffSignCenters ? 'right' : 'left';
+}
+
+export function welcomeSignGroundX(spawnWorldOff: number): number {
+  return spawnWorldOff + WELCOME_SIGN_OFFSET_X;
+}
