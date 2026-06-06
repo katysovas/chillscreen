@@ -15,5 +15,5 @@ export default async function VenuePage({ params }: VenuePageProps) {
   const route = parseVenueSlug(venue);
   if (!route) notFound();
 
-  return <SFCity spawnWorldOff={worldOffForVenueRoute(route)} />;
+  return <SFCity spawnWorldOff={worldOffForVenueRoute(route)} venueRoute={route} />;
 }

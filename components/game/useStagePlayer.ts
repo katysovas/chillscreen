@@ -7,37 +7,18 @@ import { currentSchedule, useStageChannel } from '@/lib/stageClock';
 import type { StageChannel } from '@/lib/stageVideos';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import { anyStageInView } from '@/lib/venues';
+import {
+  kickYouTubePlayback,
+  postCommand,
+  scheduleYouTubePlaybackKicks,
+  stageEmbedSrc,
+} from '@/lib/youtubePlayer';
 
 export type { StageVideo } from '@/lib/stageVideos';
 
-/** Hidden-chrome, muted-autoplay embed.
- *  `startSec` is baked into the URL so the video loads from the synced
- *  position on the very first frame — no postMessage race needed. */
+/** Hidden-chrome, muted-autoplay embed — see stageEmbedSrc. */
 function embedSrc(id: string, startSec = 0): string {
-  const params = new URLSearchParams({
-    autoplay: '1',
-    mute: '1',
-    controls: '0',
-    rel: '0',
-    modestbranding: '1',
-    iv_load_policy: '3',
-    fs: '0',
-    disablekb: '1',
-    playsinline: '1',
-    loop: '1',
-    playlist: id,
-    enablejsapi: '1',
-  });
-  if (startSec > 2) params.set('start', String(Math.floor(startSec)));
-  return `https://www.youtube-nocookie.com/embed/${id}?${params}`;
-}
-
-/** Send a command to a YouTube embed via the IFrame API postMessage protocol. */
-function postCommand(iframe: HTMLIFrameElement | null, func: string, args: unknown[] = []) {
-  iframe?.contentWindow?.postMessage(
-    JSON.stringify({ event: 'command', func, args }),
-    '*',
-  );
+  return stageEmbedSrc(id, startSec);
 }
 
 export const STAGE_IFRAME_STYLE: React.CSSProperties = {
@@ -130,6 +111,20 @@ export function useStagePlayer({
     setSrc(embedSrc(video.id, sched?.offsetSec ?? 0));
   }, [live, video?.id, vidKey, channel]);
 
+  // Retry play after src is set — onLoad alone is often too early for YouTube.
+  useEffect(() => {
+    if (!live || !src) return;
+    let cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
+    const afterPaint = requestAnimationFrame(() => {
+      cancelRetries();
+      cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
+    });
+    return () => {
+      cancelAnimationFrame(afterPaint);
+      cancelRetries();
+    };
+  }, [live, src, vidKey, iframeRef]);
+
   const [siteMuted, setSiteMuted] = useState(false);
   const siteMutedRef = useRef(siteMuted);
   siteMutedRef.current = siteMuted;
@@ -158,9 +153,7 @@ export function useStagePlayer({
 
   const onIframeLoad = useCallback(() => {
     const f = iframeRef.current;
-    // Belt-and-suspenders: ensure the player is playing and apply mute state.
-    // The start position is already handled by the `start=N` URL param.
-    postCommand(f, 'playVideo');
+    kickYouTubePlayback(f);
     if (siteMutedRef.current) {
       postCommand(f, 'mute');
     } else {

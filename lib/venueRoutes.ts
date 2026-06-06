@@ -1,5 +1,6 @@
 import { cityTileIndex } from '@/lib/spawn';
-import { cinemaMidX, coachellaMidX, concertMidX, MID_PARALLAX, VIEW_CENTER_X } from '@/lib/venues';
+import { isSouthernCaliforniaTile } from '@/lib/worldTiles';
+import { cinemaMidX, coachellaMidX, concertMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
 import { midOriginForTile } from '@/lib/worldTileGeometry';
 
 /** Deep-linkable venue destinations. */
@@ -65,4 +66,59 @@ export function worldOffForVenueRoute(route: VenueRoute): number {
       return worldOffCenteringMidX(tile, midX);
     }
   }
+}
+
+/** Whether a venue should be live on `tileIndex` for scroll-based playback. */
+export function isScrollVenueLive(
+  kind: VenueKind,
+  tileIndex: number,
+  cinemaLive: number,
+  concertLive: number,
+  coachellaLive: number,
+  focus: VenueKind,
+): boolean {
+  switch (kind) {
+    case 'cinema':
+      return tileIndex === cinemaLive;
+    case 'concert':
+      return tileIndex === concertLive && focus === 'concert';
+    case 'coachella':
+      return tileIndex === coachellaLive && focus === 'coachella';
+  }
+}
+
+/**
+ * Deep-link override: the pinned venue is live on first paint without waiting
+ * for scroll/focus heuristics to catch up.
+ */
+export function isDeepLinkVenueLive(
+  route: VenueRoute,
+  kind: VenueKind,
+  tileIndex: number,
+): boolean {
+  switch (route) {
+    case 'cinema':
+      return kind === 'cinema' && tileIndex === cityTileIndex('sf');
+    case 'outside-hands':
+      return kind === 'concert' && tileIndex === cityTileIndex('sf');
+    case 'seattle-concerts':
+      return kind === 'concert' && tileIndex === cityTileIndex('seattle');
+    case 'coachella':
+      return kind === 'coachella' && isSouthernCaliforniaTile(tileIndex);
+  }
+}
+
+export function isVenueLive(
+  kind: VenueKind,
+  tileIndex: number,
+  cinemaLive: number,
+  concertLive: number,
+  coachellaLive: number,
+  focus: VenueKind,
+  deepLinkRoute?: VenueRoute,
+): boolean {
+  if (deepLinkRoute && isDeepLinkVenueLive(deepLinkRoute, kind, tileIndex)) {
+    return true;
+  }
+  return isScrollVenueLive(kind, tileIndex, cinemaLive, concertLive, coachellaLive, focus);
 }

@@ -50,6 +50,7 @@ import { GroundLayer } from './city/GroundLayer';
 import { VenueSignsLayer } from './city/VenueSignsLayer';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { DPadBtn } from './DPadBtn';
+import type { VenueRoute } from '@/lib/venueRoutes';
 
 const KF = `${CITY_SCENE_KEYFRAMES}\n${CHARACTER_STYLES}`;
 
@@ -63,9 +64,11 @@ const KF = `${CITY_SCENE_KEYFRAMES}\n${CHARACTER_STYLES}`;
 type SFCityProps = {
   /** When set (venue deep link), spawn centered on that stage instead of random. */
   spawnWorldOff?: number;
+  /** Which venue was deep-linked — keeps that stage live on first paint. */
+  venueRoute?: VenueRoute;
 };
 
-export default function SFCity({ spawnWorldOff: spawnOverride }: SFCityProps = {}) {
+export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFCityProps = {}) {
   const skyPeriod  = useSkyPeriod();
   const randomSpawn = useSyncExternalStore(
     subscribeSpawnWorldOff,
@@ -112,8 +115,10 @@ export default function SFCity({ spawnWorldOff: spawnOverride }: SFCityProps = {
   const nearNpcRef        = useRef<number | null>(null);
   const disconnectUntil   = useRef(0);
 
-  // scrollWorldOff only updates at tile boundaries — drives React content renders
-  const [scrollWorldOff, setScrollWorldOff] = useState(serverSpawnWorldOff);
+  // Venue deep links pin scroll on first paint; home uses SSR default then random spawn.
+  const [scrollWorldOff, setScrollWorldOff] = useState(
+    () => spawnOverride ?? serverSpawnWorldOff(),
+  );
   const [facing,    setFacing]    = useState<'left' | 'right'>('right');
   const [walking,   setWalking]   = useState(false);
   const [jumping,   setJumping]   = useState(false);
@@ -731,7 +736,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride }: SFCityProps = {
       <style>{KF}</style>
 
       <SkyLayer ref={skyRef} worldOff={scrollWorldOff} period={skyPeriod} />
-      <MidLayer         ref={midRef}    worldOff={scrollWorldOff} />
+      <MidLayer ref={midRef} worldOff={scrollWorldOff} deepLinkRoute={venueRoute} />
       <SkyCreaturesLayer period={skyPeriod} worldOff={scrollWorldOff} cloudsSvgRef={cloudsRef} />
       <GroundLayer      ref={groundRef} worldOff={scrollWorldOff} />
       <VenueSignsLayer  ref={signsRef}  worldOff={scrollWorldOff} />

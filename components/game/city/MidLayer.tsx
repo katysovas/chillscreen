@@ -19,9 +19,12 @@ import { SeattleBuildingsTile, SeattleMidFeatures } from './seattle';
 import { SouthernCaliforniaTile } from './sandiego';
 import { SmallTownTile, SmallTownTerrain } from './town';
 import { TransitionWater } from './transition';
+import type { VenueRoute } from '@/lib/venueRoutes';
+import { isVenueLive } from '@/lib/venueRoutes';
 
 type MidLayerProps = {
   worldOff: number;
+  deepLinkRoute?: VenueRoute;
 };
 
 function tileContentScale(tileIndex: number) {
@@ -30,7 +33,7 @@ function tileContentScale(tileIndex: number) {
 
 /** Mid parallax: SF → short town → San Diego+Coachella → short town → Seattle → short town. */
 export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
-  function MidLayer({ worldOff }, ref) {
+  function MidLayer({ worldOff, deepLinkRoute }, ref) {
     const vx = worldOff * MID_F;
 
     // Venue-focus values — change only when the player walks into/out of a venue.
@@ -89,12 +92,15 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
                 concertFoW={concertFoW}
                 concertFoH={concertFoH}
                 concertFoY={concertFoY}
+                deepLinkRoute={deepLinkRoute}
               />
             )}
             {isSouthernCaliforniaTile(t) && (
               <SouthernCaliforniaTile
                 tileIndex={t}
-                coachellaLive={t === coachellaLive && focus === 'coachella'}
+                coachellaLive={isVenueLive(
+                  'coachella', t, cinemaLive, concertLive, coachellaLive, focus, deepLinkRoute,
+                )}
               />
             )}
           </g>
@@ -114,7 +120,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
     // Tile content re-renders when venue focus/live state changes.
     // worldOff / vx are excluded — viewBox scrolls imperatively every frame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [cinemaLive, concertLive, coachellaLive, focus]);
+    }, [cinemaLive, concertLive, coachellaLive, focus, deepLinkRoute]);
 
     return (
       <ParallaxSvgLayer

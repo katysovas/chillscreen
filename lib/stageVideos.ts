@@ -63,6 +63,7 @@ export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
     { id: 'iqQvfMi4UIk', title: 'AURORA', durationSec: 4251 },
     { id: 'SDHXMAxVe5Q', title: 'Elliott Smith', durationSec: 4148 },
     { id: '0rkjl7oJfLc', title: 'st', durationSec: 3838 },
+    { id: 'lU1Po5IyPP0', title: 'Rolling Stones', durationSec: 3838 },
 
 
 

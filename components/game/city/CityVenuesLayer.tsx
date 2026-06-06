@@ -2,6 +2,8 @@ import type { HTMLAttributes } from 'react';
 import Cinema, { CINEMA_SCALE, CINEMA_WIDTH } from '../Cinema';
 import Concert, { CONCERT_SCALE, CONCERT_WIDTH } from '../Concert';
 import { cinemaMidX, concertChannel, concertLabel, concertMidX, type VenueKind } from '@/lib/venues';
+import type { VenueRoute } from '@/lib/venueRoutes';
+import { isVenueLive } from '@/lib/venueRoutes';
 
 export type VenueFocus = VenueKind;
 
@@ -16,6 +18,8 @@ export type CityVenuesTileProps = {
   concertFoW: number;
   concertFoH: number;
   concertFoY: number;
+  /** When set, the deep-linked venue is live on first paint. */
+  deepLinkRoute?: VenueRoute;
 };
 
 /** Cinema and concert venues for one mid-layer tile. */
@@ -30,9 +34,16 @@ export function CityVenuesTile({
   concertFoW,
   concertFoH,
   concertFoY,
+  deepLinkRoute,
 }: CityVenuesTileProps) {
   const concertX = concertMidX(t);
   const cinemaX = cinemaMidX(t);
+  const concertLiveNow = isVenueLive(
+    'concert', t, cinemaLive, concertLive, 0, focus, deepLinkRoute,
+  );
+  const cinemaLiveNow = isVenueLive(
+    'cinema', t, cinemaLive, concertLive, 0, focus, deepLinkRoute,
+  );
 
   // Always render on the tile — parallax viewBox scrolling slides them in from
   // the edge. Gating on isVenueInView used stale scroll state and made venues pop in.
@@ -71,11 +82,11 @@ export function CityVenuesTile({
               width: CONCERT_WIDTH,
               transform: `scale(${CONCERT_SCALE})`,
               transformOrigin: 'top left',
-              pointerEvents: t === concertLive && focus === 'concert' ? 'auto' : 'none',
+              pointerEvents: concertLiveNow ? 'auto' : 'none',
             }}
           >
             <Concert
-              live={t === concertLive && focus === 'concert'}
+              live={concertLiveNow}
               label={concertLabel(t) ?? undefined}
               channel={concertChannel(t)}
             />
@@ -119,10 +130,10 @@ export function CityVenuesTile({
               width: CINEMA_WIDTH,
               transform: `scale(${CINEMA_SCALE})`,
               transformOrigin: 'top left',
-              pointerEvents: t === cinemaLive ? 'auto' : 'none',
+              pointerEvents: cinemaLiveNow ? 'auto' : 'none',
             }}
           >
-            <Cinema live={t === cinemaLive} />
+            <Cinema live={cinemaLiveNow} />
           </div>
         </foreignObject>
       </>

@@ -4,6 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { setCinemaNowPlaying } from '@/lib/cinemaNow';
 import { cinemaEmbedSrc } from '@/lib/cinemaVideoPool';
 import { currentSchedule, useStageChannel } from '@/lib/stageClock';
+import {
+  kickYouTubePlayback,
+  scheduleYouTubePlaybackKicks,
+} from '@/lib/youtubePlayer';
 
 const IFRAME_W = 400;
 const IFRAME_H = 225;
@@ -302,14 +306,6 @@ function Crown() {
   );
 }
 
-/** Send a command to a YouTube embed via the IFrame API postMessage protocol. */
-function postCommand(iframe: HTMLIFrameElement | null, func: string, args: unknown[] = []) {
-  iframe?.contentWindow?.postMessage(
-    JSON.stringify({ event: 'command', func, args }),
-    '*',
-  );
-}
-
 export default function Cinema({ live = true }: { live?: boolean }) {
   const { video, vidKey } = useStageChannel('cinema', live);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -332,8 +328,21 @@ export default function Cinema({ live = true }: { live?: boolean }) {
     setSrc(cinemaEmbedSrc(video.id, sched?.offsetSec ?? 0));
   }, [live, video?.id, vidKey]);
 
+  useEffect(() => {
+    if (!live || !src) return;
+    let cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
+    const afterPaint = requestAnimationFrame(() => {
+      cancelRetries();
+      cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
+    });
+    return () => {
+      cancelAnimationFrame(afterPaint);
+      cancelRetries();
+    };
+  }, [live, src, vidKey]);
+
   const onIframeLoad = () => {
-    postCommand(iframeRef.current, 'playVideo');
+    kickYouTubePlayback(iframeRef.current);
   };
 
   // Hide the iframe overlay until YouTube fires playerState=1 (playing).
@@ -383,7 +392,6 @@ export default function Cinema({ live = true }: { live?: boolean }) {
                 width={IFRAME_W}
                 height={IFRAME_H}
                 onLoad={onIframeLoad}
-                loading="lazy"
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
                 style={{ display: 'block', border: 'none', background: '#000' }}

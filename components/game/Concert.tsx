@@ -266,7 +266,6 @@ export default function Concert({
                 src={src}
                 title={video?.title ?? 'Live'}
                 onLoad={onIframeLoad}
-                loading="lazy"
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
                 style={STAGE_IFRAME_STYLE}

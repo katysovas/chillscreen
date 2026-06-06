@@ -280,7 +280,6 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
               src={src}
               title={video?.title ?? 'Couchella'}
               onLoad={onIframeLoad}
-              loading="lazy"
               allow="autoplay; encrypted-media; picture-in-picture"
               allowFullScreen
               style={STAGE_IFRAME_STYLE}
