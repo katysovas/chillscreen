@@ -3,8 +3,12 @@
  *
  * Synchronized playback is purely deterministic: every client derives the same
  * "current video + position" from a shared clock + these playlists, so everyone
- * sees the same thing at the same time on loop. No YouTube Data API and no
- * per-client randomness — just edit the lists below to curate each venue.
+ * sees the same thing at the same time on loop.
+ *
+ * Channels use either:
+ *   • `source: 'curated'` — hardcoded video IDs in this file
+ *   • `source: 'youtube-api'` — playlist built from a YouTube search query
+ *     (resolved server-side via YouTube Data API v3; see resolveStagePlaylists)
  *
  * Each video plays for exactly `durationSec` seconds before the schedule moves
  * to the next one. Set it to the real video length and the rotation aligns
@@ -32,7 +36,92 @@ export type StageChannel =
   | 'cinema'
   | 'bumbershoot'
   | 'outside-lands'
-  | 'coachella';
+  | 'coachella'
+  | 'edc';
+
+export type CuratedChannelConfig = {
+  source: 'curated';
+  videos: StageVideo[];
+};
+
+export type YoutubeApiChannelConfig = {
+  source: 'youtube-api';
+  /** YouTube Data API v3 search query. */
+  searchQuery: string;
+  maxResults?: number;
+  /** Used when the API key is missing or the search fails. */
+  fallbackVideos?: StageVideo[];
+};
+
+export type StageChannelConfig = CuratedChannelConfig | YoutubeApiChannelConfig;
+
+/**
+ * Per-channel playback source. Edit this to curate venues or point a stage at
+ * YouTube search results instead of hardcoded IDs.
+ */
+export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
+  cinema: {
+    source: 'curated',
+    videos: [
+      { id: 'RhOwyHWGqWg', title: 'Cute Baby Animals 4K', durationSec: 11673 },
+      { id: 'lTRiuFIWV54', title: 'Ocean Waves', durationSec: 3674 },
+    ],
+  },
+  bumbershoot: {
+    source: 'curated',
+    videos: [
+      { id: 'iqQvfMi4UIk', title: 'AURORA', durationSec: 4251 },
+      { id: 'SDHXMAxVe5Q', title: 'Elliott Smith', durationSec: 4148 },
+      { id: '0rkjl7oJfLc', title: 'st', durationSec: 3838 },
+      { id: 'lU1Po5IyPP0', title: 'Rolling Stones', durationSec: 3838 },
+    ],
+  },
+  'outside-lands': {
+    source: 'curated',
+    videos: [
+      { id: 'uQ588C9Ecp4', title: 'Fisher', durationSec: 4381 },
+      { id: 'fauxnAUc-c4', title: 'Phoebe Bridgers', durationSec: 4214 },
+      { id: 'Yysc6zA1lUY', title: 'Hozier', durationSec: 5773 },
+      { id: 'PeMr2TQEObc', title: 'Jhon Summit ', durationSec: 4776 },
+      { id: 'KDVQA5oL7sQ', title: 'GRYFFIN', durationSec: 4477 },
+      { id: 'Ca2XXPfWdqU', title: 'flipturn', durationSec: 2755 },
+      { id: '3NyGf1X_gFA', title: 'Kaytranada', durationSec: 3838 },
+    ],
+  },
+  coachella: {
+    source: 'curated',
+    videos: [
+      { id: 'EkIfxAHlgJA', title: 'TV' },
+    ],
+  },
+  edc: {
+    source: 'youtube-api',
+    searchQuery: 'Vegas EDC Full Set',
+    maxResults: 20,
+    fallbackVideos: [
+      { id: 'uQ588C9Ecp4', title: 'Fisher', durationSec: 4381 },
+      { id: '3NyGf1X_gFA', title: 'Kaytranada', durationSec: 3838 },
+      { id: 'PeMr2TQEObc', title: 'John Summit', durationSec: 4776 },
+    ],
+  },
+};
+
+function fallbackPlaylist(cfg: StageChannelConfig): StageVideo[] {
+  if (cfg.source === 'curated') return cfg.videos;
+  return cfg.fallbackVideos ?? [];
+}
+
+/**
+ * Fallback playlists (curated + API-channel fallbacks). The live resolver
+ * replaces `youtube-api` channels when YOUTUBE_API_KEY is available.
+ */
+export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
+  cinema: fallbackPlaylist(STAGE_CHANNEL_CONFIG.cinema),
+  bumbershoot: fallbackPlaylist(STAGE_CHANNEL_CONFIG.bumbershoot),
+  'outside-lands': fallbackPlaylist(STAGE_CHANNEL_CONFIG['outside-lands']),
+  coachella: fallbackPlaylist(STAGE_CHANNEL_CONFIG.coachella),
+  edc: fallbackPlaylist(STAGE_CHANNEL_CONFIG.edc),
+};
 
 /**
  * Fallback slot length for any video without an explicit `durationSec`.
@@ -47,40 +136,6 @@ export const DEFAULT_DURATION_MS = 60 * 60 * 1000; // 1 hour
  * lines up for everyone regardless of when they joined.
  */
 export const STAGE_EPOCH = Date.UTC(2025, 0, 1);
-
-/**
- * The curated playlists. Order matters — the schedule walks each list in order
- * and loops back to the top. Set `durationSec` to the real video length so
- * each clip plays fully before rotating to the next.
- */
-export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
-  cinema: [
-    { id: 'RhOwyHWGqWg', title: 'Cute Baby Animals 4K', durationSec: 11673 },
-    { id: 'lTRiuFIWV54', title: 'Ocean Waves', durationSec: 3674 },
-  ],
-  bumbershoot: [
-
-    { id: 'iqQvfMi4UIk', title: 'AURORA', durationSec: 4251 },
-    { id: 'SDHXMAxVe5Q', title: 'Elliott Smith', durationSec: 4148 },
-    { id: '0rkjl7oJfLc', title: 'st', durationSec: 3838 },
-    { id: 'lU1Po5IyPP0', title: 'Rolling Stones', durationSec: 3838 },
-
-
-
-  ],
-  'outside-lands': [
-    { id: 'uQ588C9Ecp4', title: 'Fisher', durationSec: 4381 },
-    { id: 'fauxnAUc-c4', title: 'Phoebe Bridgers', durationSec: 4214 },
-    { id: 'Yysc6zA1lUY', title: 'Hozier', durationSec: 5773 },
-    { id: 'PeMr2TQEObc', title: 'Jhon Summit ', durationSec: 4776 },
-    { id: 'KDVQA5oL7sQ', title: 'GRYFFIN', durationSec: 4477 },
-    { id: 'Ca2XXPfWdqU', title: 'flipturn', durationSec: 2755 },
-    { id: '3NyGf1X_gFA', title: 'Kaytranada', durationSec: 3838 },
-  ],
-  coachella: [
-    { id: 'EkIfxAHlgJA', title: 'TV' },
-  ],
-};
 
 /** Timing + playlists the server pins and the client schedules against. */
 export type StageSync = {

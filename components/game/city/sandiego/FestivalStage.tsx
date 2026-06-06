@@ -2,7 +2,13 @@
 
 import { useRef } from 'react';
 import type { HTMLAttributes, ReactElement } from 'react';
-import { SD_GND, FEST_COLORS, COACHELLA_STAGE_MID_X, COACHELLA_STAGE_SCALE } from './constants';
+import {
+  COACHELLA_STAGE_PUSH_Y,
+  COACHELLA_STAGE_SCALE,
+  COACHELLA_STAGE_MID_X,
+  FEST_COLORS,
+  SD_GND,
+} from './constants';
 import { setCoachellaNowPlaying } from '@/lib/coachellaNowPlaying';
 import { useStagePlayer, STAGE_IFRAME_STYLE } from '../../useStagePlayer';
 
@@ -82,13 +88,15 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
   // space so the player can render via the same foreignObject + XHTML-div +
   // CSS-scale pattern used by Concert / Cinema (the only reliable embed path).
   const S = COACHELLA_STAGE_SCALE;
+  const pushY = COACHELLA_STAGE_PUSH_Y;
   const videoFoX = ox + S * (iframeX - ox);
-  const videoFoY = oy + S * (iframeY - oy);
+  const videoFoY = oy + S * (iframeY - oy) + pushY;
   const videoFoW = iframeW * S;
   const videoFoH = iframeH * S;
 
   return (
     <>
+    <g transform={`translate(0, ${pushY})`}>
     <g transform={`translate(${ox},${oy}) scale(${COACHELLA_STAGE_SCALE}) translate(${-ox},${-oy})`}>
       <defs>
         <style>{STAGE_CSS}</style>
@@ -257,6 +265,7 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
         style={{ animation: 'sdc-marquee 3s ease-in-out infinite' }}>
         {marquee.toUpperCase().slice(0, 30)}
       </text>
+    </g>
     </g>
 
     {/* YouTube player — identical embed path to Concert / Cinema: an unscaled

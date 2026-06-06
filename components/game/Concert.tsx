@@ -90,7 +90,10 @@ const STAGE_SCALE = 1.55;
 
 export const CONCERT_WIDTH = Math.round(BASE_W * STAGE_SCALE);
 export const CONCERT_HEIGHT = Math.round(BASE_H * STAGE_SCALE);
-export const CONCERT_SCALE = 0.74;
+/** Display scale — between original (0.74) and the prior 2× boost (1.48). */
+export const CONCERT_SCALE = 1.0;
+/** Stage deck y inside the scaled SVG viewBox (BASE 370 × internal STAGE_SCALE). */
+export const CONCERT_DECK_VIEWBOX_Y = Math.round(370 * STAGE_SCALE);
 
 export default function Concert({
   live = false,

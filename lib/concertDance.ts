@@ -6,6 +6,8 @@ import {
   cinemaMidX,
   coachellaLiveTile,
   coachellaMidX,
+  edcLiveTile,
+  edcMidX,
   concertLiveTile,
   concertMidX,
   isVenueInView,
@@ -13,6 +15,7 @@ import {
 } from './venues';
 import { midOriginForTile } from './worldTileGeometry';
 import { COACHELLA_STAGE_HALF } from '@/components/game/city/sandiego/constants';
+import { EDC_STAGE_HALF } from '@/components/game/city/lasvegas/constants';
 import { CINEMA_SCALE, CINEMA_WIDTH } from '@/components/game/Cinema';
 import { CONCERT_SCALE, CONCERT_WIDTH } from '@/components/game/Concert';
 
@@ -51,6 +54,10 @@ export function liveCoachellaMidWorldX(worldOff: number): number | null {
   return liveVenueMidWorldX(worldOff, coachellaLiveTile, coachellaMidX, COACHELLA_STAGE_HALF);
 }
 
+export function liveEdcMidWorldX(worldOff: number): number | null {
+  return liveVenueMidWorldX(worldOff, edcLiveTile, edcMidX, EDC_STAGE_HALF);
+}
+
 export function entityScreenPct(worldX: number, worldOff: number, width: number) {
   return 50 + ((worldX - worldOff) / width) * 100;
 }
@@ -86,7 +93,8 @@ export function isNearStage(
   return (
     isNearVenue(entityWorldX, worldOff, width, liveCinemaMidWorldX(worldOff), radiusPct) ||
     isNearVenue(entityWorldX, worldOff, width, liveConcertMidWorldX(worldOff), radiusPct) ||
-    isNearVenue(entityWorldX, worldOff, width, liveCoachellaMidWorldX(worldOff), radiusPct)
+    isNearVenue(entityWorldX, worldOff, width, liveCoachellaMidWorldX(worldOff), radiusPct) ||
+    isNearVenue(entityWorldX, worldOff, width, liveEdcMidWorldX(worldOff), radiusPct)
   );
 }
 

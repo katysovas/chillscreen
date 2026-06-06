@@ -12,10 +12,12 @@ import {
   isSanFranciscoTile,
   isSeattleTile,
   isSouthernCaliforniaTile,
+  isVegasTile,
 } from '@/lib/worldTiles';
 import { MID_F } from '@/lib/parallax';
 import { gndOriginForTile, midOriginForTile } from '@/lib/worldTileGeometry';
 import { COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
+import { EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
 
 /** Ground-tile x — locked to sidewalk scroll (GND_F). */
 export function venueSignGroundX(midX: number, groundTile: number) {
@@ -408,6 +410,17 @@ export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSigns
           label="Couchella"
           accent="#e85074"
           icon="🎡"
+          groundTile={groundTile}
+          y={y}
+        />
+      )}
+      {isVegasTile(tileIndex) && (
+        <VenueArrowSign
+          tileIndex={tileIndex}
+          venueMidX={EDC_STAGE_MID_X}
+          label="Electric Daze"
+          accent="#00e5ff"
+          icon="🦉"
           groundTile={groundTile}
           y={y}
         />

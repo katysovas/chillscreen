@@ -1,15 +1,17 @@
-/** World layout: SF → town → San Diego+Coachella → town → Seattle → town */
+/** World layout: SF → town → Vegas → town → San Diego+Coachella → town → Seattle → town */
 
-export type WorldTileKind = 'sf' | 'town' | 'san_diego' | 'coachella' | 'seattle';
+export type WorldTileKind = 'sf' | 'town' | 'san_diego' | 'coachella' | 'seattle' | 'vegas';
 
-/** Tiles per cycle — 3 cities + 1 dual tile, 3 short towns. */
-export const WORLD_TILE_CYCLE = 6;
+/** Tiles per cycle — 4 cities + 1 dual tile, 4 short towns. */
+export const WORLD_TILE_CYCLE = 8;
 
 const SF_SLOT = 0;
-const SF_SD_TOWN_SLOT = 1;
+const SF_VEGAS_TOWN_SLOT = 1;
+const VEGAS_SLOT = 2;
+const VEGAS_SD_TOWN_SLOT = 3;
 /** San Diego bay / skyline + Coachella festival on one tile. */
-const SOCAL_SLOT = 2;
-const SEATTLE_SLOT = 4;
+const SOCAL_SLOT = 4;
+const SEATTLE_SLOT = 6;
 
 export function worldTileSlot(tileIndex: number): number {
   return ((tileIndex % WORLD_TILE_CYCLE) + WORLD_TILE_CYCLE) % WORLD_TILE_CYCLE;
@@ -18,6 +20,7 @@ export function worldTileSlot(tileIndex: number): number {
 export function worldTileKind(tileIndex: number): WorldTileKind {
   const slot = worldTileSlot(tileIndex);
   if (slot === SF_SLOT) return 'sf';
+  if (slot === VEGAS_SLOT) return 'vegas';
   if (slot === SOCAL_SLOT) return 'san_diego';
   if (slot === SEATTLE_SLOT) return 'seattle';
   return 'town';
@@ -36,6 +39,10 @@ export function isSanFranciscoTile(tileIndex: number): boolean {
   return worldTileKind(tileIndex) === 'sf';
 }
 
+export function isVegasTile(tileIndex: number): boolean {
+  return worldTileKind(tileIndex) === 'vegas';
+}
+
 export function isSanDiegoTile(tileIndex: number): boolean {
   return isSouthernCaliforniaTile(tileIndex);
 }
@@ -48,9 +55,19 @@ export function isTownTile(tileIndex: number): boolean {
   return worldTileKind(tileIndex) === 'town';
 }
 
-/** Compact scrub town between San Francisco and SoCal. */
+/** Compact scrub town between San Francisco and Las Vegas. */
+export function isSfToVegasTown(tileIndex: number): boolean {
+  return isTownTile(tileIndex) && worldTileSlot(tileIndex) === SF_VEGAS_TOWN_SLOT;
+}
+
+/** Compact desert town between Las Vegas and SoCal. */
+export function isVegasToSdTown(tileIndex: number): boolean {
+  return isTownTile(tileIndex) && worldTileSlot(tileIndex) === VEGAS_SD_TOWN_SLOT;
+}
+
+/** @deprecated Use isSfToVegasTown */
 export function isSfToSdTown(tileIndex: number): boolean {
-  return isTownTile(tileIndex) && worldTileSlot(tileIndex) === SF_SD_TOWN_SLOT;
+  return isSfToVegasTown(tileIndex);
 }
 
 /** Nearest tile of a given kind (searches outward from `tileIndex`). */

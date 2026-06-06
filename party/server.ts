@@ -5,7 +5,8 @@ import {
   type PlayerState,
   type ServerMessage,
 } from '../lib/multiplayer/protocol';
-import { DEFAULT_DURATION_MS, STAGE_EPOCH, STAGE_PLAYLISTS } from '../lib/stageVideos';
+import { resolveStagePlaylists } from '../lib/resolveStagePlaylists';
+import { DEFAULT_DURATION_MS, STAGE_EPOCH } from '../lib/stageVideos';
 
 /**
  * Chillscreen presence room.
@@ -20,17 +21,18 @@ export default class ChillscreenServer implements Party.Server {
 
   constructor(readonly room: Party.Room) {}
 
-  onConnect(conn: Party.Connection) {
+  async onConnect(conn: Party.Connection) {
     // Hand the newcomer the current roster + the synchronized-playback bootstrap:
     // our wall-clock (so it can correct clock skew) and the pinned playlists +
     // epoch every client schedules against. The schedule is fully deterministic,
     // so no further per-tick messages are needed (survives room hibernation).
+    const playlists = await resolveStagePlaylists(this.room.env.YOUTUBE_API_KEY as string | undefined);
     const welcome: ServerMessage = {
       t: 'welcome',
       selfId: conn.id,
       players: [...this.players.values()],
       serverNow: Date.now(),
-      stage: { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists: STAGE_PLAYLISTS },
+      stage: { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists },
     };
     conn.send(encode(welcome));
   }

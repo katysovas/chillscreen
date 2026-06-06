@@ -51,6 +51,7 @@ import { VenueSignsLayer } from './city/VenueSignsLayer';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { DPadBtn } from './DPadBtn';
 import type { VenueRoute } from '@/lib/venueRoutes';
+import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 
 const KF = `${CITY_SCENE_KEYFRAMES}\n${CHARACTER_STYLES}`;
 
@@ -268,6 +269,10 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     } else {
       setShowWelcome(true);
     }
+  }, []);
+
+  useEffect(() => {
+    bootstrapStageSyncFromApi();
   }, []);
 
   useEffect(() => { playerNameRef.current = playerName; }, [playerName]);

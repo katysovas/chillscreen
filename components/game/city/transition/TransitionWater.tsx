@@ -13,7 +13,7 @@ export function TransitionWater({ tileIndex }: TransitionWaterProps) {
   const right = worldTileKind(tileIndex + 1);
   const uid = `tw${tileIndex}`;
 
-  if (kind === 'town' || kind === 'san_diego' || kind === 'coachella') return null;
+  if (kind === 'town' || kind === 'san_diego' || kind === 'coachella' || kind === 'vegas') return null;
 
   if (kind === 'sf') {
     const fadeRight = right !== 'sf';

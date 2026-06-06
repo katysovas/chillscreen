@@ -1,10 +1,11 @@
 import { forwardRef, memo, useCallback } from 'react';
 import { CINEMA_SCALE, CINEMA_HEIGHT, CINEMA_WIDTH } from '../Cinema';
-import { CONCERT_SCALE, CONCERT_HEIGHT, CONCERT_WIDTH } from '../Concert';
+import { CONCERT_DECK_VIEWBOX_Y, CONCERT_SCALE, CONCERT_HEIGHT, CONCERT_WIDTH } from '../Concert';
 import {
   cinemaLiveTile,
   coachellaLiveTile,
   concertLiveTile,
+  edcLiveTile,
   venueInFocus,
 } from '@/lib/venues';
 import { isSouthernCaliforniaTile, worldTileKind } from '@/lib/worldTiles';
@@ -17,6 +18,7 @@ import { MidBushes } from './MidBushes';
 import { SfMidFeatures } from './SfMidFeatures';
 import { SeattleBuildingsTile, SeattleMidFeatures } from './seattle';
 import { SouthernCaliforniaTile } from './sandiego';
+import { LasVegasTile } from './lasvegas';
 import { SmallTownTile, SmallTownTerrain } from './town';
 import { TransitionWater } from './transition';
 import type { VenueRoute } from '@/lib/venueRoutes';
@@ -31,7 +33,7 @@ function tileContentScale(tileIndex: number) {
   return midWidthForTile(tileIndex) / CITY_MID_W;
 }
 
-/** Mid parallax: SF → short town → San Diego+Coachella → short town → Seattle → short town. */
+/** Mid parallax: SF → town → Vegas → town → San Diego+Coachella → town → Seattle → town. */
 export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
   function MidLayer({ worldOff, deepLinkRoute }, ref) {
     const vx = worldOff * MID_F;
@@ -40,16 +42,19 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
     const cinemaLive   = cinemaLiveTile(vx);
     const concertLive  = concertLiveTile(vx);
     const coachellaLive = coachellaLiveTile(vx);
+    const edcLive     = edcLiveTile(vx);
     const focus        = venueInFocus(vx);
 
     // Derived Cinema/Concert geometry (stable across scrolling, changes only on
     // code updates — keep outside the callback to avoid dep churn).
+    const stageGroundY = 660;
     const cinemaFoW  = CINEMA_WIDTH * CINEMA_SCALE;
     const cinemaFoH  = CINEMA_HEIGHT * CINEMA_SCALE;
-    const cinemaFoY  = 670 - cinemaFoH;
+    const cinemaFoY  = stageGroundY - cinemaFoH;
     const concertFoW = CONCERT_WIDTH * CONCERT_SCALE;
     const concertFoH = CONCERT_HEIGHT * CONCERT_SCALE;
-    const concertFoY = 670 - concertFoH;
+    // Anchor the stage deck to the ground — the SVG has crowd padding below the deck.
+    const concertFoY = stageGroundY - CONCERT_DECK_VIEWBOX_Y * CONCERT_SCALE;
 
     // Render callback is only recreated when venue-focus state changes.
     const renderTile = useCallback((t: number) => {
@@ -95,11 +100,18 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
                 deepLinkRoute={deepLinkRoute}
               />
             )}
+            {kind === 'vegas' && (
+              <LasVegasTile
+                edcLive={isVenueLive(
+                  'edc', t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute,
+                )}
+              />
+            )}
             {isSouthernCaliforniaTile(t) && (
               <SouthernCaliforniaTile
                 tileIndex={t}
                 coachellaLive={isVenueLive(
-                  'coachella', t, cinemaLive, concertLive, coachellaLive, focus, deepLinkRoute,
+                  'coachella', t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute,
                 )}
               />
             )}
@@ -120,7 +132,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
     // Tile content re-renders when venue focus/live state changes.
     // worldOff / vx are excluded — viewBox scrolls imperatively every frame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [cinemaLive, concertLive, coachellaLive, focus, deepLinkRoute]);
+    }, [cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute]);
 
     return (
       <ParallaxSvgLayer

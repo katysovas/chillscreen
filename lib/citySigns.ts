@@ -42,10 +42,16 @@ const COACHELLA = {
   accent: '#e85074',
 } as const;
 
+const VEGAS = {
+  label: 'Las Vegas',
+  icon: '🎰',
+  accent: '#ff2e9a',
+} as const;
+
 const TOWN_CENTER = 0.5;
 
 /**
- * SF → town → San Diego+Coachella → town → Seattle → town
+ * SF → town → Vegas → town → San Diego+Coachella → town → Seattle → town
  * Never label the city you're already on.
  */
 export function citySignsForTile(tileIndex: number): RoadSignDef[] {
@@ -58,16 +64,20 @@ export function citySignsForTile(tileIndex: number): RoadSignDef[] {
 
   switch (slot) {
     case 0:
-      return [{ type: 'single', ...SAN_DIEGO, dir: 'right', xFrac: EXIT }];
+      return [{ type: 'single', ...VEGAS, dir: 'right', xFrac: EXIT }];
     case 1:
-      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: SF, rightCity: SAN_DIEGO }];
+      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: SF, rightCity: VEGAS }];
     case 2:
-      return [{ type: 'single', ...SEATTLE, dir: 'right', xFrac: EXIT }];
+      return [{ type: 'single', ...SAN_DIEGO, dir: 'right', xFrac: EXIT }];
     case 3:
-      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: COACHELLA, rightCity: SEATTLE }];
+      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: VEGAS, rightCity: SAN_DIEGO }];
     case 4:
-      return [{ type: 'single', ...SF, dir: 'right', xFrac: EXIT }];
+      return [{ type: 'single', ...SEATTLE, dir: 'right', xFrac: EXIT }];
     case 5:
+      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: COACHELLA, rightCity: SEATTLE }];
+    case 6:
+      return [{ type: 'single', ...SF, dir: 'right', xFrac: EXIT }];
+    case 7:
       return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: SEATTLE, rightCity: SF }];
     default:
       return [];

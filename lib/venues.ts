@@ -2,11 +2,13 @@ import {
   isCoachellaTile,
   isSanFranciscoTile,
   isSeattleTile,
+  isVegasTile,
   nearestStageCityTile,
   nearestTileOfKind,
 } from '@/lib/worldTiles';
 import { midCycleWidth, midOriginForTile, midTileAtX } from '@/lib/worldTileGeometry';
 import { COACHELLA_STAGE_HALF, COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
+import { EDC_STAGE_HALF, EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
 import type { StageChannel } from '@/lib/stageVideos';
 
 /** Mid-layer venues — one type per tile, revealed as you scroll past the screen edge. */
@@ -52,11 +54,12 @@ export function isEvenTile(tile: number) {
   return isSanFranciscoTile(tile);
 }
 
-export type VenueKind = 'cinema' | 'concert' | 'coachella';
+export type VenueKind = 'cinema' | 'concert' | 'coachella' | 'edc';
 
 export function tileKind(tile: number): VenueKind {
   if (isSanFranciscoTile(tile)) return 'cinema';
   if (isCoachellaTile(tile)) return 'coachella';
+  if (isVegasTile(tile)) return 'edc';
   return 'concert';
 }
 
@@ -103,6 +106,12 @@ export function coachellaMidX(tile: number): number | null {
   return DEFAULT_COACHELLA_MID_X;
 }
 
+/** EDC stage x (Las Vegas tiles only). */
+export function edcMidX(tile: number): number | null {
+  if (!isVegasTile(tile)) return null;
+  return EDC_STAGE_MID_X;
+}
+
 export function midVxFromWorldOff(worldOff: number) {
   return worldOff * MID_PARALLAX;
 }
@@ -130,20 +139,30 @@ export function coachellaLiveTile(vx: number) {
   return nearestTileOfKind(viewportCenterTile(vx), 'coachella');
 }
 
+/** Tile whose EDC stage is nearest the viewport center. */
+export function edcLiveTile(vx: number) {
+  return nearestTileOfKind(viewportCenterTile(vx), 'vegas');
+}
+
 /** Which venue the viewport center is closer to (uses per-tile anchors). */
 export function venueInFocus(vx: number): VenueKind {
   const center = vx + VIEW_CENTER_X;
   const ct = concertLiveTile(vx);
   const mt = cinemaLiveTile(vx);
   const lt = coachellaLiveTile(vx);
+  const et = edcLiveTile(vx);
   const cx = concertMidX(ct);
   const mx = cinemaMidX(mt);
   const lx = coachellaMidX(lt);
+  const ex = edcMidX(et);
   const concertDist = cx != null ? Math.abs(center - venueWorldX(ct, cx)) : Infinity;
   const cinemaDist = mx != null ? Math.abs(center - venueWorldX(mt, mx)) : Infinity;
   const coachellaDist = lx != null ? Math.abs(center - venueWorldX(lt, lx)) : Infinity;
-  if (cinemaDist <= concertDist && cinemaDist <= coachellaDist) return 'cinema';
-  if (coachellaDist <= concertDist && coachellaDist <= cinemaDist) return 'coachella';
+  const edcDist = ex != null ? Math.abs(center - venueWorldX(et, ex)) : Infinity;
+  const min = Math.min(cinemaDist, concertDist, coachellaDist, edcDist);
+  if (min === cinemaDist) return 'cinema';
+  if (min === coachellaDist) return 'coachella';
+  if (min === edcDist) return 'edc';
   return 'concert';
 }
 
@@ -164,6 +183,7 @@ export function anyVenueInView(
   cinemaHalf: number,
   concertHalf: number,
   coachellaHalf = COACHELLA_STAGE_HALF,
+  edcHalf = EDC_STAGE_HALF,
 ) {
   const centerTile = viewportCenterTile(vx);
   for (let t = centerTile - 1; t <= centerTile + 1; t++) {
@@ -173,6 +193,8 @@ export function anyVenueInView(
     if (cx != null && isVenueInView(vx, t, cx, concertHalf)) return true;
     const lx = coachellaMidX(t);
     if (lx != null && isVenueInView(vx, t, lx, coachellaHalf)) return true;
+    const ex = edcMidX(t);
+    if (ex != null && isVenueInView(vx, t, ex, edcHalf)) return true;
   }
   return false;
 }
@@ -181,16 +203,21 @@ export function anyVenueInView(
  * worldOff on first paint — downtown street, no venue footprint in view.
  * (Even tiles = cinema east; odd tiles = concert west.)
  */
-export function initialWorldOff(cinemaHalf: number, concertHalf: number, coachellaHalf = COACHELLA_STAGE_HALF) {
+export function initialWorldOff(
+  cinemaHalf: number,
+  concertHalf: number,
+  coachellaHalf = COACHELLA_STAGE_HALF,
+  edcHalf = EDC_STAGE_HALF,
+) {
   for (let vx = 0; vx >= -midCycleWidth(); vx -= 40) {
-    if (!anyVenueInView(vx, cinemaHalf, concertHalf, coachellaHalf)) {
+    if (!anyVenueInView(vx, cinemaHalf, concertHalf, coachellaHalf, edcHalf)) {
       return vx / MID_PARALLAX;
     }
   }
   return 0;
 }
 
-export const START_WORLD_OFF = initialWorldOff(220, 260, COACHELLA_STAGE_HALF);
+export const START_WORLD_OFF = initialWorldOff(220, 320, COACHELLA_STAGE_HALF, EDC_STAGE_HALF);
 
 export function isConcertTileInView(vx: number) {
   return concertLiveTile(vx) === viewportCenterTile(vx);
@@ -198,7 +225,7 @@ export function isConcertTileInView(vx: number) {
 
 /** Approximate venue footprint halves for the "any stage visible" check. */
 const CINEMA_VIEW_HALF = 240;
-const CONCERT_VIEW_HALF = 280;
+const CONCERT_VIEW_HALF = 320;
 
 /**
  * True when ANY stage/venue footprint is currently on screen (not just the

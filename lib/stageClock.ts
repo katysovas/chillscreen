@@ -26,6 +26,7 @@ import {
 
 let clockOffsetMs = 0;
 let serverSync: StageSync | null = null;
+let bootstrapStarted = false;
 const listeners = new Set<() => void>();
 
 /** Apply the server handshake: align our clock + adopt the pinned playlists. */
@@ -33,6 +34,25 @@ export function applyServerStageSync(serverNow: number, sync: StageSync) {
   clockOffsetMs = serverNow - Date.now();
   serverSync = sync;
   for (const notify of listeners) notify();
+}
+
+/**
+ * Fetch resolved playlists from the Next.js API (YouTube API channels, etc.).
+ * Safe to call before PartyKit connects — the welcome handshake overwrites
+ * with the same resolver when multiplayer is active.
+ */
+export function bootstrapStageSyncFromApi() {
+  if (bootstrapStarted || typeof window === 'undefined') return;
+  bootstrapStarted = true;
+
+  fetch('/api/stage/sync')
+    .then(res => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+    .then((body: { serverNow: number; stage: StageSync }) => {
+      applyServerStageSync(body.serverNow, body.stage);
+    })
+    .catch(() => {
+      // Offline or API unavailable — DEFAULT_STAGE_SYNC fallbacks still work.
+    });
 }
 
 export function getStageSync(): StageSync {

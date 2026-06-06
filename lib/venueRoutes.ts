@@ -1,11 +1,12 @@
 import { cityTileIndex } from '@/lib/spawn';
-import { isSouthernCaliforniaTile } from '@/lib/worldTiles';
-import { cinemaMidX, coachellaMidX, concertMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
+import { isSouthernCaliforniaTile, isVegasTile } from '@/lib/worldTiles';
+import { cinemaMidX, coachellaMidX, concertMidX, edcMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
 import { midOriginForTile } from '@/lib/worldTileGeometry';
 
 /** Deep-linkable venue destinations. */
 export type VenueRoute =
   | 'coachella'
+  | 'edc'
   | 'outside-hands'
   | 'seattle-concerts'
   | 'cinema';
@@ -13,6 +14,7 @@ export type VenueRoute =
 /** Canonical URL slugs (case preserved for pretty links). */
 export const VENUE_SLUGS = [
   'Coachella',
+  'edc',
   'Outside-Hands',
   'Seattle-Concerts',
   'Cinema',
@@ -20,6 +22,7 @@ export const VENUE_SLUGS = [
 
 const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
   coachella: 'coachella',
+  edc: 'edc',
   'outside-hands': 'outside-hands',
   'seattle-concerts': 'seattle-concerts',
   cinema: 'cinema',
@@ -45,6 +48,12 @@ export function worldOffForVenueRoute(route: VenueRoute): number {
       const tile = cityTileIndex('coachella');
       const midX = coachellaMidX(tile);
       if (midX == null) throw new Error('coachella midX missing');
+      return worldOffCenteringMidX(tile, midX);
+    }
+    case 'edc': {
+      const tile = cityTileIndex('vegas');
+      const midX = edcMidX(tile);
+      if (midX == null) throw new Error('edc midX missing');
       return worldOffCenteringMidX(tile, midX);
     }
     case 'outside-hands': {
@@ -75,6 +84,7 @@ export function isScrollVenueLive(
   cinemaLive: number,
   concertLive: number,
   coachellaLive: number,
+  edcLive: number,
   focus: VenueKind,
 ): boolean {
   switch (kind) {
@@ -84,6 +94,8 @@ export function isScrollVenueLive(
       return tileIndex === concertLive && focus === 'concert';
     case 'coachella':
       return tileIndex === coachellaLive && focus === 'coachella';
+    case 'edc':
+      return tileIndex === edcLive && focus === 'edc';
   }
 }
 
@@ -105,6 +117,8 @@ export function isDeepLinkVenueLive(
       return kind === 'concert' && tileIndex === cityTileIndex('seattle');
     case 'coachella':
       return kind === 'coachella' && isSouthernCaliforniaTile(tileIndex);
+    case 'edc':
+      return kind === 'edc' && isVegasTile(tileIndex);
   }
 }
 
@@ -114,11 +128,12 @@ export function isVenueLive(
   cinemaLive: number,
   concertLive: number,
   coachellaLive: number,
+  edcLive: number,
   focus: VenueKind,
   deepLinkRoute?: VenueRoute,
 ): boolean {
   if (deepLinkRoute && isDeepLinkVenueLive(deepLinkRoute, kind, tileIndex)) {
     return true;
   }
-  return isScrollVenueLive(kind, tileIndex, cinemaLive, concertLive, coachellaLive, focus);
+  return isScrollVenueLive(kind, tileIndex, cinemaLive, concertLive, coachellaLive, edcLive, focus);
 }

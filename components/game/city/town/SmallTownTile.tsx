@@ -1,7 +1,7 @@
 import { MID_GND, MID_W } from '../shared/terrainPaths';
 import { SimpleBuilding } from '../buildings/SimpleBuilding';
 import { Victorian } from '../buildings/Victorian';
-import { isSfToSdTown, isTownTile, tileRand } from '@/lib/worldTiles';
+import { isSfToVegasTown, isTownTile, isVegasToSdTown, tileRand } from '@/lib/worldTiles';
 import { TownDesertEdge } from './TownDesertEdge';
 
 const PALETTE = [
@@ -84,7 +84,7 @@ function townTrees(tileIndex: number, compact: boolean, width: number): Tree[] {
  * imperceptible, unlike scaling discrete buildings.
  */
 export function SmallTownTerrain({ tileIndex }: { tileIndex: number }) {
-  const compact = isSfToSdTown(tileIndex) || isTownTile(tileIndex);
+  const compact = isSfToVegasTown(tileIndex) || isVegasToSdTown(tileIndex) || isTownTile(tileIndex);
 
   return (
     <g>
@@ -107,7 +107,9 @@ export function SmallTownTerrain({ tileIndex }: { tileIndex: number }) {
           shapeRendering="optimizeSpeed"
         />
       )}
-      {compact && isSfToSdTown(tileIndex) && <TownDesertEdge tileIndex={tileIndex} />}
+      {compact && (isSfToVegasTown(tileIndex) || isVegasToSdTown(tileIndex)) && (
+        <TownDesertEdge tileIndex={tileIndex} />
+      )}
     </g>
   );
 }
@@ -124,7 +126,7 @@ type SmallTownTileProps = {
  * connectors simply show fewer buildings rather than squashed ones.
  */
 export function SmallTownTile({ tileIndex, tileWidth = MID_W }: SmallTownTileProps) {
-  const compact = isSfToSdTown(tileIndex) || isTownTile(tileIndex);
+  const compact = isSfToVegasTown(tileIndex) || isVegasToSdTown(tileIndex) || isTownTile(tileIndex);
   const buildings = townLayout(tileIndex, compact, tileWidth);
   const trees = townTrees(tileIndex, compact, tileWidth);
 

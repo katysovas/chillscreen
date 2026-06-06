@@ -2,7 +2,7 @@ import { midOriginForTile, midWidthForTile } from '@/lib/worldTileGeometry';
 import { MID_PARALLAX, START_WORLD_OFF, VIEW_CENTER_X } from '@/lib/venues';
 import { WORLD_TILE_CYCLE, worldTileKind, type WorldTileKind } from '@/lib/worldTiles';
 
-const CITY_KINDS: WorldTileKind[] = ['sf', 'san_diego', 'coachella', 'seattle'];
+const CITY_KINDS: WorldTileKind[] = ['sf', 'vegas', 'san_diego', 'coachella', 'seattle'];
 
 /** Ground scroll offset that centers a mid-layer tile at the given horizontal fraction (0–1). */
 export function worldOffForMidTile(tileIndex: number, fracX = 0.5): number {
