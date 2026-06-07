@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "party:dev": "partykit dev",
-    "party:deploy": "partykit deploy",
-    "party:deploy:cf": "partykit deploy --domain $PARTYKIT_DOMAIN"
+    "party:deploy": "bash scripts/deploy-partykit.sh",
+    "party:deploy:cf": "bash scripts/deploy-partykit.sh"
   },
   "dependencies": {
     "@vercel/blob": "^2.4.0",
