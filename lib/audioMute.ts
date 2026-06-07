@@ -1,7 +1,5 @@
 /**
- * Global "is the user's audio muted" flag, shared between the website's
- * background music (SFCity) and the concert stage's YouTube player (Concert)
- * so the mute button silences everything and the two sources never fight.
+ * Global mute flag for stage YouTube players — toggled from the in-game mute button.
  */
 
 let muted = false;

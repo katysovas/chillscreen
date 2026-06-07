@@ -1,6 +1,7 @@
 import { MID_GND, MID_W } from '../shared/terrainPaths';
 import { SimpleBuilding } from '../buildings/SimpleBuilding';
 import { Victorian } from '../buildings/Victorian';
+import { skipTownMidTree } from '@/lib/stageTreeExclusion';
 import { isSfToVegasTown, isTownTile, isVegasToSdTown, tileRand } from '@/lib/worldTiles';
 import { TownDesertEdge } from './TownDesertEdge';
 
@@ -66,8 +67,10 @@ function townTrees(tileIndex: number, compact: boolean, width: number): Tree[] {
   for (let i = 0; i < max; i++) {
     const t = tileRand(tileIndex, `tr${i}`);
     if (t < 0.35) continue;
+    const x = 80 + tileRand(tileIndex, `trx${i}`) * xMax;
+    if (skipTownMidTree(tileIndex, x, width)) continue;
     trees.push({
-      x: 80 + tileRand(tileIndex, `trx${i}`) * xMax,
+      x,
       y: MID_GND,
       r: compact
         ? 11 + Math.floor(tileRand(tileIndex, `trr${i}`) * 2) * 3

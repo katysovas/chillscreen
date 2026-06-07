@@ -16,7 +16,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - **← →** or **A / D** — walk
 - **↑**, **W**, or **Space** — jump (or say goodbye when connected to an NPC)
 - **Enter** — open chat when connected to an NPC
-- **Mute button** — toggle background music (tracks in `public/audio/`)
+- **Mute button** — toggle stage video audio
 
 ## Project structure
 
@@ -31,5 +31,4 @@ components/game/
   NPC.tsx               # Autonomous NPC behaviour
   ChatBubble.tsx
   characters.ts         # NPC names, personalities, greetings
-public/audio/           # Background music (1.mp3, 2.mp3, 3.mp3)
 ```

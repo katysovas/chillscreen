@@ -33,10 +33,10 @@ export function postCommand(
 }
 
 /**
- * Register for IFrame API commands, then nudge play. Retries cover the gap
- * between iframe onLoad and YouTube's internal player becoming ready.
+ * Register for IFrame API commands, then start muted autoplay.
+ * Use only on first load — muting again after unmute breaks stage audio.
  */
-export function kickYouTubePlayback(iframe: HTMLIFrameElement | null) {
+export function primeYouTubePlayback(iframe: HTMLIFrameElement | null) {
   if (!iframe?.contentWindow) return;
   iframe.contentWindow.postMessage(
     JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }),
@@ -44,6 +44,21 @@ export function kickYouTubePlayback(iframe: HTMLIFrameElement | null) {
   );
   postCommand(iframe, 'mute');
   postCommand(iframe, 'playVideo');
+}
+
+/** Resume playback without re-muting (gestures, sync, retries). */
+export function nudgeYouTubePlayback(iframe: HTMLIFrameElement | null) {
+  if (!iframe?.contentWindow) return;
+  iframe.contentWindow.postMessage(
+    JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }),
+    '*',
+  );
+  postCommand(iframe, 'playVideo');
+}
+
+/** @deprecated Prefer primeYouTubePlayback / nudgeYouTubePlayback */
+export function kickYouTubePlayback(iframe: HTMLIFrameElement | null) {
+  primeYouTubePlayback(iframe);
 }
 
 export function applyYouTubeAudio(
@@ -62,10 +77,10 @@ export function applyYouTubeAudio(
 export function scheduleYouTubePlaybackKicks(
   iframe: HTMLIFrameElement | null,
 ): () => void {
-  kickYouTubePlayback(iframe);
+  primeYouTubePlayback(iframe);
   const delays = [400, 1200, 2500, 5000, 8000];
   const timers = delays.map(ms =>
-    window.setTimeout(() => kickYouTubePlayback(iframe), ms),
+    window.setTimeout(() => nudgeYouTubePlayback(iframe), ms),
   );
   return () => {
     for (const t of timers) window.clearTimeout(t);

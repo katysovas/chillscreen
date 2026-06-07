@@ -1,3 +1,5 @@
+import { skipMidBush } from '@/lib/stageTreeExclusion';
+
 /** Ridge trees east of the bridge, near the downtown skyline. */
 const MID_BUSH_XS = [980, 1280, 1520, 1880, 2120, 2380];
 
@@ -5,9 +7,9 @@ const MID_BUSH_XS = [980, 1280, 1520, 1880, 2120, 2380];
 export function MidBushes() {
   return (
     <>
-      {MID_BUSH_XS.map((x, i) => (
+      {MID_BUSH_XS.filter(x => !skipMidBush(x)).map((x, i) => (
         <g
-          key={i}
+          key={x}
           transform={`translate(${x},660)`}
           style={{
             animation: `sw${1 + (i % 3)} ${5 + i * 0.8}s ease-in-out infinite`,

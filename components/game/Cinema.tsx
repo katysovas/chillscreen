@@ -7,7 +7,8 @@ import { getAudioMuted } from '@/lib/audioMute';
 import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
 import {
   applyYouTubeAudio,
-  kickYouTubePlayback,
+  nudgeYouTubePlayback,
+  primeYouTubePlayback,
   scheduleYouTubePlaybackKicks,
 } from '@/lib/youtubePlayer';
 
@@ -337,8 +338,14 @@ export default function Cinema({ live = true }: { live?: boolean }) {
       cancelRetries();
       cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
     });
-    const onSync = () => scheduleYouTubePlaybackKicks(iframeRef.current);
-    const onGesture = () => kickYouTubePlayback(iframeRef.current);
+    const onSync = () => {
+      nudgeYouTubePlayback(iframeRef.current);
+      applyYouTubeAudio(iframeRef.current, getAudioMuted());
+    };
+    const onGesture = () => {
+      nudgeYouTubePlayback(iframeRef.current);
+      applyYouTubeAudio(iframeRef.current, getAudioMuted());
+    };
     const unsub = subscribeStageSync(onSync);
     window.addEventListener('pointerdown', onGesture, { passive: true });
     window.addEventListener('keydown', onGesture);
@@ -352,7 +359,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
   }, [live, src, vidKey]);
 
   const onIframeLoad = () => {
-    kickYouTubePlayback(iframeRef.current);
+    primeYouTubePlayback(iframeRef.current);
   };
 
   const [playerVisible, setPlayerVisible] = useState(false);

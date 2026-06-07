@@ -7,6 +7,7 @@ import {
   nearGndTiles,
 } from '@/lib/parallax';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
+import { skipGroundStreetTree } from '@/lib/stageTreeExclusion';
 import { SleepingCatsGround } from '../SleepingCat';
 import { StreetDogsGround } from '../StreetDog';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
@@ -75,12 +76,12 @@ function groundTileContent(tile: number) {
         />
       ))}
       {GROUND_TREE_XS.map((x, i) => (
-        fits(x, 90) ? (
+        fits(x, 90) && !skipGroundStreetTree(tile, x, w) ? (
           <ellipse key={`sh${i}`} cx={x + 28} cy={GND_Y + 8} rx={50} ry={11} fill="rgba(20,50,0,.2)" />
         ) : null
       ))}
       {GROUND_TREE_XS.map((x, i) => (
-        fits(x, 90) ? (
+        fits(x, 90) && !skipGroundStreetTree(tile, x, w) ? (
           <g
             key={i}
             style={{

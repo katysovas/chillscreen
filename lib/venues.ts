@@ -229,8 +229,7 @@ const CONCERT_VIEW_HALF = 320;
 
 /**
  * True when ANY stage/venue footprint is currently on screen (not just the
- * focused one). Used to pause the website's background music so the stage's
- * YouTube audio always takes over with no overlap.
+ * focused one). Used to mute off-screen YouTube players.
  */
 export function anyStageInView(worldOff: number): boolean {
   const vx = worldOff * MID_PARALLAX;

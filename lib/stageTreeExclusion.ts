@@ -1,0 +1,71 @@
+import { worldTileSlot } from './worldTiles';
+
+const SF_SLOT = 0;
+const SF_VEGAS_TOWN = 1;
+const VEGAS_SLOT = 2;
+const VEGAS_SD_TOWN = 3;
+const SOCAL_SLOT = 4;
+const SOCAL_SEATTLE_TOWN = 5;
+const SEATTLE_SLOT = 6;
+const SEATTLE_EAST_TOWN = 7;
+
+/** City ground tiles are full-width; towns use TOWN_GND_W. */
+const CITY_GND_MIN = 3000;
+
+/**
+ * Skip a sidewalk street tree when it would sit in front of a stage on this tile.
+ * Other trees on the tile are kept — only the stage footprint band is cleared.
+ */
+export function skipGroundStreetTree(tileIndex: number, treeX: number, tileWidth: number): boolean {
+  const slot = worldTileSlot(tileIndex);
+
+  if (tileWidth >= CITY_GND_MIN) {
+    switch (slot) {
+      case SF_SLOT:
+        return (treeX >= 880 && treeX <= 1580) || (treeX >= 2000 && treeX <= 2780);
+      case VEGAS_SLOT:
+        return treeX >= 2650 && treeX <= 3380;
+      case SOCAL_SLOT:
+        return treeX >= 2500 && treeX <= 3280;
+      case SEATTLE_SLOT:
+        return treeX >= 880 && treeX <= 1580;
+      default:
+        return false;
+    }
+  }
+
+  switch (slot) {
+    case SF_VEGAS_TOWN:
+      return treeX >= tileWidth - 300;
+    case VEGAS_SD_TOWN:
+      return treeX <= 260 || treeX >= tileWidth - 260;
+    case SOCAL_SEATTLE_TOWN:
+      return treeX <= 260 || treeX >= tileWidth - 260;
+    case SEATTLE_EAST_TOWN:
+      return treeX <= 300;
+    default:
+      return false;
+  }
+}
+
+/** Skip a small-town mid-layer tree near the edge that faces a festival stage. */
+export function skipTownMidTree(tileIndex: number, treeX: number, tileWidth: number): boolean {
+  const slot = worldTileSlot(tileIndex);
+  switch (slot) {
+    case SF_VEGAS_TOWN:
+      return treeX >= tileWidth - 200;
+    case VEGAS_SD_TOWN:
+      return treeX <= 110 || treeX >= tileWidth - 200;
+    case SOCAL_SEATTLE_TOWN:
+      return treeX <= 110 || treeX >= tileWidth - 200;
+    case SEATTLE_EAST_TOWN:
+      return treeX <= 130;
+    default:
+      return false;
+  }
+}
+
+/** Skip SF ridge bushes that overlap the cinema / center stage band. */
+export function skipMidBush(bushX: number): boolean {
+  return bushX >= 1460 && bushX <= 2240;
+}

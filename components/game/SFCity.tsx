@@ -11,8 +11,6 @@ import {
   serverSpawnWorldOff,
   subscribeSpawnWorldOff,
 } from '@/lib/spawn';
-import { getConcertInView, subscribeConcertInView } from '@/lib/concertNow';
-import { anyStageInView } from '@/lib/venues';
 import { setAudioMuted } from '@/lib/audioMute';
 import CHARACTERS from './characters';
 import RemotePlayer from './RemotePlayer';
@@ -441,68 +439,12 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     trackCharacterCreated(name);
   };
 
-  // ── Audio ──────────────────────────────────────────────────────────────────
-  const TRACKS = ['/audio/1.mp3', '/audio/2.mp3', '/audio/3.mp3'];
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [muted,  setMuted] = useState(false);
+  // ── Stage audio mute (YouTube players only) ────────────────────────────────
+  const [muted, setMuted] = useState(false);
 
   useEffect(() => {
-    // Defer audio element creation until the first user interaction so the
-    // browser never fetches the audio file on a cold page load.
-    let el: HTMLAudioElement | null = null;
-
-    const startAudio = () => {
-      if (el) { el.play().catch(() => {}); return; }
-      const src = TRACKS[Math.floor(Math.random() * TRACKS.length)];
-      el = new Audio(src);
-      el.preload = 'none';
-      el.loop    = true;
-      el.volume  = 0.35;
-      el.muted   = muted;
-      audioRef.current = el;
-      el.play().catch(() => {});
-    };
-
-    window.addEventListener('keydown',     startAudio, { once: true });
-    window.addEventListener('pointerdown', startAudio, { once: true });
-
-    return () => {
-      el?.pause();
-      audioRef.current = null;
-      window.removeEventListener('keydown',     startAudio);
-      window.removeEventListener('pointerdown', startAudio);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const mutedRef = useRef(muted);
-  mutedRef.current = muted;
-
-  // Single authority for background music: pause whenever a stage is focused OR
-  // merely on screen, so the stage's YouTube audio always takes over with no
-  // overlap. Resumes only when no stage is in view and the user isn't muted.
-  const syncBgAudio = useCallback(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    const stageActive = getConcertInView() || anyStageInView(gameWorldOffRef.current);
-    if (stageActive) {
-      if (!el.paused) el.pause();
-    } else if (!mutedRef.current) {
-      el.play().catch(() => {});
-    }
-  }, []);
-
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.muted = muted;
-    // Broadcast to the concert player so the mute button silences it too.
     setAudioMuted(muted);
-    syncBgAudio();
-  }, [muted, syncBgAudio]);
-
-  useEffect(() => {
-    syncBgAudio();
-    return subscribeConcertInView(syncBgAudio);
-  }, [syncBgAudio]);
+  }, [muted]);
 
   useEffect(() => {
     const SPEED      = 3.5;
@@ -730,8 +672,6 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         }
 
         updateDanceState(worldRef.current);
-        // Keep bg music paused whenever a stage is on screen (tracks scroll).
-        syncBgAudio();
       }
 
       gameWorldOffRef.current = worldRef.current;

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { setConcertInView } from '@/lib/concertNow';
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
 import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
 import type { StageChannel } from '@/lib/stageVideos';
@@ -9,8 +8,9 @@ import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import { anyStageInView } from '@/lib/venues';
 import {
   applyYouTubeAudio,
-  kickYouTubePlayback,
+  nudgeYouTubePlayback,
   postCommand,
+  primeYouTubePlayback,
   scheduleYouTubePlaybackKicks,
   stageEmbedSrc,
 } from '@/lib/youtubePlayer';
@@ -112,17 +112,19 @@ export function useStagePlayer({
       setSrc('');
       return;
     }
-    const refresh = () => {
-      const sched = currentSchedule(channel);
-      setSrc(embedSrc(video.id, sched?.offsetSec ?? 0));
-    };
-    refresh();
-    return subscribeStageSync(refresh);
+    const sched = currentSchedule(channel);
+    setSrc(embedSrc(video.id, sched?.offsetSec ?? 0));
   }, [live, video?.id, vidKey, channel]);
 
-  const kickPlayback = useCallback(() => {
-    scheduleYouTubePlaybackKicks(iframeRef.current);
+  const restoreAudio = useCallback(() => {
+    if (!playerVisibleRef.current) return;
+    applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
   }, [iframeRef]);
+
+  const nudgePlayback = useCallback(() => {
+    nudgeYouTubePlayback(iframeRef.current);
+    restoreAudio();
+  }, [iframeRef, restoreAudio]);
 
   useEffect(() => {
     if (!live || !src) return;
@@ -140,20 +142,20 @@ export function useStagePlayer({
   // Re-kick when sync handshake arrives or user interacts (autoplay policy).
   useEffect(() => {
     if (!live || !src) return;
-    const onSync = () => kickPlayback();
-    const onGesture = () => kickPlayback();
+    const onSync = () => nudgePlayback();
+    const onGesture = () => nudgePlayback();
     const unsub = subscribeStageSync(onSync);
     window.addEventListener('pointerdown', onGesture, { passive: true });
     window.addEventListener('keydown', onGesture);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') kickPlayback();
+      if (document.visibilityState === 'visible') nudgePlayback();
     });
     return () => {
       unsub();
       window.removeEventListener('pointerdown', onGesture);
       window.removeEventListener('keydown', onGesture);
     };
-  }, [live, src, vidKey, kickPlayback]);
+  }, [live, src, vidKey, nudgePlayback]);
 
   useEffect(() => {
     setSiteMuted(getAudioMuted());
@@ -164,11 +166,7 @@ export function useStagePlayer({
   onNowPlayingRef.current = onNowPlaying;
   useEffect(() => {
     if (!live) return;
-    setConcertInView(true);
-    return () => {
-      setConcertInView(false);
-      onNowPlayingRef.current?.(null);
-    };
+    return () => { onNowPlayingRef.current?.(null); };
   }, [live]);
 
   useEffect(() => {
@@ -176,7 +174,7 @@ export function useStagePlayer({
   }, [live, video?.title]);
 
   const onIframeLoad = useCallback(() => {
-    kickYouTubePlayback(iframeRef.current);
+    primeYouTubePlayback(iframeRef.current);
   }, [iframeRef]);
 
   // Only adjust audio after playback has started — unmuting too early breaks autoplay.
