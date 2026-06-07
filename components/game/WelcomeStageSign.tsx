@@ -1,92 +1,75 @@
 import {
-  walkDirectionFromGroundX,
   welcomeSignGroundX,
-  welcomeStageEntries,
+  welcomeStagesByDirection,
   type WelcomeStageEntry,
 } from '@/lib/welcomeSign';
 
-function arrowPath(
-  dir: 'left' | 'right',
-  cy: number,
-  innerLeft: number,
-  innerRight: number,
-) {
-  const wing = 4;
-  const head = 8;
-  if (dir === 'left') {
+/** Chevron sign body — flat back toward pole, tip points `dir`. Centered at (0, cy). */
+function arrowSignPath(dir: 'left' | 'right', cy: number, halfLen: number, halfH: number, tipLen: number) {
+  if (dir === 'right') {
+    const back = -halfLen;
+    const shoulder = halfLen - tipLen;
+    const tip = halfLen;
     return [
-      `M${innerLeft},${cy}`,
-      `L${innerLeft + head},${cy - wing}`,
-      `L${innerRight},${cy - wing}`,
-      `L${innerRight},${cy + wing}`,
-      `L${innerLeft + head},${cy + wing}`,
+      `M${back},${cy - halfH}`,
+      `L${shoulder},${cy - halfH}`,
+      `L${tip},${cy}`,
+      `L${shoulder},${cy + halfH}`,
+      `L${back},${cy + halfH}`,
       'Z',
     ].join(' ');
   }
+  const back = halfLen;
+  const shoulder = -halfLen + tipLen;
+  const tip = -halfLen;
   return [
-    `M${innerRight},${cy}`,
-    `L${innerRight - head},${cy - wing}`,
-    `L${innerLeft},${cy - wing}`,
-    `L${innerLeft},${cy + wing}`,
-    `L${innerRight - head},${cy + wing}`,
+    `M${back},${cy - halfH}`,
+    `L${shoulder},${cy - halfH}`,
+    `L${tip},${cy}`,
+    `L${shoulder},${cy + halfH}`,
+    `L${back},${cy + halfH}`,
     'Z',
   ].join(' ');
 }
 
-function StageBoard({
-  topY,
+function ArrowSign({
+  cy,
+  dir,
   entry,
-  signGroundX,
-  boardW,
-  boardH,
+  halfLen,
+  halfH,
+  tipLen,
 }: {
-  topY: number;
+  cy: number;
+  dir: 'left' | 'right';
   entry: WelcomeStageEntry;
-  signGroundX: number;
-  boardW: number;
-  boardH: number;
+  halfLen: number;
+  halfH: number;
+  tipLen: number;
 }) {
-  const dir = walkDirectionFromGroundX(signGroundX, entry.tileIndex, entry.venueMidX);
-  const boardLeft = -boardW / 2;
-  const labelY = topY + 18;
-  const arrowCy = topY + boardH - 13;
-  const arrowHalfW = 26;
-  const fontSize = entry.label.length > 14 ? 9 : entry.label.length > 8 ? 10 : 12;
+  const d = arrowSignPath(dir, cy, halfLen, halfH, tipLen);
+  const fontSize = entry.label.length > 14 ? 8.5 : entry.label.length > 10 ? 9.5 : 11;
+  const labelX = dir === 'left' ? halfLen * 0.22 : -halfLen * 0.22;
 
   return (
     <g>
-      <rect
-        x={boardLeft}
-        y={topY}
-        width={boardW}
-        height={boardH}
-        rx={5}
-        fill="#faf6ee"
-        stroke="#3a342c"
-        strokeWidth={2.5}
-      />
-      <rect
-        x={boardLeft + 5}
-        y={topY + 5}
-        width={boardW - 10}
-        height={boardH - 10}
-        rx={3}
-        fill={entry.accent}
-        opacity={0.18}
-      />
-      {[
-        [boardLeft + 9, topY + 8],
-        [boardLeft + boardW - 9, topY + 8],
-        [boardLeft + 9, topY + boardH - 8],
-        [boardLeft + boardW - 9, topY + boardH - 8],
-      ].map(([bx, by], i) => (
-        <circle key={i} cx={bx} cy={by} r={2.2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
-      ))}
-      <rect x={-12} y={topY + boardH - 3} width={24} height={5} rx={2} fill="#6b5344" />
-
+      <path d={d} fill="#faf6ee" stroke="#3a342c" strokeWidth={2.5} strokeLinejoin="round" />
+      <path d={d} fill={entry.accent} opacity={0.2} stroke="none" />
+      {/* Bolt heads on the flat back edge */}
+      {dir === 'right' ? (
+        <>
+          <circle cx={-halfLen + 7} cy={cy - halfH + 9} r={2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
+          <circle cx={-halfLen + 7} cy={cy + halfH - 9} r={2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
+        </>
+      ) : (
+        <>
+          <circle cx={halfLen - 7} cy={cy - halfH + 9} r={2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
+          <circle cx={halfLen - 7} cy={cy + halfH - 9} r={2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
+        </>
+      )}
       <text
-        x={0}
-        y={labelY}
+        x={labelX}
+        y={cy + 1}
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={fontSize}
@@ -96,13 +79,6 @@ function StageBoard({
       >
         {entry.icon} {entry.label}
       </text>
-      <path
-        d={arrowPath(dir, arrowCy, -arrowHalfW, arrowHalfW)}
-        fill={entry.accent}
-        stroke="#2a2820"
-        strokeWidth={1.4}
-        strokeLinejoin="round"
-      />
     </g>
   );
 }
@@ -158,33 +134,39 @@ type WelcomeStageSignProps = {
   y?: number;
 };
 
-/** Spawn-area trail post listing every stage with walk directions. */
+/**
+ * Spawn junction sign — header on the pole, left/right arrow-shaped stage wings.
+ */
 export function WelcomeStageSign({ spawnWorldOff, y = 697 }: WelcomeStageSignProps) {
   const signGroundX = welcomeSignGroundX(spawnWorldOff);
-  const entries = welcomeStageEntries();
+  const { left, right } = welcomeStagesByDirection(signGroundX);
+  const rowCount = Math.max(left.length, right.length, 1);
 
   const postW = 8;
   const basePostH = 30;
-  const boardW = 168;
-  const stageBoardH = 50;
-  const headerBoardH = 44;
-  const stickGap = 14;
+  const headerW = 200;
+  const headerH = 44;
+  const arrowHalfLen = 66;
+  const arrowHalfH = 21;
+  const arrowTipLen = 20;
+  const rowH = arrowHalfH * 2 + 4;
+  const wingOffset = arrowHalfLen + 20;
+  const rowGap = 10;
+  const headerGap = 12;
 
-  let cursorY = -basePostH;
-  const stageTops: number[] = [];
-  for (let i = entries.length - 1; i >= 0; i--) {
-    cursorY -= stageBoardH;
-    stageTops[i] = cursorY;
-    if (i > 0) cursorY -= stickGap;
-  }
-
-  const headerTop = cursorY - stickGap - headerBoardH;
+  const rowsHeight = rowCount * rowH + (rowCount - 1) * rowGap;
+  const headerTop = -basePostH - headerGap - rowsHeight - headerH;
+  const firstRowCy = firstRowCenterY(headerTop, headerH, headerGap, rowH);
   const postTop = headerTop - 4;
   const postTotalH = -postTop;
 
+  function rowCy(i: number) {
+    return firstRowCy + i * (rowH + rowGap);
+  }
+
   return (
     <g transform={`translate(${signGroundX},${y})`} className="welcome-stage-sign">
-      <ellipse cx={0} cy={3} rx={30} ry={7} fill="rgba(0,0,0,.22)" />
+      <ellipse cx={0} cy={3} rx={headerW / 2 + wingOffset * 0.55} ry={7} fill="rgba(0,0,0,.22)" />
 
       <rect x={-postW / 2} y={postTop} width={postW} height={postTotalH} rx={2} fill="#5c4636" />
       <rect
@@ -206,17 +188,73 @@ export function WelcomeStageSign({ spawnWorldOff, y = 697 }: WelcomeStageSignPro
       />
       <circle cx={0} cy={postTop + 2} r={3} fill="#6b5344" stroke="#3a342c" strokeWidth={0.8} />
 
-      <HeaderBoard topY={headerTop} boardW={boardW} boardH={headerBoardH} />
-      {entries.map((entry, i) => (
-        <StageBoard
-          key={entry.id}
-          topY={stageTops[i]!}
-          entry={entry}
-          signGroundX={signGroundX}
-          boardW={boardW}
-          boardH={stageBoardH}
-        />
-      ))}
+      {Array.from({ length: rowCount }, (_, i) => {
+        const cy = rowCy(i);
+        return (
+          <g key={`arm-${i}`}>
+            {left[i] && (
+              <line
+                x1={-postW / 2}
+                y1={cy}
+                x2={-wingOffset + arrowHalfLen}
+                y2={cy}
+                stroke="#6b5344"
+                strokeWidth={3}
+                strokeLinecap="round"
+              />
+            )}
+            {right[i] && (
+              <line
+                x1={postW / 2}
+                y1={cy}
+                x2={wingOffset - arrowHalfLen}
+                y2={cy}
+                stroke="#6b5344"
+                strokeWidth={3}
+                strokeLinecap="round"
+              />
+            )}
+          </g>
+        );
+      })}
+
+      <HeaderBoard topY={headerTop} boardW={headerW} boardH={headerH} />
+
+      {Array.from({ length: rowCount }, (_, i) => {
+        const cy = rowCy(i);
+        return (
+          <g key={`row-${i}`}>
+            {left[i] && (
+              <g transform={`translate(${-wingOffset},0)`}>
+                <ArrowSign
+                  cy={cy}
+                  dir="left"
+                  entry={left[i]!}
+                  halfLen={arrowHalfLen}
+                  halfH={arrowHalfH}
+                  tipLen={arrowTipLen}
+                />
+              </g>
+            )}
+            {right[i] && (
+              <g transform={`translate(${wingOffset},0)`}>
+                <ArrowSign
+                  cy={cy}
+                  dir="right"
+                  entry={right[i]!}
+                  halfLen={arrowHalfLen}
+                  halfH={arrowHalfH}
+                  tipLen={arrowTipLen}
+                />
+              </g>
+            )}
+          </g>
+        );
+      })}
     </g>
   );
+}
+
+function firstRowCenterY(headerTop: number, headerH: number, headerGap: number, rowH: number) {
+  return headerTop + headerH + headerGap + rowH / 2;
 }

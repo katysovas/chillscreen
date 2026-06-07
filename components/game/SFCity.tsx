@@ -50,6 +50,7 @@ import { GroundLayer } from './city/GroundLayer';
 import { VenueSignsLayer } from './city/VenueSignsLayer';
 import { WelcomeSignLayer } from './city/WelcomeSignLayer';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
+import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
 import { DPadBtn } from './DPadBtn';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
@@ -177,6 +178,11 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   );
   const beginPeerChatRef = useRef<((peerId: string, announce: boolean) => void) | null>(null);
   const endPeerChatRef   = useRef<((announce: boolean) => void) | null>(null);
+
+  const ambientChats = useNpcAmbientChat(
+    CHARACTERS.length,
+    showWelcome || greetingNpc !== null || peerChatId !== null,
+  );
 
   const profileRef = useRef<PlayerProfile>({ name: null, balloonColor: myColor });
   profileRef.current = { name: playerName, balloonColor: myColor };
@@ -778,6 +784,11 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
             npcTyping,
             npcMessage,
           } : undefined}
+          ambientChat={
+            greetingNpc !== i && ambientChats[i]?.message
+              ? { name: cfg.name, message: ambientChats[i]!.message! }
+              : undefined
+          }
         />
         );
       })}

@@ -42,6 +42,11 @@ type NPCProps = NPCConfig & {
     npcTyping: boolean;
     npcMessage: string | null;
   };
+  /** Short self-talk bubble (not a player conversation). */
+  ambientChat?: {
+    name: string;
+    message: string;
+  };
 };
 
 function rndBetween(min: number, max: number) {
@@ -69,7 +74,7 @@ export default function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory,
   personality,
-  paused, greeting, greetFacing, dancing = false, onMove, greetingChat,
+  paused, greeting, greetFacing, dancing = false, onMove, greetingChat, ambientChat,
 }: NPCProps) {
   // ── React state: only for infrequent visual changes ─────────────────────────
   const [jumping,   setJumping]  = useState(false);
@@ -296,14 +301,23 @@ export default function NPC({
           accessory={accessory}
           scale={scale}
           bubbleSide={screenXToBubbleSide(screenX)}
-          chatOverlay={greeting && greetingChat ? (
-            <NpcChatOverlay
-              name={greetingChat.name}
-              npcTyping={greetingChat.npcTyping}
-              npcMessage={greetingChat.npcMessage}
-              side={screenXToBubbleSide(screenX)}
-            />
-          ) : undefined}
+          chatOverlay={
+            greeting && greetingChat ? (
+              <NpcChatOverlay
+                name={greetingChat.name}
+                npcTyping={greetingChat.npcTyping}
+                npcMessage={greetingChat.npcMessage}
+                side={screenXToBubbleSide(screenX)}
+              />
+            ) : ambientChat ? (
+              <NpcChatOverlay
+                name={ambientChat.name}
+                npcTyping={false}
+                npcMessage={ambientChat.message}
+                side={screenXToBubbleSide(screenX)}
+              />
+            ) : undefined
+          }
         />
       </div>
     </div>

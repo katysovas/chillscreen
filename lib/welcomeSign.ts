@@ -89,3 +89,20 @@ export function walkDirectionFromGroundX(
 export function welcomeSignGroundX(spawnWorldOff: number): number {
   return spawnWorldOff + WELCOME_SIGN_OFFSET_X;
 }
+
+/** Stages grouped by walk direction from the welcome sign at spawn. */
+export function welcomeStagesByDirection(signGroundX: number): {
+  left: WelcomeStageEntry[];
+  right: WelcomeStageEntry[];
+} {
+  const left: WelcomeStageEntry[] = [];
+  const right: WelcomeStageEntry[] = [];
+
+  for (const entry of welcomeStageEntries()) {
+    const dir = walkDirectionFromGroundX(signGroundX, entry.tileIndex, entry.venueMidX);
+    if (dir === 'left') left.push(entry);
+    else right.push(entry);
+  }
+
+  return { left, right };
+}
