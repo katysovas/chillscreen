@@ -57,6 +57,7 @@ import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
 import { DPadBtn } from './DPadBtn';
 import type { VenueRoute } from '@/lib/venueRoutes';
+import { InviteFriends } from './InviteFriends';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 
 const KF = `${CITY_SCENE_KEYFRAMES}\n${CHARACTER_STYLES}`;
@@ -714,6 +715,13 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       )}
 
       <LovingCarLayer />
+
+      <InviteFriends
+        worldOff={scrollWorldOff}
+        playerName={playerName}
+        venueRoute={venueRoute}
+        hidden={showWelcome || inConversation}
+      />
 
       {/* Autonomous NPCs */}
       {CHARACTERS.map((cfg, i) => {
