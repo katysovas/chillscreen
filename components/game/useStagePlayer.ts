@@ -13,6 +13,7 @@ import {
   primeYouTubePlayback,
   scheduleYouTubePlaybackKicks,
   stageEmbedSrc,
+  stopYouTubePlayback,
 } from '@/lib/youtubePlayer';
 
 export type { StageVideo } from '@/lib/stageVideos';
@@ -80,6 +81,29 @@ export function useStagePlayer({
   const playerVisibleRef = useRef(false);
   playerVisibleRef.current = playerVisible;
 
+  const stageInViewRef = useRef(true);
+  const kickCancelRef = useRef<(() => void) | null>(null);
+
+  const isStageInView = useCallback(
+    () => anyStageInView(gameWorldOffRef.current),
+    [],
+  );
+
+  const syncStageToView = useCallback(() => {
+    const inView = isStageInView();
+    stageInViewRef.current = inView;
+    const f = iframeRef.current;
+    if (!f) return;
+    if (!inView) {
+      kickCancelRef.current?.();
+      kickCancelRef.current = null;
+      stopYouTubePlayback(f);
+    } else if (playerVisibleRef.current) {
+      postCommand(f, 'playVideo');
+      applyYouTubeAudio(f, siteMutedRef.current);
+    }
+  }, [iframeRef, isStageInView]);
+
   useEffect(() => {
     if (!live) return;
     setPlayerVisible(false);
@@ -89,7 +113,11 @@ export function useStagePlayer({
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
           setPlayerVisible(true);
-          applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
+          if (stageInViewRef.current) {
+            applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
+          } else {
+            stopYouTubePlayback(iframeRef.current);
+          }
         }
       } catch { /* non-JSON message from another frame — ignore */ }
     };
@@ -97,7 +125,11 @@ export function useStagePlayer({
     window.addEventListener('message', onMessage);
     const fallback = setTimeout(() => {
       setPlayerVisible(true);
-      applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
+      if (stageInViewRef.current) {
+        applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
+      } else {
+        stopYouTubePlayback(iframeRef.current);
+      }
     }, 5000);
 
     return () => {
@@ -117,25 +149,29 @@ export function useStagePlayer({
   }, [live, video?.id, vidKey, channel]);
 
   const restoreAudio = useCallback(() => {
-    if (!playerVisibleRef.current) return;
+    if (!stageInViewRef.current || !playerVisibleRef.current) return;
     applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
   }, [iframeRef]);
 
   const nudgePlayback = useCallback(() => {
+    if (!stageInViewRef.current) return;
     nudgeYouTubePlayback(iframeRef.current);
     restoreAudio();
   }, [iframeRef, restoreAudio]);
 
   useEffect(() => {
     if (!live || !src) return;
-    let cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
+    kickCancelRef.current?.();
+    kickCancelRef.current = scheduleYouTubePlaybackKicks(iframeRef.current);
     const afterPaint = requestAnimationFrame(() => {
-      cancelRetries();
-      cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
+      if (!stageInViewRef.current) return;
+      kickCancelRef.current?.();
+      kickCancelRef.current = scheduleYouTubePlaybackKicks(iframeRef.current);
     });
     return () => {
       cancelAnimationFrame(afterPaint);
-      cancelRetries();
+      kickCancelRef.current?.();
+      kickCancelRef.current = null;
     };
   }, [live, src, vidKey, iframeRef]);
 
@@ -174,29 +210,29 @@ export function useStagePlayer({
   }, [live, video?.title]);
 
   const onIframeLoad = useCallback(() => {
+    if (!stageInViewRef.current) return;
     primeYouTubePlayback(iframeRef.current);
   }, [iframeRef]);
 
   // Only adjust audio after playback has started — unmuting too early breaks autoplay.
   useEffect(() => {
-    if (!playerVisible) return;
+    if (!playerVisible || !stageInViewRef.current) return;
     applyYouTubeAudio(iframeRef.current, siteMuted);
   }, [siteMuted, playerVisible, iframeRef]);
 
   useEffect(() => {
-    if (!live) return;
-    const syncVideoToView = () => {
-      const f = iframeRef.current;
-      if (!f) return;
-      if (!anyStageInView(gameWorldOffRef.current)) {
-        postCommand(f, 'mute');
-      } else if (playerVisibleRef.current) {
-        applyYouTubeAudio(f, siteMutedRef.current);
-      }
-    };
-    const id = setInterval(syncVideoToView, 200);
-    return () => clearInterval(id);
+    if (live) return;
+    kickCancelRef.current?.();
+    kickCancelRef.current = null;
+    stopYouTubePlayback(iframeRef.current);
   }, [live, iframeRef]);
+
+  useEffect(() => {
+    if (!live) return;
+    syncStageToView();
+    const id = setInterval(syncStageToView, 200);
+    return () => clearInterval(id);
+  }, [live, syncStageToView]);
 
   return { video, src, vidKey, onIframeLoad, playerVisible };
 }

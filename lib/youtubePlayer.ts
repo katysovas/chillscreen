@@ -74,6 +74,13 @@ export function applyYouTubeAudio(
   }
 }
 
+/** Hard stop — mute + pause so off-screen players cannot leak chopped audio. */
+export function stopYouTubePlayback(iframe: HTMLIFrameElement | null) {
+  if (!iframe) return;
+  postCommand(iframe, 'mute');
+  postCommand(iframe, 'pauseVideo');
+}
+
 export function scheduleYouTubePlaybackKicks(
   iframe: HTMLIFrameElement | null,
 ): () => void {
