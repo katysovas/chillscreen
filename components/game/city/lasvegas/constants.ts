@@ -6,6 +6,9 @@ export const EDC_STAGE_MID_X = 2270;
 /** Display scale for the EDC rig + video (matches other venue ~2× boost). */
 export const EDC_STAGE_SCALE = 1.9;
 
+/** EDC-only vertical nudge — less than concert stages so the owl arch banner fits. */
+export const EDC_STAGE_PUSH_Y = 16;
+
 /** Rig width (deck + arch wings + crowd bleed) for in-view / focus checks. */
 const EDC_STAGE_W = 760;
 

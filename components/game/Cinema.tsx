@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { setCinemaNowPlaying } from '@/lib/cinemaNow';
 import { cinemaEmbedSrc } from '@/lib/cinemaVideoPool';
-import { currentSchedule, useStageChannel } from '@/lib/stageClock';
+import { getAudioMuted } from '@/lib/audioMute';
+import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
 import {
+  applyYouTubeAudio,
   kickYouTubePlayback,
   scheduleYouTubePlaybackKicks,
 } from '@/lib/youtubePlayer';
@@ -335,9 +337,17 @@ export default function Cinema({ live = true }: { live?: boolean }) {
       cancelRetries();
       cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
     });
+    const onSync = () => scheduleYouTubePlaybackKicks(iframeRef.current);
+    const onGesture = () => kickYouTubePlayback(iframeRef.current);
+    const unsub = subscribeStageSync(onSync);
+    window.addEventListener('pointerdown', onGesture, { passive: true });
+    window.addEventListener('keydown', onGesture);
     return () => {
       cancelAnimationFrame(afterPaint);
       cancelRetries();
+      unsub();
+      window.removeEventListener('pointerdown', onGesture);
+      window.removeEventListener('keydown', onGesture);
     };
   }, [live, src, vidKey]);
 
@@ -345,7 +355,6 @@ export default function Cinema({ live = true }: { live?: boolean }) {
     kickYouTubePlayback(iframeRef.current);
   };
 
-  // Hide the iframe overlay until YouTube fires playerState=1 (playing).
   const [playerVisible, setPlayerVisible] = useState(false);
   useEffect(() => {
     if (!live) return;
@@ -355,11 +364,15 @@ export default function Cinema({ live = true }: { live?: boolean }) {
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
           setPlayerVisible(true);
+          applyYouTubeAudio(iframeRef.current, getAudioMuted());
         }
       } catch { /* ignore */ }
     };
     window.addEventListener('message', onMessage);
-    const fallback = setTimeout(() => setPlayerVisible(true), 5000);
+    const fallback = setTimeout(() => {
+      setPlayerVisible(true);
+      applyYouTubeAudio(iframeRef.current, getAudioMuted());
+    }, 5000);
     return () => { window.removeEventListener('message', onMessage); clearTimeout(fallback); };
   }, [vidKey, live]);
 

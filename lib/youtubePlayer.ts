@@ -8,6 +8,7 @@ export function stageEmbedSrc(id: string, startSec = 0): string {
     rel: '0',
     modestbranding: '1',
     iv_load_policy: '3',
+    cc_load_policy: '3',
     fs: '0',
     disablekb: '1',
     playsinline: '1',
@@ -41,17 +42,32 @@ export function kickYouTubePlayback(iframe: HTMLIFrameElement | null) {
     JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }),
     '*',
   );
+  postCommand(iframe, 'mute');
   postCommand(iframe, 'playVideo');
+}
+
+export function applyYouTubeAudio(
+  iframe: HTMLIFrameElement | null,
+  siteMuted: boolean,
+) {
+  if (!iframe) return;
+  if (siteMuted) {
+    postCommand(iframe, 'mute');
+  } else {
+    postCommand(iframe, 'unMute');
+    postCommand(iframe, 'setVolume', [55]);
+  }
 }
 
 export function scheduleYouTubePlaybackKicks(
   iframe: HTMLIFrameElement | null,
 ): () => void {
   kickYouTubePlayback(iframe);
-  const t1 = window.setTimeout(() => kickYouTubePlayback(iframe), 400);
-  const t2 = window.setTimeout(() => kickYouTubePlayback(iframe), 1200);
+  const delays = [400, 1200, 2500, 5000, 8000];
+  const timers = delays.map(ms =>
+    window.setTimeout(() => kickYouTubePlayback(iframe), ms),
+  );
   return () => {
-    window.clearTimeout(t1);
-    window.clearTimeout(t2);
+    for (const t of timers) window.clearTimeout(t);
   };
 }

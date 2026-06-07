@@ -36,6 +36,7 @@ import {
   getPlayerName,
   setPlayerName as savePlayerName,
 } from '@/lib/playerStorage';
+import { identifyPlayer, trackCharacterCreated } from '@/lib/analytics';
 import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
@@ -48,6 +49,7 @@ import { SkyCreaturesLayer } from './SkyCreatures';
 import { CITY_SCENE_KEYFRAMES } from './city/citySceneKeyframes';
 import { CHARACTER_STYLES } from './characterStyles';
 import { SkyLayer } from './city/SkyLayer';
+import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 import { MidLayer } from './city/MidLayer';
 import { GroundLayer } from './city/GroundLayer';
 import { VenueSignsLayer } from './city/VenueSignsLayer';
@@ -95,6 +97,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   // ── SVG refs for imperative viewBox updates ────────────────────────────────
   const skyRef    = useRef<SVGSVGElement>(null);
   const midRef    = useRef<SVGSVGElement>(null);
+  const midForegroundRef = useRef<SVGSVGElement>(null);
   const groundRef = useRef<SVGSVGElement>(null);
   const signsRef  = useRef<SVGSVGElement>(null);
   const welcomeRef = useRef<SVGSVGElement>(null);
@@ -109,6 +112,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     const vb    = (x: number) => `${x} 0 1400 900`;
     skyRef.current?.setAttribute('viewBox', vb(skyVx));
     midRef.current?.setAttribute('viewBox', vb(midVx));
+    midForegroundRef.current?.setAttribute('viewBox', vb(midVx));
     groundRef.current?.setAttribute('viewBox', vb(gndVx));
     signsRef.current?.setAttribute('viewBox', vb(gndVx));
     welcomeRef.current?.setAttribute('viewBox', vb(gndVx));
@@ -279,6 +283,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     const stored = getPlayerName();
     if (stored) {
       setPlayerName(stored);
+      identifyPlayer(stored);
     } else {
       setShowWelcome(true);
     }
@@ -433,6 +438,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     savePlayerName(name);
     setPlayerName(name);
     setShowWelcome(false);
+    trackCharacterCreated(name);
   };
 
   // ── Audio ──────────────────────────────────────────────────────────────────
@@ -754,8 +760,9 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       <style>{KF}</style>
 
       <SkyLayer ref={skyRef} worldOff={scrollWorldOff} period={skyPeriod} />
-      <MidLayer ref={midRef} worldOff={scrollWorldOff} deepLinkRoute={venueRoute} />
-      <SkyCreaturesLayer period={skyPeriod} worldOff={scrollWorldOff} cloudsSvgRef={cloudsRef} />
+      <SkyCloudsLayer ref={cloudsRef} worldOff={scrollWorldOff} period={skyPeriod} />
+      <SkyCreaturesLayer period={skyPeriod} worldOff={scrollWorldOff} />
+      <MidLayer ref={midRef} foregroundRef={midForegroundRef} worldOff={scrollWorldOff} deepLinkRoute={venueRoute} />
       <GroundLayer      ref={groundRef} worldOff={scrollWorldOff} />
       <VenueSignsLayer  ref={signsRef}  worldOff={scrollWorldOff} />
       {!venueRoute && (

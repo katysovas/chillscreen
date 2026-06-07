@@ -2,7 +2,6 @@
 
 import { forwardRef, memo } from 'react';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
-import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 
 // ─── Keyframes (injected via <style> in SFCity) ───────────────────────────────
 export const SKY_CREATURES_KF = `
@@ -215,13 +214,11 @@ function UFOShape() {
 type SkyCreaturesLayerProps = {
   period?: SkyPeriod;
   worldOff: number;
-  /** Ref forwarded to the clouds SVG for imperative viewBox updates. */
-  cloudsSvgRef?: React.Ref<SVGSVGElement>;
 };
 
 // ─── Layer ────────────────────────────────────────────────────────────────────
 export const SkyCreaturesLayer = memo(forwardRef<SVGSVGElement, SkyCreaturesLayerProps>(
-function SkyCreaturesLayerInner({ period = 'day', worldOff, cloudsSvgRef }, _ref) {
+function SkyCreaturesLayerInner({ period = 'day', worldOff: _worldOff }, _ref) {
   const fly = (dir: 'ltr' | 'rtl', period: number, delay: number) =>
     `${dir === 'ltr' ? 'sky-ltr' : 'sky-rtl'} ${period}s ${delay}s linear infinite`;
 
@@ -233,7 +230,6 @@ function SkyCreaturesLayerInner({ period = 'day', worldOff, cloudsSvgRef }, _ref
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        zIndex: 8,
         overflow: 'hidden',
       }}
     >
@@ -281,10 +277,6 @@ function SkyCreaturesLayerInner({ period = 'day', worldOff, cloudsSvgRef }, _ref
             <UFOShape />
           </div>
         </div>
-      </div>
-
-      <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
-        <SkyCloudsLayer ref={cloudsSvgRef} worldOff={worldOff} period={period} />
       </div>
     </div>
   );

@@ -156,17 +156,15 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
         </g>
       ))}
 
-      {/* Header sign above the roof */}
+      {/* Header sign above the roof — solid board, no opacity pulse */}
       <rect
         x={midX - 130} y={top - 64} width={260} height={32} rx={4}
         fill="#15151c" stroke="#e85074" strokeWidth={1.5}
-        style={{ animation: 'sdc-glow 3.4s ease-in-out infinite' }}
       />
       <text
         x={midX} y={top - 41} textAnchor="middle"
         fontFamily="'Big Shoulders Display', sans-serif" fontWeight="900"
         fontSize="16" letterSpacing="7" fill="#ff7a98"
-        style={{ animation: 'sdc-shine 3s ease-in-out infinite' }}
       >
         COUCHELLA
       </text>
@@ -199,16 +197,21 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
         </g>
       ))}
 
-      {/* LED wall + glowing frame */}
-      <rect x={screenX - 6} y={screenY - 6} width={screenW + 12} height={screenH + 12}
-        rx={4} fill="url(#sdc-led)" opacity={0.55} filter="url(#sdc-blur6)"
-        style={{ animation: 'sdc-glow 4s ease-in-out infinite' }} />
-      <rect x={screenX} y={screenY} width={screenW} height={screenH} rx={3} fill="#0b0b12"
-        stroke="url(#sdc-led)" strokeWidth={2.5} />
+      {/* LED wall + solid frame */}
       <rect
-        x={screenX + 6} y={screenY + 6} width={screenW - 12} height={screenH - 12}
-        fill="url(#sdc-led)" opacity={live ? 0.12 : 0.5}
+        x={screenX - 8} y={screenY - 8} width={screenW + 16} height={screenH + 16}
+        rx={4} fill="#1a1a22" stroke="#e85074" strokeWidth={3}
       />
+      <rect
+        x={screenX} y={screenY} width={screenW} height={screenH} rx={3}
+        fill="#0b0b12" stroke="#2c2c34" strokeWidth={2.5}
+      />
+      {!live && (
+        <rect
+          x={screenX + 6} y={screenY + 6} width={screenW - 12} height={screenH - 12}
+          rx={2} fill="#0b0b12"
+        />
+      )}
 
       {/* Scanlines */}
       {!live && Array.from({ length: 6 }, (_, i) => (

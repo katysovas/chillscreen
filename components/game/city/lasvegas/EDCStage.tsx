@@ -2,10 +2,11 @@
 
 import { useRef } from 'react';
 import type { HTMLAttributes } from 'react';
-import { EDC_STAGE_MID_X, EDC_STAGE_SCALE, NEON, VEGAS_GND } from './constants';
+import { EDC_STAGE_MID_X, EDC_STAGE_PUSH_Y, EDC_STAGE_SCALE, NEON, VEGAS_GND } from './constants';
 import { Flame, laserFan } from './helpers';
 import { setEdcNowPlaying } from '@/lib/edcNowPlaying';
-import { useStagePlayer, STAGE_IFRAME_STYLE } from '../../useStagePlayer';
+import { useStagePlayer } from '../../useStagePlayer';
+import { StageVideoFrame } from '../../StageVideoFrame';
 
 export { EDC_STAGE_MID_X };
 
@@ -31,10 +32,11 @@ export function EDCStage({ live = false }: { live?: boolean }) {
   });
 
   const S = EDC_STAGE_SCALE;
+  const pushY = EDC_STAGE_PUSH_Y;
   const ox = cx;
   const oy = stageY;
   const videoFoX = ox + S * (scrX - ox);
-  const videoFoY = oy + S * (scrY - oy);
+  const videoFoY = oy + S * (scrY - oy) + pushY;
   const videoFoW = scrW * S;
   const videoFoH = scrH * S;
 
@@ -42,6 +44,7 @@ export function EDCStage({ live = false }: { live?: boolean }) {
 
   return (
     <>
+      <g transform={`translate(0, ${pushY})`}>
       <g transform={`translate(${ox},${oy}) scale(${S}) translate(${-ox},${-oy})`}>
         {laserFan(cx, 250, 9, 560, NEON.violet, 96)}
 
@@ -161,6 +164,7 @@ export function EDCStage({ live = false }: { live?: boolean }) {
           {marquee.toUpperCase().slice(0, 30)}
         </text>
       </g>
+      </g>
 
       <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>
         <div
@@ -172,32 +176,17 @@ export function EDCStage({ live = false }: { live?: boolean }) {
             pointerEvents: 'none',
           }}
         >
-          <div style={{ width: scrW, height: scrH, background: '#000', borderRadius: 6, overflow: 'hidden', position: 'relative' }}>
-            {src && (
-              <iframe
-                key={vidKey}
-                ref={iframeRef}
-                src={src}
-                title={video?.title ?? 'Electric Daze'}
-                onLoad={onIframeLoad}
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                style={{ ...STAGE_IFRAME_STYLE, width: scrW, height: scrH }}
-              />
-            )}
-            {src && (
-              <div style={{
-                position: 'absolute', inset: 0, zIndex: 10,
-                background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
-                opacity: playerVisible ? 0 : 1,
-                transition: playerVisible ? 'opacity 0.8s' : 'none',
-              }}>
-                <span style={{ fontFamily: 'sans-serif', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
-                {video?.title && <span style={{ fontFamily: 'sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 10px', lineHeight: 1.3 }}>{video.title}</span>}
-              </div>
-            )}
-          </div>
+          <StageVideoFrame
+            iframeRef={iframeRef}
+            src={src}
+            vidKey={vidKey}
+            title={video?.title}
+            onIframeLoad={onIframeLoad}
+            playerVisible={playerVisible}
+            width={scrW}
+            height={scrH}
+            borderRadius={6}
+          />
         </div>
       </foreignObject>
     </>

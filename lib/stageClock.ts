@@ -76,6 +76,11 @@ function subscribe(cb: () => void): () => void {
   };
 }
 
+/** Fires when the server/API sync handshake updates playlists or clock skew. */
+export function subscribeStageSync(cb: () => void): () => void {
+  return subscribe(cb);
+}
+
 export type StageChannelState = {
   /** The video that should be playing now (undefined while not live). */
   video: StageVideo | undefined;
@@ -117,6 +122,9 @@ export function useStageChannel(channel: StageChannel, live: boolean): StageChan
       if (next) {
         // Re-evaluate just after the next rotation boundary.
         timer = setTimeout(tick, Math.max(250, next.msUntilNext) + 50);
+      } else {
+        // Sync not ready yet — retry until playlists arrive.
+        timer = setTimeout(tick, 500);
       }
     };
 

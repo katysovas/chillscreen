@@ -1,5 +1,16 @@
 const KEY = 'whichstage:playerName';
 const LEGACY_KEY = 'cs:playerName';
+const PLAYER_ID_KEY = 'whichstage:playerId';
+
+export function getOrCreatePlayerId(): string {
+  if (typeof window === 'undefined') return 'server';
+  let id = localStorage.getItem(PLAYER_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(PLAYER_ID_KEY, id);
+  }
+  return id;
+}
 
 export function getPlayerName(): string | null {
   if (typeof window === 'undefined') return null;

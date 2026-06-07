@@ -6,8 +6,8 @@ export const COACHELLA_STAGE_MID_X = 2125;
 /** Scale factor applied to the Coachella main stage (matches cinema/concert display boost). */
 export const COACHELLA_STAGE_SCALE = 2.2;
 
-/** Nudge the scaled rig down so the deck sits on the sidewalk. */
-export const COACHELLA_STAGE_PUSH_Y = 55;
+/** Coachella-only vertical nudge — less than concert/EDC (scaled rig is already tall). */
+export const COACHELLA_STAGE_PUSH_Y = 103;
 
 const COACHELLA_STAGE_W = 2440 - 2010 + 150;
 

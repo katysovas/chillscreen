@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { setConcertInView } from '@/lib/concertNow';
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
-import { currentSchedule, useStageChannel } from '@/lib/stageClock';
+import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
 import type { StageChannel } from '@/lib/stageVideos';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import { anyStageInView } from '@/lib/venues';
 import {
+  applyYouTubeAudio,
   kickYouTubePlayback,
   postCommand,
   scheduleYouTubePlaybackKicks,
@@ -71,47 +72,58 @@ export function useStagePlayer({
 }: UseStagePlayerOptions): UseStagePlayerResult {
   const { video, vidKey } = useStageChannel(channel, live);
 
-  // ── Overlay: hide until YouTube fires playerState=1 (playing) ─────────────
+  const [siteMuted, setSiteMuted] = useState(false);
+  const siteMutedRef = useRef(siteMuted);
+  siteMutedRef.current = siteMuted;
+
   const [playerVisible, setPlayerVisible] = useState(false);
+  const playerVisibleRef = useRef(false);
+  playerVisibleRef.current = playerVisible;
 
   useEffect(() => {
     if (!live) return;
-    // Reset overlay whenever the video slot changes.
     setPlayerVisible(false);
 
     const onMessage = (e: MessageEvent) => {
       try {
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        // YouTube IFrame API: {"event":"infoDelivery","info":{"playerState":1}}
         if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
           setPlayerVisible(true);
+          applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
         }
       } catch { /* non-JSON message from another frame — ignore */ }
     };
 
     window.addEventListener('message', onMessage);
-    // Safety fallback: reveal after 5 s even if the API message never arrives
-    // (e.g. autoplay blocked, slow connection, restricted embed).
-    const fallback = setTimeout(() => setPlayerVisible(true), 5000);
+    const fallback = setTimeout(() => {
+      setPlayerVisible(true);
+      applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
+    }, 5000);
 
     return () => {
       window.removeEventListener('message', onMessage);
       clearTimeout(fallback);
     };
-  }, [vidKey, live]);
+  }, [vidKey, live, iframeRef]);
 
-  // Embed URL depends on syncedNow() — set after mount to avoid SSR/client mismatch.
   const [src, setSrc] = useState('');
   useEffect(() => {
     if (!live || !video) {
       setSrc('');
       return;
     }
-    const sched = currentSchedule(channel);
-    setSrc(embedSrc(video.id, sched?.offsetSec ?? 0));
+    const refresh = () => {
+      const sched = currentSchedule(channel);
+      setSrc(embedSrc(video.id, sched?.offsetSec ?? 0));
+    };
+    refresh();
+    return subscribeStageSync(refresh);
   }, [live, video?.id, vidKey, channel]);
 
-  // Retry play after src is set — onLoad alone is often too early for YouTube.
+  const kickPlayback = useCallback(() => {
+    scheduleYouTubePlaybackKicks(iframeRef.current);
+  }, [iframeRef]);
+
   useEffect(() => {
     if (!live || !src) return;
     let cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
@@ -125,17 +137,29 @@ export function useStagePlayer({
     };
   }, [live, src, vidKey, iframeRef]);
 
-  const [siteMuted, setSiteMuted] = useState(false);
-  const siteMutedRef = useRef(siteMuted);
-  siteMutedRef.current = siteMuted;
+  // Re-kick when sync handshake arrives or user interacts (autoplay policy).
+  useEffect(() => {
+    if (!live || !src) return;
+    const onSync = () => kickPlayback();
+    const onGesture = () => kickPlayback();
+    const unsub = subscribeStageSync(onSync);
+    window.addEventListener('pointerdown', onGesture, { passive: true });
+    window.addEventListener('keydown', onGesture);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') kickPlayback();
+    });
+    return () => {
+      unsub();
+      window.removeEventListener('pointerdown', onGesture);
+      window.removeEventListener('keydown', onGesture);
+    };
+  }, [live, src, vidKey, kickPlayback]);
 
   useEffect(() => {
     setSiteMuted(getAudioMuted());
     return subscribeAudioMuted(() => setSiteMuted(getAudioMuted()));
   }, []);
 
-  // Mark the stage in view (pauses website audio) + report now-playing, but
-  // only the live instance touches the shared flag so siblings can't clobber it.
   const onNowPlayingRef = useRef(onNowPlaying);
   onNowPlayingRef.current = onNowPlaying;
   useEffect(() => {
@@ -152,32 +176,15 @@ export function useStagePlayer({
   }, [live, video?.title]);
 
   const onIframeLoad = useCallback(() => {
-    const f = iframeRef.current;
-    kickYouTubePlayback(f);
-    if (siteMutedRef.current) {
-      postCommand(f, 'mute');
-    } else {
-      postCommand(f, 'unMute');
-      postCommand(f, 'setVolume', [55]);
-    }
+    kickYouTubePlayback(iframeRef.current);
   }, [iframeRef]);
 
-  // React to the site mute toggle on the loaded iframe.
+  // Only adjust audio after playback has started — unmuting too early breaks autoplay.
   useEffect(() => {
-    const f = iframeRef.current;
-    if (!f) return;
-    if (siteMuted) {
-      postCommand(f, 'mute');
-    } else {
-      postCommand(f, 'unMute');
-      postCommand(f, 'setVolume', [55]);
-    }
-  }, [siteMuted, iframeRef]);
+    if (!playerVisible) return;
+    applyYouTubeAudio(iframeRef.current, siteMuted);
+  }, [siteMuted, playerVisible, iframeRef]);
 
-  // Stop stage video audio when the player walks off screen from the stage.
-  // The Concert component can stay mounted (stale vx in MidLayer's memoized
-  // renderTile closure), so we poll the live world offset directly and mute
-  // the iframe whenever the stage footprint is no longer visible.
   useEffect(() => {
     if (!live) return;
     const syncVideoToView = () => {
@@ -185,9 +192,8 @@ export function useStagePlayer({
       if (!f) return;
       if (!anyStageInView(gameWorldOffRef.current)) {
         postCommand(f, 'mute');
-      } else if (!siteMutedRef.current) {
-        postCommand(f, 'unMute');
-        postCommand(f, 'setVolume', [55]);
+      } else if (playerVisibleRef.current) {
+        applyYouTubeAudio(f, siteMutedRef.current);
       }
     };
     const id = setInterval(syncVideoToView, 200);
