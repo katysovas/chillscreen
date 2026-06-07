@@ -20,6 +20,15 @@ export type RemotePlayerState = {
   walking: boolean;
 };
 
+/** Ephemeral public shout shown above a player. */
+export type RemoteAmbientMessage = {
+  text: string;
+  until: number;
+};
+
+/** How long ambient shouts stay visible above a character. */
+export const PLAYER_AMBIENT_VISIBLE_MS = 5_000;
+
 type PeerEvents = {
   onPeerOpen?: (peerId: string) => void;
   onPeerClose?: (peerId: string) => void;
@@ -60,6 +69,8 @@ export type Multiplayer = {
   connected: boolean;
   /** Stable ref to the live roster (positions update here every tick). */
   remoteStateRef: React.RefObject<Map<string, RemotePlayerState>>;
+  /** Live ambient shouts keyed by player id. */
+  ambientRef: React.RefObject<Map<string, RemoteAmbientMessage>>;
   /** Re-renders only when players join/leave. */
   remoteIds: string[];
   sendMove: (worldX: number, facing: Facing, walking: boolean) => void;
@@ -68,6 +79,7 @@ export type Multiplayer = {
   closePeerChat: (to: string) => void;
   sendPeerTyping: (to: string, typing: boolean) => void;
   sendPeerMessage: (to: string, text: string) => void;
+  sendAmbientMessage: (text: string) => void;
 };
 
 /**
@@ -78,6 +90,7 @@ export type Multiplayer = {
 export function useMultiplayer(opts: Options): Multiplayer {
   const socketRef = useRef<PartySocket | null>(null);
   const remoteStateRef = useRef<Map<string, RemotePlayerState>>(new Map());
+  const ambientRef = useRef<Map<string, RemoteAmbientMessage>>(new Map());
 
   const [selfId, setSelfId] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
@@ -149,6 +162,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
           break;
         }
         case 'left': {
+          ambientRef.current.delete(msg.id);
           if (roster.delete(msg.id)) setRemoteIds([...roster.keys()]);
           ev.onPeerLeft?.(msg.id);
           break;
@@ -167,6 +181,12 @@ export function useMultiplayer(opts: Options): Multiplayer {
         case 'chat-close':  ev.onPeerClose?.(msg.from); break;
         case 'chat-typing': ev.onPeerTyping?.(msg.from, msg.typing); break;
         case 'chat-msg':    ev.onPeerMessage?.(msg.from, msg.text); break;
+        case 'ambient':
+          ambientRef.current.set(msg.from, {
+            text: msg.text,
+            until: Date.now() + PLAYER_AMBIENT_VISIBLE_MS,
+          });
+          break;
       }
     };
 
@@ -197,9 +217,11 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const closePeerChat  = useCallback((to: string) => send({ t: 'chat-close', to }), [send]);
   const sendPeerTyping = useCallback((to: string, typing: boolean) => send({ t: 'chat-typing', to, typing }), [send]);
   const sendPeerMessage = useCallback((to: string, text: string) => send({ t: 'chat-msg', to, text }), [send]);
+  const sendAmbientMessage = useCallback((text: string) => send({ t: 'ambient-msg', text }), [send]);
 
   return {
-    selfId, connected, remoteStateRef, remoteIds,
+    selfId, connected, remoteStateRef, ambientRef, remoteIds,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
+    sendAmbientMessage,
   };
 }

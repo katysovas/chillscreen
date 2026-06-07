@@ -63,17 +63,18 @@ export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
   cinema: {
     source: 'curated',
     videos: [
-      { id: 'RhOwyHWGqWg', title: 'Cute Baby Animals 4K', durationSec: 11673 },
+      { id: 'RhOwyHWGqWg', title: 'Cute Baby Animals', durationSec: 11673 },
       { id: 'lTRiuFIWV54', title: 'Ocean Waves', durationSec: 3674 },
     ],
   },
   bumbershoot: {
-    source: 'curated',
-    videos: [
+    source: 'youtube-api',
+    searchQuery: 'Seattle Full Show',
+    maxResults: 20,
+    fallbackVideos: [
       { id: 'iqQvfMi4UIk', title: 'AURORA', durationSec: 4251 },
       { id: 'SDHXMAxVe5Q', title: 'Elliott Smith', durationSec: 4148 },
       { id: '0rkjl7oJfLc', title: 'st', durationSec: 3838 },
-      { id: 'lU1Po5IyPP0', title: 'Rolling Stones', durationSec: 3838 },
     ],
   },
   'outside-lands': {
@@ -91,7 +92,7 @@ export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
   coachella: {
     source: 'curated',
     videos: [
-      { id: 'EkIfxAHlgJA', title: 'TV' },
+      { id: 'EkIfxAHlgJA', title: 'Coachella Live Set' },
     ],
   },
   edc: {

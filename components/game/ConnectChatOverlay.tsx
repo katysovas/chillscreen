@@ -11,7 +11,7 @@ import {
   type BubbleSide,
 } from './ChatBubble';
 
-type ChatMode = null | 'chat';
+type ChatMode = null | 'chat' | 'ambient';
 
 export function NpcChatOverlay({
   name,
@@ -116,4 +116,83 @@ export function PlayerChatOverlay({
       </AttachedHint>
     </div>
   );
+}
+
+/** Public shout — visible to everyone nearby in the world. */
+export function AmbientPlayerOverlay({
+  chatMode,
+  playerName,
+  ambientMessage,
+  chatDraft,
+  setChatDraft,
+  onSendMessage,
+  chatInputRef,
+  side,
+}: {
+  chatMode: ChatMode;
+  playerName: string | null;
+  ambientMessage: string | null;
+  chatDraft: string;
+  setChatDraft: (v: string) => void;
+  onSendMessage: (text: string) => void;
+  chatInputRef: React.RefObject<HTMLInputElement | null>;
+  side: BubbleSide;
+}) {
+  const stackAlign = side === 'left' ? 'flex-end' : 'flex-start';
+
+  if (chatMode === 'ambient') {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: stackAlign,
+          justifyContent: 'flex-end',
+          gap: 8,
+        }}
+      >
+        {ambientMessage && (
+          <AttachedChatBubble
+            name={playerName ?? undefined}
+            message={ambientMessage}
+            showTail={false}
+            side={side}
+          />
+        )}
+        <AttachedInputBubble showTail side={side}>
+          <input
+            ref={chatInputRef}
+            value={chatDraft}
+            onChange={e => setChatDraft(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && chatDraft.trim()) {
+                onSendMessage(chatDraft.trim());
+              }
+            }}
+            placeholder="Shout something…"
+            maxLength={120}
+            style={{
+              border: 'none', outline: 'none', fontSize: 13,
+              flex: 1, background: 'transparent', color: '#222',
+              fontFamily: 'inherit',
+            }}
+            autoComplete="off"
+          />
+          <span style={{ fontSize: 10, color: '#bbb', whiteSpace: 'nowrap' }}>↵ send</span>
+        </AttachedInputBubble>
+      </div>
+    );
+  }
+
+  if (ambientMessage) {
+    return (
+      <AttachedChatBubble
+        name={playerName ?? undefined}
+        message={ambientMessage}
+        side={side}
+      />
+    );
+  }
+
+  return null;
 }

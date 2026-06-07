@@ -20,6 +20,20 @@ export type YoutubeVideoMeta = {
   durationSec?: number;
 };
 
+type YoutubeVideoStatus = {
+  embeddable?: boolean;
+  privacyStatus?: string;
+  uploadStatus?: string;
+};
+
+/** True when YouTube allows this video in a third-party iframe embed. */
+export function isYoutubeVideoEmbeddable(status: YoutubeVideoStatus | undefined): boolean {
+  if (!status) return false;
+  if (status.uploadStatus && status.uploadStatus !== 'processed') return false;
+  if (status.privacyStatus && status.privacyStatus !== 'public') return false;
+  return status.embeddable !== false;
+}
+
 /** Search YouTube for videos and resolve titles + durations. */
 export async function fetchYoutubeSearchVideos(
   query: string,
@@ -30,6 +44,7 @@ export async function fetchYoutubeSearchVideos(
   searchUrl.searchParams.set('part', 'snippet');
   searchUrl.searchParams.set('type', 'video');
   searchUrl.searchParams.set('q', query);
+  searchUrl.searchParams.set('videoEmbeddable', 'true');
   searchUrl.searchParams.set('maxResults', String(Math.min(maxResults, 50)));
   searchUrl.searchParams.set('key', apiKey);
 
@@ -49,7 +64,7 @@ export async function fetchYoutubeSearchVideos(
   if (ids.length === 0) return [];
 
   const detailsUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
-  detailsUrl.searchParams.set('part', 'contentDetails,snippet');
+  detailsUrl.searchParams.set('part', 'contentDetails,snippet,status');
   detailsUrl.searchParams.set('id', ids.join(','));
   detailsUrl.searchParams.set('key', apiKey);
 
@@ -63,18 +78,21 @@ export async function fetchYoutubeSearchVideos(
       id: string;
       snippet?: { title?: string };
       contentDetails?: { duration?: string };
+      status?: YoutubeVideoStatus;
     }[];
   };
 
   const byId = new Map(
-    (detailsData.items ?? []).map(item => {
-      const durationSec = parseYoutubeDuration(item.contentDetails?.duration ?? '') ?? undefined;
-      return [item.id, {
-        id: item.id,
-        title: item.snippet?.title?.trim() || item.id,
-        durationSec,
-      } satisfies YoutubeVideoMeta];
-    }),
+    (detailsData.items ?? [])
+      .filter(item => isYoutubeVideoEmbeddable(item.status))
+      .map(item => {
+        const durationSec = parseYoutubeDuration(item.contentDetails?.duration ?? '') ?? undefined;
+        return [item.id, {
+          id: item.id,
+          title: item.snippet?.title?.trim() || item.id,
+          durationSec,
+        } satisfies YoutubeVideoMeta];
+      }),
   );
 
   // Preserve search ranking order.

@@ -37,7 +37,9 @@ export type ClientMessage =
   | { t: 'chat-open'; to: string }
   | { t: 'chat-close'; to: string }
   | { t: 'chat-typing'; to: string; typing: boolean }
-  | { t: 'chat-msg'; to: string; text: string };
+  | { t: 'chat-msg'; to: string; text: string }
+  // Public shout — visible to everyone in the room.
+  | { t: 'ambient-msg'; text: string };
 
 /* ── Server → Client ─────────────────────────────────────────────────────── */
 export type ServerMessage =
@@ -53,7 +55,8 @@ export type ServerMessage =
   | { t: 'chat-open'; from: string }
   | { t: 'chat-close'; from: string }
   | { t: 'chat-typing'; from: string; typing: boolean }
-  | { t: 'chat-msg'; from: string; text: string };
+  | { t: 'chat-msg'; from: string; text: string }
+  | { t: 'ambient'; from: string; text: string };
 
 export function encode(msg: ClientMessage | ServerMessage): string {
   return JSON.stringify(msg);

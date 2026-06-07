@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useSyncExternalStore } from 'react';
 import Character from './Character';
 import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
-import { NpcChatOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
+import { AmbientPlayerOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
 import { CHAR_BOTTOM } from './groundLayout';
 import { SKY_F, MID_F, GND_F } from '@/lib/parallax';
@@ -14,7 +14,8 @@ import {
 import { setAudioMuted } from '@/lib/audioMute';
 import CHARACTERS from './characters';
 import RemotePlayer from './RemotePlayer';
-import { useMultiplayer } from '@/lib/multiplayer/useMultiplayer';
+import { PLAYER_AMBIENT_VISIBLE_MS, useMultiplayer } from '@/lib/multiplayer/useMultiplayer';
+import { filterChatMessage } from '@/lib/messageFilter';
 import {
   getSessionBalloonColor,
   getServerBalloonColor,
@@ -142,12 +143,15 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const [nearNpc,     setNearNpc]     = useState<number | null>(null);
   const [greetNpcX,   setGreetNpcX]   = useState(50);
   // ── Player chat ─────────────────────────────────────────────────────────────
-  type ChatMode = null | 'chat';
+  type ChatMode = null | 'chat' | 'ambient';
   const [showWelcome,   setShowWelcome]   = useState(false);
   const [playerName,    setPlayerName]    = useState<string | null>(null);
   const [chatMode,      setChatMode]      = useState<ChatMode>(null);
+  const chatModeRef = useRef<ChatMode>(null);
   const [chatDraft,     setChatDraft]     = useState('');
   const [playerMessage, setPlayerMessage] = useState<string | null>(null);
+  const [playerAmbientMessage, setPlayerAmbientMessage] = useState<string | null>(null);
+  const ambientHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [npcMessage,    setNpcMessage]    = useState<string | null>(null);
   const [npcTyping,     setNpcTyping]     = useState(false);
   const [chatHistory,   setChatHistory]   = useState<ChatTurn[]>([]);
@@ -162,6 +166,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const cinemaNowRef  = useRef<string | null>(null);
   const concertNowRef = useRef<string | null>(null);
   const greetingSessionRef = useRef<number | null>(null);
+  const showWelcomeRef = useRef(false);
 
   // ── Multiplayer (PartyKit) ──────────────────────────────────────────────────
   // Random per-session balloon color. useSyncExternalStore gives a stable value
@@ -292,6 +297,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     bootstrapStageSyncFromApi();
   }, []);
 
+  useEffect(() => { showWelcomeRef.current = showWelcome; }, [showWelcome]);
+  useEffect(() => { chatModeRef.current = chatMode; }, [chatMode]);
   useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
   useEffect(() => { chatHistoryRef.current = chatHistory; }, [chatHistory]);
   useEffect(() => {
@@ -420,17 +427,47 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     return () => controller.abort();
   }, [chatSendTick, greetingNpc, playerName]);
 
+  const clearAmbientHide = useCallback(() => {
+    if (ambientHideRef.current) clearTimeout(ambientHideRef.current);
+    ambientHideRef.current = null;
+  }, []);
+
+  const showPlayerAmbient = useCallback((text: string) => {
+    clearAmbientHide();
+    setPlayerAmbientMessage(text);
+    ambientHideRef.current = setTimeout(() => {
+      setPlayerAmbientMessage(null);
+      ambientHideRef.current = null;
+    }, PLAYER_AMBIENT_VISIBLE_MS);
+  }, [clearAmbientHide]);
+
+  useEffect(() => () => { clearAmbientHide(); }, [clearAmbientHide]);
+
   const handleSendMessage = (text: string) => {
-    setPlayerMessage(text);
+    const filtered = filterChatMessage(text);
+    if (!filtered.ok) {
+      setChatDraft('');
+      return;
+    }
+    const safe = filtered.text;
+    setPlayerMessage(safe);
     setChatDraft('');
     if (peerChatRef.current !== null) {
-      // Real human on the other end — relay over the wire, no AI.
-      mpRef.current?.sendPeerMessage(peerChatRef.current, text);
+      mpRef.current?.sendPeerMessage(peerChatRef.current, safe);
       mpRef.current?.sendPeerTyping(peerChatRef.current, false);
       return;
     }
-    sentMessageRef.current = text;
+    sentMessageRef.current = safe;
     setChatSendTick(t => t + 1);
+  };
+
+  const handleAmbientSend = (text: string) => {
+    const filtered = filterChatMessage(text);
+    setChatDraft('');
+    setChatMode(null);
+    if (!filtered.ok) return;
+    showPlayerAmbient(filtered.text);
+    mpRef.current?.sendAmbientMessage(filtered.text);
   };
 
   const handleWelcomeName = (name: string) => {
@@ -494,6 +531,11 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       setTimeout(() => chatInputRef.current?.focus(), 30);
     };
 
+    const openAmbientPanel = () => {
+      setChatMode('ambient');
+      setTimeout(() => chatInputRef.current?.focus(), 30);
+    };
+
     const onDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -504,6 +546,10 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           setChatMode(null);
           setChatDraft('');
         }
+        return;
+      }
+
+      if (e.key === 'Enter' && chatModeRef.current === 'ambient') {
         return;
       }
 
@@ -540,6 +586,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           && Date.now() > disconnectUntil.current
         ) {
           beginPeerChatRef.current?.(nearPeerRef.current, true);
+        } else if (!showWelcomeRef.current) {
+          openAmbientPanel();
         }
       }
     };
@@ -765,6 +813,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           key={pid}
           id={pid}
           stateRef={mp.remoteStateRef}
+          ambientRef={mp.ambientRef}
           greeting={peerChatId === pid}
           greetingChat={peerChatId === pid ? {
             name: mp.remoteStateRef.current.get(pid)?.name ?? 'Wanderer',
@@ -794,18 +843,31 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
               dancing={TEST_FORCE_DANCE || playerDancing}
               balloonColor={myColor}
               bubbleSide={playerBubbleSide(greetNpcX)}
-              chatOverlay={inConversation ? (
-                <PlayerChatOverlay
-                  npcScreenX={greetNpcX}
-                  chatMode={chatMode}
-                  playerName={playerName}
-                  playerMessage={playerMessage}
-                  chatDraft={chatDraft}
-                  setChatDraft={setChatDraft}
-                  onSendMessage={handleSendMessage}
-                  chatInputRef={chatInputRef}
-                />
-              ) : undefined}
+              chatOverlay={
+                inConversation ? (
+                  <PlayerChatOverlay
+                    npcScreenX={greetNpcX}
+                    chatMode={chatMode === 'ambient' ? null : chatMode}
+                    playerName={playerName}
+                    playerMessage={playerMessage}
+                    chatDraft={chatDraft}
+                    setChatDraft={setChatDraft}
+                    onSendMessage={handleSendMessage}
+                    chatInputRef={chatInputRef}
+                  />
+                ) : (
+                  <AmbientPlayerOverlay
+                    chatMode={chatMode}
+                    playerName={playerName}
+                    ambientMessage={playerAmbientMessage}
+                    chatDraft={chatDraft}
+                    setChatDraft={setChatDraft}
+                    onSendMessage={handleAmbientSend}
+                    chatInputRef={chatInputRef}
+                    side={facing === 'left' ? 'right' : 'left'}
+                  />
+                )
+              }
             />
           </div>
         </div>

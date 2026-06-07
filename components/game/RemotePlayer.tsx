@@ -6,7 +6,10 @@ import { NpcChatOverlay } from './ConnectChatOverlay';
 import { CHAR_BOTTOM } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef, worldXToScreenPct } from '@/lib/gameWorldRef';
-import type { RemotePlayerState } from '@/lib/multiplayer/useMultiplayer';
+import type {
+  RemoteAmbientMessage,
+  RemotePlayerState,
+} from '@/lib/multiplayer/useMultiplayer';
 
 type RemotePlayerProps = {
   id: string;
@@ -16,6 +19,7 @@ type RemotePlayerProps = {
   /** True while the local player is in a 1:1 chat with this player. */
   greeting?: boolean;
   greetingChat?: { name: string; npcTyping: boolean; npcMessage: string | null };
+  ambientRef?: React.RefObject<Map<string, RemoteAmbientMessage>>;
 };
 
 /** How quickly the rendered position eases toward the latest networked target. */
@@ -28,7 +32,7 @@ const LERP = 0.22;
  * interpolation so 15 Hz packets read as smooth 60 fps movement.
  */
 export default function RemotePlayer({
-  id, stateRef, scale = 0.34, greeting = false, greetingChat,
+  id, stateRef, scale = 0.34, greeting = false, greetingChat, ambientRef,
 }: RemotePlayerProps) {
   const divRef       = useRef<HTMLDivElement>(null);
   const characterRef = useRef<CharacterHandle>(null);
@@ -42,6 +46,8 @@ export default function RemotePlayer({
   const colorRef = useRef(color);
   // screenX only feeds the chat-bubble side; refreshed when a chat opens.
   const [screenX, setScreenX] = useState(50);
+  const [ambientMessage, setAmbientMessage] = useState<string | null>(null);
+  const lastAmbientRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (greeting && divRef.current) {
@@ -82,6 +88,15 @@ export default function RemotePlayer({
 
         const pct = worldXToScreenPct(renderXRef.current, gameWorldOffRef.current);
         if (divRef.current) divRef.current.style.left = `${pct}%`;
+
+        if (ambientRef?.current) {
+          const amb = ambientRef.current.get(id);
+          const active = amb && amb.until > Date.now() ? amb.text : null;
+          if (active !== lastAmbientRef.current) {
+            lastAmbientRef.current = active;
+            setAmbientMessage(active);
+          }
+        }
       }
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -110,14 +125,23 @@ export default function RemotePlayer({
         balloonColor={color}
         scale={scale}
         bubbleSide={bubbleSide}
-        chatOverlay={greeting && greetingChat ? (
-          <NpcChatOverlay
-            name={greetingChat.name}
-            npcTyping={greetingChat.npcTyping}
-            npcMessage={greetingChat.npcMessage}
-            side={bubbleSide}
-          />
-        ) : undefined}
+        chatOverlay={
+          greeting && greetingChat ? (
+            <NpcChatOverlay
+              name={greetingChat.name}
+              npcTyping={greetingChat.npcTyping}
+              npcMessage={greetingChat.npcMessage}
+              side={bubbleSide}
+            />
+          ) : ambientMessage ? (
+            <NpcChatOverlay
+              name={stateRef.current?.get(id)?.name ?? 'Wanderer'}
+              npcTyping={false}
+              npcMessage={ambientMessage}
+              side={bubbleSide}
+            />
+          ) : undefined
+        }
       />
     </div>
   );

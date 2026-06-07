@@ -6,6 +6,7 @@ import {
   type ServerMessage,
 } from '../lib/multiplayer/protocol';
 import { resolveStagePlaylists } from '../lib/resolveStagePlaylists';
+import { filterChatMessage } from '../lib/messageFilter';
 import { DEFAULT_DURATION_MS, STAGE_EPOCH } from '../lib/stageVideos';
 
 /**
@@ -107,9 +108,20 @@ export default class WhichStageServer implements Party.Server {
       case 'chat-typing':
         this.sendTo(msg.to, { t: 'chat-typing', from: sender.id, typing: msg.typing });
         break;
-      case 'chat-msg':
-        this.sendTo(msg.to, { t: 'chat-msg', from: sender.id, text: msg.text });
+      case 'chat-msg': {
+        const filtered = filterChatMessage(msg.text);
+        if (!filtered.ok) return;
+        this.sendTo(msg.to, { t: 'chat-msg', from: sender.id, text: filtered.text });
         break;
+      }
+      case 'ambient-msg': {
+        const filtered = filterChatMessage(msg.text);
+        if (!filtered.ok) return;
+        this.room.broadcast(
+          encode({ t: 'ambient', from: sender.id, text: filtered.text }),
+        );
+        break;
+      }
     }
   }
 
