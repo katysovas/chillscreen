@@ -3,7 +3,7 @@ import { bitcoinWorldNote, formatBitcoinUsd, type BitcoinSnapshot } from '@/lib/
 
 export type ChatTurn = { role: 'user' | 'assistant'; content: string };
 
-export const NPC_CHAT_MODEL = 'gpt-4o-mini';
+export const NPC_CHAT_MODEL = 'gpt-4.1-nano';
 
 /** Minimum time the typing bubble stays visible before the reply appears. */
 export const NPC_TYPING_MS = 1400;
