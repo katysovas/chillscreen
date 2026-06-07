@@ -4,6 +4,7 @@ import { LIGHTSABER_STYLES } from './accessories/lightsaber/styles';
 import { MICROPHONE_STYLES } from './accessories/microphone/styles';
 import { NECKLACE_STYLES } from './accessories/necklace/styles';
 import { VENDOR_CART_STYLES } from './accessories/vendorCart/styles';
+import { LOADOUT_STYLES } from './loadout/styles';
 import { MAIN_CHARACTER_STYLES } from './main/styles';
 import { PIRATE_CHARACTER_STYLES } from './pirate/styles';
 import { SHARED_CHARACTER_STYLES } from './shared/styles';
@@ -19,4 +20,5 @@ export const CHARACTER_STYLES = [
   VENDOR_CART_STYLES,
   LIGHTSABER_STYLES,
   PIRATE_CHARACTER_STYLES,
+  LOADOUT_STYLES,
 ].join('\n');

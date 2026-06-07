@@ -1,12 +1,53 @@
 import type { CharacterDef } from '@/components/game/characters';
 import { getStageWorldSnapshot, type StageWorldEntry } from '@/lib/stageWorldSnapshot';
+import { BUZ_NPC_ID } from '@/lib/vendorShop';
 
 export const AMBIENT_VISIBLE_MS = 2200;
 export const AMBIENT_VISIBLE_JITTER_MS = 400;
 export const AMBIENT_INTERVAL_MIN_MS = 48_000;
 export const AMBIENT_INTERVAL_MAX_MS = 72_000;
 
+/** Per-NPC ambient timing overrides. */
+const NPC_AMBIENT_INTERVAL: Partial<Record<string, { minMs: number; maxMs: number }>> = {
+  [BUZ_NPC_ID]: { minMs: 9_000, maxMs: 16_000 },
+};
+
+const NPC_AMBIENT_INITIAL_DELAY: Partial<Record<string, { minMs: number; maxMs: number }>> = {
+  [BUZ_NPC_ID]: { minMs: 3_000, maxMs: 6_000 },
+};
+
+const NPC_AMBIENT_VISIBLE: Partial<Record<string, { baseMs: number; jitterMs: number }>> = {
+  [BUZ_NPC_ID]: { baseMs: 3_400, jitterMs: 800 },
+};
+
+export function getAmbientIntervalMs(characterId: string): { minMs: number; maxMs: number } {
+  return NPC_AMBIENT_INTERVAL[characterId] ?? {
+    minMs: AMBIENT_INTERVAL_MIN_MS,
+    maxMs: AMBIENT_INTERVAL_MAX_MS,
+  };
+}
+
+export function getAmbientInitialDelayMs(
+  characterId: string,
+  npcIndex: number,
+  entryDelay = 0,
+): number {
+  const override = NPC_AMBIENT_INITIAL_DELAY[characterId];
+  if (override) {
+    return override.minMs + Math.random() * (override.maxMs - override.minMs);
+  }
+  return 12_000 + entryDelay * 0.35 + npcIndex * 4_500 + Math.random() * 8_000;
+}
+
+export function getAmbientVisibleMs(characterId: string): { baseMs: number; jitterMs: number } {
+  return NPC_AMBIENT_VISIBLE[characterId] ?? {
+    baseMs: AMBIENT_VISIBLE_MS,
+    jitterMs: AMBIENT_VISIBLE_JITTER_MS,
+  };
+}
+
 const STAGE_MUMBLE_WEIGHT = 0.92;
+const BUZ_VENDOR_SHOUT_WEIGHT = 0.9;
 
 function pick<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]!;
@@ -205,20 +246,20 @@ const CHARACTER_STAGE_FLAVOR: Partial<Record<string, StageFlavorFn>> = {
   buz: stage =>
     stage.nowPlaying
       ? [
-          `${stage.nowPlaying} at ${stage.stageName} — snacks?`,
-          `catch ${stage.nowPlaying} at ${stage.stageName}`,
-          `${stage.stageName} got ${stage.nowPlaying} rn`,
-          `everyone going to ${stage.stageName} for ${stage.nowPlaying}`,
-          `${stage.nowPlaying} at ${stage.stageName} = peak hours`,
-          `${stage.stageName}: ${stage.nowPlaying}. I'm nearby.`,
-          `${stage.nowPlaying} drop incoming — stock the glowsticks`,
-          `${stage.stageName} crowd is the move rn`,
+          `${stage.nowPlaying} at ${stage.stageName} — merch first!`,
+          `heading to ${stage.stageName}? grab a hat on the way`,
+          `${stage.stageName} is popping — stock up at my cart`,
+          `${stage.nowPlaying} crowd needs PIRATE HATS`,
+          `everyone at ${stage.stageName} — headphones!`,
+          `${stage.nowPlaying} at ${stage.stageName}. lightsabers ready.`,
+          `walk to ${stage.stageName} — cutlass optional`,
+          `${stage.stageName} set + festival merch = perfect night`,
         ]
       : [
-          `swing by ${stage.stageName} later`,
-          `${stage.stageName} slow. good time to restock.`,
-          `${stage.stageName} between sets: opportunity`,
-          `${stage.stageName} quiet. setting up shop.`,
+          `between sets? browse my cart`,
+          `${stage.stageName} quiet — good time to shop`,
+          `restock while ${stage.stageName} loads up`,
+          `merch tent open while ${stage.stageName} waits`,
         ],
 
   atlas: stage =>
@@ -349,16 +390,47 @@ const CHARACTER_GENERIC: Partial<Record<string, string[]>> = {
     'rebellions are built on vibes',
   ],
   buz: [
-    'mystery bag??',
-    'staying hydrated?',
-    'glowsticks. just saying',
-    'I know a guy',
-    'limited supply rn',
-    'good energy accepted',
-    "don't ask questions",
-    'best customers in the biz',
-    "restock complete. let's go.",
-    'business is booming',
+    'HUNTER HATS! CAMO UP!',
+    'BASEBALL CAPS! FESTIVAL EDITION!',
+    'PAMELA HATS! MAIN CHARACTER ENERGY!',
+    'GLASSES! LOOK COOL STAY MYSTERIOUS!',
+    'BLUE GLASSES! FESTIVAL NIGHT VISION!',
+    'GREEN GLASSES! LAWN CROWD ENERGY!',
+    'CIRCLE GLASSES! RETRO FESTIVAL VIBES!',
+    'YELLOW GLASSES! SUNNY SET ENERGY!',
+    'OPTIC GLASSES! READ THE SETLIST!',
+    'SKI GOGGLES! SLOPE-READY SHADES!',
+    'HORNS UP! VIKING HATS HERE!',
+    'HEADPHONES! BLOCK OUT THE CROWD!',
+    'CUTLASS IN STOCK! WHO NEEDS A BLADE?',
+    'LIGHTSABERS! LIMITED RUN!',
+    'STEP RIGHT UP! FESTIVAL MERCH!',
+    'BUZ HAS THE GOODS!',
+    'MERCH TENT IS OPEN!',
+    'TALK TO BUZ — BEST STUFF HERE!',
+    'WHO NEEDS A NICE HAT?',
+    'HEADPHONES FOR THE HEADLINER IN YOU!',
+    'SWORDS AND SABERS! STEP UP!',
+    "DON'T WALK PAST WITHOUT LOOKING!",
+    'FRESH MERCH! RIGHT HERE!',
+    "I GOT WHAT YOU'RE MISSING!",
+    'PIRATE OR DJ — PICK YOUR LOOK!',
+    'EVERYONE NEEDS MERCH!',
+    'CHAT WITH ME — I\'LL HOOK YOU UP!',
+    'CUTLASS CHECK! WHO\'S READY?',
+    'LIGHTSABER ENERGY ONLY!',
+    'TRICORNS! … WELL, PIRATE HATS!',
+    'MERCH OVER HERE!',
+    "DON'T BE SHY — COME LOOK!",
+    'ONLY THE GOOD STUFF!',
+    'FESTIVAL MERCH! RIGHT THIS WAY!',
+    'WHO WANTS A LIGHTSABER?',
+    'HEADPHONES! FEEL THE BASS IN PEACE!',
+    'BEST CART AT THE FESTIVAL!',
+    'STOCK UP BEFORE THE NEXT SET!',
+    'I SEE YOU LOOKING — COME CHAT!',
+    'MERCH MERCH MERCH!',
+    'GET EQUIPPED! TALK TO BUZ!',
   ],
   atlas: [
     'fascinating',
@@ -427,7 +499,18 @@ function pickGenericMumble(character: CharacterDef): string {
   return pick(GENERIC_MUMBLES);
 }
 
+function pickBuzAmbientMumble(): string {
+  const vendorPool = CHARACTER_GENERIC[BUZ_NPC_ID]!;
+  if (Math.random() < BUZ_VENDOR_SHOUT_WEIGHT) return pick(vendorPool);
+
+  const snapshot = getStageWorldSnapshot();
+  const stage = pickStage(snapshot);
+  return pickStageMumble({ id: BUZ_NPC_ID } as CharacterDef, stage);
+}
+
 export function pickAmbientMumble(character: CharacterDef): string {
+  if (character.id === BUZ_NPC_ID) return pickBuzAmbientMumble();
+
   const snapshot = getStageWorldSnapshot();
   const stage = pickStage(snapshot);
   if (Math.random() < STAGE_MUMBLE_WEIGHT) return pickStageMumble(character, stage);

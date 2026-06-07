@@ -1,0 +1,251 @@
+import type { LoadoutItemDef, LoadoutSlot } from './types';
+
+/** All equippable items — vendor store reads names, slots, and prices from here. */
+export const LOADOUT_CATALOG: Record<string, LoadoutItemDef> = {
+  // ── Hand ─────────────────────────────────────────────────────────────────
+  'hand-balloon': {
+    id: 'hand-balloon',
+    slot: 'hand',
+    name: 'Heart Balloon',
+    description: 'The classic festival float.',
+    vendorPrice: 0,
+    defaultProps: {},
+  },
+  'hand-microphone': {
+    id: 'hand-microphone',
+    slot: 'hand',
+    name: 'Microphone',
+    description: 'For spontaneous crowd work.',
+    vendorPrice: 120,
+    handMounted: true,
+    holdSide: 'right',
+    defaultProps: { color: '#2c3e50' },
+  },
+  'hand-lightsaber': {
+    id: 'hand-lightsaber',
+    slot: 'hand',
+    name: 'Lightsaber',
+    description: 'Elegant weapon for a more civilized age.',
+    vendorPrice: 250,
+    handMounted: true,
+    holdSide: 'right',
+    defaultProps: { bladeColor: '#66ff88', hiltColor: '#4a4a52' },
+  },
+  'hand-sword': {
+    id: 'hand-sword',
+    slot: 'hand',
+    name: 'Cutlass',
+    description: 'A festival pirate\'s trusty blade.',
+    handMounted: true,
+    holdSide: 'right',
+    defaultProps: {},
+  },
+
+  // ── Hat ──────────────────────────────────────────────────────────────────
+  'hat-beanie': {
+    id: 'hat-beanie',
+    slot: 'hat',
+    name: 'Beanie',
+    vendorPrice: 40,
+    defaultProps: { color: '#2c3e50' },
+  },
+  'hat-cap': {
+    id: 'hat-cap',
+    slot: 'hat',
+    name: 'Baseball Cap',
+    vendorPrice: 55,
+    defaultProps: { color: '#1a5276' },
+  },
+  'hat-chef': {
+    id: 'hat-chef',
+    slot: 'hat',
+    name: 'Chef Hat',
+    vendorPrice: 80,
+    defaultProps: { color: '#f8f8f8' },
+  },
+  'hat-pirate-bandana': {
+    id: 'hat-pirate-bandana',
+    slot: 'hat',
+    name: 'Pirate Hat',
+    description: 'A proper tricorn — ready to plunder the merch tent.',
+    vendorPrice: 95,
+    defaultProps: {},
+  },
+  'hat-headphones': {
+    id: 'hat-headphones',
+    slot: 'hat',
+    name: 'Headphones',
+    description: 'Block out the crowd, feel the bass.',
+    defaultProps: {},
+  },
+  'hat-viking': {
+    id: 'hat-viking',
+    slot: 'hat',
+    name: 'Viking Helmet',
+    description: 'Horns optional. Festival raid ready.',
+    defaultProps: {},
+  },
+  'hat-lady': {
+    id: 'hat-lady',
+    slot: 'hat',
+    name: 'Lady Hat',
+    description: 'Wide brim, festival flair.',
+    defaultProps: {},
+  },
+  'hat-hunter': {
+    id: 'hat-hunter',
+    slot: 'hat',
+    name: 'Hunter Hat',
+    description: 'Camo cap for the festival wilds.',
+    defaultProps: {},
+  },
+  'hat-baseball': {
+    id: 'hat-baseball',
+    slot: 'hat',
+    name: 'Baseball Cap',
+    description: 'Classic ballpark fit for the festival.',
+    defaultProps: {},
+  },
+  'hat-pamela': {
+    id: 'hat-pamela',
+    slot: 'hat',
+    name: 'Pamela Hat',
+    description: 'Wide brim, main-character energy.',
+    defaultProps: {},
+  },
+  // ── Sunglasses ───────────────────────────────────────────────────────────
+  'shades-round': {
+    id: 'shades-round',
+    slot: 'sunglasses',
+    name: 'Round Shades',
+    vendorPrice: 65,
+    defaultProps: { color: '#111', lensColor: '#1a1a2e' },
+  },
+  'shades-aviator': {
+    id: 'shades-aviator',
+    slot: 'sunglasses',
+    name: 'Aviators',
+    vendorPrice: 90,
+    defaultProps: { color: '#b8860b', lensColor: '#2d3436' },
+  },
+  'shades-glasses': {
+    id: 'shades-glasses',
+    slot: 'sunglasses',
+    name: 'Glasses',
+    description: 'Classic frames for the main stage stare.',
+    defaultProps: {},
+  },
+  'shades-glasses-blue': {
+    id: 'shades-glasses-blue',
+    slot: 'sunglasses',
+    name: 'Blue Glasses',
+    description: 'Cool blue frames for festival nights.',
+    defaultProps: {},
+  },
+  'shades-glasses-green': {
+    id: 'shades-glasses-green',
+    slot: 'sunglasses',
+    name: 'Green Glasses',
+    description: 'Fresh green frames for the lawn crowd.',
+    defaultProps: {},
+  },
+  'shades-glasses-circle': {
+    id: 'shades-glasses-circle',
+    slot: 'sunglasses',
+    name: 'Circle Glasses',
+    description: 'Round frames for retro festival vibes.',
+    defaultProps: {},
+  },
+  'shades-glasses-yellow': {
+    id: 'shades-glasses-yellow',
+    slot: 'sunglasses',
+    name: 'Yellow Glasses',
+    description: 'Sunny yellow frames for daytime sets.',
+    defaultProps: {},
+  },
+  'shades-glasses-optic': {
+    id: 'shades-glasses-optic',
+    slot: 'sunglasses',
+    name: 'Optic Glasses',
+    description: 'Clear lenses for reading the setlist up close.',
+    defaultProps: {},
+  },
+  'shades-glasses-skiing': {
+    id: 'shades-glasses-skiing',
+    slot: 'sunglasses',
+    name: 'Ski Goggles',
+    description: 'Slope-ready shades for the chilly sets.',
+    defaultProps: {},
+  },
+
+  // ── Necklace ─────────────────────────────────────────────────────────────
+  'necklace-pendant': {
+    id: 'necklace-pendant',
+    slot: 'necklace',
+    name: 'Pendant Necklace',
+    vendorPrice: 150,
+    defaultProps: { symbol: '★', color: '#f7931a', chainColor: '#c9a227' },
+  },
+  'necklace-pearls': {
+    id: 'necklace-pearls',
+    slot: 'necklace',
+    name: 'Pearl Necklace',
+    vendorPrice: 200,
+    defaultProps: { color: '#f5f0e6' },
+  },
+
+  // ── Top ──────────────────────────────────────────────────────────────────
+  'top-tee': {
+    id: 'top-tee',
+    slot: 'top',
+    name: 'Festival Tee',
+    vendorPrice: 45,
+    defaultProps: { color: '#4a90d9' },
+  },
+  'top-tank': {
+    id: 'top-tank',
+    slot: 'top',
+    name: 'Neon Tank',
+    vendorPrice: 50,
+    defaultProps: { color: '#39ff14' },
+  },
+  'top-tie-dye': {
+    id: 'top-tie-dye',
+    slot: 'top',
+    name: 'Tie-Dye Tee',
+    vendorPrice: 75,
+    defaultProps: { color: '#e85074', accentColor: '#6c5ce7' },
+  },
+
+  // ── Bottom ───────────────────────────────────────────────────────────────
+  'bottom-shorts': {
+    id: 'bottom-shorts',
+    slot: 'bottom',
+    name: 'Shorts',
+    vendorPrice: 40,
+    defaultProps: { color: '#5d6d7e' },
+  },
+  'bottom-jeans': {
+    id: 'bottom-jeans',
+    slot: 'bottom',
+    name: 'Jeans',
+    vendorPrice: 60,
+    defaultProps: { color: '#2c3e6b' },
+  },
+  'bottom-dress': {
+    id: 'bottom-dress',
+    slot: 'bottom',
+    name: 'Sundress',
+    description: 'Covers torso and legs.',
+    vendorPrice: 110,
+    defaultProps: { color: '#e17055' },
+  },
+};
+
+export function loadoutItem(id: string): LoadoutItemDef | undefined {
+  return LOADOUT_CATALOG[id];
+}
+
+export function catalogForSlot(slot: LoadoutSlot): LoadoutItemDef[] {
+  return Object.values(LOADOUT_CATALOG).filter(item => item.slot === slot);
+}

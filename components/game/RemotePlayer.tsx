@@ -10,6 +10,11 @@ import type {
   RemoteAmbientMessage,
   RemotePlayerState,
 } from '@/lib/multiplayer/useMultiplayer';
+import {
+  loadoutFromSync,
+  loadoutSyncKey,
+} from '@/lib/multiplayer/loadoutSync';
+import type { CharacterLoadout } from './characters/loadout';
 
 type RemotePlayerProps = {
   id: string;
@@ -42,8 +47,13 @@ export default function RemotePlayer({
   const rafRef       = useRef<number | null>(null);
 
   const initial = stateRef.current?.get(id);
-  const [color, setColor] = useState(initial?.balloonColor ?? '#ef4023');
+  const initialColor = initial?.balloonColor ?? '#ef4023';
+  const [color, setColor] = useState(initialColor);
   const colorRef = useRef(color);
+  const [loadout, setLoadout] = useState<CharacterLoadout>(() =>
+    loadoutFromSync(initial?.loadout, initialColor),
+  );
+  const loadoutKeyRef = useRef(loadoutSyncKey(initial?.loadout));
   // screenX only feeds the chat-bubble side; refreshed when a chat opens.
   const [screenX, setScreenX] = useState(50);
   const [ambientMessage, setAmbientMessage] = useState<string | null>(null);
@@ -71,6 +81,12 @@ export default function RemotePlayer({
         if (s.balloonColor && s.balloonColor !== colorRef.current) {
           colorRef.current = s.balloonColor;
           setColor(s.balloonColor);
+          setLoadout(prev => ({ ...prev, balloonColor: s.balloonColor }));
+        }
+        const nextLoadoutKey = loadoutSyncKey(s.loadout);
+        if (nextLoadoutKey !== loadoutKeyRef.current) {
+          loadoutKeyRef.current = nextLoadoutKey;
+          setLoadout(loadoutFromSync(s.loadout, s.balloonColor));
         }
         if (renderXRef.current === null) renderXRef.current = s.worldX;
         const diff = s.worldX - renderXRef.current;
@@ -123,6 +139,7 @@ export default function RemotePlayer({
         walking={walkingRef.current}
         facing={facingRef.current}
         balloonColor={color}
+        loadout={loadout}
         scale={scale}
         bubbleSide={bubbleSide}
         chatOverlay={

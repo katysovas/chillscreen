@@ -22,6 +22,9 @@ import {
   subscribeBalloonColor,
 } from '@/lib/identity';
 import type { PlayerProfile } from '@/lib/multiplayer/protocol';
+import { getPlayerLoadout, equipLoadoutItem, unequipLoadoutItem } from '@/lib/playerLoadout';
+import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
+import { BUZ_NPC_ID } from '@/lib/vendorShop';
 
 /** Set to an NPC id to spawn only that character immediately (testing). */
 const TEST_SPAWN_NPC_ID: string | null = null;
@@ -31,6 +34,9 @@ const TEST_FORCE_DANCE = false;
 
 /** Show all four player variant skins side-by-side (testing). */
 const TEST_PLAYER_VARIANT_GALLERY = false;
+
+/** Equip loadout items on the player at startup (testing). */
+const TEST_PLAYER_LOADOUT = {} as const;
 import {
   getPlayerName,
   setPlayerName as savePlayerName,
@@ -59,7 +65,10 @@ import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
 import { DPadBtn } from './DPadBtn';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { BottomControlPanel } from './BottomControlPanel';
+import { VendorShopPanel } from './VendorShopPanel';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
+import type { CharacterLoadout } from './characters/loadout';
+import { defaultLoadout } from './characters/loadout';
 
 const KF = `${CITY_SCENE_KEYFRAMES}\n${CHARACTER_STYLES}`;
 
@@ -177,6 +186,25 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     getSessionBalloonColor,
     getServerBalloonColor,
   );
+  // SSR/hydration: start from defaults; localStorage loadout applies after mount.
+  const [playerLoadout, setPlayerLoadout] = useState<CharacterLoadout>(() => ({
+    ...defaultLoadout(myColor),
+    ...TEST_PLAYER_LOADOUT,
+  }));
+
+  useEffect(() => {
+    setPlayerLoadout({ ...getPlayerLoadout(myColor), ...TEST_PLAYER_LOADOUT });
+  }, [myColor]);
+
+  const handleVendorPurchase = useCallback((itemId: string) => {
+    const next = equipLoadoutItem(itemId, myColor);
+    if (next) setPlayerLoadout({ ...next, ...TEST_PLAYER_LOADOUT });
+  }, [myColor]);
+
+  const handleVendorUnequip = useCallback((itemId: string) => {
+    const next = unequipLoadoutItem(itemId, myColor);
+    if (next) setPlayerLoadout({ ...next, ...TEST_PLAYER_LOADOUT });
+  }, [myColor]);
 
   // Peer (real human) 1:1 chat — mirrors the NPC greeting flow.
   const [peerChatId,  setPeerChatId]  = useState<string | null>(null);
@@ -196,8 +224,16 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     showWelcome || greetingNpc !== null || peerChatId !== null,
   );
 
-  const profileRef = useRef<PlayerProfile>({ name: null, balloonColor: myColor });
-  profileRef.current = { name: playerName, balloonColor: myColor };
+  const profileRef = useRef<PlayerProfile>({
+    name: null,
+    balloonColor: myColor,
+    loadout: serializeLoadout(playerLoadout),
+  });
+  profileRef.current = {
+    name: playerName,
+    balloonColor: myColor,
+    loadout: serializeLoadout(playerLoadout),
+  };
 
   const mp = useMultiplayer({
     profileRef,
@@ -259,10 +295,14 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   }, []);
   endPeerChatRef.current = endPeerChat;
 
-  // Broadcast identity (name/color) whenever it changes.
+  // Broadcast identity (name, color, loadout) whenever it changes.
   useEffect(() => {
-    sendProfile({ name: playerName, balloonColor: myColor });
-  }, [playerName, myColor, sendProfile]);
+    sendProfile({
+      name: playerName,
+      balloonColor: myColor,
+      loadout: serializeLoadout(playerLoadout),
+    });
+  }, [playerName, myColor, playerLoadout, sendProfile]);
 
   // Relay "typing…" to the peer while the local player composes a message.
   useEffect(() => {
@@ -736,6 +776,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   }, []);
 
   const inConversation = greetingNpc !== null || peerChatId !== null;
+  const showVendorShop =
+    greetingNpc !== null && CHARACTERS[greetingNpc]?.id === BUZ_NPC_ID;
   const conversationPartnerName = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
     : greetingNpc !== null ? CHARACTERS[greetingNpc]?.name : null;
@@ -841,6 +883,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
               facing={facing}
               dancing={TEST_FORCE_DANCE || playerDancing}
               balloonColor={myColor}
+              loadout={playerLoadout}
               bubbleSide={playerBubbleSide(greetNpcX)}
               chatOverlay={
                 inConversation ? (
@@ -870,6 +913,14 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
             />
           </div>
         </div>
+      )}
+
+      {showVendorShop && (
+        <VendorShopPanel
+          loadout={playerLoadout}
+          onPurchase={handleVendorPurchase}
+          onUnequip={handleVendorUnequip}
+        />
       )}
 
       {/* Greeting status bar */}

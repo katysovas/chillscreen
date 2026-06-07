@@ -2,6 +2,18 @@
 import { forwardRef, useImperativeHandle, useRef, type CSSProperties, type ReactNode } from 'react';
 import type { BubbleSide } from '../../ChatBubble';
 import {
+  loadoutHoldSide,
+  resolveLoadout,
+  renderLoadoutBottom,
+  renderLoadoutFloat,
+  renderLoadoutHand,
+  renderLoadoutHat,
+  renderLoadoutNecklace,
+  renderLoadoutSunglasses,
+  renderLoadoutTop,
+} from '../loadout';
+import type { CharacterLoadout } from '../loadout';
+import {
   accessoryHoldSide,
   renderAccessorySlot,
 } from '../render';
@@ -11,6 +23,8 @@ export type CharacterProps = {
   walking: boolean;
   facing: 'left' | 'right';
   balloonColor?: string;
+  /** Layered outfit props — preferred over legacy `accessory` when set. */
+  loadout?: CharacterLoadout;
   accessory?: CharacterAccessory;
   scale?: number;
   /** Outfit skin — adds `ch-outfit-{name}` on the wrapper (tie-dye, neon tank, …). */
@@ -75,6 +89,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   walking,
   facing,
   balloonColor = '#ef4023',
+  loadout,
   accessory,
   scale = 0.34,
   outfit,
@@ -113,10 +128,12 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   }), []);
 
   const mirrored = facing === 'left';
+  const equipped = loadout ? resolveLoadout(loadout, balloonColor) : null;
+  const holdRight = equipped
+    ? loadoutHoldSide(equipped) === 'right'
+    : accessoryHoldSide(accessory) === 'right';
   const partyHandClass = dancing
-    ? accessoryHoldSide(accessory) === 'right'
-      ? ' ch-free-hand-left'
-      : ' ch-free-hand-right'
+    ? holdRight ? ' ch-free-hand-left' : ' ch-free-hand-right'
     : '';
 
   return (
@@ -139,19 +156,29 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
           className={`ch-wrapper${outfit ? ` ch-outfit-${outfit}` : ''}${walking ? ' ch-walking' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
         >
           <div className="ch-animal">
-            {renderAccessorySlot('float', accessory, balloonColor)}
+            {equipped
+              ? renderLoadoutFloat(equipped)
+              : renderAccessorySlot('float', accessory, balloonColor)}
             <div className="ch-ears" />
             <div className="ch-body">
-              {renderAccessorySlot('head', accessory, balloonColor)}
+              {equipped
+                ? renderLoadoutHat(equipped)
+                : renderAccessorySlot('head', accessory, balloonColor)}
               <div className="ch-eyes" />
+              {equipped && renderLoadoutSunglasses(equipped)}
               <div className="ch-nose"><span /><span /></div>
+              {equipped && renderLoadoutNecklace(equipped)}
+              {equipped && renderLoadoutTop(equipped)}
               <div className="ch-hands">
                 <div className="ch-left-hand"><span /><span /></div>
                 <div className="ch-right-hand">
                   <span /><span />
-                  {renderAccessorySlot('hand', accessory, balloonColor)}
+                  {equipped
+                    ? renderLoadoutHand(equipped)
+                    : renderAccessorySlot('hand', accessory, balloonColor)}
                 </div>
               </div>
+              {equipped && renderLoadoutBottom(equipped)}
             </div>
             <div className="ch-legs"><span /><span /></div>
           </div>

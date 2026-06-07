@@ -1,13 +1,12 @@
-/** Tricorn hat with gold band, skull ☠, animated feather plume + eyepatch
- *  and gold earring. Render inside .ch-body before the face. */
+import { HatProp } from '../loadout/props/HatProp';
+
+const PIRATE_HAT_CTX = { balloonColor: '#000', props: {} } as const;
+
+/** SVG tricorn + eyepatch, gold earring, baggy pants. Render inside .ch-body before the face. */
 export function PirateHeadAccessory() {
   return (
     <>
-      <div className="ch-pirate-hat">
-        <div className="ch-pirate-hat-band" />
-        <div className="ch-pirate-hat-skull">☠</div>
-        <div className="ch-pirate-hat-feather" />
-      </div>
+      <HatProp variant="pirate-hat" ctx={PIRATE_HAT_CTX} />
       <div className="ch-eyepatch" />
       <div className="ch-pirate-earring" />
       <div className="ch-pirate-pants" />

@@ -30,3 +30,24 @@ export { MicrophoneAccessory } from './accessories/microphone/accessory';
 export { NecklaceAccessory } from './accessories/necklace/accessory';
 export { PirateHeadAccessory, PirateSwordAccessory } from './pirate/accessory';
 export { VendorCartAccessory } from './accessories/vendorCart/accessory';
+
+export type {
+  CharacterLoadout,
+  LoadoutItemDef,
+  LoadoutItemProps,
+  LoadoutRenderCtx,
+  LoadoutSlot,
+} from './loadout';
+export {
+  LOADOUT_CATALOG,
+  LOADOUT_SLOTS,
+  catalogForSlot,
+  defaultLoadout,
+  isLoadoutHandMounted,
+  loadoutFromAccessory,
+  loadoutHoldSide,
+  loadoutItem,
+  loadoutItemId,
+  normalizeLoadout,
+  renderLoadoutItem,
+} from './loadout';

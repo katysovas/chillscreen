@@ -61,6 +61,7 @@ export default class WhichStageServer implements Party.Server {
           id: sender.id,
           name: msg.profile.name,
           balloonColor: msg.profile.balloonColor,
+          loadout: msg.profile.loadout,
           worldX: msg.worldX,
           facing: msg.facing,
           walking: msg.walking,
@@ -91,6 +92,9 @@ export default class WhichStageServer implements Party.Server {
         if (!player) return;
         player.name = msg.profile.name;
         player.balloonColor = msg.profile.balloonColor;
+        if (msg.profile.loadout !== undefined) {
+          player.loadout = msg.profile.loadout;
+        }
         this.broadcastExcept(sender.id, {
           t: 'profile',
           id: sender.id,

@@ -1,12 +1,17 @@
+const HEADPHONES_SRC = '/images/props/headphones.svg';
+
 export function DjHeadphones({ color = '#2c2c34' }: { color?: string }) {
   return (
     <div
       className="ch-dj-phones"
       style={{ ['--dj-phone-color' as string]: color }}
     >
-      <div className="ch-dj-phones-band" />
-      <div className="ch-dj-phones-cup ch-dj-phones-cup-l" />
-      <div className="ch-dj-phones-cup ch-dj-phones-cup-r" />
+      <img
+        src={HEADPHONES_SRC}
+        alt=""
+        className="ch-dj-phones-img"
+        draggable={false}
+      />
     </div>
   );
 }

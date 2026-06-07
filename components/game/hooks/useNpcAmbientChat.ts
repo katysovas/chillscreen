@@ -3,10 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import CHARACTERS from '@/components/game/characters';
 import {
-  AMBIENT_INTERVAL_MAX_MS,
-  AMBIENT_INTERVAL_MIN_MS,
-  AMBIENT_VISIBLE_JITTER_MS,
-  AMBIENT_VISIBLE_MS,
+  getAmbientInitialDelayMs,
+  getAmbientIntervalMs,
+  getAmbientVisibleMs,
   pickAmbientMumble,
 } from '@/lib/npcAmbientChat';
 
@@ -14,20 +13,19 @@ export type NpcAmbientChatState = {
   message: string | null;
 };
 
-function randomIntervalMs() {
-  return (
-    AMBIENT_INTERVAL_MIN_MS +
-    Math.random() * (AMBIENT_INTERVAL_MAX_MS - AMBIENT_INTERVAL_MIN_MS)
-  );
+function randomIntervalMs(characterId: string) {
+  const { minMs, maxMs } = getAmbientIntervalMs(characterId);
+  return minMs + Math.random() * (maxMs - minMs);
 }
 
 function initialDelayMs(npcIndex: number) {
-  const entry = CHARACTERS[npcIndex]?.entryDelay ?? 0;
-  return 12_000 + entry * 0.35 + npcIndex * 4_500 + Math.random() * 8_000;
+  const character = CHARACTERS[npcIndex];
+  if (!character) return 12_000;
+  return getAmbientInitialDelayMs(character.id, npcIndex, character.entryDelay);
 }
 
 /**
- * Schedules ambient self-talk for each NPC (~once per minute each).
+ * Schedules ambient self-talk for each NPC (Buz shouts more often).
  * Local template lines only — stage acts from synced YouTube playlists.
  */
 export function useNpcAmbientChat(npcCount: number, paused: boolean) {
@@ -59,15 +57,15 @@ export function useNpcAmbientChat(npcCount: number, paused: boolean) {
       });
     };
 
-    const showBubble = (index: number, message: string) => {
+    const showBubble = (index: number, message: string, characterId: string) => {
       clearHide(index);
       setAmbientChats(prev => {
         const next = [...prev];
         next[index] = { message };
         return next;
       });
-      const visible =
-        AMBIENT_VISIBLE_MS + Math.random() * AMBIENT_VISIBLE_JITTER_MS;
+      const visibleMs = getAmbientVisibleMs(characterId);
+      const visible = visibleMs.baseMs + Math.random() * visibleMs.jitterMs;
       hideTimersRef.current.set(
         index,
         setTimeout(() => hideBubble(index), visible),
@@ -80,17 +78,18 @@ export function useNpcAmbientChat(npcCount: number, paused: boolean) {
       const character = CHARACTERS[index];
       if (!character) return;
 
-      showBubble(index, pickAmbientMumble(character));
+      showBubble(index, pickAmbientMumble(character), character.id);
     };
 
     const scheduleNpc = (index: number, delayMs: number) => {
+      const characterId = CHARACTERS[index]?.id ?? '';
       const timer = setTimeout(() => {
         mumble(index);
         const loop = () => {
           const next = setTimeout(() => {
             mumble(index);
             loop();
-          }, randomIntervalMs());
+          }, randomIntervalMs(characterId));
           scheduleTimers.push(next);
         };
         loop();

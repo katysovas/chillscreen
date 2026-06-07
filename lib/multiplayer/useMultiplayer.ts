@@ -7,6 +7,7 @@ import {
   decodeServer,
   encode,
   type Facing,
+  type PlayerLoadoutSync,
   type PlayerProfile,
 } from './protocol';
 import { applyServerStageSync } from '@/lib/stageClock';
@@ -15,6 +16,7 @@ import { applyServerStageSync } from '@/lib/stageClock';
 export type RemotePlayerState = {
   name: string | null;
   balloonColor: string;
+  loadout?: PlayerLoadoutSync;
   worldX: number;
   facing: Facing;
   walking: boolean;
@@ -145,8 +147,12 @@ export function useMultiplayer(opts: Options): Multiplayer {
           roster.clear();
           for (const p of msg.players) {
             roster.set(p.id, {
-              name: p.name, balloonColor: p.balloonColor,
-              worldX: p.worldX, facing: p.facing, walking: p.walking,
+              name: p.name,
+              balloonColor: p.balloonColor,
+              loadout: p.loadout,
+              worldX: p.worldX,
+              facing: p.facing,
+              walking: p.walking,
             });
           }
           setRemoteIds([...roster.keys()]);
@@ -155,8 +161,12 @@ export function useMultiplayer(opts: Options): Multiplayer {
         case 'joined': {
           const p = msg.player;
           roster.set(p.id, {
-            name: p.name, balloonColor: p.balloonColor,
-            worldX: p.worldX, facing: p.facing, walking: p.walking,
+            name: p.name,
+            balloonColor: p.balloonColor,
+            loadout: p.loadout,
+            worldX: p.worldX,
+            facing: p.facing,
+            walking: p.walking,
           });
           setRemoteIds([...roster.keys()]);
           break;
@@ -174,7 +184,13 @@ export function useMultiplayer(opts: Options): Multiplayer {
         }
         case 'profile': {
           const p = roster.get(msg.id);
-          if (p) { p.name = msg.profile.name; p.balloonColor = msg.profile.balloonColor; }
+          if (p) {
+            p.name = msg.profile.name;
+            p.balloonColor = msg.profile.balloonColor;
+            if (msg.profile.loadout !== undefined) {
+              p.loadout = msg.profile.loadout;
+            }
+          }
           break;
         }
         case 'chat-open':   ev.onPeerOpen?.(msg.from); break;

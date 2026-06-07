@@ -14,10 +14,21 @@ export type Facing = 'left' | 'right';
 /** The single shared room everyone joins for now. */
 export const ROOM_ID = 'whichstage-global';
 
+/** Equipped item ids replicated to other players (no local-only fields). */
+export type PlayerLoadoutSync = {
+  hat?: string | null;
+  sunglasses?: string | null;
+  necklace?: string | null;
+  top?: string | null;
+  bottom?: string | null;
+  hand?: string | null;
+};
+
 /** Identity a player chooses for the session (random color, optional name). */
 export type PlayerProfile = {
   name: string | null;
   balloonColor: string;
+  loadout?: PlayerLoadoutSync;
 };
 
 /** Full per-player state the room keeps in memory and replicates. */
