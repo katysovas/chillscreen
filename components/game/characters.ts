@@ -1,6 +1,7 @@
 import type { Personality } from './NPC';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
+import type { StageAnchorKind } from '@/lib/stageAnchor';
 
 export type CharacterDef = {
   id: string;
@@ -17,6 +18,8 @@ export type CharacterDef = {
   entryDelay: number;
   scale?: number;
   personality: Personality;
+  /** When set, NPC stays by this stage type (merch cart). */
+  stageAnchor?: StageAnchorKind;
   /** Voice and temperament — fed into the NPC chat prompt. */
   personalityNotes: string;
 };
@@ -171,17 +174,62 @@ const CHARACTERS: CharacterDef[] = [
   },
 
   {
-    id: 'buz',
+    id: 'buz-concert',
     name: 'Buz',
     balloonColor: '#d4893a',
     accessory: { type: 'vendorCart', color: '#e8520a', emoji: '🛍️' },
-    startX: 30,
+    startX: 50,
     entryDirection: 'right',
     entryDelay: 0,
+    stageAnchor: 'concert',
     personality: {
-      speed: 0.02,                  // barely moves — pushing a heavy cart
-      idleMs: [6000, 14000],        // long stands — vendor working his spot
-      wanderRange: [18, 42],        // stays left of center, near stage entrances
+      speed: 0.02,
+      idleMs: [6000, 14000],
+      wanderRange: [18, 42],
+      jumpiness: 0,
+    },
+    personalityNotes:
+      'Festival vendor who opens by offering something — a snack, a glowstick, a mystery bag. ' +
+      'Warm and theatrical about the goods, not pushy about the sale. Knows food stalls, ' +
+      'merch worth buying, shortcuts, and which sets are worth the crowd. Tips like a friend. ' +
+      'Never takes no personally — just pivots to something else.',
+  },
+
+  {
+    id: 'buz-coachella',
+    name: 'Buz',
+    balloonColor: '#d4893a',
+    accessory: { type: 'vendorCart', color: '#e8520a', emoji: '🛍️' },
+    startX: 50,
+    entryDirection: 'right',
+    entryDelay: 0,
+    stageAnchor: 'coachella',
+    personality: {
+      speed: 0.02,
+      idleMs: [6000, 14000],
+      wanderRange: [18, 42],
+      jumpiness: 0,
+    },
+    personalityNotes:
+      'Festival vendor who opens by offering something — a snack, a glowstick, a mystery bag. ' +
+      'Warm and theatrical about the goods, not pushy about the sale. Knows food stalls, ' +
+      'merch worth buying, shortcuts, and which sets are worth the crowd. Tips like a friend. ' +
+      'Never takes no personally — just pivots to something else.',
+  },
+
+  {
+    id: 'buz-edc',
+    name: 'Buz',
+    balloonColor: '#d4893a',
+    accessory: { type: 'vendorCart', color: '#e8520a', emoji: '🛍️' },
+    startX: 50,
+    entryDirection: 'right',
+    entryDelay: 0,
+    stageAnchor: 'edc',
+    personality: {
+      speed: 0.02,
+      idleMs: [6000, 14000],
+      wanderRange: [18, 42],
       jumpiness: 0,
     },
     personalityNotes:

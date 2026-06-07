@@ -1,6 +1,6 @@
 import type { CharacterDef } from '@/components/game/characters';
 import { getStageWorldSnapshot, type StageWorldEntry } from '@/lib/stageWorldSnapshot';
-import { BUZ_NPC_ID } from '@/lib/vendorShop';
+import { isBuzNpc, BUZ_NPC_ID } from '@/lib/vendorShop';
 
 export const AMBIENT_VISIBLE_MS = 2200;
 export const AMBIENT_VISIBLE_JITTER_MS = 400;
@@ -21,7 +21,8 @@ const NPC_AMBIENT_VISIBLE: Partial<Record<string, { baseMs: number; jitterMs: nu
 };
 
 export function getAmbientIntervalMs(characterId: string): { minMs: number; maxMs: number } {
-  return NPC_AMBIENT_INTERVAL[characterId] ?? {
+  const key = isBuzNpc(characterId) ? BUZ_NPC_ID : characterId;
+  return NPC_AMBIENT_INTERVAL[key] ?? {
     minMs: AMBIENT_INTERVAL_MIN_MS,
     maxMs: AMBIENT_INTERVAL_MAX_MS,
   };
@@ -32,7 +33,7 @@ export function getAmbientInitialDelayMs(
   npcIndex: number,
   entryDelay = 0,
 ): number {
-  const override = NPC_AMBIENT_INITIAL_DELAY[characterId];
+  const override = NPC_AMBIENT_INITIAL_DELAY[isBuzNpc(characterId) ? BUZ_NPC_ID : characterId];
   if (override) {
     return override.minMs + Math.random() * (override.maxMs - override.minMs);
   }
@@ -40,7 +41,8 @@ export function getAmbientInitialDelayMs(
 }
 
 export function getAmbientVisibleMs(characterId: string): { baseMs: number; jitterMs: number } {
-  return NPC_AMBIENT_VISIBLE[characterId] ?? {
+  const key = isBuzNpc(characterId) ? BUZ_NPC_ID : characterId;
+  return NPC_AMBIENT_VISIBLE[key] ?? {
     baseMs: AMBIENT_VISIBLE_MS,
     jitterMs: AMBIENT_VISIBLE_JITTER_MS,
   };
@@ -521,7 +523,7 @@ function pickBuzAmbientMumble(): string {
 }
 
 export function pickAmbientMumble(character: CharacterDef): string {
-  if (character.id === BUZ_NPC_ID) return pickBuzAmbientMumble();
+  if (isBuzNpc(character.id)) return pickBuzAmbientMumble();
 
   const snapshot = getStageWorldSnapshot();
   const stage = pickStage(snapshot);

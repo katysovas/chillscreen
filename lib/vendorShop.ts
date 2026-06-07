@@ -85,7 +85,14 @@ export const VENDOR_SHOP_ITEMS: VendorShopItemId[] = [
   ...DRINK_ITEMS,
 ];
 
+/** Legacy id — prefer `isBuzNpc()`. */
 export const BUZ_NPC_ID = 'buz';
+
+export const BUZ_NPC_IDS = ['buz-concert', 'buz-coachella', 'buz-edc'] as const;
+
+export function isBuzNpc(id: string): boolean {
+  return id === BUZ_NPC_ID || id.startsWith('buz-');
+}
 
 /** Preview art for vendor cards — omit for inline CSS previews. */
 export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {

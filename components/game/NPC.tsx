@@ -7,6 +7,11 @@ import type { CharacterLoadout } from './characters/loadout';
 import { CHAR_BOTTOM } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
+import {
+  STAGE_VENDOR_WANDER_PX,
+  vendorAnchorGroundWorldX,
+  type StageAnchorKind,
+} from '@/lib/stageAnchor';
 
 // ── Personality ────────────────────────────────────────────────────────────────
 export type Personality = {
@@ -34,6 +39,7 @@ export type NPCConfig = {
 type State = 'idle' | 'wandering';
 
 type NPCProps = NPCConfig & {
+  stageAnchor?: StageAnchorKind;
   paused: boolean;
   greeting: boolean;
   greetFacing: 'left' | 'right';
@@ -76,7 +82,7 @@ const SCREEN_MAX = 130;
 export default function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
-  personality,
+  personality, stageAnchor,
   paused, greeting, greetFacing, dancing = false, onMove, greetingChat, ambientChat,
 }: NPCProps) {
   // ── React state: only for infrequent visual changes ─────────────────────────
@@ -102,6 +108,8 @@ export default function NPC({
   const rafRef              = useRef<number | null>(null);
   const jumpTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onMoveRef           = useRef(onMove);
+  const stageSpotRef        = useRef(0);
+  const stageVisibleRef     = useRef(!stageAnchor);
 
   useEffect(() => { pausedRef.current = paused; }, [paused]);
   useEffect(() => { onMoveRef.current = onMove; }, [onMove]);
@@ -140,10 +148,21 @@ export default function NPC({
 
   const speedPx = () => (personality.speed / 100) * vw();
 
+  const anchorWorldX = () =>
+    stageAnchor
+      ? vendorAnchorGroundWorldX(stageAnchor, gameWorldOffRef.current, vw())
+      : null;
+
+  const pickAnchorTarget = (anchor: number) =>
+    anchor + rndBetween(-STAGE_VENDOR_WANDER_PX, STAGE_VENDOR_WANDER_PX);
+
   const pctToWorld = (pct: number) =>
     screenPctToWorldX(pct, gameWorldOffRef.current);
 
   const pickWanderTarget = (curWorldX: number) => {
+    const anchor = anchorWorldX();
+    if (stageAnchor && anchor != null) return pickAnchorTarget(anchor);
+
     const [prefLo, prefHi] = personality.wanderRange;
     const curPct = worldXToScreenPct(curWorldX, gameWorldOffRef.current);
     const avoiding = Date.now() < avoidPlayerUntil.current;
@@ -167,6 +186,15 @@ export default function NPC({
   };
 
   const fleeFromPlayer = () => {
+    const anchor = anchorWorldX();
+    if (stageAnchor && anchor != null) {
+      targetWorldRef.current = pickAnchorTarget(anchor);
+      stateRef.current = 'wandering';
+      applyFacing(targetWorldRef.current > worldXRef.current ? 'right' : 'left');
+      applyWalking(true);
+      return;
+    }
+
     avoidPlayerUntil.current = Date.now() + rndBetween(25_000, 45_000);
     const curPct = worldXToScreenPct(worldXRef.current, gameWorldOffRef.current);
     const fleeTarget = curPct <= 50
@@ -180,6 +208,11 @@ export default function NPC({
 
   // ── Entry ─────────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (stageAnchor) {
+      setActive(true);
+      return;
+    }
+
     const t = setTimeout(() => {
       worldXRef.current = pctToWorld(startX);
       // Always pick an on-screen entry target so the NPC walks into view.
@@ -193,7 +226,7 @@ export default function NPC({
     }, entryDelay);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entryDelay, startX]);
+  }, [entryDelay, startX, stageAnchor]);
 
   // ── Decision loop ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -250,6 +283,32 @@ export default function NPC({
     const loop = () => {
       const off = gameWorldOffRef.current;
 
+      if (stageAnchor) {
+        const anchor = vendorAnchorGroundWorldX(stageAnchor, off, vw());
+        const visible = anchor != null;
+        stageVisibleRef.current = visible;
+        if (divRef.current) {
+          divRef.current.style.visibility = visible ? 'visible' : 'hidden';
+        }
+        if (!visible) {
+          onMoveRef.current(Number.NaN);
+          rafRef.current = requestAnimationFrame(loop);
+          return;
+        }
+        if (stageSpotRef.current === 0) {
+          stageSpotRef.current = rndBetween(-STAGE_VENDOR_WANDER_PX * 0.5, STAGE_VENDOR_WANDER_PX * 0.5);
+          worldXRef.current = anchor + stageSpotRef.current;
+        }
+        if (!pausedRef.current) {
+          const home = anchor + stageSpotRef.current;
+          const drift = home - worldXRef.current;
+          if (stateRef.current === 'idle' && Math.abs(drift) > 2) {
+            const step = Math.min(speedPx(), Math.abs(drift));
+            worldXRef.current += drift > 0 ? step : -step;
+          }
+        }
+      }
+
       if (!pausedRef.current && stateRef.current === 'wandering') {
         const target = targetWorldRef.current;
         const cur    = worldXRef.current;
@@ -277,7 +336,7 @@ export default function NPC({
 
     rafRef.current = requestAnimationFrame(loop);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [active, personality]);
+  }, [active, personality, stageAnchor]);
 
   // ── Flee on disconnect ─────────────────────────────────────────────────────
   const wasGreetingRef = useRef(false);

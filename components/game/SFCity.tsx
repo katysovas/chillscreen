@@ -24,7 +24,7 @@ import {
 import type { PlayerProfile } from '@/lib/multiplayer/protocol';
 import { getPlayerLoadout, equipLoadoutItem, unequipLoadoutItem } from '@/lib/playerLoadout';
 import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
-import { BUZ_NPC_ID } from '@/lib/vendorShop';
+import { isBuzNpc } from '@/lib/vendorShop';
 
 /** Set to an NPC id to spawn only that character immediately (testing). */
 const TEST_SPAWN_NPC_ID: string | null = null;
@@ -777,7 +777,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   const inConversation = greetingNpc !== null || peerChatId !== null;
   const showVendorShop =
-    greetingNpc !== null && CHARACTERS[greetingNpc]?.id === BUZ_NPC_ID;
+    greetingNpc !== null && isBuzNpc(CHARACTERS[greetingNpc]?.id ?? '');
   const conversationPartnerName = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
     : greetingNpc !== null ? CHARACTERS[greetingNpc]?.name : null;
@@ -827,6 +827,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         <NPC
           key={cfg.id}
           {...cfg}
+          stageAnchor={cfg.stageAnchor}
           startX={testing ? 55 : cfg.startX}
           entryDelay={testing ? 0 : cfg.entryDelay}
           paused={greetingNpc === i}

@@ -67,6 +67,29 @@ export function venueScreenPct(worldOff: number, midWorldX: number) {
   return 50 + ((midWorldX - vx - VIEW_CENTER_X) / VIEW_WIDTH) * 100;
 }
 
+/** Ground scroll x for a point at a venue's screen % (matches player/NPC space). */
+export function groundWorldXAtVenueScreenPct(
+  worldOff: number,
+  screenPct: number,
+  width = typeof window !== 'undefined' ? window.innerWidth : 1200,
+): number {
+  return worldOff + ((screenPct - 50) / 100) * width;
+}
+
+/** Ground scroll x in the crowd lane just downstage of a venue mid anchor. */
+export function groundWorldXAtVenue(
+  worldOff: number,
+  midWorldX: number,
+  screenOffsetPct = 0,
+  width = typeof window !== 'undefined' ? window.innerWidth : 1200,
+): number {
+  return groundWorldXAtVenueScreenPct(
+    worldOff,
+    venueScreenPct(worldOff, midWorldX) + screenOffsetPct,
+    width,
+  );
+}
+
 /** @deprecated use venueScreenPct */
 export const concertScreenPct = venueScreenPct;
 
