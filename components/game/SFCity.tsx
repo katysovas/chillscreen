@@ -29,6 +29,9 @@ const TEST_SPAWN_NPC_ID: string | null = null;
 
 /** Force all characters into dance mode regardless of stage proximity (testing). */
 const TEST_FORCE_DANCE = false;
+
+/** Show all four player variant skins side-by-side (testing). */
+const TEST_PLAYER_VARIANT_GALLERY = false;
 import {
   getPlayerName,
   setPlayerName as savePlayerName,
@@ -49,6 +52,7 @@ import { MidLayer } from './city/MidLayer';
 import { GroundLayer } from './city/GroundLayer';
 import { VenueSignsLayer } from './city/VenueSignsLayer';
 import { WelcomeSignLayer } from './city/WelcomeSignLayer';
+import { PlayerVariantGallery } from './PlayerVariantGallery';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
 import { DPadBtn } from './DPadBtn';
@@ -808,35 +812,42 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         />
       ))}
 
-      {/* Player — world scrolls, character stays centred */}
-      <div style={{
-        position: 'absolute',
-        left: '50%',
-        bottom: CHAR_BOTTOM,
-        zIndex: inConversation ? 200 : 20,
-      }}>
-        <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
-          <Character
-            walking={walking}
-            facing={facing}
-            dancing={TEST_FORCE_DANCE || playerDancing}
-            balloonColor={myColor}
-            bubbleSide={playerBubbleSide(greetNpcX)}
-            chatOverlay={inConversation ? (
-              <PlayerChatOverlay
-                npcScreenX={greetNpcX}
-                chatMode={chatMode}
-                playerName={playerName}
-                playerMessage={playerMessage}
-                chatDraft={chatDraft}
-                setChatDraft={setChatDraft}
-                onSendMessage={handleSendMessage}
-                chatInputRef={chatInputRef}
-              />
-            ) : undefined}
-          />
+      {TEST_PLAYER_VARIANT_GALLERY ? (
+        <PlayerVariantGallery
+          walking={walking}
+          dancing={TEST_FORCE_DANCE || playerDancing}
+        />
+      ) : (
+        /* Player — world scrolls, character stays centred */
+        <div style={{
+          position: 'absolute',
+          left: '50%',
+          bottom: CHAR_BOTTOM,
+          zIndex: inConversation ? 200 : 20,
+        }}>
+          <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
+            <Character
+              walking={walking}
+              facing={facing}
+              dancing={TEST_FORCE_DANCE || playerDancing}
+              balloonColor={myColor}
+              bubbleSide={playerBubbleSide(greetNpcX)}
+              chatOverlay={inConversation ? (
+                <PlayerChatOverlay
+                  npcScreenX={greetNpcX}
+                  chatMode={chatMode}
+                  playerName={playerName}
+                  playerMessage={playerMessage}
+                  chatDraft={chatDraft}
+                  setChatDraft={setChatDraft}
+                  onSendMessage={handleSendMessage}
+                  chatInputRef={chatInputRef}
+                />
+              ) : undefined}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Proximity hint — touching but not yet connected */}
       {!inConversation && (nearNpc !== null || nearPeer !== null) && (

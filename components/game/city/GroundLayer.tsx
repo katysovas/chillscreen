@@ -8,6 +8,7 @@ import {
 } from '@/lib/parallax';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
 import { SleepingCatsGround } from '../SleepingCat';
+import { StreetDogsGround } from '../StreetDog';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
 import { StreetTree } from './street/StreetTree';
 import { LampPost } from './street/LampPost';
@@ -93,6 +94,7 @@ function groundTileContent(tile: number) {
         ) : null
       ))}
       <SleepingCatsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
+      <StreetDogsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
       {LAMP_XS.map((x, i) => (
         fits(x, 30) ? <LampPost key={i} x={x} y={GND_Y} /> : null
       ))}

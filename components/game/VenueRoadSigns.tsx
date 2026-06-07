@@ -18,6 +18,7 @@ import { MID_F } from '@/lib/parallax';
 import { gndOriginForTile, midOriginForTile } from '@/lib/worldTileGeometry';
 import { COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
 import { EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
+import { ArrowSignBoard, SignPost } from './city/ArrowSignBoard';
 
 /** Ground-tile x — locked to sidewalk scroll (GND_F). */
 export function venueSignGroundX(midX: number, groundTile: number) {
@@ -41,186 +42,43 @@ export type StreetSignProps = {
   icon: string;
 };
 
-function arrowPath(
-  dir: 'left' | 'right',
-  cy: number,
-  innerLeft: number,
-  innerRight: number,
-) {
-  const wing = 4;
-  const head = 8;
-  if (dir === 'left') {
-    return [
-      `M${innerLeft},${cy}`,
-      `L${innerLeft + head},${cy - wing}`,
-      `L${innerRight},${cy - wing}`,
-      `L${innerRight},${cy + wing}`,
-      `L${innerLeft + head},${cy + wing}`,
-      'Z',
-    ].join(' ');
-  }
-  return [
-    `M${innerRight},${cy}`,
-    `L${innerRight - head},${cy - wing}`,
-    `L${innerLeft},${cy - wing}`,
-    `L${innerLeft},${cy + wing}`,
-    `L${innerRight - head},${cy + wing}`,
-    'Z',
-  ].join(' ');
-}
+const ARROW_HALF_LEN = 58;
+const ARROW_HALF_H = 19;
+const ARROW_TIP_LEN = 17;
+const WING_OFFSET = ARROW_HALF_LEN + 16;
 
 export function StreetSign({ x, y, dir, label, accent, icon }: StreetSignProps) {
-  const postW = 8;
-  const postH = 28;
-  const boardW = label.length > 12 ? 138 : 108;
-  const boardH = 56;
-  const boardTop = -postH - boardH + 2;
-  const boardLeft = -boardW / 2;
-  const labelY = boardTop + 18;
-  const arrowCy = boardTop + boardH - 14;
-  const arrowHalfW = 28;
-  const arrowInnerLeft = -arrowHalfW;
-  const arrowInnerRight = arrowHalfW;
-  const fontSize = label.length > 12 ? 9 : label.length > 8 ? 10 : 13;
+  const basePostH = 28;
+  const arrowCy = -basePostH - ARROW_HALF_H - 2;
+  const postTop = arrowCy - ARROW_HALF_H - 6;
+  const postH = -postTop;
+  const wingX = dir === 'left' ? -WING_OFFSET : WING_OFFSET;
 
   return (
     <g transform={`translate(${x},${y})`}>
-      <ellipse cx={0} cy={3} rx={24} ry={7} fill="rgba(0,0,0,.22)" />
+      <ellipse cx={0} cy={3} rx={WING_OFFSET + 12} ry={7} fill="rgba(0,0,0,.22)" />
 
-      <rect x={-postW / 2} y={-postH} width={postW} height={postH} rx={2} fill="#5c4636" />
-      <rect x={-postW / 2 + 1} y={-postH} width={postW - 2} height={postH - 2} rx={1.5} fill="#8a6b4f" />
-      <line x1={0} y1={-postH + 4} x2={0} y2={-4} stroke="#6b5344" strokeWidth={1} opacity={0.5} />
+      <SignPost
+        postTop={postTop}
+        postH={postH}
+        armCy={arrowCy}
+        armDir={dir}
+        wingOffset={WING_OFFSET}
+        arrowHalfLen={ARROW_HALF_LEN}
+      />
 
-      <g>
-        <rect
-          x={boardLeft}
-          y={boardTop}
-          width={boardW}
-          height={boardH}
-          rx={6}
-          fill="#faf6ee"
-          stroke="#3a342c"
-          strokeWidth={2.5}
-        />
-        <rect
-          x={boardLeft + 5}
-          y={boardTop + 5}
-          width={boardW - 10}
-          height={boardH - 10}
-          rx={4}
-          fill={accent}
-          opacity={0.18}
-        />
-        {[
-          [boardLeft + 10, boardTop + 10],
-          [boardLeft + boardW - 10, boardTop + 10],
-          [boardLeft + 10, boardTop + boardH - 10],
-          [boardLeft + boardW - 10, boardTop + boardH - 10],
-        ].map(([bx, by], i) => (
-          <circle key={i} cx={bx} cy={by} r={2.5} fill="#5c4636" stroke="#3a342c" strokeWidth={0.8} />
-        ))}
-        <rect x={-14} y={boardTop + boardH - 4} width={28} height={6} rx={2} fill="#6b5344" />
-
-        <text
-          x={0}
-          y={labelY}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize={fontSize}
-          fontWeight={800}
-          fill="#2a2820"
-          fontFamily="system-ui, -apple-system, sans-serif"
-        >
-          {icon} {label}
-        </text>
-        <path
-          d={arrowPath(dir, arrowCy, arrowInnerLeft, arrowInnerRight)}
-          fill={accent}
-          stroke="#2a2820"
-          strokeWidth={1.5}
-          strokeLinejoin="round"
+      <g transform={`translate(${wingX},0)`}>
+        <ArrowSignBoard
+          cy={arrowCy}
+          dir={dir}
+          label={label}
+          icon={icon}
+          accent={accent}
+          halfLen={ARROW_HALF_LEN}
+          halfH={ARROW_HALF_H}
+          tipLen={ARROW_TIP_LEN}
         />
       </g>
-    </g>
-  );
-}
-
-type TrailBoardProps = {
-  topY: number;
-  dir: 'left' | 'right';
-  label: string;
-  icon: string;
-  accent: string;
-  boardW: number;
-  boardH: number;
-};
-
-/** Single trail-style direction board (mounts on shared post). */
-function TrailSignBoard({ topY, dir, label, icon, accent, boardW, boardH }: TrailBoardProps) {
-  const boardLeft = -boardW / 2;
-  const labelY = topY + 18;
-  const arrowCy = topY + boardH - 13;
-  const arrowHalfW = 26;
-  const fontSize = label.length > 12 ? 9 : label.length > 8 ? 10 : 12;
-  const labelX = dir === 'left' ? 8 : -8;
-
-  return (
-    <g>
-      <rect
-        x={boardLeft}
-        y={topY}
-        width={boardW}
-        height={boardH}
-        rx={5}
-        fill="#faf6ee"
-        stroke="#3a342c"
-        strokeWidth={2.5}
-      />
-      <rect
-        x={boardLeft + 5}
-        y={topY + 5}
-        width={boardW - 10}
-        height={boardH - 10}
-        rx={3}
-        fill={accent}
-        opacity={0.18}
-      />
-      {[
-        [boardLeft + 9, topY + 8],
-        [boardLeft + boardW - 9, topY + 8],
-        [boardLeft + 9, topY + boardH - 8],
-        [boardLeft + boardW - 9, topY + boardH - 8],
-      ].map(([bx, by], i) => (
-        <circle key={i} cx={bx} cy={by} r={2.2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
-      ))}
-      <rect
-        x={-12}
-        y={topY + boardH - 3}
-        width={24}
-        height={5}
-        rx={2}
-        fill="#6b5344"
-      />
-
-      <text
-        x={labelX}
-        y={labelY}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={fontSize}
-        fontWeight={800}
-        fill="#2a2820"
-        fontFamily="system-ui, -apple-system, sans-serif"
-      >
-        {icon} {label}
-      </text>
-      <path
-        d={arrowPath(dir, arrowCy, -arrowHalfW, arrowHalfW)}
-        fill={accent}
-        stroke="#2a2820"
-        strokeWidth={1.4}
-        strokeLinejoin="round"
-      />
     </g>
   );
 }
@@ -232,30 +90,33 @@ type CombinedTownSignProps = {
   rightCity: { label: string; icon: string; accent: string };
 };
 
-/** Trail junction — two separate boards on one post with stick visible between. */
+/** Trail junction — left/right arrow wings on one post (same shape as welcome sign). */
 function CombinedTownSign({ x, y, leftCity, rightCity }: CombinedTownSignProps) {
-  const postW = 8;
   const basePostH = 30;
-  const boardW = 152;
-  const boardH = 50;
-  const stickGap = 20;
+  const arrowHalfLen = 62;
+  const arrowHalfH = 20;
+  const arrowTipLen = 18;
+  const rowH = arrowHalfH * 2 + 4;
+  const rowGap = 14;
+  const wingOffset = arrowHalfLen + 18;
 
-  const lowerBoardTop = -basePostH - boardH;
-  const upperBoardTop = lowerBoardTop - stickGap - boardH;
-  const postTop = upperBoardTop - 4;
-  const postTotalH = -postTop;
+  const lowerCy = -basePostH - arrowHalfH - 2;
+  const upperCy = lowerCy - rowH - rowGap;
+  const postTop = upperCy - arrowHalfH - 6;
+  const postH = -postTop;
+
+  const postW = 8;
 
   return (
     <g transform={`translate(${x},${y})`}>
-      <ellipse cx={0} cy={3} rx={30} ry={7} fill="rgba(0,0,0,.22)" />
+      <ellipse cx={0} cy={3} rx={wingOffset + 14} ry={7} fill="rgba(0,0,0,.22)" />
 
-      {/* continuous post — visible in the gap between boards */}
-      <rect x={-postW / 2} y={postTop} width={postW} height={postTotalH} rx={2} fill="#5c4636" />
+      <rect x={-postW / 2} y={postTop} width={postW} height={postH} rx={2} fill="#5c4636" />
       <rect
         x={-postW / 2 + 1}
         y={postTop}
         width={postW - 2}
-        height={postTotalH - 2}
+        height={postH - 2}
         rx={1.5}
         fill="#8a6b4f"
       />
@@ -269,25 +130,49 @@ function CombinedTownSign({ x, y, leftCity, rightCity }: CombinedTownSignProps) 
         opacity={0.45}
       />
       <circle cx={0} cy={postTop + 2} r={3} fill="#6b5344" stroke="#3a342c" strokeWidth={0.8} />
+      <line
+        x1={-postW / 2}
+        y1={upperCy}
+        x2={-wingOffset + arrowHalfLen}
+        y2={upperCy}
+        stroke="#6b5344"
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+      <line
+        x1={postW / 2}
+        y1={lowerCy}
+        x2={wingOffset - arrowHalfLen}
+        y2={lowerCy}
+        stroke="#6b5344"
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
 
-      <TrailSignBoard
-        topY={lowerBoardTop}
-        dir="right"
-        label={rightCity.label}
-        icon={rightCity.icon}
-        accent={rightCity.accent}
-        boardW={boardW}
-        boardH={boardH}
-      />
-      <TrailSignBoard
-        topY={upperBoardTop}
-        dir="left"
-        label={leftCity.label}
-        icon={leftCity.icon}
-        accent={leftCity.accent}
-        boardW={boardW}
-        boardH={boardH}
-      />
+      <g transform={`translate(${-wingOffset},0)`}>
+        <ArrowSignBoard
+          cy={upperCy}
+          dir="left"
+          label={leftCity.label}
+          icon={leftCity.icon}
+          accent={leftCity.accent}
+          halfLen={arrowHalfLen}
+          halfH={arrowHalfH}
+          tipLen={arrowTipLen}
+        />
+      </g>
+      <g transform={`translate(${wingOffset},0)`}>
+        <ArrowSignBoard
+          cy={lowerCy}
+          dir="right"
+          label={rightCity.label}
+          icon={rightCity.icon}
+          accent={rightCity.accent}
+          halfLen={arrowHalfLen}
+          halfH={arrowHalfH}
+          tipLen={arrowTipLen}
+        />
+      </g>
     </g>
   );
 }
@@ -326,8 +211,6 @@ function VenueArrowSign({
   groundTile: number;
   y: number;
 }) {
-  // Place the sign near the venue's ground-equivalent x (clamped clear of the
-  // tile edges / city exit sign). Placement is cosmetic; direction is exact.
   const venueGround = venueSignGroundX(venueMidX, groundTile);
   const signX = Math.min(Math.max(90, venueGround - 300), groundTile - 700);
 

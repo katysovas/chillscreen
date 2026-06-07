@@ -24,6 +24,7 @@ export type NPCConfig = {
   balloonColor: string;
   scale?: number;
   accessory?: CharacterAccessory;
+  outfit?: string;
   personality: Personality;
   name: string;
 };
@@ -72,7 +73,7 @@ const SCREEN_MAX = 130;
 
 export default function NPC({
   startX, entryDirection, entryDelay,
-  balloonColor, scale = 0.34, accessory,
+  balloonColor, scale = 0.34, accessory, outfit,
   personality,
   paused, greeting, greetFacing, dancing = false, onMove, greetingChat, ambientChat,
 }: NPCProps) {
@@ -299,6 +300,7 @@ export default function NPC({
           dancing={dancing && !greeting}
           balloonColor={balloonColor}
           accessory={accessory}
+          outfit={outfit}
           scale={scale}
           bubbleSide={screenXToBubbleSide(screenX)}
           chatOverlay={

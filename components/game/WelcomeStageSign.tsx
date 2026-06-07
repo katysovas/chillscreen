@@ -3,34 +3,7 @@ import {
   welcomeStagesByDirection,
   type WelcomeStageEntry,
 } from '@/lib/welcomeSign';
-
-/** Chevron sign body — flat back toward pole, tip points `dir`. Centered at (0, cy). */
-function arrowSignPath(dir: 'left' | 'right', cy: number, halfLen: number, halfH: number, tipLen: number) {
-  if (dir === 'right') {
-    const back = -halfLen;
-    const shoulder = halfLen - tipLen;
-    const tip = halfLen;
-    return [
-      `M${back},${cy - halfH}`,
-      `L${shoulder},${cy - halfH}`,
-      `L${tip},${cy}`,
-      `L${shoulder},${cy + halfH}`,
-      `L${back},${cy + halfH}`,
-      'Z',
-    ].join(' ');
-  }
-  const back = halfLen;
-  const shoulder = -halfLen + tipLen;
-  const tip = -halfLen;
-  return [
-    `M${back},${cy - halfH}`,
-    `L${shoulder},${cy - halfH}`,
-    `L${tip},${cy}`,
-    `L${shoulder},${cy + halfH}`,
-    `L${back},${cy + halfH}`,
-    'Z',
-  ].join(' ');
-}
+import { ArrowSignBoard } from './city/ArrowSignBoard';
 
 function ArrowSign({
   cy,
@@ -47,39 +20,17 @@ function ArrowSign({
   halfH: number;
   tipLen: number;
 }) {
-  const d = arrowSignPath(dir, cy, halfLen, halfH, tipLen);
-  const fontSize = entry.label.length > 14 ? 8.5 : entry.label.length > 10 ? 9.5 : 11;
-  const labelX = dir === 'left' ? halfLen * 0.22 : -halfLen * 0.22;
-
   return (
-    <g>
-      <path d={d} fill="#faf6ee" stroke="#3a342c" strokeWidth={2.5} strokeLinejoin="round" />
-      <path d={d} fill={entry.accent} opacity={0.2} stroke="none" />
-      {/* Bolt heads on the flat back edge */}
-      {dir === 'right' ? (
-        <>
-          <circle cx={-halfLen + 7} cy={cy - halfH + 9} r={2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
-          <circle cx={-halfLen + 7} cy={cy + halfH - 9} r={2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
-        </>
-      ) : (
-        <>
-          <circle cx={halfLen - 7} cy={cy - halfH + 9} r={2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
-          <circle cx={halfLen - 7} cy={cy + halfH - 9} r={2} fill="#5c4636" stroke="#3a342c" strokeWidth={0.7} />
-        </>
-      )}
-      <text
-        x={labelX}
-        y={cy + 1}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={fontSize}
-        fontWeight={800}
-        fill="#2a2820"
-        fontFamily="system-ui, -apple-system, sans-serif"
-      >
-        {entry.icon} {entry.label}
-      </text>
-    </g>
+    <ArrowSignBoard
+      cy={cy}
+      dir={dir}
+      label={entry.label}
+      icon={entry.icon}
+      accent={entry.accent}
+      halfLen={halfLen}
+      halfH={halfH}
+      tipLen={tipLen}
+    />
   );
 }
 
