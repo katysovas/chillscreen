@@ -233,7 +233,7 @@ function SkyCreaturesLayerInner({ period = 'day', worldOff: _worldOff }, _ref) {
         overflow: 'hidden',
       }}
     >
-      <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+      <div style={{ position: 'absolute', inset: 0 }}>
         {showBirdsAndPlanes && (
           <>
             <div style={{ position: 'absolute', top: '9%', animation: fly('ltr', 62, -5) }}>

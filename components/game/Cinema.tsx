@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { setCinemaNowPlaying } from '@/lib/cinemaNow';
 import { cinemaEmbedSrc } from '@/lib/cinemaVideoPool';
-import { getAudioMuted } from '@/lib/audioMute';
 import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
 import {
   applyYouTubeAudio,
@@ -338,13 +337,14 @@ export default function Cinema({ live = true }: { live?: boolean }) {
       cancelRetries();
       cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
     });
+    const keepMuted = () => applyYouTubeAudio(iframeRef.current, true);
     const onSync = () => {
       nudgeYouTubePlayback(iframeRef.current);
-      applyYouTubeAudio(iframeRef.current, getAudioMuted());
+      keepMuted();
     };
     const onGesture = () => {
       nudgeYouTubePlayback(iframeRef.current);
-      applyYouTubeAudio(iframeRef.current, getAudioMuted());
+      keepMuted();
     };
     const unsub = subscribeStageSync(onSync);
     window.addEventListener('pointerdown', onGesture, { passive: true });
@@ -371,14 +371,14 @@ export default function Cinema({ live = true }: { live?: boolean }) {
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
           setPlayerVisible(true);
-          applyYouTubeAudio(iframeRef.current, getAudioMuted());
+          applyYouTubeAudio(iframeRef.current, true);
         }
       } catch { /* ignore */ }
     };
     window.addEventListener('message', onMessage);
     const fallback = setTimeout(() => {
       setPlayerVisible(true);
-      applyYouTubeAudio(iframeRef.current, getAudioMuted());
+      applyYouTubeAudio(iframeRef.current, true);
     }, 5000);
     return () => { window.removeEventListener('message', onMessage); clearTimeout(fallback); };
   }, [vidKey, live]);

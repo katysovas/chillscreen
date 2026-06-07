@@ -1,5 +1,6 @@
 import { SITE_URL } from '@/lib/site';
 import type { VenueRoute } from '@/lib/venueRoutes';
+import { venueSlugForRoute } from '@/lib/venueRoutes';
 import {
   anyStageInView,
   concertLiveTile,
@@ -10,18 +11,7 @@ import {
 import { isSeattleTile } from '@/lib/worldTiles';
 
 export function venueRouteSlug(route: VenueRoute): string {
-  switch (route) {
-    case 'coachella':
-      return 'Coachella';
-    case 'edc':
-      return 'edc';
-    case 'outside-hands':
-      return 'Outside-Hands';
-    case 'seattle-concerts':
-      return 'Seattle-Concerts';
-    case 'cinema':
-      return 'Cinema';
-  }
+  return venueSlugForRoute(route);
 }
 
 export function venueKindToRoute(kind: VenueKind, concertTile: number): VenueRoute {

@@ -1,46 +1,41 @@
 import type { VenueRoute } from '@/lib/venueRoutes';
+import { parseVenueSlug, venueSlugForRoute } from '@/lib/venueRoutes';
 
 export type VenueSeo = {
   title: string;
   description: string;
-  slug: string;
 };
 
 export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
   coachella: {
-    title: 'Coachella Stage',
-    slug: 'Coachella',
+    title: 'Couchella',
     description:
-      'Jump straight to the Coachella stage on WhichStage. Explore the desert festival ' +
-      'grounds and watch synchronized live sets in your browser.',
+      'Walk the Couchella festival grounds on WhichStage and watch synchronized live sets ' +
+      'with other players — no download required.',
   },
   edc: {
     title: 'Electric Daze',
-    slug: 'edc',
     description:
-      'Visit the Electric Daze stage in Las Vegas on WhichStage. Walk the strip, ' +
-      'feel the bass, and watch live EDC-style sets with other players.',
+      'Visit Electric Daze in Las Vegas on WhichStage. Walk the Strip, feel the bass, ' +
+      'and watch live EDC-style sets with friends in your browser.',
   },
   'outside-hands': {
     title: 'Outside Hands',
-    slug: 'Outside-Hands',
     description:
-      'Head to Outside Hands in San Francisco on WhichStage. A street-side concert stage ' +
-      'with live performances on the big LED wall.',
+      'Catch live sets at Outside Hands in San Francisco on WhichStage — a street-side ' +
+      'concert stage with a big LED wall.',
   },
   'seattle-concerts': {
     title: 'Seattle Concerts',
-    slug: 'Seattle-Concerts',
     description:
-      'Find Seattle Concerts on WhichStage. Walk the Emerald City and catch live sets ' +
-      'at the outdoor festival stage.',
+      'Explore Seattle on WhichStage and watch live sets at the outdoor festival stage ' +
+      'along the Emerald City skyline.',
   },
   cinema: {
     title: 'Chill Cinema',
-    slug: 'Cinema',
     description:
-      'Visit Chill Cinema in San Francisco on WhichStage. An outdoor movie screen ' +
-      'playing curated films while you explore the city.',
+      'Visit Chill Cinema in San Francisco on WhichStage — an outdoor movie screen ' +
+      'with curated films while you explore the city.',
   },
 };
 
@@ -49,9 +44,10 @@ export function venueSeoForRoute(route: VenueRoute): VenueSeo {
 }
 
 export function venueSeoForSlug(slug: string): VenueSeo | null {
-  const normalized = slug.toLowerCase().replace(/_/g, '-');
-  for (const seo of Object.values(VENUE_SEO)) {
-    if (seo.slug.toLowerCase().replace(/_/g, '-') === normalized) return seo;
-  }
-  return null;
+  const route = parseVenueSlug(slug);
+  return route ? venueSeoForRoute(route) : null;
+}
+
+export function venuePathForRoute(route: VenueRoute): string {
+  return `/${venueSlugForRoute(route)}`;
 }

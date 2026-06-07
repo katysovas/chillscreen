@@ -57,7 +57,7 @@ import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
 import { DPadBtn } from './DPadBtn';
 import type { VenueRoute } from '@/lib/venueRoutes';
-import { InviteFriends } from './InviteFriends';
+import { BottomControlPanel } from './BottomControlPanel';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 
 const KF = `${CITY_SCENE_KEYFRAMES}\n${CHARACTER_STYLES}`;
@@ -716,10 +716,17 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
       <LovingCarLayer />
 
-      <InviteFriends
+      <BottomControlPanel
         worldOff={scrollWorldOff}
         playerName={playerName}
         venueRoute={venueRoute}
+        connectName={
+          !inConversation && nearNpc !== null
+            ? CHARACTERS[nearNpc]?.name
+            : !inConversation && nearPeer !== null
+              ? nearPeerName
+              : null
+        }
         hidden={showWelcome || inConversation}
       />
 
@@ -801,22 +808,6 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
               ) : undefined}
             />
           </div>
-        </div>
-      )}
-
-      {/* Proximity hint — touching but not yet connected */}
-      {!inConversation && (nearNpc !== null || nearPeer !== null) && (
-        <div style={{
-          position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 40, pointerEvents: 'none',
-          background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(8px)',
-          borderRadius: 40, padding: '7px 18px',
-          border: '1px solid rgba(255,255,255,0.12)',
-          color: 'rgba(255,255,255,0.7)', fontSize: 11,
-          letterSpacing: 2, textTransform: 'uppercase',
-          fontFamily: "Georgia,'Times New Roman',serif",
-        }}>
-          ↵ connect with {nearNpc !== null ? CHARACTERS[nearNpc]?.name : nearPeerName}
         </div>
       )}
 

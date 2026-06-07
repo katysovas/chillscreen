@@ -36,6 +36,11 @@ export function buildPageMetadata({
     creator: SITE_NAME,
     publisher: SITE_NAME,
     category: 'games',
+    appleWebApp: {
+      capable: true,
+      title: SITE_NAME,
+      statusBarStyle: 'black-translucent',
+    },
     formatDetection: {
       email: false,
       address: false,

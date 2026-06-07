@@ -22,7 +22,7 @@ export function skipGroundStreetTree(tileIndex: number, treeX: number, tileWidth
   if (tileWidth >= CITY_GND_MIN) {
     switch (slot) {
       case SF_SLOT:
-        return (treeX >= 880 && treeX <= 1580) || (treeX >= 2000 && treeX <= 2780);
+        return (treeX >= 720 && treeX <= 1080) || (treeX >= 2080 && treeX <= 2780);
       case VEGAS_SLOT:
         return treeX >= 2650 && treeX <= 3380;
       case SOCAL_SLOT:
@@ -65,7 +65,7 @@ export function skipTownMidTree(tileIndex: number, treeX: number, tileWidth: num
   }
 }
 
-/** Skip SF ridge bushes that overlap the cinema / center stage band. */
+/** Skip SF ridge bushes that overlap the concert or cinema footprints. */
 export function skipMidBush(bushX: number): boolean {
-  return bushX >= 1460 && bushX <= 2240;
+  return (bushX >= 520 && bushX <= 980) || (bushX >= 2100 && bushX <= 2580);
 }

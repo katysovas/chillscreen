@@ -23,8 +23,8 @@ export const VIEW_CENTER_X = 700;
 /** Matches SFCity mid-layer parallax factor. */
 export const MID_PARALLAX = 0.35;
 
-/** Default anchors (cinema worked well here — east side of even tiles). */
-export const DEFAULT_CINEMA_MID_X = 1720;
+/** Default anchors — concert west, cinema far east (same tile, separated). */
+export const DEFAULT_CINEMA_MID_X = 2350;
 
 /** Default west anchor for odd tiles (concert). */
 export const DEFAULT_CONCERT_MID_X = 880;
@@ -34,13 +34,13 @@ export const DEFAULT_COACHELLA_MID_X = COACHELLA_STAGE_MID_X;
 
 /** Sidewalk sign posts (mid-layer x, same on every block). */
 export const CONCERT_SIGN_MID_X = 520;
-export const CINEMA_SIGN_MID_X = 1980;
+export const CINEMA_SIGN_MID_X = 2280;
 
 /** West / east placement bands inside a tile (keeps venues separated). */
-const CONCERT_X_MIN = 620;
-const CONCERT_X_MAX = 1040;
-const CINEMA_X_MIN = 1480;
-const CINEMA_X_MAX = 2100;
+const CONCERT_X_MIN = 520;
+const CONCERT_X_MAX = 920;
+const CINEMA_X_MIN = 2180;
+const CINEMA_X_MAX = 2520;
 
 /** Deterministic 0..1 jitter per tile (stable across sessions). */
 function tileRand(tile: number, salt: string) {

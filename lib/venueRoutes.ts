@@ -2,37 +2,13 @@ import { cityTileIndex } from '@/lib/spawn';
 import { isSouthernCaliforniaTile, isVegasTile } from '@/lib/worldTiles';
 import { cinemaMidX, coachellaMidX, concertMidX, edcMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
 import { midOriginForTile } from '@/lib/worldTileGeometry';
-
-/** Deep-linkable venue destinations. */
-export type VenueRoute =
-  | 'coachella'
-  | 'edc'
-  | 'outside-hands'
-  | 'seattle-concerts'
-  | 'cinema';
-
-/** Canonical URL slugs (case preserved for pretty links). */
-export const VENUE_SLUGS = [
-  'Coachella',
-  'edc',
-  'Outside-Hands',
-  'Seattle-Concerts',
-  'Cinema',
-] as const;
-
-const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
-  coachella: 'coachella',
-  edc: 'edc',
-  'outside-hands': 'outside-hands',
-  'seattle-concerts': 'seattle-concerts',
-  cinema: 'cinema',
-  'chill-cinema': 'cinema',
-};
-
-/** Parse a URL segment like `Coachella` or `outside-hands`. */
-export function parseVenueSlug(slug: string): VenueRoute | null {
-  return SLUG_TO_ROUTE[slug.toLowerCase().replace(/_/g, '-')] ?? null;
-}
+export type { VenueRoute } from '@/lib/venueSlugs';
+export {
+  parseVenueSlug,
+  VENUE_SLUGS,
+  venueSlugForRoute,
+} from '@/lib/venueSlugs';
+import type { VenueRoute } from '@/lib/venueSlugs';
 
 /** Ground scroll offset that centers a mid-layer anchor in the viewport. */
 function worldOffCenteringMidX(tile: number, midX: number): number {
