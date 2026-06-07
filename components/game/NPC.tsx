@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
+import type { CharacterLoadout } from './characters/loadout';
 import { CHAR_BOTTOM } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
@@ -24,6 +25,7 @@ export type NPCConfig = {
   balloonColor: string;
   scale?: number;
   accessory?: CharacterAccessory;
+  loadout?: CharacterLoadout;
   outfit?: string;
   personality: Personality;
   name: string;
@@ -73,7 +75,7 @@ const SCREEN_MAX = 130;
 
 export default function NPC({
   startX, entryDirection, entryDelay,
-  balloonColor, scale = 0.34, accessory, outfit,
+  balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality,
   paused, greeting, greetFacing, dancing = false, onMove, greetingChat, ambientChat,
 }: NPCProps) {
@@ -304,6 +306,7 @@ export default function NPC({
           facing={facingRef.current}
           dancing={dancing && !greeting}
           balloonColor={balloonColor}
+          loadout={loadout}
           accessory={accessory}
           outfit={outfit}
           scale={scale}

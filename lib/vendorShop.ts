@@ -20,12 +20,18 @@ const GLASSES_ITEMS = [
   'shades-glasses-skiing',
 ] as const;
 
-const HAND_ITEMS = ['hand-sword', 'hand-lightsaber'] as const;
+const HAND_ITEMS = ['hand-sword', 'hand-lightsaber', 'hand-boombox'] as const;
+
+const FOOD_ITEMS = ['food-hotdog', 'food-donut', 'food-fries'] as const;
+
+const DRINK_ITEMS = [] as const;
 
 export type VendorShopItemId =
   | (typeof HAT_ITEMS)[number]
   | (typeof GLASSES_ITEMS)[number]
-  | (typeof HAND_ITEMS)[number];
+  | (typeof HAND_ITEMS)[number]
+  | (typeof FOOD_ITEMS)[number]
+  | (typeof DRINK_ITEMS)[number];
 
 export type VendorShopCategory = {
   id: string;
@@ -54,6 +60,18 @@ export const VENDOR_SHOP_CATEGORIES: VendorShopCategory[] = [
     slot: 'hand',
     items: HAND_ITEMS,
   },
+  {
+    id: 'food',
+    label: 'Food',
+    slot: 'hand',
+    items: FOOD_ITEMS,
+  },
+  {
+    id: 'drinks',
+    label: 'Drinks',
+    slot: 'hand',
+    items: DRINK_ITEMS,
+  },
 ];
 
 export const DEFAULT_VENDOR_CATEGORY = VENDOR_SHOP_CATEGORIES[0]!.id;
@@ -63,6 +81,8 @@ export const VENDOR_SHOP_ITEMS: VendorShopItemId[] = [
   ...HAT_ITEMS,
   ...GLASSES_ITEMS,
   ...HAND_ITEMS,
+  ...FOOD_ITEMS,
+  ...DRINK_ITEMS,
 ];
 
 export const BUZ_NPC_ID = 'buz';
@@ -83,6 +103,10 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'shades-glasses-yellow': '/images/props/glasses_yellow.svg',
   'shades-glasses-optic': '/images/props/glasses_optic.svg',
   'shades-glasses-skiing': '/images/props/glasses_skiing.svg',
+  'hand-boombox': '/images/props/hands_boombox.svg',
+  'food-hotdog': '/images/props/food_hotdog.svg',
+  'food-donut': '/images/props/food_donut.svg',
+  'food-fries': '/images/props/food_fries.svg',
 };
 
 /** Thumbnail sizing tweaks per item in the shop panel. */
@@ -103,4 +127,8 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'shades-glasses-yellow': { width: 36, height: 16 },
   'shades-glasses-optic': { width: 36, height: 16 },
   'shades-glasses-skiing': { width: 36, height: 16 },
+  'hand-boombox': { width: 36, height: 28 },
+  'food-hotdog': { width: 34, height: 22 },
+  'food-donut': { width: 34, height: 22 },
+  'food-fries': { width: 34, height: 22 },
 };

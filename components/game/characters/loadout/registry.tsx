@@ -18,6 +18,10 @@ const RENDERERS: Record<string, ItemRenderer> = {
   'hand-microphone': ctx => <HandProp variant="microphone" ctx={ctx} />,
   'hand-lightsaber': ctx => <HandProp variant="lightsaber" ctx={ctx} />,
   'hand-sword': ctx => <HandProp variant="sword" ctx={ctx} />,
+  'hand-boombox': ctx => <HandProp variant="boombox" ctx={ctx} />,
+  'food-hotdog': ctx => <HandProp variant="hotdog" ctx={ctx} />,
+  'food-donut': ctx => <HandProp variant="donut" ctx={ctx} />,
+  'food-fries': ctx => <HandProp variant="fries" ctx={ctx} />,
 
   'hat-beanie': ctx => <HatProp variant="beanie" ctx={ctx} />,
   'hat-cap': ctx => <HatProp variant="cap" ctx={ctx} />,

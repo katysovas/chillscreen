@@ -10,8 +10,8 @@ export const LOADOUT_STYLES = `
   .ch-lo-hat-chef-poof{position:absolute;left:50%;bottom:100%;width:96px;height:72px;margin-left:-48px;background:var(--lo-color,#f8f8f8);border:2px solid #000;border-radius:50%;box-shadow:inset 0 -12px 0 rgba(0,0,0,.06);}
   .ch-lo-hat-pirate-hat{top:-92px;width:228px;height:116px;}
   .ch-lo-pirate-hat-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
-  .ch-lo-hat-headphones{top:-96px;width:218px;height:181px;}
-  .ch-lo-headphones-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-lo-hat-headphones{top:-96px;width:300px;height:181px;}
+  .ch-lo-headphones-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;transform:scaleX(1.5);transform-origin:center bottom;pointer-events:none;user-select:none;}
   .ch-lo-hat-viking-hat{top:-165px;width:196px;height:196px;}
   .ch-lo-viking-hat-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-lo-hat-lady-hat{top:-112px;width:300px;height:162px;}
@@ -58,4 +58,14 @@ export const LOADOUT_STYLES = `
   .ch-lo-bottom-jeans{position:absolute;left:50%;bottom:-58px;width:34px;height:52px;transform:translateX(-50%);background:var(--lo-color,#2c3e6b);border:2px solid #1a2540;border-radius:0 0 8px 8px;box-shadow:38px 0 0 var(--lo-color),-38px 0 0 var(--lo-color),38px 0 0 #1a2540,-38px 0 0 #1a2540;}
   .ch-lo-bottom-dress{position:absolute;left:50%;top:48px;width:168px;height:148px;transform:translateX(-50%);background:var(--lo-color,#e17055);border:2px solid rgba(0,0,0,.35);border-radius:28px 28px 40px 40px;z-index:8;box-shadow:inset 0 -16px 0 rgba(0,0,0,.1);}
   .ch-lo-bottom-dress:before{content:"";position:absolute;left:50%;top:-8px;width:60px;height:24px;margin-left:-30px;background:var(--lo-color,#e17055);border:2px solid rgba(0,0,0,.35);border-bottom:none;border-radius:20px 20px 0 0;}
+
+  /* ── Hand props ───────────────────────────────────────────────────────── */
+  .ch-right-hand .ch-lo-boombox{position:absolute;left:-36px;top:-14px;width:136px;height:112px;transform:rotate(38deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-boombox-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-hotdog{position:absolute;left:-39px;top:18px;width:176px;height:110px;transform:rotate(18deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-hotdog-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-donut{position:absolute;left:-39px;top:18px;width:176px;height:110px;transform:rotate(18deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-donut-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-fries{position:absolute;left:-59px;top:-2px;width:176px;height:110px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-fries-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
 `;

@@ -1,5 +1,6 @@
 import type { Personality } from './NPC';
 import type { CharacterAccessory } from './characterAccessories';
+import type { CharacterLoadout } from './characters/loadout';
 
 export type CharacterDef = {
   id: string;
@@ -7,6 +8,8 @@ export type CharacterDef = {
   balloonColor: string;
   /** Replaces the default heart balloon when set. */
   accessory?: CharacterAccessory;
+  /** Layered outfit — preferred over legacy `accessory` when set. */
+  loadout?: CharacterLoadout;
   /** Outfit skin — adds `ch-outfit-{name}` on the wrapper. */
   outfit?: string;
   startX: number;
@@ -100,7 +103,10 @@ const CHARACTERS: CharacterDef[] = [
     id: 'dub',
     name: 'Dub',
     balloonColor: '#e04f8e',
-    accessory: { type: 'dj', headphoneColor: '#2c2c34', speakerColor: '#e04f8e' },
+    loadout: {
+      hat: 'hat-headphones',
+      hand: 'hand-boombox',
+    },
     startX: -20,
     entryDirection: 'right',
     entryDelay: 30000,

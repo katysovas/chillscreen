@@ -1,6 +1,6 @@
 export const DJ_STYLES = `
-  .ch-dj-phones{position:absolute;left:50%;top:-96px;width:218px;height:181px;transform:translateX(-50%);z-index:14;pointer-events:none;}
-  .ch-dj-phones-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-dj-phones{position:absolute;left:50%;top:-96px;width:300px;height:181px;transform:translateX(-50%);z-index:14;pointer-events:none;}
+  .ch-dj-phones-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;transform:scaleX(1.5);transform-origin:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-dj-speaker{position:absolute;left:-32px;top:-12px;width:118px;height:100px;transform:rotate(38deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
   .ch-boom-handle{position:absolute;bottom:74px;left:50%;width:56px;height:23px;margin-left:-28px;border:3px solid #222;border-bottom:none;border-radius:28px 28px 0 0;background:linear-gradient(180deg,#888,#555);box-shadow:inset 0 -4px 0 rgba(0,0,0,.2);}
   .ch-boom-handle:before{content:"";position:absolute;left:10px;right:10px;top:6px;height:10px;border:2px solid #222;border-bottom:none;border-radius:14px 14px 0 0;background:#666;}

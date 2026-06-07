@@ -154,7 +154,7 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip }: Props) {
         top: '50%',
         transform: 'translateY(-50%)',
         zIndex: 210,
-        width: 208,
+        width: 248,
         padding: '12px 12px 10px',
         borderRadius: 16,
         background: '#fff',
@@ -184,12 +184,13 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip }: Props) {
           marginBottom: 10,
         }}
       >
-        Festival Merch
+        Festival Store
       </div>
 
       <div
         style={{
           display: 'flex',
+          flexWrap: 'wrap',
           gap: 4,
           marginBottom: 10,
           padding: 3,
@@ -205,20 +206,23 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip }: Props) {
               type="button"
               onClick={() => setCategoryId(tab.id)}
               style={{
-                flex: 1,
-                padding: '5px 8px',
+                flex: '1 1 28%',
+                minWidth: 44,
+                padding: '5px 6px',
                 borderRadius: 8,
                 border: 'none',
                 background: active ? '#fff' : 'transparent',
                 boxShadow: active ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
                 color: active ? '#222' : '#888',
-                fontSize: 9,
+                fontSize: 8,
                 fontWeight: 700,
-                letterSpacing: 0.3,
+                letterSpacing: 0.2,
                 textTransform: 'uppercase',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
-                whiteSpace: 'nowrap',
+                whiteSpace: 'normal',
+                lineHeight: 1.15,
+                textAlign: 'center',
               }}
             >
               {tab.label}
@@ -228,6 +232,21 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip }: Props) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {category.items.length === 0 ? (
+          <div
+            style={{
+              padding: '12px 8px',
+              borderRadius: 10,
+              border: '1px solid #ececec',
+              background: '#fafafa',
+              fontSize: 10,
+              color: '#999',
+              textAlign: 'center',
+            }}
+          >
+            Coming soon
+          </div>
+        ) : null}
         {category.items.map(itemId => {
           const item = loadoutItem(itemId);
           if (!item) return null;
