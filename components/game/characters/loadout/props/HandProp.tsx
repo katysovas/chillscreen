@@ -5,12 +5,24 @@ import { PirateSwordAccessory } from '../../pirate/accessory';
 import type { LoadoutRenderCtx } from '../types';
 
 const BOOMBOX_SRC = '/images/props/hands_boombox.svg';
+const BALLOONS_SRC = '/images/props/hands_balloons.svg';
+const BALLOONS_2_SRC = '/images/props/hands_balloons_2.svg';
 const HOTDOG_SRC = '/images/props/food_hotdog.svg';
 const DONUT_SRC = '/images/props/food_donut.svg';
 const FRIES_SRC = '/images/props/food_fries.svg';
+const PIZZA_SRC = '/images/props/food_pizza.svg';
+const TACOS_SRC = '/images/props/food_tacos.svg';
+const POPCORN_SRC = '/images/props/food_popcorn.svg';
+const LOLLIPOP_SRC = '/images/props/food_lollipop.svg';
+const MARTINI_SRC = '/images/props/drinks_martini.svg';
+const LEMONADE_SRC = '/images/props/drinks_lemonade.svg';
+const BEER_SRC = '/images/props/drinks_beer.svg';
+const BOTTLE_SRC = '/images/props/drinks_bottle.svg';
+const WATER_SRC = '/images/props/drinks_water.svg';
+const JUICE_SRC = '/images/props/drinks_juice.svg';
 
 type HandPropProps = {
-  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'hotdog' | 'donut' | 'fries';
+  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza' | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle' | 'water' | 'juice';
   ctx: LoadoutRenderCtx;
 };
 
@@ -39,6 +51,28 @@ export function HandProp({ variant, ctx }: HandPropProps) {
             src={BOOMBOX_SRC}
             alt=""
             className="ch-lo-boombox-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'balloons':
+      return (
+        <div className="ch-lo-balloons">
+          <img
+            src={BALLOONS_SRC}
+            alt=""
+            className="ch-lo-balloons-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'balloons2':
+      return (
+        <div className="ch-lo-balloons-2">
+          <img
+            src={BALLOONS_2_SRC}
+            alt=""
+            className="ch-lo-balloons-2-img"
             draggable={false}
           />
         </div>
@@ -72,6 +106,116 @@ export function HandProp({ variant, ctx }: HandPropProps) {
             src={FRIES_SRC}
             alt=""
             className="ch-lo-fries-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'pizza':
+      return (
+        <div className="ch-lo-pizza">
+          <img
+            src={PIZZA_SRC}
+            alt=""
+            className="ch-lo-pizza-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'tacos':
+      return (
+        <div className="ch-lo-tacos">
+          <img
+            src={TACOS_SRC}
+            alt=""
+            className="ch-lo-tacos-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'popcorn':
+      return (
+        <div className="ch-lo-popcorn">
+          <img
+            src={POPCORN_SRC}
+            alt=""
+            className="ch-lo-popcorn-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'lollipop':
+      return (
+        <div className="ch-lo-lollipop">
+          <img
+            src={LOLLIPOP_SRC}
+            alt=""
+            className="ch-lo-lollipop-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'martini':
+      return (
+        <div className="ch-lo-martini">
+          <img
+            src={MARTINI_SRC}
+            alt=""
+            className="ch-lo-martini-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'lemonade':
+      return (
+        <div className="ch-lo-lemonade">
+          <img
+            src={LEMONADE_SRC}
+            alt=""
+            className="ch-lo-lemonade-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'beer':
+      return (
+        <div className="ch-lo-beer">
+          <img
+            src={BEER_SRC}
+            alt=""
+            className="ch-lo-beer-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'bottle':
+      return (
+        <div className="ch-lo-bottle">
+          <img
+            src={BOTTLE_SRC}
+            alt=""
+            className="ch-lo-bottle-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'water':
+      return (
+        <div className="ch-lo-water">
+          <img
+            src={WATER_SRC}
+            alt=""
+            className="ch-lo-water-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'juice':
+      return (
+        <div className="ch-lo-juice">
+          <img
+            src={JUICE_SRC}
+            alt=""
+            className="ch-lo-juice-img"
             draggable={false}
           />
         </div>

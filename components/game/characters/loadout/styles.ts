@@ -62,10 +62,34 @@ export const LOADOUT_STYLES = `
   /* ── Hand props ───────────────────────────────────────────────────────── */
   .ch-right-hand .ch-lo-boombox{position:absolute;left:-36px;top:-14px;width:136px;height:112px;transform:rotate(38deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
   .ch-lo-boombox-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-balloons{position:absolute;left:-108px;top:-195px;width:320px;height:264px;transform:rotate(68deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-balloons-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-balloons-2{position:absolute;left:-108px;top:-195px;width:320px;height:264px;transform:rotate(68deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-balloons-2-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-hotdog{position:absolute;left:-39px;top:18px;width:176px;height:110px;transform:rotate(18deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
   .ch-lo-hotdog-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-donut{position:absolute;left:-39px;top:18px;width:176px;height:110px;transform:rotate(18deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
   .ch-lo-donut-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-fries{position:absolute;left:-59px;top:-2px;width:176px;height:110px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
   .ch-lo-fries-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-pizza{position:absolute;left:-119px;top:-22px;width:220px;height:138px;transform:rotate(70deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-pizza-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-tacos{position:absolute;left:-79px;top:-42px;width:176px;height:110px;transform:rotate(90deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-tacos-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-popcorn{position:absolute;left:-109px;top:4px;width:220px;height:138px;transform:rotate(70deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-popcorn-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-lollipop{position:absolute;left:-18px;top:-260px;width:182px;height:260px;transform:rotate(110deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-lollipop-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-martini{position:absolute;left:-99px;top:-22px;width:220px;height:138px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-martini-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-lemonade{position:absolute;left:-99px;top:-42px;width:220px;height:138px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-lemonade-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-beer{position:absolute;left:-99px;top:-22px;width:220px;height:138px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-beer-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-bottle{position:absolute;left:-99px;top:-22px;width:220px;height:138px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-bottle-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-water{position:absolute;left:-99px;top:-22px;width:220px;height:138px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-water-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-juice{position:absolute;left:-99px;top:-22px;width:220px;height:138px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-juice-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
 `;

@@ -6,11 +6,13 @@ import {
   COACHELLA_STAGE_PUSH_Y,
   COACHELLA_STAGE_SCALE,
   COACHELLA_STAGE_MID_X,
+  COACHELLA_STAGE_HALF,
   FEST_COLORS,
   SD_GND,
 } from './constants';
 import { setCoachellaNowPlaying } from '@/lib/coachellaNowPlaying';
 import { useStagePlayer, STAGE_IFRAME_STYLE } from '../../useStagePlayer';
+import { StageToiletsBeside } from '../street/StageToiletRow';
 
 const STAGE_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&display=swap');
@@ -269,6 +271,12 @@ export function FestivalStage({ live = false }: { live?: boolean }) {
         {marquee.toUpperCase().slice(0, 30)}
       </text>
     </g>
+    <StageToiletsBeside
+      centerX={COACHELLA_STAGE_MID_X}
+      stageHalfWidth={COACHELLA_STAGE_HALF}
+      side="left"
+      y={deck - 66}
+    />
     </g>
 
     {/* YouTube player — identical embed path to Concert / Cinema: an unscaled

@@ -2,11 +2,12 @@
 
 import { useRef } from 'react';
 import type { HTMLAttributes } from 'react';
-import { EDC_STAGE_MID_X, EDC_STAGE_PUSH_Y, EDC_STAGE_SCALE, NEON, VEGAS_GND } from './constants';
+import { EDC_STAGE_MID_X, EDC_STAGE_PUSH_Y, EDC_STAGE_SCALE, EDC_STAGE_HALF, NEON, VEGAS_GND } from './constants';
 import { Flame, laserFan } from './helpers';
 import { setEdcNowPlaying } from '@/lib/edcNowPlaying';
 import { useStagePlayer } from '../../useStagePlayer';
 import { StageVideoFrame } from '../../StageVideoFrame';
+import { StageToiletsBeside } from '../street/StageToiletRow';
 
 export { EDC_STAGE_MID_X };
 
@@ -164,6 +165,12 @@ export function EDCStage({ live = false }: { live?: boolean }) {
           {marquee.toUpperCase().slice(0, 30)}
         </text>
       </g>
+      <StageToiletsBeside
+        centerX={cx}
+        stageHalfWidth={EDC_STAGE_HALF}
+        side="right"
+        y={deckY - 66}
+      />
       </g>
 
       <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>

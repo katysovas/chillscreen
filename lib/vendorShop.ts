@@ -20,11 +20,11 @@ const GLASSES_ITEMS = [
   'shades-glasses-skiing',
 ] as const;
 
-const HAND_ITEMS = ['hand-sword', 'hand-lightsaber', 'hand-boombox'] as const;
+const HAND_ITEMS = ['hand-sword', 'hand-lightsaber', 'hand-boombox', 'hand-balloons', 'hand-balloons-2'] as const;
 
-const FOOD_ITEMS = ['food-hotdog', 'food-donut', 'food-fries'] as const;
+const FOOD_ITEMS = ['food-hotdog', 'food-donut', 'food-fries', 'food-pizza', 'food-tacos', 'food-popcorn', 'food-lollipop'] as const;
 
-const DRINK_ITEMS = [] as const;
+const DRINK_ITEMS = ['drink-martini', 'drink-lemonade', 'drink-beer', 'drink-bottle', 'drink-water', 'drink-juice'] as const;
 
 export type VendorShopItemId =
   | (typeof HAT_ITEMS)[number]
@@ -104,9 +104,21 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'shades-glasses-optic': '/images/props/glasses_optic.svg',
   'shades-glasses-skiing': '/images/props/glasses_skiing.svg',
   'hand-boombox': '/images/props/hands_boombox.svg',
+  'hand-balloons': '/images/props/hands_balloons.svg',
+  'hand-balloons-2': '/images/props/hands_balloons_2.svg',
   'food-hotdog': '/images/props/food_hotdog.svg',
   'food-donut': '/images/props/food_donut.svg',
   'food-fries': '/images/props/food_fries.svg',
+  'food-pizza': '/images/props/food_pizza.svg',
+  'food-tacos': '/images/props/food_tacos.svg',
+  'food-popcorn': '/images/props/food_popcorn.svg',
+  'food-lollipop': '/images/props/food_lollipop.svg',
+  'drink-martini': '/images/props/drinks_martini.svg',
+  'drink-lemonade': '/images/props/drinks_lemonade.svg',
+  'drink-beer': '/images/props/drinks_beer.svg',
+  'drink-bottle': '/images/props/drinks_bottle.svg',
+  'drink-water': '/images/props/drinks_water.svg',
+  'drink-juice': '/images/props/drinks_juice.svg',
 };
 
 /** Thumbnail sizing tweaks per item in the shop panel. */
@@ -128,7 +140,19 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'shades-glasses-optic': { width: 36, height: 16 },
   'shades-glasses-skiing': { width: 36, height: 16 },
   'hand-boombox': { width: 36, height: 28 },
+  'hand-balloons': { width: 44, height: 44 },
+  'hand-balloons-2': { width: 44, height: 44 },
   'food-hotdog': { width: 34, height: 22 },
   'food-donut': { width: 34, height: 22 },
   'food-fries': { width: 34, height: 22 },
+  'food-pizza': { width: 34, height: 22 },
+  'food-tacos': { width: 34, height: 22 },
+  'food-popcorn': { width: 38, height: 26 },
+  'food-lollipop': { width: 26, height: 38 },
+  'drink-martini': { width: 28, height: 32 },
+  'drink-lemonade': { width: 28, height: 32 },
+  'drink-beer': { width: 28, height: 32 },
+  'drink-bottle': { width: 28, height: 32 },
+  'drink-water': { width: 28, height: 32 },
+  'drink-juice': { width: 28, height: 32 },
 };
