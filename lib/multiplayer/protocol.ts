@@ -12,7 +12,7 @@ import type { StageSync } from '../stageVideos';
 export type Facing = 'left' | 'right';
 
 /** The single shared room everyone joins for now. */
-export const ROOM_ID = 'chillscreen-global';
+export const ROOM_ID = 'whichstage-global';
 
 /** Identity a player chooses for the session (random color, optional name). */
 export type PlayerProfile = {

@@ -1,26 +1,54 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { JsonLd } from '@/components/JsonLd';
+import { breadcrumbJsonLd, webPageJsonLd } from '@/lib/jsonLd';
+import { buildPageMetadata } from '@/lib/siteMetadata';
+
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Support',
+  description:
+    'Get help with WhichStage — controls, NPC chat, audio troubleshooting, and contact support.',
+  path: '/support',
+});
 
 export default function SupportPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-amber-50 to-violet-100 px-6 py-16">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@graph': [
+            webPageJsonLd({
+              path: '/support',
+              title: 'Support',
+              description:
+                'Get help with WhichStage — controls, NPC chat, audio troubleshooting, and contact support.',
+            }),
+            breadcrumbJsonLd([
+              { name: 'WhichStage', path: '/' },
+              { name: 'Support', path: '/support' },
+            ]),
+          ],
+        }}
+      />
       <div className="mx-auto max-w-xl text-center">
         <Link
           href="/"
           className="mb-8 inline-block text-sm text-emerald-700 hover:underline"
         >
-          ← Back to ChillScreen
+          ← Back to WhichStage
         </Link>
 
         <div className="mt-8 rounded-2xl bg-white/70 p-10 shadow-sm backdrop-blur">
           <div className="mb-4 text-5xl">🌿</div>
           <h1 className="mb-3 text-3xl font-black text-slate-800">Support</h1>
           <p className="mb-6 text-slate-600">
-            Having trouble with ChillScreen, or just want to say hello? We&rsquo;d
+            Having trouble with WhichStage, or just want to say hello? We&rsquo;d
             love to hear from you.
           </p>
 
           <a
-            href="mailto:support@chillscreen.com"
+            href="mailto:support@whichstage.com"
             className="inline-flex items-center rounded-xl bg-emerald-700 px-6 py-3 font-bold text-white transition hover:bg-emerald-800"
           >
             Email support

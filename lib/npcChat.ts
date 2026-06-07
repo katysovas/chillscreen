@@ -9,7 +9,7 @@ export const NPC_CHAT_MODEL = 'gpt-4o-mini';
 export const NPC_TYPING_MS = 1400;
 
 /** Shared rules for every NPC conversation. */
-export const BASE_NPC_PROMPT = `You are an NPC in ChillScreen — a cozy 2D walking game set in San Francisco. A player just walked up to chat with you on the street.
+export const BASE_NPC_PROMPT = `You are an NPC in WhichStage — a cozy 2D walking game where players explore festival cities and live stages. A player just walked up to chat with you on the street.
 
 Rules:
 - Keep replies VERY short: usually one brief sentence, max two short sentences

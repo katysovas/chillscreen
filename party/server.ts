@@ -9,13 +9,13 @@ import { resolveStagePlaylists } from '../lib/resolveStagePlaylists';
 import { DEFAULT_DURATION_MS, STAGE_EPOCH } from '../lib/stageVideos';
 
 /**
- * Chillscreen presence room.
+ * WhichStage presence room.
  *
  * Pure relay + ephemeral in-memory roster — no database, no accounts. Players
  * connect, announce a profile + spawn position, then stream movement and 1:1
  * chat. When a connection drops the player evaporates from the room.
  */
-export default class ChillscreenServer implements Party.Server {
+export default class WhichStageServer implements Party.Server {
   /** connId → live player state (lives only in memory). */
   private players = new Map<string, PlayerState>();
 
@@ -44,7 +44,7 @@ export default class ChillscreenServer implements Party.Server {
       // Surface handler crashes in Workers Logs / `partykit tail` instead of
       // letting an unhandled rejection take down the room.
       console.error(
-        `[chillscreen] onMessage failed room=${this.room.id} conn=${sender.id}`,
+        `[whichstage] onMessage failed room=${this.room.id} conn=${sender.id}`,
         err,
       );
     }
@@ -121,7 +121,7 @@ export default class ChillscreenServer implements Party.Server {
 
   onError(conn: Party.Connection, err: Error) {
     console.error(
-      `[chillscreen] connection error room=${this.room.id} conn=${conn.id}`,
+      `[whichstage] connection error room=${this.room.id} conn=${conn.id}`,
       err,
     );
     this.onClose(conn);

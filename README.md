@@ -1,6 +1,6 @@
-# ChillScreen
+# WhichStage
 
-A chill 2D side-scrolling game. Walk through San Francisco, meet autonomous NPCs, and chat when you connect.
+Explore cities, watch live shows, and meet autonomous NPCs in a 2D side-scrolling world.
 
 ## Run locally
 

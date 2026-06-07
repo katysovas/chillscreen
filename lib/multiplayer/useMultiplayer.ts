@@ -36,7 +36,7 @@ type Options = PeerEvents & {
   spawnWorldOffRef: React.RefObject<number>;
 };
 
-// Host of the deployed PartyKit room (e.g. "chillscreen.<user>.partykit.dev").
+// Host of the deployed PartyKit room (e.g. "whichstage.<user>.partykit.dev").
 // On localhost we always use the local `partykit dev` server so `.env.local`
 // can keep the production host for deploys. Accepts a bare host or a full URL —
 // PartySocket only wants the host[:port], and auto-selects ws/wss.
