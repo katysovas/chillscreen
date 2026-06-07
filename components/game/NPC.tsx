@@ -116,6 +116,12 @@ export default function NPC({
   useLayoutEffect(() => {
     characterRef.current?.setFacing(greeting ? greetFacing : facingRef.current);
     characterRef.current?.setWalking(!greeting && !paused && walkingRef.current);
+    // Position is driven by the RAF loop — omit `left` from React style or
+    // re-renders (dancing, ambient chat, jump) snap back to entry `startX`
+    // off-screen while collision still tracks the real world-x.
+    if (divRef.current) {
+      divRef.current.style.left = `${screenXRef.current}%`;
+    }
   });
 
   // ── Imperative helpers — update ref + Character DOM together ────────────────
@@ -286,7 +292,6 @@ export default function NPC({
       ref={divRef}
       style={{
         position: 'absolute',
-        left: `${startX}%`,
         bottom: CHAR_BOTTOM,
         zIndex: greeting ? 200 : 18,
       }}

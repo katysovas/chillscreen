@@ -118,7 +118,11 @@ export default function Concert({
 
   const crowdD = useMemo(() => makeCrowd(BASE_W), []);
   const spkCones = useMemo(() => speakerCones(6, 2), []);
-  const marqueeTitle = video?.title ?? (live ? 'Loading…' : label ?? 'Live Concert');
+  const isSeattle = channel === 'bumbershoot';
+  const venueLabel = label ?? 'Seattle Concerts';
+  const marqueeTitle = isSeattle
+    ? venueLabel
+    : (video?.title ?? (live ? 'Loading…' : label ?? 'Live Concert'));
 
   const motes = useMemo(() => Array.from({ length: 14 }, (_, i) => ({
     left: `${5 + (i * 79) % 90}%`,
@@ -178,8 +182,8 @@ export default function Concert({
           </linearGradient>
         </defs>
 
-        {/* Permanent festival banner — unique per city, sits above the roof peak */}
-        {label && (
+        {/* Permanent festival banner — SF / other cities; Seattle uses marquee only */}
+        {label && !isSeattle && (
           <g>
             <line x1={150} y1={-6} x2={166} y2={14} stroke="#16241a" strokeWidth="3" />
             <line x1={370} y1={-6} x2={354} y2={14} stroke="#16241a" strokeWidth="3" />
@@ -283,7 +287,11 @@ export default function Concert({
                 transition: playerVisible ? 'opacity 0.8s' : 'none',
               }}>
                 <span style={{ fontFamily: 'sans-serif', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
-                {video?.title && <span style={{ fontFamily: 'sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 10px', lineHeight: 1.3 }}>{video.title}</span>}
+                {(isSeattle ? venueLabel : video?.title) && (
+                  <span style={{ fontFamily: 'sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 10px', lineHeight: 1.3 }}>
+                    {isSeattle ? venueLabel : video?.title}
+                  </span>
+                )}
               </div>
             )}
           </div>

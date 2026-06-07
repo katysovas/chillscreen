@@ -39,12 +39,18 @@ export type StageChannel =
   | 'coachella'
   | 'edc';
 
-export type CuratedChannelConfig = {
+/** Per-stage playlist rules — matched against video titles (case-insensitive). */
+export type StagePlaylistRules = {
+  /** Substrings that exclude a video from this stage (e.g. `['pearl jam']`). */
+  excludeTitlePatterns?: string[];
+};
+
+export type CuratedChannelConfig = StagePlaylistRules & {
   source: 'curated';
   videos: StageVideo[];
 };
 
-export type YoutubeApiChannelConfig = {
+export type YoutubeApiChannelConfig = StagePlaylistRules & {
   source: 'youtube-api';
   /** YouTube Data API v3 search query. */
   searchQuery: string;
@@ -54,6 +60,34 @@ export type YoutubeApiChannelConfig = {
 };
 
 export type StageChannelConfig = CuratedChannelConfig | YoutubeApiChannelConfig;
+
+/** Title substrings excluded from every stage playlist. */
+export const GLOBAL_EXCLUDE_TITLE_PATTERNS = ['monster'];
+
+/** Merge global + per-stage exclusion patterns. */
+export function mergeExcludePatterns(stagePatterns?: string[]): string[] {
+  return [...GLOBAL_EXCLUDE_TITLE_PATTERNS, ...(stagePatterns ?? [])];
+}
+
+function titleMatchesPatterns(title: string, patterns: string[]): boolean {
+  const norm = title.toLowerCase();
+  return patterns.some(p => norm.includes(p.toLowerCase()));
+}
+
+/** True when a title matches global or per-stage exclusion patterns. */
+export function isExcludedStageVideo(title: string, stagePatterns?: string[]): boolean {
+  const all = mergeExcludePatterns(stagePatterns);
+  return all.length > 0 && titleMatchesPatterns(title, all);
+}
+
+export function filterStageVideos<T extends { title: string }>(
+  videos: T[],
+  stagePatterns?: string[],
+): T[] {
+  const all = mergeExcludePatterns(stagePatterns);
+  if (!all.length) return videos;
+  return videos.filter(v => !titleMatchesPatterns(v.title, all));
+}
 
 /**
  * Per-channel playback source. Edit this to curate venues or point a stage at
@@ -69,8 +103,9 @@ export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
   },
   bumbershoot: {
     source: 'youtube-api',
-    searchQuery: 'Seattle Full Show',
+    searchQuery: 'Seattle Full Concert',
     maxResults: 20,
+    excludeTitlePatterns: ['pearl jam'],
     fallbackVideos: [
       { id: 'iqQvfMi4UIk', title: 'AURORA', durationSec: 4251 },
       { id: 'SDHXMAxVe5Q', title: 'Elliott Smith', durationSec: 4148 },
@@ -92,7 +127,7 @@ export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
   coachella: {
     source: 'curated',
     videos: [
-      { id: 'EkIfxAHlgJA', title: 'Coachella Live Set' },
+      { id: 'EkIfxAHlgJA', title: 'Coachella Stage' },
     ],
   },
   edc: {
@@ -108,8 +143,8 @@ export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
 };
 
 function fallbackPlaylist(cfg: StageChannelConfig): StageVideo[] {
-  if (cfg.source === 'curated') return cfg.videos;
-  return cfg.fallbackVideos ?? [];
+  const raw = cfg.source === 'curated' ? cfg.videos : (cfg.fallbackVideos ?? []);
+  return filterStageVideos(raw, cfg.excludeTitlePatterns);
 }
 
 /**

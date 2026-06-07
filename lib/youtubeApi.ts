@@ -34,18 +34,28 @@ export function isYoutubeVideoEmbeddable(status: YoutubeVideoStatus | undefined)
   return status.embeddable !== false;
 }
 
+import { filterStageVideos, mergeExcludePatterns } from './stageVideos';
+
 /** Search YouTube for videos and resolve titles + durations. */
 export async function fetchYoutubeSearchVideos(
   query: string,
   apiKey: string,
   maxResults = 20,
+  excludeTitlePatterns?: string[],
 ): Promise<YoutubeVideoMeta[]> {
+  // Over-fetch when exclusions may thin the list.
+  const hasExclusions = mergeExcludePatterns(excludeTitlePatterns).length > 0;
+  const fetchCount = Math.min(
+    50,
+    hasExclusions ? Math.max(maxResults * 2, maxResults + 10) : maxResults,
+  );
+
   const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search');
   searchUrl.searchParams.set('part', 'snippet');
   searchUrl.searchParams.set('type', 'video');
   searchUrl.searchParams.set('q', query);
   searchUrl.searchParams.set('videoEmbeddable', 'true');
-  searchUrl.searchParams.set('maxResults', String(Math.min(maxResults, 50)));
+  searchUrl.searchParams.set('maxResults', String(fetchCount));
   searchUrl.searchParams.set('key', apiKey);
 
   const searchRes = await fetch(searchUrl);
@@ -101,5 +111,5 @@ export async function fetchYoutubeSearchVideos(
     const video = byId.get(id);
     if (video) out.push(video);
   }
-  return out;
+  return filterStageVideos(out, excludeTitlePatterns).slice(0, maxResults);
 }

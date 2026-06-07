@@ -121,9 +121,9 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   // ── Greeting / collision ───────────────────────────────────────────────────
   // Each NPC reports its world-x each frame (same coordinate space as worldRef).
-  const npcWorldXRefs     = useRef(
-    CHARACTERS.map(c => screenPctToWorldX(c.startX, serverSpawnWorldOff())),
-  );
+  // Infinity until each NPC's RAF loop reports a live position — avoids
+  // connecting to off-screen entry coords while the sprite is still hidden.
+  const npcWorldXRefs     = useRef<number[]>(CHARACTERS.map(() => Infinity));
   const greetingRef       = useRef<number | null>(null);
   const nearNpcRef        = useRef<number | null>(null);
   const disconnectUntil   = useRef(0);
@@ -277,9 +277,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     setScrollWorldOff(spawnWorldOff);
     gameWorldOffRef.current = spawnWorldOff;
     updateViewBoxes(spawnWorldOff);
-    npcWorldXRefs.current = CHARACTERS.map(c =>
-      screenPctToWorldX(c.startX, spawnWorldOff),
-    );
+    npcWorldXRefs.current = CHARACTERS.map(() => Infinity);
   // updateViewBoxes is stable (no deps); spawnWorldOff is the only meaningful dep
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spawnWorldOff]);
@@ -690,6 +688,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           if (Date.now() > disconnectUntil.current) {
             for (let i = 0; i < npcWorldXRefs.current.length; i++) {
               const wx = npcWorldXRefs.current[i];
+              if (!Number.isFinite(wx)) continue;
               const screenPct = worldXToScreenPct(wx, worldRef.current, width);
               const distPx    = Math.abs(wx - worldRef.current);
               if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx && distPx < bestDist) {

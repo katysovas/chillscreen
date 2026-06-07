@@ -1,5 +1,6 @@
 import { fetchYoutubeSearchVideos } from './youtubeApi';
 import {
+  filterStageVideos,
   STAGE_CHANNEL_CONFIG,
   STAGE_PLAYLISTS,
   type StageChannel,
@@ -37,6 +38,7 @@ export async function resolveStagePlaylists(apiKey?: string): Promise<Record<Sta
             cfg.searchQuery,
             apiKey,
             cfg.maxResults ?? 20,
+            cfg.excludeTitlePatterns,
           );
           if (videos.length > 0) {
             playlists[channel] = videos;
@@ -46,6 +48,11 @@ export async function resolveStagePlaylists(apiKey?: string): Promise<Record<Sta
         }
       }),
     );
+  }
+
+  for (const channel of Object.keys(STAGE_CHANNEL_CONFIG) as StageChannel[]) {
+    const { excludeTitlePatterns } = STAGE_CHANNEL_CONFIG[channel];
+    playlists[channel] = filterStageVideos(playlists[channel], excludeTitlePatterns);
   }
 
   cache = { playlists, fetchedAt: Date.now() };
