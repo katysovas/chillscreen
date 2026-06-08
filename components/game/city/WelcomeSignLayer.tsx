@@ -1,6 +1,7 @@
 import { forwardRef, memo } from 'react';
 import { WelcomeStageSign } from '../WelcomeStageSign';
 import { GND_F } from '@/lib/parallax';
+import { PARALLAX_LAYER_BASE } from './shared/parallaxLayerStyle';
 
 const GND_Y = 685;
 
@@ -20,13 +21,11 @@ export const WelcomeSignLayer = memo(forwardRef<SVGSVGElement, WelcomeSignLayerP
         width="100%"
         height="100%"
         preserveAspectRatio="xMidYMid slice"
+        shapeRendering="optimizeSpeed"
         style={{
-          position: 'absolute',
-          inset: 0,
+          ...PARALLAX_LAYER_BASE,
           zIndex: 7,
           pointerEvents: 'none',
-          willChange: 'transform',
-          contain: 'layout style paint',
         }}
       >
         <WelcomeStageSign spawnWorldOff={spawnWorldOff} y={GND_Y + 12} />

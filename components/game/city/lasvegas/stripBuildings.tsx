@@ -1,11 +1,12 @@
 import { NEON, VEGAS_GND } from './constants';
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 import { litWindows, svgN } from './helpers';
 
 const GND = VEGAS_GND;
 
 export function DesertRidge() {
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       <path
         d={`M0,${GND} L0,560 L300,540 L640,560 L1000,535 L1400,558 L1850,540
             L2250,560 L2600,545 L2600,${GND} Z`}

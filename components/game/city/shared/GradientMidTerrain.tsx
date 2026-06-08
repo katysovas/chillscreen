@@ -1,4 +1,5 @@
 import { worldTileKind } from '@/lib/worldTiles';
+import { DECORATIVE_SHAPE } from './parallaxLayerStyle';
 import {
   HILL_MAIN_PATH,
   MID_HILL,
@@ -18,12 +19,12 @@ export function GradientMidTerrain({ tileIndex }: GradientMidTerrainProps) {
   const showSfShore = kind === 'sf';
 
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       {/* No opaque sky fill here — the SkyLayer gradient shows through.
           A minimal white-haze overlay at the horizon adds depth without
           creating color-specific seams at tile boundaries. */}
-      <path d={SKY_PATH} fill="rgba(255,255,255,.07)" shapeRendering="optimizeSpeed" />
-      <path d={HILL_MAIN_PATH} fill={MID_HILL} shapeRendering="optimizeSpeed" />
+      <path d={SKY_PATH} fill="rgba(255,255,255,.07)" />
+      <path d={HILL_MAIN_PATH} fill={MID_HILL} />
       {showSfShore && (
         <>
           <path d={SHORE_PATH} fill={MID_SHORE} opacity={0.92} />

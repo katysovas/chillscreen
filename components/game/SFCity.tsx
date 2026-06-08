@@ -52,7 +52,6 @@ import { isNearStage } from '@/lib/concertDance';
 import { LovingCarLayer } from './LovingCar';
 import { WelcomePopup } from './WelcomePopup';
 import { SkyCreaturesLayer } from './SkyCreatures';
-import { CITY_SCENE_KEYFRAMES } from './city/citySceneKeyframes';
 import { CHARACTER_STYLES } from './characterStyles';
 import { SkyLayer } from './city/SkyLayer';
 import { SkyCloudsLayer } from './city/SkyCloudsLayer';
@@ -66,15 +65,13 @@ import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
 import { DPadBtn } from './DPadBtn';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { BottomControlPanel } from './BottomControlPanel';
-import { VendorShopPanel } from './VendorShopPanel';
+import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
+import { preloadAllLoadoutSlots } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { runAllStagePlayerSyncs } from '@/lib/stagePlayerRegistry';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
-
-const KF = `${CITY_SCENE_KEYFRAMES}\n${CHARACTER_STYLES}`;
-
 
 // ─── NPC cast ─────────────────────────────────────────────────────────────────
 
@@ -830,6 +827,20 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const inConversation = greetingNpc !== null || peerChatId !== null;
   const showVendorShop =
     greetingNpc !== null && isBuzNpc(CHARACTERS[greetingNpc]?.id ?? '');
+
+  useEffect(() => {
+    if (nearNpc === null) return;
+    if (!isBuzNpc(CHARACTERS[nearNpc]?.id ?? '')) return;
+    preloadVendorShopPanel();
+    void preloadAllLoadoutSlots();
+  }, [nearNpc]);
+
+  useEffect(() => {
+    if (!showVendorShop) return;
+    preloadVendorShopPanel();
+    void preloadAllLoadoutSlots();
+  }, [showVendorShop]);
+
   const conversationPartnerName = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
     : greetingNpc !== null ? CHARACTERS[greetingNpc]?.name : null;
@@ -839,7 +850,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', animation: 'fdi 1.5s ease' }}>
-      <style>{KF}</style>
+      <style>{CHARACTER_STYLES}</style>
 
       <SkyLayer ref={skyRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
       <SkyCloudsLayer ref={cloudsRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />

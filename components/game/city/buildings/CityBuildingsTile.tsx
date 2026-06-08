@@ -3,6 +3,7 @@ import { SimpleBuilding } from './SimpleBuilding';
 import { CoitTower } from './CoitTower';
 import { ModernTowers } from './ModernTower';
 import { HillsideHouse } from './HillsideHouse';
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 
 /** Shift skyline east — clear of Golden Gate / bay (left ~0–520). */
 export const CITY_BUILDINGS_OFFSET_X = 560;
@@ -25,7 +26,7 @@ const SIMPLE_BLOCKS = [
 /** Building skyline for one mid-layer tile (offset east of the bridge). */
 export function CityBuildingsTile() {
   return (
-    <g transform={`translate(${CITY_BUILDINGS_OFFSET_X},0)`}>
+    <g {...DECORATIVE_SHAPE} transform={`translate(${CITY_BUILDINGS_OFFSET_X},0)`}>
       {VICTORIAN_ROW.map((b, i) => (
         <Victorian key={i} x={b.x} y={b.y} col={b.col} w={b.w} h={b.h} />
       ))}

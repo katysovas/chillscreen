@@ -2,6 +2,7 @@ import { MID_GND, MID_W } from '../shared/terrainPaths';
 import { SimpleBuilding } from '../buildings/SimpleBuilding';
 import { Victorian } from '../buildings/Victorian';
 import { skipTownMidTree } from '@/lib/stageTreeExclusion';
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 import { isSfToVegasTown, isTownTile, isVegasToSdTown, tileRand } from '@/lib/worldTiles';
 import { TownDesertEdge } from './TownDesertEdge';
 
@@ -90,7 +91,7 @@ export function SmallTownTerrain({ tileIndex }: { tileIndex: number }) {
   const compact = isSfToVegasTown(tileIndex) || isVegasToSdTown(tileIndex) || isTownTile(tileIndex);
 
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       {!compact && (
         <path
           d={`M-2,${MID_GND + 8} Q${MID_W * 0.25},${MID_GND - 6} ${MID_W * 0.5},${MID_GND + 4}
@@ -98,7 +99,6 @@ export function SmallTownTerrain({ tileIndex }: { tileIndex: number }) {
             L${MID_W + 2},900 L-2,900 Z`}
           fill="#8a9880"
           opacity={0.28}
-          shapeRendering="optimizeSpeed"
         />
       )}
       {compact && (
@@ -107,7 +107,6 @@ export function SmallTownTerrain({ tileIndex }: { tileIndex: number }) {
             L${980},${MID_GND + 4} L980,900 L0,900 Z`}
           fill="#8a9880"
           opacity={0.28}
-          shapeRendering="optimizeSpeed"
         />
       )}
       {compact && (isSfToVegasTown(tileIndex) || isVegasToSdTown(tileIndex)) && (

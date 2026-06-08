@@ -2,33 +2,7 @@
 
 import { forwardRef, memo } from 'react';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
-
-// ─── Keyframes (injected via <style> in SFCity) ───────────────────────────────
-export const SKY_CREATURES_KF = `
-  @keyframes sky-ltr {
-    0%        { transform: translate3d(-380px, 0, 0); }
-    28%, 100% { transform: translate3d(calc(100vw + 380px), 0, 0); }
-  }
-  @keyframes sky-rtl {
-    0%        { transform: translate3d(calc(100vw + 380px), 0, 0); }
-    28%, 100% { transform: translate3d(-380px, 0, 0); }
-  }
-  @keyframes sky-ufo-ltr {
-    0%      { transform: translate3d(-200px, 0, 0); }
-    8%, 100% { transform: translate3d(calc(100vw + 200px), 0, 0); }
-  }
-  @keyframes ufo-bob {
-    0%,100% { transform: translateY(0px) rotate(-2deg); }
-    50%     { transform: translateY(-14px) rotate(2deg); }
-  }
-  @keyframes ufo-lt1 { 0%,100%{opacity:1}   45%{opacity:.08} }
-  @keyframes ufo-lt2 { 0%,100%{opacity:.35} 65%{opacity:1}   }
-  @keyframes ufo-lt3 { 0%,100%{opacity:.9}  20%{opacity:.05} }
-  @keyframes ufo-glow {
-    0%,100% { opacity:.3;  transform: scale(1);    }
-    50%     { opacity:.75; transform: scale(1.28); }
-  }
-`;
+import { PARALLAX_LAYER_BASE } from './city/shared/parallaxLayerStyle';
 
 // ─── Bird ────────────────────────────────────────────────────────────────────
 function Bird({
@@ -226,8 +200,7 @@ function SkyCreaturesLayerInner({ period = 'day' }, _ref) {
   return (
     <div
       style={{
-        position: 'absolute',
-        inset: 0,
+        ...PARALLAX_LAYER_BASE,
         pointerEvents: 'none',
         overflow: 'hidden',
       }}

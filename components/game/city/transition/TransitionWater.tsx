@@ -1,4 +1,5 @@
 import { worldTileKind } from '@/lib/worldTiles';
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 import { MID_W } from '../shared/terrainPaths';
 import { WATER_PATH, SF_WATER, SEA_WATER } from '../shared/terrainPaths';
 
@@ -18,7 +19,7 @@ export function TransitionWater({ tileIndex }: TransitionWaterProps) {
   if (kind === 'sf') {
     const fadeRight = right !== 'sf';
     return (
-      <g>
+      <g {...DECORATIVE_SHAPE}>
         <defs>
           <linearGradient id={`sfw-${uid}`} gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={MID_W} y2={0}>
             <stop offset="0%" stopColor={SF_WATER} stopOpacity={left === 'town' ? 0.85 : 1} />
@@ -39,7 +40,7 @@ export function TransitionWater({ tileIndex }: TransitionWaterProps) {
   if (kind !== 'seattle') return null;
 
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       <defs>
         <linearGradient id={`seaw-${uid}`} gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={MID_W} y2={0}>
           {fadeLeft && <stop offset="0%" stopColor={SEA_WATER} stopOpacity={0} />}

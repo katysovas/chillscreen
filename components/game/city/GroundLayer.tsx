@@ -11,6 +11,7 @@ import { skipGroundStreetTree } from '@/lib/stageTreeExclusion';
 import { SleepingCatsGround } from '../SleepingCat';
 import { StreetDogsGround } from '../StreetDog';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
+import { DECORATIVE_SHAPE } from './shared/parallaxLayerStyle';
 import { StreetTree } from './street/StreetTree';
 import { LampPost } from './street/LampPost';
 
@@ -34,7 +35,7 @@ function groundTileContent(tile: number) {
   const fits = (x: number, halfW: number) => x <= w - halfW;
 
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       <rect x={0} y={GND_Y + 25} width={w} height={215} fill="#b0a878" />
       <rect x={0} y={GND_Y + 25} width={w} height={12} fill="rgba(0,0,0,.08)" />
       {Array.from({ length: Math.ceil(w / 80) }, (_, i) => (

@@ -150,6 +150,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
           tileOrigin={midOriginForTile}
           nearTileIndices={nearMidTiles}
           defs={atmoDefs}
+          shapeRendering="optimizeSpeed"
         >
           {renderTile}
         </ParallaxSvgLayer>
@@ -160,6 +161,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             tileWidth={CITY_MID_W}
             tileOrigin={midOriginForTile}
             nearTileIndices={nearMidTiles}
+            shapeRendering="optimizeSpeed"
             style={{ pointerEvents: 'none' }}
           >
             {renderVegasForeground}

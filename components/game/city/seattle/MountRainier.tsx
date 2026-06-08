@@ -1,4 +1,6 @@
 // All path strings pre-computed at module load — never recomputed on render.
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
+
 const PEAK_X = 1855;
 const PEAK_Y = 268;
 
@@ -29,7 +31,7 @@ const GLACIER_ARC = `M1820,300 Q${PEAK_X},${PEAK_Y} 1892,302`;
  */
 export function MountRainier() {
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       {/* Translucent atmospheric body — does NOT cover the sky with an opaque hue */}
       <path d={BASE_PATH} fill="rgba(202,216,236,.18)" />
       {/* Snow cap — opaque white, reads against any sky */}

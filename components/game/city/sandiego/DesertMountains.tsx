@@ -1,4 +1,5 @@
 import { MID_W } from '../shared/terrainPaths';
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 import { DESERT_FAR, DESERT_MID, DESERT_NEAR } from './constants';
 
 /**
@@ -27,18 +28,15 @@ export function DesertMountains({ tileIndex = 0, fadeLeft = false, fadeRight = f
       <path
         d="M-2,470 L380,360 L640,430 L920,330 L1240,420 L1560,340 L1900,430 L2280,360 L2602,440 L2602,900 L-2,900 Z"
         fill={DESERT_FAR}
-        shapeRendering="optimizeSpeed"
       />
       <path
         d="M-2,520 L300,440 L560,500 L880,410 L1200,500 L1520,430 L1880,510 L2240,440 L2602,510 L2602,900 L-2,900 Z"
         fill={DESERT_MID}
         opacity={0.92}
-        shapeRendering="optimizeSpeed"
       />
       <path
         d="M-2,576 L260,520 L520,566 L820,500 L1140,572 L1480,512 L1840,574 L2200,520 L2602,572 L2602,900 L-2,900 Z"
         fill={DESERT_NEAR}
-        shapeRendering="optimizeSpeed"
       />
     </>
   );
@@ -54,7 +52,7 @@ export function DesertMountains({ tileIndex = 0, fadeLeft = false, fadeRight = f
   const needsH   = fadeLeft || fadeRight;
 
   const content = (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       <defs>
         {/* Vertical alpha gradient — transparent at sky, opaque at terrain */}
         <linearGradient id={vGradId} gradientUnits="userSpaceOnUse" x1={0} y1={380} x2={0} y2={490}>

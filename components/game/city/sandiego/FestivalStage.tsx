@@ -14,16 +14,6 @@ import { setCoachellaNowPlaying } from '@/lib/coachellaNowPlaying';
 import { useStagePlayer, STAGE_IFRAME_STYLE } from '../../useStagePlayer';
 import { StageToiletsBeside } from '../street/StageToiletRow';
 
-const STAGE_KEYFRAMES = `
-  @keyframes sdc-beam-a { 0%,100%{transform:rotate(-16deg)} 50%{transform:rotate(14deg)} }
-  @keyframes sdc-beam-b { 0%,100%{transform:rotate(12deg)}  50%{transform:rotate(-18deg)} }
-  @keyframes sdc-beam-c { 0%,100%{transform:rotate(-10deg)} 50%{transform:rotate(20deg)} }
-  @keyframes sdc-beam-d { 0%,100%{transform:rotate(18deg)}  50%{transform:rotate(-12deg)} }
-  @keyframes sdc-shine  { 0%,100%{opacity:.35} 50%{opacity:1} }
-  @keyframes sdc-glow   { 0%,100%{opacity:.5} 50%{opacity:.95} }
-  @keyframes sdc-marquee{ 0%,100%{opacity:.7} 50%{opacity:1} }
-`;
-
 /** Stage center x — used for venue focus / in-view checks. */
 export { COACHELLA_STAGE_MID_X };
 
@@ -86,7 +76,6 @@ function FestivalStageShell({
       <g transform={`translate(0, ${pushY})`}>
         <g transform={`translate(${ox},${oy}) scale(${COACHELLA_STAGE_SCALE}) translate(${-ox},${-oy})`}>
           <defs>
-            <style>{STAGE_KEYFRAMES}</style>
             <linearGradient id="sdc-roof" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#33333d" />
               <stop offset="100%" stopColor="#1d1d25" />

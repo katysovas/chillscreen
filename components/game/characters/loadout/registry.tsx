@@ -1,76 +1,101 @@
 import type { ReactNode } from 'react';
+import { BalloonAccessory } from '../main/accessory';
 import { LOADOUT_CATALOG } from './catalog';
-import {
-  BottomProp,
-  HandProp,
-  HatProp,
-  NecklaceProp,
-  SunglassesProp,
-  TopProp,
-} from './props';
-import type { LoadoutRenderCtx, LoadoutSlot } from './types';
+import type { ItemRenderer } from './registry/types';
+import type { CharacterLoadout, LoadoutRenderCtx, LoadoutSlot } from './types';
+import { LOADOUT_SLOTS, loadoutItemId } from './types';
 
-type ItemRenderer = (ctx: LoadoutRenderCtx) => ReactNode;
-
-/** Maps catalog ids → prop components. Add entries when authoring new vendor items. */
-const RENDERERS: Record<string, ItemRenderer> = {
-  'hand-balloon': ctx => <HandProp variant="balloon" ctx={ctx} />,
-  'hand-microphone': ctx => <HandProp variant="microphone" ctx={ctx} />,
-  'hand-lightsaber': ctx => <HandProp variant="lightsaber" ctx={ctx} />,
-  'hand-sword': ctx => <HandProp variant="sword" ctx={ctx} />,
-  'hand-boombox': ctx => <HandProp variant="boombox" ctx={ctx} />,
-  'hand-balloons': ctx => <HandProp variant="balloons" ctx={ctx} />,
-  'hand-balloons-2': ctx => <HandProp variant="balloons2" ctx={ctx} />,
-  'food-hotdog': ctx => <HandProp variant="hotdog" ctx={ctx} />,
-  'food-donut': ctx => <HandProp variant="donut" ctx={ctx} />,
-  'food-fries': ctx => <HandProp variant="fries" ctx={ctx} />,
-  'food-pizza': ctx => <HandProp variant="pizza" ctx={ctx} />,
-  'food-tacos': ctx => <HandProp variant="tacos" ctx={ctx} />,
-  'food-popcorn': ctx => <HandProp variant="popcorn" ctx={ctx} />,
-  'food-lollipop': ctx => <HandProp variant="lollipop" ctx={ctx} />,
-  'drink-martini': ctx => <HandProp variant="martini" ctx={ctx} />,
-  'drink-lemonade': ctx => <HandProp variant="lemonade" ctx={ctx} />,
-  'drink-beer': ctx => <HandProp variant="beer" ctx={ctx} />,
-  'drink-bottle': ctx => <HandProp variant="bottle" ctx={ctx} />,
-  'drink-water': ctx => <HandProp variant="water" ctx={ctx} />,
-  'drink-juice': ctx => <HandProp variant="juice" ctx={ctx} />,
-
-  'hat-beanie': ctx => <HatProp variant="beanie" ctx={ctx} />,
-  'hat-cap': ctx => <HatProp variant="cap" ctx={ctx} />,
-  'hat-chef': ctx => <HatProp variant="chef" ctx={ctx} />,
-  'hat-pirate-bandana': ctx => <HatProp variant="pirate-hat" ctx={ctx} />,
-  'hat-headphones': ctx => <HatProp variant="headphones" ctx={ctx} />,
-  'hat-viking': ctx => <HatProp variant="viking-hat" ctx={ctx} />,
-  'hat-lady': ctx => <HatProp variant="lady-hat" ctx={ctx} />,
-  'hat-hunter': ctx => <HatProp variant="hunter-hat" ctx={ctx} />,
-  'hat-baseball': ctx => <HatProp variant="baseball-hat" ctx={ctx} />,
-  'hat-pamela': ctx => <HatProp variant="pamela-hat" ctx={ctx} />,
-  'shades-round': ctx => <SunglassesProp variant="round" ctx={ctx} />,
-  'shades-aviator': ctx => <SunglassesProp variant="aviator" ctx={ctx} />,
-  'shades-glasses': ctx => <SunglassesProp variant="glasses" ctx={ctx} />,
-  'shades-glasses-blue': ctx => <SunglassesProp variant="glasses-blue" ctx={ctx} />,
-  'shades-glasses-green': ctx => <SunglassesProp variant="glasses-green" ctx={ctx} />,
-  'shades-glasses-circle': ctx => <SunglassesProp variant="glasses-circle" ctx={ctx} />,
-  'shades-glasses-yellow': ctx => <SunglassesProp variant="glasses-yellow" ctx={ctx} />,
-  'shades-glasses-optic': ctx => <SunglassesProp variant="glasses-optic" ctx={ctx} />,
-  'shades-glasses-skiing': ctx => <SunglassesProp variant="glasses-skiing" ctx={ctx} />,
-
-  'necklace-pendant': ctx => <NecklaceProp variant="pendant" ctx={ctx} />,
-  'necklace-pearls': ctx => <NecklaceProp variant="pearls" ctx={ctx} />,
-
-  'top-tee': ctx => <TopProp variant="tee" ctx={ctx} />,
-  'top-tank': ctx => <TopProp variant="tank" ctx={ctx} />,
-  'top-tie-dye': ctx => <TopProp variant="tie-dye" ctx={ctx} />,
-
-  'bottom-shorts': ctx => <BottomProp variant="shorts" ctx={ctx} />,
-  'bottom-jeans': ctx => <BottomProp variant="jeans" ctx={ctx} />,
-  'bottom-dress': ctx => <BottomProp variant="dress" ctx={ctx} />,
+/** Default balloon — kept in the main bundle for first paint. */
+const CORE_RENDERERS: Record<string, ItemRenderer> = {
+  'hand-balloon': ctx => (
+    <BalloonAccessory color={ctx.props.color ?? ctx.balloonColor} />
+  ),
 };
 
+const slotModules = new Map<LoadoutSlot, Record<string, ItemRenderer>>();
+const slotLoads = new Map<LoadoutSlot, Promise<void>>();
+let registryVersion = 0;
+const listeners = new Set<() => void>();
+
+const SLOT_IMPORTS: Record<
+  LoadoutSlot,
+  () => Promise<{ RENDERERS: Record<string, ItemRenderer> }>
+> = {
+  hand: () => import('./registry/slots/hand'),
+  hat: () => import('./registry/slots/hat'),
+  sunglasses: () => import('./registry/slots/sunglasses'),
+  necklace: () => import('./registry/slots/necklace'),
+  top: () => import('./registry/slots/top'),
+  bottom: () => import('./registry/slots/bottom'),
+};
+
+function bumpRegistry() {
+  registryVersion += 1;
+  for (const notify of listeners) notify();
+}
+
+export function getLoadoutRegistryVersion(): number {
+  return registryVersion;
+}
+
+export function subscribeLoadoutRegistry(cb: () => void): () => void {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
+/** Load prop renderers for one slot (idempotent). */
+export function preloadLoadoutSlot(slot: LoadoutSlot): Promise<void> {
+  if (slotModules.has(slot)) return Promise.resolve();
+  let pending = slotLoads.get(slot);
+  if (!pending) {
+    pending = SLOT_IMPORTS[slot]().then(mod => {
+      slotModules.set(slot, mod.RENDERERS);
+      bumpRegistry();
+    });
+    slotLoads.set(slot, pending);
+  }
+  return pending;
+}
+
+/** Load every slot chunk — use before opening Buz's shop. */
+export function preloadAllLoadoutSlots(): Promise<void> {
+  return Promise.all(LOADOUT_SLOTS.map(preloadLoadoutSlot)).then(() => {});
+}
+
+export function equippedLoadoutItemIds(loadout: CharacterLoadout): string[] {
+  return LOADOUT_SLOTS
+    .map(slot => loadoutItemId(loadout, slot))
+    .filter((id): id is string => Boolean(id));
+}
+
+/** Load renderers for currently equipped items. */
+export function preloadLoadoutItems(itemIds: string[]): Promise<void> {
+  const slots = new Set<LoadoutSlot>();
+  for (const id of itemIds) {
+    const slot = LOADOUT_CATALOG[id]?.slot;
+    if (slot) slots.add(slot);
+  }
+  return Promise.all([...slots].map(preloadLoadoutSlot)).then(() => {});
+}
+
+function rendererFor(itemId: string): ItemRenderer | undefined {
+  if (CORE_RENDERERS[itemId]) return CORE_RENDERERS[itemId];
+  const slot = LOADOUT_CATALOG[itemId]?.slot;
+  if (!slot) return undefined;
+  return slotModules.get(slot)?.[itemId];
+}
+
 export function renderLoadoutItem(itemId: string, ctx: LoadoutRenderCtx): ReactNode {
-  const render = RENDERERS[itemId];
-  if (!render) return null;
-  return render(ctx);
+  const render = rendererFor(itemId);
+  if (render) return render(ctx);
+
+  const slot = LOADOUT_CATALOG[itemId]?.slot;
+  if (slot && !slotModules.has(slot)) {
+    void preloadLoadoutSlot(slot);
+  }
+  return null;
 }
 
 export function buildRenderCtx(

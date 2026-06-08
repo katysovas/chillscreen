@@ -9,11 +9,12 @@ import {
   VegasSphere,
   WelcomeSign,
 } from './stripBuildings';
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 
 /** Las Vegas Strip skyline — render before EDC so the stage sits in front. */
 export function LasVegasSkyline() {
   return (
-    <>
+    <g {...DECORATIVE_SHAPE}>
       <DesertRidge />
       <StratTower x={150} />
       <LuxorPyramid x={470} />
@@ -23,6 +24,6 @@ export function LasVegasSkyline() {
       <VegasSphere cx={1470} r={185} />
       <HighRoller cx={1760} cy={400} r={130} />
       <WelcomeSign x={1880} />
-    </>
+    </g>
   );
 }

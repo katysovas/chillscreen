@@ -1,7 +1,9 @@
 /** SF-only landmarks (terrain base comes from GradientMidTerrain). */
+import { DECORATIVE_SHAPE } from './shared/parallaxLayerStyle';
+
 export function SfMidFeatures() {
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       <GoldenGateBridge />
     </g>
   );

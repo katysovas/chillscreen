@@ -1,5 +1,6 @@
 import { forwardRef, memo, type CSSProperties, type ReactNode, type SVGProps } from 'react';
 import { nearTiles } from '@/lib/parallax';
+import { PARALLAX_LAYER_BASE } from './parallaxLayerStyle';
 
 type ParallaxSvgLayerProps = {
   viewBoxX: number;
@@ -59,10 +60,7 @@ export const ParallaxSvgLayer = forwardRef<SVGSVGElement, ParallaxSvgLayerProps>
         preserveAspectRatio="xMidYMid slice"
         shapeRendering={shapeRendering}
         style={{
-          position: 'absolute',
-          inset: 0,
-          willChange: 'transform',
-          contain: 'layout style paint',
+          ...PARALLAX_LAYER_BASE,
           ...style,
         }}
       >

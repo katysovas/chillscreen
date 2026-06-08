@@ -87,12 +87,6 @@ export function AttachedTypingBubble({
 }) {
   return (
     <div style={{ ...bubbleShell, minWidth: 72, animation: 'chat-in-left 0.22s ease-out both' }}>
-      <style>{`
-        @keyframes chat-typing-dot {
-          0%, 70%, 100% { opacity: 0.35; transform: translateY(0); }
-          35% { opacity: 1; transform: translateY(-4px); }
-        }
-      `}</style>
       {name && (
         <div style={{
           fontWeight: 700,

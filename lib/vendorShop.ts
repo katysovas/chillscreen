@@ -1,4 +1,4 @@
-import type { LoadoutSlot } from '@/components/game/characters/loadout';
+import type { LoadoutSlot } from '@/components/game/characters/loadout/types';
 
 const HAT_ITEMS = [
   'hat-pirate-bandana',

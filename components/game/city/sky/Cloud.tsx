@@ -1,3 +1,5 @@
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
+
 type CloudProps = {
   x: number;
   y: number;
@@ -40,7 +42,7 @@ export function Cloud({
   const dx = drift.dx;
 
   return (
-    <g transform={`translate(${x},${y}) scale(${s})`} opacity={variant === 'dim' ? 0.45 : 1}>
+    <g {...DECORATIVE_SHAPE} transform={`translate(${x},${y}) scale(${s})`} opacity={variant === 'dim' ? 0.45 : 1}>
       <g>
         <animateTransform
           attributeName="transform"

@@ -1,4 +1,5 @@
 import { MID_W } from '../shared/terrainPaths';
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 import { worldTileKind } from '@/lib/worldTiles';
 import { MountRainier } from './MountRainier';
 import { EvergreenHills } from './EvergreenHills';
@@ -16,7 +17,7 @@ export function SeattleMidFeatures({ tileIndex }: SeattleMidFeaturesProps) {
   const rightTown = worldTileKind(tileIndex + 1) === 'town';
 
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       <defs>
         <linearGradient id={`sein-${uid}`} gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={MID_W} y2={0}>
           <stop offset="0%" stopColor="white" stopOpacity={leftTown ? 0 : 1} />

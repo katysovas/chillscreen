@@ -1,7 +1,9 @@
 /** Puget Sound water with curved shore and a Washington State Ferry. */
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
+
 export function PugetSound() {
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       <path
         d="M0,584
            L448,584

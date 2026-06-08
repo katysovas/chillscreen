@@ -5,6 +5,8 @@ export const LVC_CSS = `
     z-index: 25;
     pointer-events: none;
     overflow: visible;
+    will-change: transform;
+    contain: layout style paint;
   }
 
   .lvc-runner {

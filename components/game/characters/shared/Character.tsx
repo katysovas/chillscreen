@@ -1,9 +1,11 @@
 'use client';
-import { forwardRef, useImperativeHandle, useRef, type CSSProperties, type ReactNode } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import type { BubbleSide } from '../../ChatBubble';
 import {
+  equippedLoadoutItemIds,
+  getLoadoutRegistryVersion,
   loadoutHoldSide,
-  resolveLoadout,
+  preloadLoadoutItems,
   renderLoadoutBottom,
   renderLoadoutFloat,
   renderLoadoutHand,
@@ -11,6 +13,8 @@ import {
   renderLoadoutNecklace,
   renderLoadoutSunglasses,
   renderLoadoutTop,
+  resolveLoadout,
+  subscribeLoadoutRegistry,
 } from '../loadout';
 import type { CharacterLoadout } from '../loadout';
 import {
@@ -104,6 +108,17 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   bubbleSideRef.current = bubbleSide;
   const scaleRef       = useRef(scale);
   scaleRef.current     = scale;
+
+  useSyncExternalStore(
+    subscribeLoadoutRegistry,
+    getLoadoutRegistryVersion,
+    () => 0,
+  );
+
+  useEffect(() => {
+    if (!loadout) return;
+    void preloadLoadoutItems(equippedLoadoutItemIds(loadout));
+  }, [loadout]);
 
   useImperativeHandle(ref, () => ({
     setFacing(f) {

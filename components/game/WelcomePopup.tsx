@@ -34,16 +34,6 @@ export function WelcomePopup({ balloonColor, onEnter }: Props) {
       WebkitBackdropFilter: 'blur(12px)',
       animation: 'wlc-fade-in 0.45s ease',
     }}>
-      <style>{`
-        @keyframes wlc-fade-in {
-          from { opacity: 0; transform: scale(0.96); }
-          to   { opacity: 1; transform: scale(1);    }
-        }
-        @keyframes wlc-char-sway {
-          0%,100% { transform: translateY(0px);  }
-          50%      { transform: translateY(-6px); }
-        }
-      `}</style>
 
       <div style={{
         background: 'rgb(13,1,34)',

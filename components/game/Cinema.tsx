@@ -58,13 +58,6 @@ const S = `
     animation: cin-flicker 9s ease-in-out infinite;
     user-select: none; position: relative; z-index: 1;
   }
-  @keyframes cin-flicker {
-    0%,17%,19%,21%,58%,60%,100% {
-      text-shadow: 0 0 4px #e8c040,0 0 14px rgba(232,192,64,.85),0 0 28px rgba(212,168,48,.45),0 0 50px rgba(180,130,30,.25);
-      color: #e8c040;
-    }
-    18%,59% { text-shadow: none; color: #4a4020; }
-  }
 
   .cin-film {
     width: ${CIN_W}px; height: 18px;
@@ -150,8 +143,6 @@ const S = `
     animation: cin-ba 1.4s ease-in-out infinite;
   }
   .cin-bulb:nth-child(odd) { animation-name: cin-bb; }
-  @keyframes cin-ba { 0%,100%{opacity:.25;box-shadow:0 0 2px rgba(212,168,48,.2)} 50%{opacity:1;box-shadow:0 0 6px 3px rgba(212,168,48,.6)} }
-  @keyframes cin-bb { 0%,100%{opacity:1;box-shadow:0 0 6px 3px rgba(212,168,48,.6)} 50%{opacity:.25;box-shadow:0 0 2px rgba(212,168,48,.2)} }
 
   .cin-now {
     font-family: Georgia, 'Times New Roman', serif;
@@ -159,7 +150,6 @@ const S = `
     opacity: .55; text-transform: uppercase; font-weight: 400;
     animation: cin-fade 3s ease-in-out infinite;
   }
-  @keyframes cin-fade { 0%,100%{opacity:.45} 50%{opacity:.7} }
   .cin-title {
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 14px; letter-spacing: 2px; font-weight: 400;
@@ -167,7 +157,6 @@ const S = `
     padding: 0 16px;
     animation: cin-title-in .4s ease;
   }
-  @keyframes cin-title-in { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
 
   .cin-facade {
     width: ${CIN_W}px; height: 88px;

@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
-import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
+import { currentSchedule, useStageChannel } from '@/lib/stageClock';
 import type { StageChannel } from '@/lib/stageVideos';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import { isStageChannelInView } from '@/lib/venues';
-import { registerStagePlayerSync } from '@/lib/stagePlayerRegistry';
+import { registerStagePlayerNudge, registerStagePlayerPlayingListener, registerStagePlayerSync } from '@/lib/stagePlayerRegistry';
 import {
   applyYouTubeAudio,
   nudgeYouTubePlayback,
@@ -98,6 +98,7 @@ export function useStagePlayer({
 
   const stageInViewRef = useRef(true);
   const kickCancelRef = useRef<(() => void) | null>(null);
+  const onPlayingRef = useRef<() => void>(() => {});
 
   const isStageInView = useCallback(
     () => isStageChannelInView(channel, gameWorldOffRef.current),
@@ -119,36 +120,24 @@ export function useStagePlayer({
     }
   }, [iframeRef, isStageInView, applyAudio]);
 
+  onPlayingRef.current = () => {
+    setPlayerVisible(true);
+    if (stageInViewRef.current) {
+      applyAudio(iframeRef.current);
+    } else {
+      stopYouTubePlayback(iframeRef.current);
+    }
+  };
+
   useEffect(() => {
     if (!live) return;
     setPlayerVisible(false);
 
-    const onMessage = (e: MessageEvent) => {
-      try {
-        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
-          setPlayerVisible(true);
-          if (stageInViewRef.current) {
-            applyAudio(iframeRef.current);
-          } else {
-            stopYouTubePlayback(iframeRef.current);
-          }
-        }
-      } catch { /* non-JSON message from another frame — ignore */ }
-    };
-
-    window.addEventListener('message', onMessage);
-    const fallback = setTimeout(() => {
-      setPlayerVisible(true);
-      if (stageInViewRef.current) {
-        applyAudio(iframeRef.current);
-      } else {
-        stopYouTubePlayback(iframeRef.current);
-      }
-    }, 5000);
+    const unregister = registerStagePlayerPlayingListener(iframeRef, onPlayingRef);
+    const fallback = setTimeout(() => onPlayingRef.current(), 5000);
 
     return () => {
-      window.removeEventListener('message', onMessage);
+      unregister();
       clearTimeout(fallback);
     };
   }, [vidKey, live, iframeRef]);
@@ -193,19 +182,7 @@ export function useStagePlayer({
   // Re-kick when sync handshake arrives or user interacts (autoplay policy).
   useEffect(() => {
     if (!live || !src) return;
-    const onSync = () => nudgePlayback();
-    const onGesture = () => nudgePlayback();
-    const unsub = subscribeStageSync(onSync);
-    window.addEventListener('pointerdown', onGesture, { passive: true });
-    window.addEventListener('keydown', onGesture);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') nudgePlayback();
-    });
-    return () => {
-      unsub();
-      window.removeEventListener('pointerdown', onGesture);
-      window.removeEventListener('keydown', onGesture);
-    };
+    return registerStagePlayerNudge(nudgePlayback);
   }, [live, src, vidKey, nudgePlayback]);
 
   useEffect(() => {

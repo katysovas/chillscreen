@@ -1,4 +1,5 @@
 import { skipMidBush } from '@/lib/stageTreeExclusion';
+import { DECORATIVE_SHAPE } from './shared/parallaxLayerStyle';
 
 /** Ridge trees east of the bridge, near the downtown skyline. */
 const MID_BUSH_XS = [980, 1280, 1520, 1880, 2120, 2380];
@@ -6,7 +7,7 @@ const MID_BUSH_XS = [980, 1280, 1520, 1880, 2120, 2380];
 /** Small trees along the mid-layer ridge. */
 export function MidBushes() {
   return (
-    <>
+    <g {...DECORATIVE_SHAPE}>
       {MID_BUSH_XS.filter(x => !skipMidBush(x)).map((x, i) => (
         <g
           key={x}
@@ -24,6 +25,6 @@ export function MidBushes() {
           <circle cx={0} cy={-98} r={20} fill="#288028" opacity={0.7} />
         </g>
       ))}
-    </>
+    </g>
   );
 }

@@ -1,4 +1,5 @@
 import { SD_GND } from './constants';
+import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 import { Palm } from './Palm';
 
 const WIN = 'rgba(150,200,235,.18)'; // single window-tint overlay per building
@@ -14,7 +15,7 @@ const BUILDINGS = [
 /** Downtown San Diego skyline — One America Plaza sail-top + waterfront towers. */
 export function SanDiegoSkyline() {
   return (
-    <g>
+    <g {...DECORATIVE_SHAPE}>
       {BUILDINGS.map((b, i) => (
         <g key={i}>
           <rect x={b.x} y={SD_GND - b.h} width={b.w} height={b.h} fill={b.c} />

@@ -3,31 +3,10 @@
 import { useMemo, useRef, useId, type ReactNode } from 'react';
 import { setConcertNowPlaying } from '@/lib/concertNowPlaying';
 import { useStagePlayer, STAGE_IFRAME_STYLE } from './useStagePlayer';
+import { DECORATIVE_SHAPE } from './city/shared/parallaxLayerStyle';
 import type { StageChannel } from '@/lib/stageVideos';
 
 const S = `
-  @keyframes sw-a { 0%,100%{transform:rotate(-18deg)} 50%{transform:rotate(18deg)} }
-  @keyframes sw-b { 0%,100%{transform:rotate(14deg)}  50%{transform:rotate(-14deg)} }
-  @keyframes sw-c { 0%,100%{transform:rotate(-8deg)}  50%{transform:rotate(22deg)} }
-  @keyframes sw-d { 0%,100%{transform:rotate(20deg)}  50%{transform:rotate(-10deg)} }
-  @keyframes sw-e { 0%,100%{transform:rotate(-22deg)} 50%{transform:rotate(8deg)} }
-  @keyframes sw-f { 0%,100%{transform:rotate(10deg)}  50%{transform:rotate(-20deg)} }
-  @keyframes glow-a { 0%,100%{opacity:.28} 50%{opacity:.55} }
-  @keyframes glow-b { 0%,100%{opacity:.55} 50%{opacity:.28} }
-  @keyframes glow-c { 0%,100%{opacity:.20} 50%{opacity:.45} }
-  @keyframes smoke {
-    0%   { transform:translateX(0)   scaleX(1);   opacity:.22; }
-    40%  { transform:translateX(18px) scaleX(1.3); opacity:.14; }
-    100% { transform:translateX(-8px) scaleX(.9);  opacity:.22; }
-  }
-  @keyframes smoke2 {
-    0%   { transform:translateX(0)   scaleX(1);   opacity:.18; }
-    50%  { transform:translateX(-20px) scaleX(1.4); opacity:.10; }
-    100% { transform:translateX(10px)  scaleX(.8);  opacity:.18; }
-  }
-  @keyframes crowd-sway { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
-  @keyframes stg-mote { 0%{opacity:0;transform:translate(0,0)} 20%{opacity:.9} 100%{opacity:0;transform:translate(var(--mx),var(--my))} }
-
   .stg-wrap {
     display:flex; flex-direction:column; align-items:center;
     position:relative; z-index:1;
@@ -266,7 +245,11 @@ function ConcertChrome({
         <ellipse cx="180" cy="318" rx="130" ry="22" fill={`url(#${gid('smokeG')})`} style={{ animation: 'smoke 6s ease-in-out infinite' }} />
         <ellipse cx="340" cy="320" rx="110" ry="18" fill={`url(#${gid('smokeG')})`} style={{ animation: 'smoke2 8s ease-in-out infinite' }} />
 
-        <g transform="translate(0,385)" style={{ animation: 'crowd-sway 2.5s ease-in-out infinite' }}>
+        <g
+          transform="translate(0,385)"
+          style={{ animation: 'crowd-sway 2.5s ease-in-out infinite' }}
+          {...DECORATIVE_SHAPE}
+        >
           <path d={crowdD} fill="#0a1a10" />
           <path d={crowdD} fill="rgba(56,216,128,.06)" />
         </g>

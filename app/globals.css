@@ -1,3 +1,211 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── SFCity scene (clouds, signs, chat, sky creatures) ─────────────────────── */
+
+@keyframes cloud1 {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(16px); }
+}
+@keyframes cloud2 {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-12px); }
+}
+@keyframes cloud3 {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(9px); }
+}
+@keyframes sw1 {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+}
+@keyframes sw2 {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+}
+@keyframes sw3 {
+  0%, 100% { transform: rotate(-2.2deg); }
+  50% { transform: rotate(2.2deg); }
+}
+@keyframes fdi {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes greet-pop {
+  0%, 100% { transform: translateX(-50%) scale(1) translateY(0); }
+  50% { transform: translateX(-50%) scale(1.18) translateY(-6px); }
+}
+@keyframes chat-in-left {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes chat-in-right {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes sky-ltr {
+  0% { transform: translate3d(-380px, 0, 0); }
+  28%, 100% { transform: translate3d(calc(100vw + 380px), 0, 0); }
+}
+@keyframes sky-rtl {
+  0% { transform: translate3d(calc(100vw + 380px), 0, 0); }
+  28%, 100% { transform: translate3d(-380px, 0, 0); }
+}
+@keyframes sky-ufo-ltr {
+  0% { transform: translate3d(-200px, 0, 0); }
+  8%, 100% { transform: translate3d(calc(100vw + 200px), 0, 0); }
+}
+@keyframes ufo-bob {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50% { transform: translateY(-14px) rotate(2deg); }
+}
+@keyframes ufo-lt1 {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.08; }
+}
+@keyframes ufo-lt2 {
+  0%, 100% { opacity: 0.35; }
+  65% { opacity: 1; }
+}
+@keyframes ufo-lt3 {
+  0%, 100% { opacity: 0.9; }
+  20% { opacity: 0.05; }
+}
+@keyframes ufo-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.28); }
+}
+
+/* ── Concert stage ─────────────────────────────────────────────────────────── */
+
+@keyframes sw-a {
+  0%, 100% { transform: rotate(-18deg); }
+  50% { transform: rotate(18deg); }
+}
+@keyframes sw-b {
+  0%, 100% { transform: rotate(14deg); }
+  50% { transform: rotate(-14deg); }
+}
+@keyframes sw-c {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(22deg); }
+}
+@keyframes sw-d {
+  0%, 100% { transform: rotate(20deg); }
+  50% { transform: rotate(-10deg); }
+}
+@keyframes sw-e {
+  0%, 100% { transform: rotate(-22deg); }
+  50% { transform: rotate(8deg); }
+}
+@keyframes sw-f {
+  0%, 100% { transform: rotate(10deg); }
+  50% { transform: rotate(-20deg); }
+}
+@keyframes glow-a {
+  0%, 100% { opacity: 0.28; }
+  50% { opacity: 0.55; }
+}
+@keyframes glow-b {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.28; }
+}
+@keyframes glow-c {
+  0%, 100% { opacity: 0.20; }
+  50% { opacity: 0.45; }
+}
+@keyframes smoke {
+  0% { transform: translateX(0) scaleX(1); opacity: 0.22; }
+  40% { transform: translateX(18px) scaleX(1.3); opacity: 0.14; }
+  100% { transform: translateX(-8px) scaleX(0.9); opacity: 0.22; }
+}
+@keyframes smoke2 {
+  0% { transform: translateX(0) scaleX(1); opacity: 0.18; }
+  50% { transform: translateX(-20px) scaleX(1.4); opacity: 0.10; }
+  100% { transform: translateX(10px) scaleX(0.8); opacity: 0.18; }
+}
+@keyframes crowd-sway {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes stg-mote {
+  0% { opacity: 0; transform: translate(0, 0); }
+  20% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(var(--mx), var(--my)); }
+}
+
+/* ── Cinema ────────────────────────────────────────────────────────────────── */
+
+@keyframes cin-flicker {
+  0%, 17%, 19%, 21%, 58%, 60%, 100% {
+    text-shadow: 0 0 4px #e8c040, 0 0 14px rgba(232, 192, 64, 0.85), 0 0 28px rgba(212, 168, 48, 0.45), 0 0 50px rgba(180, 130, 30, 0.25);
+    color: #e8c040;
+  }
+  18%, 59% { text-shadow: none; color: #4a4020; }
+}
+@keyframes cin-ba {
+  0%, 100% { opacity: 0.25; box-shadow: 0 0 2px rgba(212, 168, 48, 0.2); }
+  50% { opacity: 1; box-shadow: 0 0 6px 3px rgba(212, 168, 48, 0.6); }
+}
+@keyframes cin-bb {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px 3px rgba(212, 168, 48, 0.6); }
+  50% { opacity: 0.25; box-shadow: 0 0 2px rgba(212, 168, 48, 0.2); }
+}
+@keyframes cin-fade {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.7; }
+}
+@keyframes cin-title-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── Coachella / Festival stage ────────────────────────────────────────────── */
+
+@keyframes sdc-beam-a {
+  0%, 100% { transform: rotate(-16deg); }
+  50% { transform: rotate(14deg); }
+}
+@keyframes sdc-beam-b {
+  0%, 100% { transform: rotate(12deg); }
+  50% { transform: rotate(-18deg); }
+}
+@keyframes sdc-beam-c {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(20deg); }
+}
+@keyframes sdc-beam-d {
+  0%, 100% { transform: rotate(18deg); }
+  50% { transform: rotate(-12deg); }
+}
+@keyframes sdc-shine {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+@keyframes sdc-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.95; }
+}
+@keyframes sdc-marquee {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* ── Chat bubbles ──────────────────────────────────────────────────────────── */
+
+@keyframes chat-typing-dot {
+  0%, 70%, 100% { opacity: 0.35; transform: translateY(0); }
+  35% { opacity: 1; transform: translateY(-4px); }
+}
+
+/* ── Welcome popup ─────────────────────────────────────────────────────────── */
+
+@keyframes wlc-fade-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes wlc-char-sway {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}

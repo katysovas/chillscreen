@@ -1,10 +1,7 @@
-import type { CharacterLoadout } from '@/components/game/characters/loadout';
-import {
-  defaultLoadout,
-  loadoutItem,
-  loadoutItemId,
-  normalizeLoadout,
-} from '@/components/game/characters/loadout';
+import type { CharacterLoadout } from '@/components/game/characters/loadout/types';
+import { defaultLoadout, normalizeLoadout } from '@/components/game/characters/loadout/defaults';
+import { loadoutItem } from '@/components/game/characters/loadout/catalog';
+import { loadoutItemId } from '@/components/game/characters/loadout/types';
 
 const STORAGE_KEY = 'whichstage-player-loadout';
 

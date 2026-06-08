@@ -32,6 +32,7 @@ export const VenueSignsLayer = memo(forwardRef<SVGSVGElement, VenueSignsLayerPro
         tileWidth={CITY_GND_W}
         tileOrigin={gndOriginForTile}
         nearTileIndices={nearGndTiles}
+        shapeRendering="optimizeSpeed"
         style={{ zIndex: 6, pointerEvents: 'none' }}
         children={renderSignTile}
       />
