@@ -62,7 +62,7 @@ export function equipLoadoutItem(
   return next;
 }
 
-/** Remove a catalog item from its slot if currently equipped. */
+/** Remove an equipped item from its slot and from owned (vendor × button). */
 export function unequipLoadoutItem(
   itemId: string,
   balloonColor: string,
@@ -71,7 +71,14 @@ export function unequipLoadoutItem(
   if (!def) return null;
   const current = getPlayerLoadout(balloonColor);
   if (loadoutItemId(current, def.slot) !== itemId) return null;
-  return equipLoadoutSlot(def.slot, null, balloonColor);
+
+  const owned = (current.owned ?? []).filter(id => id !== itemId);
+  const next = normalizeLoadout(
+    { ...current, [def.slot]: null, owned },
+    balloonColor,
+  );
+  writePlayerLoadout(next);
+  return next;
 }
 
 /** Reset to defaults (keeps balloon color). */

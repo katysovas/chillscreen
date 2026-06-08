@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   DEFAULT_STAGE_SYNC,
   mergeStagePlaylists,
+  mergeStageSyncPlaylists,
   scheduleFor,
   type ScheduledVideo,
   type StageChannel,
@@ -40,15 +41,19 @@ export function applyServerStageSync(
   sync: StageSync,
   source?: SyncSource,
 ) {
-  if (source === 'api' && syncSource === 'partykit') return;
+  const playlists = serverSync
+    ? mergeStageSyncPlaylists(serverSync.playlists, sync.playlists)
+    : mergeStagePlaylists(sync.playlists);
 
-  if (source === 'partykit') {
-    apiFetchAbort?.abort();
-    apiFetchAbort = null;
+  // PartyKit owns the clock once connected; API can still upgrade fallback playlists.
+  if (source === 'api' && syncSource === 'partykit' && serverSync) {
+    serverSync = { ...serverSync, playlists };
+    for (const notify of listeners) notify();
+    return;
   }
 
   clockOffsetMs = serverNow - Date.now();
-  serverSync = sync;
+  serverSync = { ...sync, playlists };
   if (source) syncSource = source;
 
   for (const notify of listeners) notify();
@@ -56,8 +61,8 @@ export function applyServerStageSync(
 
 /**
  * Fetch resolved playlists from the Next.js API (YouTube API channels, etc.).
- * Aborts if PartyKit applies sync first. PartyKit welcome overwrites when both
- * complete — API is the single-player fallback when the room is unreachable.
+ * Runs in parallel with PartyKit; when both complete, API-resolved youtube-api
+ * playlists replace PartyKit fallbacks (e.g. missing YOUTUBE_API_KEY on PartyKit).
  */
 export function bootstrapStageSyncFromApi() {
   if (bootstrapStarted || typeof window === 'undefined') return;

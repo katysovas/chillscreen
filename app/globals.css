@@ -242,3 +242,21 @@
     transform: translate(var(--tx), var(--ty)) rotate(calc(var(--rot) + 180deg)) scale(1.25);
   }
 }
+
+/* ── Mystery sticker — transparent WebGL noise overlay ───────────────────── */
+
+.ws-sticker-trip-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-sticker-trip-canvas {
+    display: none;
+  }
+}

@@ -210,6 +210,16 @@ export const LOADOUT_CATALOG: Record<string, LoadoutItemDef> = {
     holdSide: 'right',
     defaultProps: {},
   },
+  'party-sticker': {
+    id: 'party-sticker',
+    slot: 'hand',
+    name: 'Mystery Sticker',
+    description: 'Peel it, hold it, and let the lawn melt a little.',
+    vendorPrice: 70,
+    handMounted: true,
+    holdSide: 'right',
+    defaultProps: {},
+  },
 
   // ── Hat ──────────────────────────────────────────────────────────────────
   'hat-beanie': {

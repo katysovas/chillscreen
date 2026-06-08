@@ -34,5 +34,13 @@ export {
 export { defaultLoadout, normalizeLoadout } from './defaults';
 export { loadoutFromAccessory } from './bridge';
 export { GlowstickAmbient, GLOWSTICK_AMBIENT_TWEAK } from './GlowstickAmbient';
-export { hasPurchasedLoadoutItem, hasGlowsticksEquipped, PARTY_GLOWSTICKS_ID } from './ownership';
+export { StickerTripOverlay } from './StickerTripOverlay';
+export {
+  hasPurchasedLoadoutItem,
+  hasGlowsticksEquipped,
+  hasStickerTripActive,
+  hasStickerEquipped,
+  PARTY_GLOWSTICKS_ID,
+  PARTY_STICKER_ID,
+} from './ownership';
 export { LOADOUT_STYLES } from './styles';

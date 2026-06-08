@@ -23,4 +23,5 @@ export const RENDERERS: Record<string, ItemRenderer> = {
   'drink-water': ctx => <HandProp variant="water" ctx={ctx} />,
   'drink-juice': ctx => <HandProp variant="juice" ctx={ctx} />,
   'party-glowsticks': ctx => <HandProp variant="glowsticks" ctx={ctx} />,
+  'party-sticker': ctx => <HandProp variant="sticker" ctx={ctx} />,
 };

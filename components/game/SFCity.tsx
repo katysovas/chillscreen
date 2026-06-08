@@ -69,7 +69,7 @@ import type { VenueRoute } from '@/lib/venueRoutes';
 import { BottomControlPanel } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
-import { preloadAllLoadoutSlots } from './characters/loadout';
+import { hasStickerTripActive, preloadAllLoadoutSlots, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { runAllStagePlayerSyncs } from '@/lib/stagePlayerRegistry';
 import type { CharacterLoadout } from './characters/loadout';
@@ -1054,6 +1054,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30,
         background: 'radial-gradient(ellipse 92% 90% at 50% 46%, transparent 38%, rgba(0,0,0,.5) 100%)',
       }} />
+
+      <StickerTripOverlay active={hasStickerTripActive(playerLoadout)} />
 
       {/* Welcome popup — shown on first visit (no stored name). */}
       {showWelcome && (

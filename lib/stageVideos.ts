@@ -239,6 +239,52 @@ export function mergeStagePlaylists(
   );
 }
 
+/** True when a youtube-api channel still has only its hardcoded fallback IDs. */
+export function isFallbackOnlyPlaylist(
+  channel: StageChannel,
+  videos: StageVideo[],
+): boolean {
+  const cfg = STAGE_CHANNEL_CONFIG[channel];
+  if (cfg.source !== 'youtube-api') return false;
+  const fallbacks = cfg.fallbackVideos ?? STAGE_PLAYLISTS[channel];
+  if (!videos.length) return true;
+  if (videos.length > fallbacks.length) return false;
+  const fallbackIds = new Set(fallbacks.map(v => v.id));
+  return videos.every(v => fallbackIds.has(v.id));
+}
+
+/** Prefer API-resolved playlists over PartyKit fallbacks when merging sync sources. */
+export function preferResolvedStagePlaylist(
+  channel: StageChannel,
+  a: StageVideo[],
+  b: StageVideo[],
+): StageVideo[] {
+  const aFallback = isFallbackOnlyPlaylist(channel, a);
+  const bFallback = isFallbackOnlyPlaylist(channel, b);
+  if (!aFallback && bFallback) return a;
+  if (aFallback && !bFallback) return b;
+  return b.length >= a.length ? b : a;
+}
+
+/** Merge two partial sync payloads, keeping richer youtube-api results per channel. */
+export function mergeStageSyncPlaylists(
+  existing: Partial<Record<StageChannel, StageVideo[]>> | undefined,
+  incoming: Partial<Record<StageChannel, StageVideo[]>> | undefined,
+): Record<StageChannel, StageVideo[]> {
+  const merged = mergeStagePlaylists(incoming);
+  if (!existing) return merged;
+  const base = mergeStagePlaylists(existing);
+  const out = { ...merged };
+  for (const channel of Object.keys(STAGE_PLAYLISTS) as StageChannel[]) {
+    out[channel] = preferResolvedStagePlaylist(
+      channel,
+      base[channel],
+      merged[channel],
+    );
+  }
+  return out;
+}
+
 export type ScheduledVideo = {
   video: StageVideo;
   /** Index into the channel playlist. */
