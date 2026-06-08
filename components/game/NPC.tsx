@@ -12,6 +12,7 @@ import {
   vendorAnchorGroundWorldX,
   type StageAnchorKind,
 } from '@/lib/stageAnchor';
+import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
 
 // ── Personality ────────────────────────────────────────────────────────────────
 export type Personality = {
@@ -39,13 +40,13 @@ export type NPCConfig = {
 type State = 'idle' | 'wandering';
 
 type NPCProps = NPCConfig & {
+  /** Index in CHARACTERS — used by the shared movement RAF in SFCity. */
+  index: number;
   stageAnchor?: StageAnchorKind;
   paused: boolean;
   greeting: boolean;
   greetFacing: 'left' | 'right';
   dancing?: boolean;
-  /** Reports world-x each frame (for collision detection). */
-  onMove: (worldX: number) => void;
   greetingChat?: {
     name: string;
     npcTyping: boolean;
@@ -80,10 +81,11 @@ const SCREEN_MIN = -30;
 const SCREEN_MAX = 130;
 
 export default function NPC({
+  index,
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality, stageAnchor,
-  paused, greeting, greetFacing, dancing = false, onMove, greetingChat, ambientChat,
+  paused, greeting, greetFacing, dancing = false, greetingChat, ambientChat,
 }: NPCProps) {
   // ── React state: only for infrequent visual changes ─────────────────────────
   const [jumping,   setJumping]  = useState(false);
@@ -105,14 +107,11 @@ export default function NPC({
   const pausedRef           = useRef(paused);
   const jumpingRef          = useRef(false);
   const avoidPlayerUntil    = useRef(0);
-  const rafRef              = useRef<number | null>(null);
   const jumpTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const onMoveRef           = useRef(onMove);
   const stageSpotRef        = useRef(0);
   const stageVisibleRef     = useRef(!stageAnchor);
 
   useEffect(() => { pausedRef.current = paused; }, [paused]);
-  useEffect(() => { onMoveRef.current = onMove; }, [onMove]);
 
   // Sync screenX state when greeting starts (needed for bubble side only).
   useEffect(() => {
@@ -145,8 +144,6 @@ export default function NPC({
     walkingRef.current = w;
     characterRef.current?.setWalking(w);
   };
-
-  const speedPx = () => (personality.speed / 100) * vw();
 
   const anchorWorldX = () =>
     stageAnchor
@@ -276,25 +273,23 @@ export default function NPC({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, personality]);
 
-  // ── Movement RAF — position via divRef, facing/walking via CharacterHandle ──
+  // ── Movement — registered with SFCity's single game-frame RAF ───────────────
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      setNpcMovementTick(index, null);
+      return;
+    }
 
-    const loop = () => {
-      const off = gameWorldOffRef.current;
-
+    setNpcMovementTick(index, (off, width) => {
       if (stageAnchor) {
-        const anchor = vendorAnchorGroundWorldX(stageAnchor, off, vw());
+        const anchor = vendorAnchorGroundWorldX(stageAnchor, off, width);
         const visible = anchor != null;
         stageVisibleRef.current = visible;
         if (divRef.current) {
           divRef.current.style.visibility = visible ? 'visible' : 'hidden';
         }
-        if (!visible) {
-          onMoveRef.current(Number.NaN);
-          rafRef.current = requestAnimationFrame(loop);
-          return;
-        }
+        if (!visible) return Number.NaN;
+
         if (stageSpotRef.current === 0) {
           stageSpotRef.current = rndBetween(-STAGE_VENDOR_WANDER_PX * 0.5, STAGE_VENDOR_WANDER_PX * 0.5);
           worldXRef.current = anchor + stageSpotRef.current;
@@ -303,7 +298,7 @@ export default function NPC({
           const home = anchor + stageSpotRef.current;
           const drift = home - worldXRef.current;
           if (stateRef.current === 'idle' && Math.abs(drift) > 2) {
-            const step = Math.min(speedPx(), Math.abs(drift));
+            const step = Math.min((personality.speed / 100) * width, Math.abs(drift));
             worldXRef.current += drift > 0 ? step : -step;
           }
         }
@@ -313,7 +308,7 @@ export default function NPC({
         const target = targetWorldRef.current;
         const cur    = worldXRef.current;
         const diff   = target - cur;
-        const spd    = speedPx();
+        const spd    = (personality.speed / 100) * width;
 
         if (Math.abs(diff) < spd) {
           worldXRef.current = target;
@@ -326,17 +321,15 @@ export default function NPC({
         }
       }
 
-      // Position — direct DOM, no React state.
-      const pct = worldXToScreenPct(worldXRef.current, off);
+      const pct = worldXToScreenPct(worldXRef.current, off, width);
       screenXRef.current = pct;
       if (divRef.current) divRef.current.style.left = `${pct}%`;
-      onMoveRef.current(worldXRef.current);
-      rafRef.current = requestAnimationFrame(loop);
-    };
+      return worldXRef.current;
+    });
 
-    rafRef.current = requestAnimationFrame(loop);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [active, personality, stageAnchor]);
+    return () => { setNpcMovementTick(index, null); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, index, personality, stageAnchor]);
 
   // ── Flee on disconnect ─────────────────────────────────────────────────────
   const wasGreetingRef = useRef(false);

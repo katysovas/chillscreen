@@ -5,7 +5,8 @@ import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
 import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
 import type { StageChannel } from '@/lib/stageVideos';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
-import { anyStageInView } from '@/lib/venues';
+import { isStageChannelInView } from '@/lib/venues';
+import { registerStagePlayerSync } from '@/lib/stagePlayerRegistry';
 import {
   applyYouTubeAudio,
   nudgeYouTubePlayback,
@@ -39,6 +40,8 @@ type UseStagePlayerOptions = {
   iframeRef: RefObject<HTMLIFrameElement | null>;
   /** Called with the current video title (or null) while this stage is live. */
   onNowPlaying?: (title: string | null) => void;
+  /** Ignore the global mute toggle — cinema stays silent. */
+  alwaysMuted?: boolean;
 };
 
 type UseStagePlayerResult = {
@@ -69,13 +72,25 @@ type UseStagePlayerResult = {
  * from the shared, server-pinned playlist (`@/lib/stageClock`).
  */
 export function useStagePlayer({
-  live, channel, iframeRef, onNowPlaying,
+  live, channel, iframeRef, onNowPlaying, alwaysMuted = false,
 }: UseStagePlayerOptions): UseStagePlayerResult {
   const { video, vidKey } = useStageChannel(channel, live);
 
   const [siteMuted, setSiteMuted] = useState(false);
   const siteMutedRef = useRef(siteMuted);
   siteMutedRef.current = siteMuted;
+
+  const audioMuted = useCallback(
+    () => alwaysMuted || siteMutedRef.current,
+    [alwaysMuted],
+  );
+
+  const applyAudio = useCallback(
+    (iframe: HTMLIFrameElement | null) => {
+      applyYouTubeAudio(iframe, audioMuted());
+    },
+    [audioMuted],
+  );
 
   const [playerVisible, setPlayerVisible] = useState(false);
   const playerVisibleRef = useRef(false);
@@ -85,8 +100,8 @@ export function useStagePlayer({
   const kickCancelRef = useRef<(() => void) | null>(null);
 
   const isStageInView = useCallback(
-    () => anyStageInView(gameWorldOffRef.current),
-    [],
+    () => isStageChannelInView(channel, gameWorldOffRef.current),
+    [channel],
   );
 
   const syncStageToView = useCallback(() => {
@@ -100,9 +115,9 @@ export function useStagePlayer({
       stopYouTubePlayback(f);
     } else if (playerVisibleRef.current) {
       postCommand(f, 'playVideo');
-      applyYouTubeAudio(f, siteMutedRef.current);
+      applyAudio(f);
     }
-  }, [iframeRef, isStageInView]);
+  }, [iframeRef, isStageInView, applyAudio]);
 
   useEffect(() => {
     if (!live) return;
@@ -114,7 +129,7 @@ export function useStagePlayer({
         if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
           setPlayerVisible(true);
           if (stageInViewRef.current) {
-            applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
+            applyAudio(iframeRef.current);
           } else {
             stopYouTubePlayback(iframeRef.current);
           }
@@ -126,7 +141,7 @@ export function useStagePlayer({
     const fallback = setTimeout(() => {
       setPlayerVisible(true);
       if (stageInViewRef.current) {
-        applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
+        applyAudio(iframeRef.current);
       } else {
         stopYouTubePlayback(iframeRef.current);
       }
@@ -150,8 +165,8 @@ export function useStagePlayer({
 
   const restoreAudio = useCallback(() => {
     if (!stageInViewRef.current || !playerVisibleRef.current) return;
-    applyYouTubeAudio(iframeRef.current, siteMutedRef.current);
-  }, [iframeRef]);
+    applyAudio(iframeRef.current);
+  }, [iframeRef, applyAudio]);
 
   const nudgePlayback = useCallback(() => {
     if (!stageInViewRef.current) return;
@@ -194,9 +209,10 @@ export function useStagePlayer({
   }, [live, src, vidKey, nudgePlayback]);
 
   useEffect(() => {
+    if (alwaysMuted) return;
     setSiteMuted(getAudioMuted());
     return subscribeAudioMuted(() => setSiteMuted(getAudioMuted()));
-  }, []);
+  }, [alwaysMuted]);
 
   const onNowPlayingRef = useRef(onNowPlaying);
   onNowPlayingRef.current = onNowPlaying;
@@ -217,8 +233,8 @@ export function useStagePlayer({
   // Only adjust audio after playback has started — unmuting too early breaks autoplay.
   useEffect(() => {
     if (!playerVisible || !stageInViewRef.current) return;
-    applyYouTubeAudio(iframeRef.current, siteMuted);
-  }, [siteMuted, playerVisible, iframeRef]);
+    applyAudio(iframeRef.current);
+  }, [siteMuted, playerVisible, iframeRef, applyAudio, alwaysMuted]);
 
   useEffect(() => {
     if (live) return;
@@ -229,10 +245,18 @@ export function useStagePlayer({
 
   useEffect(() => {
     if (!live) return;
-    syncStageToView();
-    const id = setInterval(syncStageToView, 200);
-    return () => clearInterval(id);
+    return registerStagePlayerSync(syncStageToView);
   }, [live, syncStageToView]);
+
+  // Stop playback when the live player unmounts (shell/live swap on scroll-away).
+  useEffect(() => {
+    if (!live) return;
+    return () => {
+      kickCancelRef.current?.();
+      kickCancelRef.current = null;
+      stopYouTubePlayback(iframeRef.current);
+    };
+  }, [live, iframeRef]);
 
   return { video, src, vidKey, onIframeLoad, playerVisible };
 }

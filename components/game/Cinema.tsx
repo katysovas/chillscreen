@@ -1,15 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useRef, type ReactNode } from 'react';
 import { setCinemaNowPlaying } from '@/lib/cinemaNow';
-import { cinemaEmbedSrc } from '@/lib/cinemaVideoPool';
-import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
-import {
-  applyYouTubeAudio,
-  nudgeYouTubePlayback,
-  primeYouTubePlayback,
-  scheduleYouTubePlaybackKicks,
-} from '@/lib/youtubePlayer';
+import { useStagePlayer } from './useStagePlayer';
 
 const IFRAME_W = 400;
 const IFRAME_H = 225;
@@ -389,76 +382,14 @@ export function CinemaShell() {
 }
 
 function CinemaLive() {
-  const { video, vidKey } = useStageChannel('cinema', true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  useEffect(() => {
-    if (video?.title) setCinemaNowPlaying(video.title);
-    else setCinemaNowPlaying(null);
-    return () => { setCinemaNowPlaying(null); };
-  }, [video?.title]);
-
-  const [src, setSrc] = useState('');
-  useEffect(() => {
-    if (!video) {
-      setSrc('');
-      return;
-    }
-    const sched = currentSchedule('cinema');
-    setSrc(cinemaEmbedSrc(video.id, sched?.offsetSec ?? 0));
-  }, [video?.id, vidKey]);
-
-  useEffect(() => {
-    if (!src) return;
-    let cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
-    const afterPaint = requestAnimationFrame(() => {
-      cancelRetries();
-      cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
-    });
-    const keepMuted = () => applyYouTubeAudio(iframeRef.current, true);
-    const onSync = () => {
-      nudgeYouTubePlayback(iframeRef.current);
-      keepMuted();
-    };
-    const onGesture = () => {
-      nudgeYouTubePlayback(iframeRef.current);
-      keepMuted();
-    };
-    const unsub = subscribeStageSync(onSync);
-    window.addEventListener('pointerdown', onGesture, { passive: true });
-    window.addEventListener('keydown', onGesture);
-    return () => {
-      cancelAnimationFrame(afterPaint);
-      cancelRetries();
-      unsub();
-      window.removeEventListener('pointerdown', onGesture);
-      window.removeEventListener('keydown', onGesture);
-    };
-  }, [src, vidKey]);
-
-  const onIframeLoad = () => {
-    primeYouTubePlayback(iframeRef.current);
-  };
-
-  const [playerVisible, setPlayerVisible] = useState(false);
-  useEffect(() => {
-    setPlayerVisible(false);
-    const onMessage = (e: MessageEvent) => {
-      try {
-        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
-          setPlayerVisible(true);
-          applyYouTubeAudio(iframeRef.current, true);
-        }
-      } catch { /* ignore */ }
-    };
-    window.addEventListener('message', onMessage);
-    const fallback = setTimeout(() => {
-      setPlayerVisible(true);
-      applyYouTubeAudio(iframeRef.current, true);
-    }, 5000);
-    return () => { window.removeEventListener('message', onMessage); clearTimeout(fallback); };
-  }, [vidKey]);
+  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
+    live: true,
+    channel: 'cinema',
+    iframeRef,
+    onNowPlaying: setCinemaNowPlaying,
+    alwaysMuted: true,
+  });
 
   const marqueeTitle = video?.title ?? 'Loading…';
 

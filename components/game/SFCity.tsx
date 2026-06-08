@@ -67,6 +67,8 @@ import type { VenueRoute } from '@/lib/venueRoutes';
 import { BottomControlPanel } from './BottomControlPanel';
 import { VendorShopPanel } from './VendorShopPanel';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
+import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
+import { runAllStagePlayerSyncs } from '@/lib/stagePlayerRegistry';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
 
@@ -670,11 +672,25 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       }
     };
 
+    const tickNpcs = () => {
+      runAllNpcMovementTicks(
+        worldRef.current,
+        window.innerWidth,
+        npcWorldXRefs.current,
+      );
+    };
+
+    const tickStagePlayers = () => {
+      runAllStagePlayerSyncs();
+    };
+
     const loop = () => {
       // While in any conversation (NPC or peer), freeze the player completely
       if (greetingRef.current !== null || peerChatRef.current !== null) {
         if (walkingRef.current) { walkingRef.current = false; setWalking(false); }
         frameCountRef.current++;
+        tickNpcs();
+        tickStagePlayers();
         if (frameCountRef.current % 4 === 0) { updateDanceState(worldRef.current); broadcastMove(); }
         gameWorldOffRef.current = worldRef.current;
         rafRef.current = requestAnimationFrame(loop);
@@ -701,6 +717,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
       // Always update viewBoxes imperatively — no React re-render
       updateViewBoxes(worldRef.current);
+      tickNpcs();
+      tickStagePlayers();
 
       // Update React state only when mid-tile bucket changes (very infrequent)
       if (isWalking) {
@@ -826,6 +844,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         return (
         <NPC
           key={cfg.id}
+          index={i}
           {...cfg}
           stageAnchor={cfg.stageAnchor}
           startX={testing ? 55 : cfg.startX}
@@ -834,7 +853,6 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           greeting={greetingNpc === i}
           greetFacing={greetNpcX < 50 ? 'right' : 'left'}
           dancing={TEST_FORCE_DANCE || npcDancing[i]}
-          onMove={wx => { npcWorldXRefs.current[i] = wx; }}
           greetingChat={greetingNpc === i ? {
             name: cfg.name,
             npcTyping,

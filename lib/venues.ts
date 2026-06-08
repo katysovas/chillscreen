@@ -233,7 +233,35 @@ const CONCERT_VIEW_HALF = 320;
  */
 export function anyStageInView(worldOff: number): boolean {
   const vx = worldOff * MID_PARALLAX;
-  return anyVenueInView(vx, CINEMA_VIEW_HALF, CONCERT_VIEW_HALF);
+  return anyVenueInView(vx, CINEMA_VIEW_HALF, CONCERT_VIEW_HALF, COACHELLA_STAGE_HALF, EDC_STAGE_HALF);
+}
+
+/** True when this channel's stage footprint intersects the viewport. */
+export function isStageChannelInView(channel: StageChannel, worldOff: number): boolean {
+  const vx = worldOff * MID_PARALLAX;
+  const centerTile = viewportCenterTile(vx);
+
+  for (let t = centerTile - 1; t <= centerTile + 1; t++) {
+    if (channel === 'cinema') {
+      const mx = cinemaMidX(t);
+      if (mx != null && isVenueInView(vx, t, mx, CINEMA_VIEW_HALF)) return true;
+      continue;
+    }
+    if (channel === 'coachella') {
+      const lx = coachellaMidX(t);
+      if (lx != null && isVenueInView(vx, t, lx, COACHELLA_STAGE_HALF)) return true;
+      continue;
+    }
+    if (channel === 'edc') {
+      const ex = edcMidX(t);
+      if (ex != null && isVenueInView(vx, t, ex, EDC_STAGE_HALF)) return true;
+      continue;
+    }
+    // outside-lands + bumbershoot share the concert footprint
+    const cx = concertMidX(t);
+    if (cx != null && isVenueInView(vx, t, cx, CONCERT_VIEW_HALF)) return true;
+  }
+  return false;
 }
 
 /** @deprecated use DEFAULT_CINEMA_MID_X */
