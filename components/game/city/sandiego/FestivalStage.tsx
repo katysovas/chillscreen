@@ -24,10 +24,6 @@ const STAGE_KEYFRAMES = `
   @keyframes sdc-marquee{ 0%,100%{opacity:.7} 50%{opacity:1} }
 `;
 
-const STAGE_FONT_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&display=swap');
-`;
-
 /** Stage center x — used for venue focus / in-view checks. */
 export { COACHELLA_STAGE_MID_X };
 
@@ -35,15 +31,12 @@ type FestivalStageShellProps = {
   marquee?: string;
   /** Dark LED fill + scanlines when no video is mounted. */
   idleScreen?: boolean;
-  /** Include Google Font @import (live player only). */
-  withFont?: boolean;
 };
 
 /** Static truss portal + LED frame — no YouTube hooks. */
 function FestivalStageShell({
   marquee = 'COUCHELLA',
   idleScreen = true,
-  withFont = false,
 }: FestivalStageShellProps) {
   const L = 2010;
   const R = 2440;
@@ -86,16 +79,14 @@ function FestivalStageShell({
     del: (i % 7) * 0.18,
   }));
 
-  const fontFamily = withFont
-    ? "'Big Shoulders Display', sans-serif"
-    : 'system-ui, sans-serif';
+  const fontFamily = 'system-ui, sans-serif';
 
   return (
     <>
       <g transform={`translate(0, ${pushY})`}>
         <g transform={`translate(${ox},${oy}) scale(${COACHELLA_STAGE_SCALE}) translate(${-ox},${-oy})`}>
           <defs>
-            <style>{withFont ? `${STAGE_FONT_CSS}${STAGE_KEYFRAMES}` : STAGE_KEYFRAMES}</style>
+            <style>{STAGE_KEYFRAMES}</style>
             <linearGradient id="sdc-roof" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#33333d" />
               <stop offset="100%" stopColor="#1d1d25" />
@@ -297,7 +288,7 @@ function FestivalStageLive() {
 
   return (
     <>
-      <FestivalStageShell marquee={marquee} idleScreen={false} withFont />
+      <FestivalStageShell marquee={marquee} idleScreen={false} />
       <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>
         <div
           {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}

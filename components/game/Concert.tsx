@@ -6,8 +6,6 @@ import { useStagePlayer, STAGE_IFRAME_STYLE } from './useStagePlayer';
 import type { StageChannel } from '@/lib/stageVideos';
 
 const S = `
-  @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@300;400;700;900&family=Cormorant+Garamond:ital,wght@1,300&display=swap');
-
   @keyframes sw-a { 0%,100%{transform:rotate(-18deg)} 50%{transform:rotate(18deg)} }
   @keyframes sw-b { 0%,100%{transform:rotate(14deg)}  50%{transform:rotate(-14deg)} }
   @keyframes sw-c { 0%,100%{transform:rotate(-8deg)}  50%{transform:rotate(22deg)} }
@@ -183,7 +181,7 @@ function ConcertChrome({
             <rect x={84} y={-46} width={352} height={38} rx={5}
               fill={`url(#${gid('scrGlow')})`} opacity={0.6} />
             <text x={260} y={-20} textAnchor="middle"
-              fontFamily="'Big Shoulders Display', sans-serif" fontWeight="900"
+              fontFamily="system-ui, sans-serif" fontWeight="900"
               fontSize="20" letterSpacing="5" fill="#62f2a6"
               style={{ animation: 'glow-b 3.2s ease-in-out infinite' }}>
               {label.toUpperCase()}
@@ -276,7 +274,7 @@ function ConcertChrome({
 
         <rect x="160" y="92" width="200" height="30" rx="2" fill="#0a1610" stroke="rgba(56,216,128,.3)" strokeWidth="1" />
         <text x="260" y="111" textAnchor="middle"
-          fontFamily="'Big Shoulders Display', sans-serif" fontWeight="300" fontSize="11" letterSpacing="4"
+          fontFamily="system-ui, sans-serif" fontWeight="600" fontSize="11" letterSpacing="4"
           fill="rgba(56,216,128,.75)" style={{ animation: 'glow-a 3s ease-in-out infinite' }}>
           {marqueeTitle.toUpperCase()}
         </text>

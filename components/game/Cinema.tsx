@@ -10,8 +10,6 @@ const CIN_W = 460;
 
 // ── SF city palette — gold marquee on Victorian blue-gray ─────────────────────
 const S = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&display=swap');
-
   .cin-wrap {
     display: flex; flex-direction: column; align-items: center; gap: 0;
     position: relative; z-index: 1;
@@ -49,8 +47,8 @@ const S = `
     color: #d4a830; font-size: 8px; letter-spacing: 4px; opacity: .45;
   }
   .cin-neon {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 21px; letter-spacing: 8px; font-weight: 300;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 21px; letter-spacing: 8px; font-weight: 400;
     color: #e8c040;
     text-shadow:
       0 0 4px #e8c040,
@@ -156,14 +154,14 @@ const S = `
   @keyframes cin-bb { 0%,100%{opacity:1;box-shadow:0 0 6px 3px rgba(212,168,48,.6)} 50%{opacity:.25;box-shadow:0 0 2px rgba(212,168,48,.2)} }
 
   .cin-now {
-    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-family: Georgia, 'Times New Roman', serif;
     font-size: 8px; letter-spacing: 6px; color: #d4a830;
-    opacity: .55; text-transform: uppercase; font-weight: 300;
+    opacity: .55; text-transform: uppercase; font-weight: 400;
     animation: cin-fade 3s ease-in-out infinite;
   }
   @keyframes cin-fade { 0%,100%{opacity:.45} 50%{opacity:.7} }
   .cin-title {
-    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-family: Georgia, 'Times New Roman', serif;
     font-size: 14px; letter-spacing: 2px; font-weight: 400;
     color: rgba(255,240,200,.85); text-align: center;
     padding: 0 16px;
