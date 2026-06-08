@@ -24,7 +24,10 @@ import {
   subscribeBalloonColor,
 } from '@/lib/identity';
 import type { PlayerProfile } from '@/lib/multiplayer/protocol';
-import { getPlayerLoadout, equipLoadoutItem, unequipLoadoutItem } from '@/lib/playerLoadout';
+import { getPlayerLoadout, unequipLoadoutItem } from '@/lib/playerLoadout';
+import { getPlayerCoins, STARTING_COINS } from '@/lib/playerCoins';
+import { purchaseVendorItem } from '@/lib/vendorPurchase';
+import { preloadPurchaseSound, unlockPurchaseSound } from '@/lib/playPurchaseSound';
 import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
 import { isBuzNpc } from '@/lib/vendorShop';
 
@@ -201,14 +204,20 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     ...defaultLoadout(myColor),
     ...TEST_PLAYER_LOADOUT,
   }));
+  const [playerCoins, setPlayerCoins] = useState(STARTING_COINS);
 
   useEffect(() => {
     setPlayerLoadout({ ...getPlayerLoadout(myColor), ...TEST_PLAYER_LOADOUT });
+    setPlayerCoins(getPlayerCoins());
   }, [myColor]);
 
-  const handleVendorPurchase = useCallback((itemId: string) => {
-    const next = equipLoadoutItem(itemId, myColor);
-    if (next) setPlayerLoadout({ ...next, ...TEST_PLAYER_LOADOUT });
+  const handleVendorPurchase = useCallback((itemId: string): boolean => {
+    const coinsBefore = getPlayerCoins();
+    const result = purchaseVendorItem(itemId, myColor);
+    if (!result.ok) return false;
+    setPlayerLoadout({ ...result.loadout, ...TEST_PLAYER_LOADOUT });
+    setPlayerCoins(result.coins);
+    return result.charged || result.coins < coinsBefore;
   }, [myColor]);
 
   const handleVendorUnequip = useCallback((itemId: string) => {
@@ -220,6 +229,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const [vendorShopDismissed, setVendorShopDismissed] = useState(false);
 
   const toggleVendorShop = useCallback(() => {
+    unlockPurchaseSound();
     setVendorShopManualOpen(open => {
       const next = !open;
       if (next) setVendorShopDismissed(false);
@@ -234,6 +244,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   const warmVendorShop = useCallback(() => {
     preloadVendorShopPanel();
+    preloadPurchaseSound();
     void preloadAllLoadoutSlots();
   }, []);
 
@@ -1024,6 +1035,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       {showVendorPanel && (
         <VendorShopPanel
           loadout={playerLoadout}
+          coins={playerCoins}
           onPurchase={handleVendorPurchase}
           onUnequip={handleVendorUnequip}
           onClose={closeVendorShop}

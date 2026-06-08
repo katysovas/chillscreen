@@ -20,7 +20,7 @@ const GLASSES_ITEMS = [
   'shades-glasses-skiing',
 ] as const;
 
-const HAND_ITEMS = ['hand-sword', 'hand-lightsaber', 'hand-boombox', 'hand-balloons', 'hand-balloons-2'] as const;
+const HAND_ITEMS = ['hand-sword', 'hand-lightsaber', 'hand-boombox', 'hand-balloons', 'hand-balloons-2', 'hand-totem'] as const;
 
 const FOOD_ITEMS = ['food-hotdog', 'food-donut', 'food-fries', 'food-pizza', 'food-tacos', 'food-popcorn', 'food-lollipop'] as const;
 
@@ -123,6 +123,7 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'hand-boombox': '/images/props/hands_boombox.svg',
   'hand-balloons': '/images/props/hands_balloons.svg',
   'hand-balloons-2': '/images/props/hands_balloons_2.svg',
+  'hand-totem': '/images/props/hands_totem.svg',
   'food-hotdog': '/images/props/food_hotdog.svg',
   'food-donut': '/images/props/food_donut.svg',
   'food-fries': '/images/props/food_fries.svg',
@@ -161,6 +162,7 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'hand-boombox': { width: 36, height: 28 },
   'hand-balloons': { width: 44, height: 44 },
   'hand-balloons-2': { width: 44, height: 44 },
+  'hand-totem': { width: 28, height: 44 },
   'food-hotdog': { width: 34, height: 22 },
   'food-donut': { width: 34, height: 22 },
   'food-fries': { width: 34, height: 22 },

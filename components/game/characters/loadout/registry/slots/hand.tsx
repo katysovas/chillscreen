@@ -9,6 +9,7 @@ export const RENDERERS: Record<string, ItemRenderer> = {
   'hand-boombox': ctx => <HandProp variant="boombox" ctx={ctx} />,
   'hand-balloons': ctx => <HandProp variant="balloons" ctx={ctx} />,
   'hand-balloons-2': ctx => <HandProp variant="balloons2" ctx={ctx} />,
+  'hand-totem': ctx => <HandProp variant="totem" ctx={ctx} />,
   'food-hotdog': ctx => <HandProp variant="hotdog" ctx={ctx} />,
   'food-donut': ctx => <HandProp variant="donut" ctx={ctx} />,
   'food-fries': ctx => <HandProp variant="fries" ctx={ctx} />,

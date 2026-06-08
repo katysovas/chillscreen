@@ -1,5 +1,14 @@
-/** Welcome arch center x on Tentaroo tiles (matches tentaroo-scene.svg). */
-export const TENTAROO_ARCH_MID_X = 360;
+/** Welcome arch center x on Tentaroo tiles (tentaroo-arch.svg). */
+export const TENTAROO_ARCH_MID_X = 1160;
+
+/** Display scale for tentaroo-arch.svg (feet stay on {@link TENTAROO_GND}). */
+export const TENTAROO_ARCH_SCALE = 0.85;
+
+/** Native arch artboard — feet sit on {@link TENTAROO_GND}. */
+export const TENTAROO_ARCH_ART_W = 1400;
+export const TENTAROO_ARCH_ART_H = 820;
+export const TENTAROO_ARCH_ART_MID_X = 700;
+export const TENTAROO_ARCH_ART_GROUND_Y = 742;
 
 /** Ground line on Tentaroo tiles. */
 export const TENTAROO_GND = 660;

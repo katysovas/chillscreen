@@ -198,7 +198,10 @@ export function BottomControlPanel({
         {showCart && (
           <button
             type="button"
-            onClick={onToggleVendorShop}
+            onClick={() => {
+              onVendorShopWarm?.();
+              onToggleVendorShop?.();
+            }}
             onMouseEnter={onVendorShopWarm}
             onFocus={onVendorShopWarm}
             aria-label={vendorShopOpen ? 'Close festival store' : 'Open festival store'}

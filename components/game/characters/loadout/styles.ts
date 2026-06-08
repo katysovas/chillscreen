@@ -66,6 +66,8 @@ export const LOADOUT_STYLES = `
   .ch-lo-balloons-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-balloons-2{position:absolute;left:-108px;top:-195px;width:320px;height:264px;transform:rotate(68deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
   .ch-lo-balloons-2-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-totem{position:absolute;left:-22px;top:-175px;width:160px;height:340px;transform:rotate(50deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-totem-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-hotdog{position:absolute;left:-39px;top:18px;width:176px;height:110px;transform:rotate(18deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
   .ch-lo-hotdog-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-donut{position:absolute;left:-39px;top:18px;width:176px;height:110px;transform:rotate(18deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}

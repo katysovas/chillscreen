@@ -1,27 +1,12 @@
 <svg viewBox="0 0 2600 800" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
 <!-- ============================================================
-     TENTAROO — tent city + totems + arch
+     TENTAROO — tent city + totems (arch is tentaroo-arch.svg)
      2600 x 800 | ground line y=660 | id-free for 3x tiling
-     Light: upper-left. ANCHORS: Arch x=360 (feet y=660, apex y=300)
+     Light: upper-left. Arch: tentaroo-arch.svg @ x=1160 (see constants)
      Tents: midground row scale~0.7 (y~600), foreground row scale~1.0 (y~668-704)
      Sky kept as flat backdrop only (no sun/clouds) — delete the 2 sky rects
      if you composite over the game's own gradient.
      ============================================================ -->
-<!-- THE ARCH (x=360) -->
-<g>
-  <rect x="250" y="340" width="36" height="320" rx="8" fill="#e0a93f"/>
-  <rect x="434" y="340" width="36" height="320" rx="8" fill="#caa039"/>
-  <path d="M250 360 C 250 230 470 230 470 360 L470 360 C 470 270 250 270 250 360 Z" fill="#e8b04a"/>
-  <rect x="276" y="312" width="168" height="46" rx="6" fill="#2b6cb0"/>
-  <text x="360" y="343" font-family="Arial Black, Arial, sans-serif" font-size="22" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">TENTAROO</text>
-  <g fill="#fff4c2">
-    <circle cx="262" cy="300" r="5"><animate attributeName="opacity" values="1;0.3;1" dur="2.2s" repeatCount="indefinite"/></circle>
-    <circle cx="300" cy="262" r="5"><animate attributeName="opacity" values="0.3;1;0.3" dur="2.6s" repeatCount="indefinite"/></circle>
-    <circle cx="360" cy="250" r="5"><animate attributeName="opacity" values="1;0.4;1" dur="2.0s" repeatCount="indefinite"/></circle>
-    <circle cx="420" cy="262" r="5"><animate attributeName="opacity" values="0.4;1;0.4" dur="2.4s" repeatCount="indefinite"/></circle>
-    <circle cx="458" cy="300" r="5"><animate attributeName="opacity" values="1;0.3;1" dur="2.8s" repeatCount="indefinite"/></circle>
-  </g>
-</g>
 <!-- MIDGROUND tent row -->
 <!-- dome tent @150 -->
 <ellipse cx="154" cy="609" rx="33" ry="6" fill="#274d2a" opacity="0.22"/>

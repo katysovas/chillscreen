@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   loadoutItem,
   loadoutItemId,
+  hasPurchasedLoadoutItem,
   type CharacterLoadout,
 } from './characters/loadout';
 import {
@@ -13,10 +14,13 @@ import {
   VENDOR_SHOP_CATEGORIES,
   type VendorShopItemId,
 } from '@/lib/vendorShop';
+import { vendorItemPrice } from '@/lib/vendorPrices';
+import { playPurchaseSound } from '@/lib/playPurchaseSound';
 
 type Props = {
   loadout: CharacterLoadout;
-  onPurchase: (itemId: string) => void;
+  coins: number;
+  onPurchase: (itemId: string) => boolean;
   onUnequip: (itemId: string) => void;
   onClose?: () => void;
 };
@@ -117,6 +121,130 @@ function LightsaberPreview() {
   );
 }
 
+const COIN_SRC = '/images/coin.svg';
+const COIN_LIGHT_SRC = '/images/coin-light.svg';
+
+function CoinAmount({
+  amount,
+  iconSize = 12,
+  muted = false,
+  light = false,
+  fontSize = 11,
+  fontWeight = 800,
+}: {
+  amount: number;
+  iconSize?: number;
+  muted?: boolean;
+  light?: boolean;
+  fontSize?: number;
+  fontWeight?: number;
+}) {
+  const color = light ? '#fff' : muted ? '#b8a068' : '#c9a227';
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        color,
+        fontSize,
+        fontWeight,
+        lineHeight: 1,
+      }}
+    >
+      <img
+        src={light ? COIN_LIGHT_SRC : COIN_SRC}
+        alt=""
+        width={iconSize}
+        height={iconSize}
+        draggable={false}
+        style={{
+          display: 'block',
+          objectFit: 'contain',
+          opacity: muted && !light ? 0.55 : 1,
+          flexShrink: 0,
+        }}
+      />
+      {amount}
+    </span>
+  );
+}
+
+const actionBtnBase = {
+  fontFamily: 'inherit',
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: 0.35,
+  textTransform: 'uppercase' as const,
+  borderRadius: 8,
+  padding: '7px 10px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 5,
+  whiteSpace: 'nowrap' as const,
+  lineHeight: 1,
+  flexShrink: 0,
+};
+
+function BuyButton({
+  price,
+  disabled,
+  onClick,
+}: {
+  price: number;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={disabled ? `Buy for ${price} coins — insufficient funds` : `Buy for ${price} coins`}
+      style={{
+        ...actionBtnBase,
+        border: 'none',
+        background: disabled
+          ? '#f0f0f0'
+          : 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
+        color: disabled ? '#aaa' : '#fff',
+        boxShadow: disabled ? 'none' : '0 2px 6px rgba(230, 126, 34, 0.28)',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
+      <span>Buy</span>
+      <CoinAmount
+        amount={price}
+        iconSize={11}
+        fontSize={10}
+        fontWeight={700}
+        light={!disabled}
+        muted={disabled}
+      />
+    </button>
+  );
+}
+
+function EquipButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        ...actionBtnBase,
+        border: '1.5px solid #e67e22',
+        background: '#fff',
+        color: '#e67e22',
+        cursor: 'pointer',
+      }}
+    >
+      Equip
+    </button>
+  );
+}
+
 function ItemPreview({ itemId }: { itemId: VendorShopItemId }) {
   if (itemId === 'hand-sword') return <SwordPreview />;
   if (itemId === 'hand-lightsaber') return <LightsaberPreview />;
@@ -142,7 +270,7 @@ function ItemPreview({ itemId }: { itemId: VendorShopItemId }) {
 }
 
 /** Buz's merch panel — fixed on the right so chat stays clear. */
-export function VendorShopPanel({ loadout, onPurchase, onUnequip, onClose }: Props) {
+export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose }: Props) {
   const [categoryId, setCategoryId] = useState(DEFAULT_VENDOR_CATEGORY);
   const category =
     VENDOR_SHOP_CATEGORIES.find(c => c.id === categoryId) ?? VENDOR_SHOP_CATEGORIES[0]!;
@@ -155,8 +283,8 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip, onClose }: Pro
         top: '50%',
         transform: 'translateY(-50%)',
         zIndex: 210,
-        width: 248,
-        padding: '12px 12px 10px',
+        width: 300,
+        padding: '14px 14px 12px',
         borderRadius: 16,
         background: '#fff',
         border: '1px solid rgba(0,0,0,0.08)',
@@ -194,14 +322,36 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip, onClose }: Pro
       )}
       <div
         style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: '#222',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
           marginBottom: 10,
           paddingRight: onClose ? 20 : 0,
         }}
       >
-        Festival Store
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#222' }}>
+          Festival Store
+        </div>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 11,
+            fontWeight: 700,
+            color: '#9a7209',
+            background: 'linear-gradient(180deg,#fff9e6,#fff3cc)',
+            border: '1px solid rgba(184,134,11,0.35)',
+            borderRadius: 999,
+            padding: '4px 10px',
+            whiteSpace: 'nowrap',
+            letterSpacing: 0.15,
+          }}
+        >
+          <span>Coins:</span>
+          <CoinAmount amount={coins} iconSize={11} fontSize={11} fontWeight={700} />
+        </div>
       </div>
 
       <div
@@ -248,12 +398,12 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip, onClose }: Pro
         })}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {category.items.length === 0 ? (
           <div
             style={{
-              padding: '12px 8px',
-              borderRadius: 10,
+              padding: '14px 10px',
+              borderRadius: 12,
               border: '1px solid #ececec',
               background: '#fafafa',
               fontSize: 10,
@@ -268,67 +418,80 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip, onClose }: Pro
           const item = loadoutItem(itemId);
           if (!item) return null;
           const equipped = loadoutItemId(loadout, item.slot) === itemId;
+          const owned = hasPurchasedLoadoutItem(loadout, itemId);
+          const price = vendorItemPrice(itemId);
+          const canAfford = coins >= price;
 
-          const cardStyle = {
-            display: 'flex',
-            gap: 8,
-            width: '100%',
-            padding: '6px 8px',
-            borderRadius: 10,
-            border: equipped ? '1.5px solid #e67e22' : '1px solid #ececec',
-            background: equipped ? '#fff8f0' : '#fafafa',
-            fontFamily: 'inherit',
-            textAlign: 'left' as const,
-          };
-
-          const thumb = (
+          return (
             <div
+              key={itemId}
               style={{
-                flexShrink: 0,
-                width: 44,
-                height: 36,
-                borderRadius: 8,
-                background: '#fff',
-                border: '1px solid #eee',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: 10,
+                padding: '8px 10px',
+                borderRadius: 12,
+                border: equipped ? '1.5px solid #e67e22' : '1px solid #ececec',
+                background: equipped ? '#fff8f0' : '#fafafa',
               }}
             >
-              <ItemPreview itemId={itemId} />
-            </div>
-          );
-
-          const body = (
-            <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#333',
-                  lineHeight: 1.25,
-                  wordBreak: 'break-word',
-                }}
-              >
-                {item.name}
-              </div>
-              <div
-                style={{
-                  marginTop: 5,
-                  minHeight: 18,
+                  flexShrink: 0,
+                  width: 48,
+                  height: 40,
+                  borderRadius: 10,
+                  background: '#fff',
+                  border: '1px solid #eee',
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
+                <ItemPreview itemId={itemId} />
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#222',
+                    lineHeight: 1.25,
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {item.name}
+                </div>
+                {owned && !equipped ? (
+                  <div
+                    style={{
+                      marginTop: 3,
+                      fontSize: 9,
+                      fontWeight: 600,
+                      letterSpacing: 0.4,
+                      textTransform: 'uppercase',
+                      color: '#9a9a9a',
+                    }}
+                  >
+                    Owned
+                  </div>
+                ) : null}
+              </div>
+
+              <div style={{ flexShrink: 0 }}>
                 {equipped ? (
-                  <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span
                       style={{
-                        fontSize: 8,
+                        fontSize: 9,
                         fontWeight: 700,
-                        letterSpacing: 0.6,
+                        letterSpacing: 0.5,
                         textTransform: 'uppercase',
                         color: '#c86a1a',
+                        padding: '7px 8px',
+                        borderRadius: 8,
+                        background: 'rgba(230, 126, 34, 0.1)',
                       }}
                     >
                       Equipped
@@ -337,20 +500,16 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip, onClose }: Pro
                       type="button"
                       aria-label={`Remove ${item.name}`}
                       title={`Remove ${item.name}`}
-                      onClick={e => {
-                        e.stopPropagation();
-                        onUnequip(itemId);
-                      }}
+                      onClick={() => onUnequip(itemId)}
                       style={{
-                        marginLeft: 'auto',
-                        width: 18,
-                        height: 18,
+                        width: 28,
+                        height: 28,
                         padding: 0,
-                        borderRadius: '50%',
-                        border: '1px solid rgba(200,106,26,0.35)',
+                        borderRadius: 8,
+                        border: '1px solid rgba(200, 106, 26, 0.3)',
                         background: '#fff',
                         color: '#c86a1a',
-                        fontSize: 13,
+                        fontSize: 14,
                         lineHeight: 1,
                         cursor: 'pointer',
                         fontFamily: 'inherit',
@@ -361,46 +520,20 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip, onClose }: Pro
                     >
                       ×
                     </button>
-                  </>
+                  </div>
+                ) : owned ? (
+                  <EquipButton onClick={() => onPurchase(itemId)} />
                 ) : (
-                  <span
-                    style={{
-                      fontSize: 8,
-                      fontWeight: 700,
-                      letterSpacing: 0.6,
-                      textTransform: 'uppercase',
-                      color: '#777',
-                      padding: '2px 7px',
-                      borderRadius: 999,
-                      background: '#eee',
+                  <BuyButton
+                    price={price}
+                    disabled={!canAfford}
+                    onClick={() => {
+                      if (onPurchase(itemId)) playPurchaseSound();
                     }}
-                  >
-                    Buy
-                  </span>
+                  />
                 )}
               </div>
             </div>
-          );
-
-          if (equipped) {
-            return (
-              <div key={itemId} style={cardStyle}>
-                {thumb}
-                {body}
-              </div>
-            );
-          }
-
-          return (
-            <button
-              key={itemId}
-              type="button"
-              onClick={() => onPurchase(itemId)}
-              style={{ ...cardStyle, cursor: 'pointer' }}
-            >
-              {thumb}
-              {body}
-            </button>
           );
         })}
       </div>

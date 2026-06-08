@@ -22,9 +22,10 @@ const WATER_SRC = '/images/props/drinks_water.svg';
 const JUICE_SRC = '/images/props/drinks_juice.svg';
 const GLOWSTICKS_SRC = '/images/props/festival_glowsticks.png';
 const STICKER_SRC = '/images/props/sticker.svg';
+const TOTEM_SRC = '/images/props/hands_totem.svg';
 
 type HandPropProps = {
-  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza' | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle' | 'water' | 'juice' | 'glowsticks' | 'sticker';
+  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza' | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle' | 'water' | 'juice' | 'glowsticks' | 'sticker' | 'totem';
   ctx: LoadoutRenderCtx;
 };
 
@@ -240,6 +241,17 @@ export function HandProp({ variant, ctx }: HandPropProps) {
             src={STICKER_SRC}
             alt=""
             className="ch-lo-sticker-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'totem':
+      return (
+        <div className="ch-lo-totem">
+          <img
+            src={TOTEM_SRC}
+            alt=""
+            className="ch-lo-totem-img"
             draggable={false}
           />
         </div>

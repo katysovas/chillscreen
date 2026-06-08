@@ -150,10 +150,11 @@ export function WelcomePopup({ balloonColor, onEnter }: Props) {
               cursor: valid ? 'pointer' : 'default',
               border: 'none',
               background: valid
-                ? 'linear-gradient(135deg,#4a8fe8,#b06be0)'
+                ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
                 : 'rgba(255,255,255,0.1)',
               color: valid ? '#fff' : 'rgba(255,255,255,0.3)',
-              transition: 'background 0.2s, color 0.2s',
+              boxShadow: valid ? '0 2px 10px rgba(230, 126, 34, 0.35)' : 'none',
+              transition: 'background 0.2s, color 0.2s, box-shadow 0.2s',
               whiteSpace: 'nowrap',
             }}
           >
