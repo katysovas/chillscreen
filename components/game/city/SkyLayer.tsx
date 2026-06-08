@@ -1,13 +1,14 @@
 import { forwardRef, memo, useCallback, useMemo } from 'react';
-import { SKY_F, SKY_TILE } from '@/lib/parallax';
+import { SKY_TILE } from '@/lib/parallax';
 import { skyTheme, type SkyPeriod } from '@/lib/skyTimeOfDay';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
 import { Sun } from './sky/Sun';
 import { Moon } from './sky/Moon';
 
 type SkyLayerProps = {
-  worldOff: number;
   period: SkyPeriod;
+  /** Initial viewBox x — imperative ref updates handle scroll after mount. */
+  initialViewBoxX?: number;
 };
 
 // Stars pre-computed at module load, distributed uniformly in tile-space (0..SKY_TILE).
@@ -24,8 +25,7 @@ const SKY_STAR_FIELD = Array.from({ length: 88 }, (_, i) => ({
  * Sky background at SKY_F — sun/moon here; clouds in SkyCloudsLayer. Both render before MidLayer.
  */
 export const SkyLayer = memo(forwardRef<SVGSVGElement, SkyLayerProps>(
-  function SkyLayer({ worldOff, period }, ref) {
-    const vx     = worldOff * SKY_F;
+  function SkyLayer({ period, initialViewBoxX = 0 }, ref) {
     const theme  = skyTheme(period);
     const gradId = `sky-bg-${period}`;
 
@@ -84,7 +84,7 @@ export const SkyLayer = memo(forwardRef<SVGSVGElement, SkyLayerProps>(
     return (
       <ParallaxSvgLayer
         ref={ref}
-        viewBoxX={vx}
+        viewBoxX={initialViewBoxX}
         tileWidth={SKY_TILE}
         defs={skyDefs}
         shapeRendering="optimizeSpeed"

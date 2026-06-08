@@ -1,4 +1,9 @@
-import { CITY_GND_W, CITY_MID_W } from './worldTileGeometry';
+import {
+  CITY_GND_W,
+  CITY_MID_W,
+  gndTileAtX,
+  midTileAtX,
+} from './worldTileGeometry';
 
 /** Parallax scroll factors and tile widths for world layers. */
 export const SKY_F = 0.08;
@@ -17,11 +22,23 @@ export {
   TOWN_MID_W,
   gndOriginForTile,
   gndWidthForTile,
+  gndTileAtX,
   midOriginForTile,
   midWidthForTile,
+  midTileAtX,
   nearGndTiles,
   nearMidTiles,
 } from './worldTileGeometry';
+
+/** Center mid tile for scroll — matches nearMidTiles viewport sampling. */
+export function midScrollTile(worldOff: number): number {
+  return midTileAtX(worldOff * MID_F + 700);
+}
+
+/** Center ground tile for scroll — matches nearGndTiles viewport sampling. */
+export function gndScrollTile(worldOff: number): number {
+  return gndTileAtX(worldOff * GND_F + 700);
+}
 
 /** @deprecated use CITY_GND_W — kept for legacy callers. */
 export const GND_TILE = CITY_GND_W;

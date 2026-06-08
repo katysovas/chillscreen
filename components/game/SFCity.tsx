@@ -5,7 +5,7 @@ import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
 import { AmbientPlayerOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
 import { CHAR_BOTTOM } from './groundLayout';
-import { SKY_F, MID_F, GND_F } from '@/lib/parallax';
+import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/parallax';
 import {
   getClientSpawnWorldOff,
   serverSpawnWorldOff,
@@ -114,7 +114,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const signsRef  = useRef<SVGSVGElement>(null);
   const welcomeRef = useRef<SVGSVGElement>(null);
   const cloudsRef = useRef<SVGSVGElement>(null);
-  const lastScrollBucketRef = useRef(0);
+  const lastMidScrollTileRef = useRef<number | null>(null);
+  const lastGndScrollTileRef = useRef<number | null>(null);
 
   /** Update scrolling SVG viewBoxes directly — zero React overhead. */
   const updateViewBoxes = (off: number) => {
@@ -141,7 +142,11 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const disconnectUntil   = useRef(0);
 
   // Venue deep links pin scroll on first paint; home uses SSR default then random spawn.
-  const [scrollWorldOff, setScrollWorldOff] = useState(
+  // Mid scroll drives venue live/shell + invite UI; ground scroll drives sign tiles.
+  const [midScrollWorldOff, setMidScrollWorldOff] = useState(
+    () => spawnOverride ?? serverSpawnWorldOff(),
+  );
+  const [gndScrollWorldOff, setGndScrollWorldOff] = useState(
     () => spawnOverride ?? serverSpawnWorldOff(),
   );
   const [facing,    setFacing]    = useState<'left' | 'right'>('right');
@@ -317,10 +322,13 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   useLayoutEffect(() => {
     worldRef.current = spawnWorldOff;
-    setScrollWorldOff(spawnWorldOff);
+    setMidScrollWorldOff(spawnWorldOff);
+    setGndScrollWorldOff(spawnWorldOff);
     gameWorldOffRef.current = spawnWorldOff;
     updateViewBoxes(spawnWorldOff);
     npcWorldXRefs.current = CHARACTERS.map(() => Infinity);
+    lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
+    lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
   // updateViewBoxes is stable (no deps); spawnWorldOff is the only meaningful dep
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spawnWorldOff]);
@@ -740,12 +748,18 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       tickNpcs();
       tickStagePlayers();
 
-      // Update React state only when mid-tile bucket changes (very infrequent)
+      // Re-render tile-bound layers only when the visible tile window changes.
       if (isWalking) {
-        const bucket = Math.round(worldRef.current * MID_F / 100);
-        if (bucket !== lastScrollBucketRef.current) {
-          lastScrollBucketRef.current = bucket;
-          setScrollWorldOff(worldRef.current);
+        const off = worldRef.current;
+        const midTile = midScrollTile(off);
+        const gndTile = gndScrollTile(off);
+        if (midTile !== lastMidScrollTileRef.current) {
+          lastMidScrollTileRef.current = midTile;
+          setMidScrollWorldOff(off);
+        }
+        if (gndTile !== lastGndScrollTileRef.current) {
+          lastGndScrollTileRef.current = gndTile;
+          setGndScrollWorldOff(off);
         }
       }
 
@@ -827,16 +841,15 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', animation: 'fdi 1.5s ease' }}>
       <style>{KF}</style>
 
-      <SkyLayer ref={skyRef} worldOff={scrollWorldOff} period={skyPeriod} />
-      <SkyCloudsLayer ref={cloudsRef} worldOff={scrollWorldOff} period={skyPeriod} />
-      <SkyCreaturesLayer period={skyPeriod} worldOff={scrollWorldOff} />
-      <MidLayer ref={midRef} foregroundRef={midForegroundRef} worldOff={scrollWorldOff} deepLinkRoute={venueRoute} />
-      <GroundLayer      ref={groundRef} worldOff={scrollWorldOff} />
-      <VenueSignsLayer  ref={signsRef}  worldOff={scrollWorldOff} />
+      <SkyLayer ref={skyRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
+      <SkyCloudsLayer ref={cloudsRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
+      <SkyCreaturesLayer period={skyPeriod} />
+      <MidLayer ref={midRef} foregroundRef={midForegroundRef} worldOff={midScrollWorldOff} deepLinkRoute={venueRoute} />
+      <GroundLayer      ref={groundRef} worldOff={gndScrollWorldOff} />
+      <VenueSignsLayer  ref={signsRef}  worldOff={gndScrollWorldOff} />
       {!venueRoute && (
         <WelcomeSignLayer
           ref={welcomeRef}
-          worldOff={scrollWorldOff}
           spawnWorldOff={spawnWorldOff}
         />
       )}
@@ -844,7 +857,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       <LovingCarLayer />
 
       <BottomControlPanel
-        worldOff={scrollWorldOff}
+        worldOff={midScrollWorldOff}
         playerName={playerName}
         venueRoute={venueRoute}
         connectName={

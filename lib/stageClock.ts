@@ -24,28 +24,48 @@ import {
  * schedule even if the room is unreachable.
  */
 
+type SyncSource = 'partykit' | 'api';
+
 let clockOffsetMs = 0;
 let serverSync: StageSync | null = null;
+let syncSource: SyncSource | null = null;
 let bootstrapStarted = false;
+let apiFetchAbort: AbortController | null = null;
 const listeners = new Set<() => void>();
 
 /** Apply the server handshake: align our clock + adopt the pinned playlists. */
-export function applyServerStageSync(serverNow: number, sync: StageSync) {
+export function applyServerStageSync(
+  serverNow: number,
+  sync: StageSync,
+  source?: SyncSource,
+) {
+  if (source === 'api' && syncSource === 'partykit') return;
+
+  if (source === 'partykit') {
+    apiFetchAbort?.abort();
+    apiFetchAbort = null;
+  }
+
   clockOffsetMs = serverNow - Date.now();
   serverSync = sync;
+  if (source) syncSource = source;
+
   for (const notify of listeners) notify();
 }
 
 /**
  * Fetch resolved playlists from the Next.js API (YouTube API channels, etc.).
- * Safe to call before PartyKit connects — the welcome handshake overwrites
- * with the same resolver when multiplayer is active.
+ * Aborts if PartyKit applies sync first. PartyKit welcome overwrites when both
+ * complete — API is the single-player fallback when the room is unreachable.
  */
 export function bootstrapStageSyncFromApi() {
   if (bootstrapStarted || typeof window === 'undefined') return;
   bootstrapStarted = true;
 
-  fetch('/api/stage/sync')
+  const controller = new AbortController();
+  apiFetchAbort = controller;
+
+  fetch('/api/stage/sync', { signal: controller.signal })
     .then(res => {
       if (!res.ok) return Promise.reject(new Error(String(res.status)));
       const ageSec = parseInt(res.headers.get('Age') ?? '0', 10);
@@ -56,9 +76,12 @@ export function bootstrapStageSyncFromApi() {
       }));
     })
     .then(({ serverNow, stage }) => {
-      applyServerStageSync(serverNow, stage);
+      apiFetchAbort = null;
+      applyServerStageSync(serverNow, stage, 'api');
     })
     .catch(() => {
+      apiFetchAbort = null;
+      if (controller.signal.aborted) return;
       // Offline or API unavailable — DEFAULT_STAGE_SYNC fallbacks still work.
     });
 }

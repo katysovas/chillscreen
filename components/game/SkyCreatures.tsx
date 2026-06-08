@@ -213,12 +213,11 @@ function UFOShape() {
 
 type SkyCreaturesLayerProps = {
   period?: SkyPeriod;
-  worldOff: number;
 };
 
 // ─── Layer ────────────────────────────────────────────────────────────────────
 export const SkyCreaturesLayer = memo(forwardRef<SVGSVGElement, SkyCreaturesLayerProps>(
-function SkyCreaturesLayerInner({ period = 'day', worldOff: _worldOff }, _ref) {
+function SkyCreaturesLayerInner({ period = 'day' }, _ref) {
   const fly = (dir: 'ltr' | 'rtl', period: number, delay: number) =>
     `${dir === 'ltr' ? 'sky-ltr' : 'sky-rtl'} ${period}s ${delay}s linear infinite`;
 

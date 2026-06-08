@@ -180,7 +180,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
           // Align our clock + adopt the pinned playlists so every venue plays
           // the same synchronized video for everyone in the room.
           if (msg.serverNow != null && msg.stage) {
-            applyServerStageSync(msg.serverNow, msg.stage);
+            applyServerStageSync(msg.serverNow, msg.stage, 'partykit');
           }
           roster.clear();
           for (const p of msg.players) {

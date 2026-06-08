@@ -1,19 +1,19 @@
 import { forwardRef, memo, useCallback } from 'react';
-import { SKY_F, SKY_TILE } from '@/lib/parallax';
+import { SKY_TILE } from '@/lib/parallax';
 import { skyTheme, type SkyPeriod } from '@/lib/skyTimeOfDay';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
 import { Cloud } from './sky/Cloud';
 import { SKY_CLOUDS } from './sky/cloudLayout';
 
 type SkyCloudsLayerProps = {
-  worldOff: number;
   period: SkyPeriod;
+  /** Initial viewBox x — imperative ref updates handle scroll after mount. */
+  initialViewBoxX?: number;
 };
 
 /** Scrolling cloud layer at SKY_F — rendered before MidLayer so clouds sit behind stages. */
 export const SkyCloudsLayer = memo(forwardRef<SVGSVGElement, SkyCloudsLayerProps>(
-  function SkyCloudsLayer({ worldOff, period }, ref) {
-    const vx    = worldOff * SKY_F;
+  function SkyCloudsLayer({ period, initialViewBoxX = 0 }, ref) {
     const theme = skyTheme(period);
 
     const renderTile = useCallback(() => (
@@ -36,7 +36,7 @@ export const SkyCloudsLayer = memo(forwardRef<SVGSVGElement, SkyCloudsLayerProps
     return (
       <ParallaxSvgLayer
         ref={ref}
-        viewBoxX={vx}
+        viewBoxX={initialViewBoxX}
         tileWidth={SKY_TILE}
         shapeRendering="optimizeSpeed"
         style={{ pointerEvents: 'none' }}
