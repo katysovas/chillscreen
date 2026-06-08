@@ -2,17 +2,21 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-const GLOWSTICKS_SRC = '/images/props/festival_glowsticks.png';
+const GLOWSTICK_SRCS = [
+  '/images/props/festival_glowsticks.png',
+  '/images/props/glow-sticks.png',
+] as const;
 
 /** Dev: every character, burst on mount, ~4–6s repeats — flip off after tuning. */
 export const GLOWSTICK_AMBIENT_TWEAK = false;
 
-const MIN_INTERVAL_MS = GLOWSTICK_AMBIENT_TWEAK ? 4_000 : 20_000;
-const MAX_INTERVAL_MS = GLOWSTICK_AMBIENT_TWEAK ? 6_000 : 30_000;
+const MIN_INTERVAL_MS = GLOWSTICK_AMBIENT_TWEAK ? 4_000 : 10_000;
+const MAX_INTERVAL_MS = GLOWSTICK_AMBIENT_TWEAK ? 6_000 : 15_000;
 const BURST_DURATION_MS = 2_200;
 
 type ThrownStick = {
   id: number;
+  src: string;
   left: number;
   top: number;
   rot: number;
@@ -26,7 +30,7 @@ function randomBetween(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
-function makeBurst(nextId: number): { sticks: ThrownStick[]; nextId: number } {
+function makeBurst(nextId: number, variant: number): { sticks: ThrownStick[]; nextId: number } {
   const count = 10 + Math.floor(Math.random() * 5);
   const sticks: ThrownStick[] = [];
   let id = nextId;
@@ -35,6 +39,7 @@ function makeBurst(nextId: number): { sticks: ThrownStick[]; nextId: number } {
     const angle = randomBetween(-Math.PI * 0.85, Math.PI * 0.15);
     sticks.push({
       id: id++,
+      src: GLOWSTICK_SRCS[(i + variant) % GLOWSTICK_SRCS.length]!,
       left: 220 + randomBetween(-110, 110),
       top: 75 + randomBetween(-20, 40),
       rot: randomBetween(0, 360),
@@ -51,6 +56,7 @@ function makeBurst(nextId: number): { sticks: ThrownStick[]; nextId: number } {
 export function GlowstickAmbient({ active }: { active: boolean }) {
   const [sticks, setSticks] = useState<ThrownStick[]>([]);
   const idRef = useRef(0);
+  const variantRef = useRef(0);
   const clearBurstRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -69,7 +75,8 @@ export function GlowstickAmbient({ active }: { active: boolean }) {
 
     const fireBurst = () => {
       if (cancelled) return;
-      const burst = makeBurst(idRef.current);
+      const burst = makeBurst(idRef.current, variantRef.current);
+      variantRef.current = (variantRef.current + 1) % GLOWSTICK_SRCS.length;
       idRef.current = burst.nextId;
       setSticks(burst.sticks);
       if (clearBurstRef.current) clearTimeout(clearBurstRef.current);
@@ -99,7 +106,7 @@ export function GlowstickAmbient({ active }: { active: boolean }) {
       {sticks.map(s => (
         <img
           key={s.id}
-          src={GLOWSTICKS_SRC}
+          src={s.src}
           alt=""
           draggable={false}
           className="ch-glowstick-thrown"

@@ -354,7 +354,7 @@ function ConcertLive({
       label={label}
       channel={channel}
       marqueeTitle={marqueeTitle}
-      showMotes
+      showMotes={false}
       screen={screen}
     />
   );

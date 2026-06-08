@@ -12,6 +12,7 @@ import {
   subscribeSpawnWorldOff,
 } from '@/lib/spawn';
 import { setAudioMuted } from '@/lib/audioMute';
+import { playChatInviteBeep } from '@/lib/playChatInviteBeep';
 import CHARACTERS from './characters';
 import RemotePlayer from './RemotePlayer';
 import { scheduleIdleCallback } from '@/lib/scheduleIdleCallback';
@@ -280,6 +281,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     nearPeerRef.current = null; setNearPeer(null);
     nearNpcRef.current = null;  setNearNpc(null);
     if (announce) mpRef.current?.openPeerChat(peerId);
+    else playChatInviteBeep();
     setChatMode('chat');
     setTimeout(() => chatInputRef.current?.focus(), 120);
   }, []);

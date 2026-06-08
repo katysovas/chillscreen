@@ -161,7 +161,7 @@ export function WelcomePopup({ balloonColor, onEnter }: Props) {
           </button>
         </div>
 
-        {/* Coming soon */}
+        {/* What's New */}
         <div style={{
           width: '100%',
           background: 'rgba(255,255,255,0.04)',
@@ -176,12 +176,11 @@ export function WelcomePopup({ balloonColor, onEnter }: Props) {
             textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)',
             marginBottom: 10,
           }}>
-            Coming soon
+            What&apos;s New
           </div>
           {[
-            'Avatar Customizations',
-            'Vendor Shops',
-            'Live Watch Parties',
+            'Fresh party favors dropped at Baz\'s shop',
+            'Bring your crew - share link to stage',
           ].map(item => (
             <div key={item} style={{
               display: 'flex', alignItems: 'center', gap: 9,
@@ -189,10 +188,11 @@ export function WelcomePopup({ balloonColor, onEnter }: Props) {
               marginBottom: 7,
             }}>
               <span style={{
-                width: 18, height: 18, borderRadius: '50%',
-                background: 'linear-gradient(135deg,#4a8fe8,#b06be0)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, fontSize: 10, color: '#fff', fontWeight: 700,
+                flexShrink: 0,
+                fontSize: 14,
+                color: '#fff',
+                fontWeight: 700,
+                lineHeight: 1,
               }}>✓</span>
               {item}
             </div>
