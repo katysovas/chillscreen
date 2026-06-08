@@ -161,10 +161,19 @@ export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
     source: 'youtube-api',
     searchQuery: 'bonnaroo live',
     maxResults: 20,
+    excludeTitlePatterns: [
+      'outside lands',
+      'outside hands',
+      'coachella',
+      'electric daisy',
+      'edc ',
+      'edc orlando',
+      'ultra miami',
+    ],
     fallbackVideos: [
-      { id: 'uQ588C9Ecp4', title: 'Fisher', durationSec: 4381 },
-      { id: '3NyGf1X_gFA', title: 'Kaytranada', durationSec: 4241 },
-      { id: 'PeMr2TQEObc', title: 'John Summit', durationSec: 4776 },
+      { id: '1OpJa-QNopU', title: 'Chappell Roan — Bonnaroo 2024', durationSec: 3503 },
+      { id: '8qXhFMkxDXM', title: 'Pretty Lights — Bonnaroo Sunrise 2024', durationSec: 7475 },
+      { id: 'jfKfPfyJRdk', title: 'Bonnaroo Live', durationSec: 3600 },
     ],
   },
 };

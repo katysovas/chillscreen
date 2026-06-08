@@ -96,6 +96,22 @@ export function concertLabel(tile: number): string | null {
   return null;
 }
 
+/** Synchronized playback channel for a venue kind (+ tile for concert cities). */
+export function stageChannelForVenueKind(kind: VenueKind, tile: number): StageChannel {
+  switch (kind) {
+    case 'cinema':
+      return 'cinema';
+    case 'concert':
+      return concertChannel(tile);
+    case 'coachella':
+      return 'coachella';
+    case 'edc':
+      return 'edc';
+    case 'which-stage':
+      return 'which-stage';
+  }
+}
+
 /** Synchronized playback channel (pinned playlist) for each city's stage. */
 export function concertChannel(tile: number): StageChannel {
   if (isSeattleTile(tile)) return 'bumbershoot';

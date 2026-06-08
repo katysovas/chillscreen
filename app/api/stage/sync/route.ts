@@ -11,7 +11,7 @@ export const revalidate = 3600;
 
 const getPlaylists = unstable_cache(
   async () => resolveStagePlaylists(process.env.YOUTUBE_API_KEY),
-  ['stage-playlists'],
+  ['stage-playlists-v2'],
   { revalidate: STAGE_PLAYLIST_CACHE_SECONDS },
 );
 

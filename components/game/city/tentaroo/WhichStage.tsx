@@ -6,6 +6,7 @@ import { setWhichStageNowPlaying } from '@/lib/whichStageNowPlaying';
 import { useStagePlayer } from '../../useStagePlayer';
 import { StageVideoFrame } from '../../StageVideoFrame';
 import { StageToiletsBeside } from '../street/StageToiletRow';
+import { stageChannelForVenueKind } from '@/lib/venues';
 import {
   TENTAROO_GND,
   WHICH_NEON,
@@ -300,11 +301,13 @@ function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true }: WhichSt
   );
 }
 
+const WHICH_STAGE_CHANNEL = stageChannelForVenueKind('which-stage', 0);
+
 function WhichStageLive() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
     live: true,
-    channel: 'which-stage',
+    channel: WHICH_STAGE_CHANNEL,
     iframeRef,
     onNowPlaying: setWhichStageNowPlaying,
   });
