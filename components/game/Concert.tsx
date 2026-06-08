@@ -272,6 +272,7 @@ export default function Concert({
                 ref={iframeRef}
                 src={src}
                 title={video?.title ?? 'Live'}
+                loading="lazy"
                 onLoad={onIframeLoad}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen

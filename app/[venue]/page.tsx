@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import SFCity from '@/components/game/SFCity';
+import SFCityLoader from '@/components/game/SFCityLoader';
 import { JsonLd } from '@/components/JsonLd';
 import { invitePageCopy, parseFriendParam } from '@/lib/inviteSeo';
 import { breadcrumbJsonLd, webPageJsonLd } from '@/lib/jsonLd';
@@ -67,7 +67,7 @@ export default async function VenuePage({ params, searchParams }: VenuePageProps
           ],
         }}
       />
-      <SFCity spawnWorldOff={worldOffForVenueRoute(route)} venueRoute={route} />
+      <SFCityLoader spawnWorldOff={worldOffForVenueRoute(route)} venueRoute={route} />
     </>
   );
 }

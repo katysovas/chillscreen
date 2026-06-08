@@ -51,6 +51,7 @@ export function StageVideoFrame({
         ref={iframeRef}
         src={src}
         title={title ?? 'Live stage'}
+        loading="lazy"
         onLoad={onIframeLoad}
         allow={STAGE_IFRAME_ALLOW}
         tabIndex={-1}

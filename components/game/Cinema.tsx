@@ -411,6 +411,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
                 title={video.title}
                 width={IFRAME_W}
                 height={IFRAME_H}
+                loading="lazy"
                 onLoad={onIframeLoad}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
