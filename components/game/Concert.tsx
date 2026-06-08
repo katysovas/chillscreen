@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useId } from 'react';
+import { useMemo, useRef, useId, type ReactNode } from 'react';
 import { setConcertNowPlaying } from '@/lib/concertNowPlaying';
 import { useStagePlayer, STAGE_IFRAME_STYLE } from './useStagePlayer';
 import type { StageChannel } from '@/lib/stageVideos';
@@ -95,34 +95,28 @@ export const CONCERT_SCALE = 1.0;
 /** Stage deck y inside the scaled SVG viewBox (BASE 370 × internal STAGE_SCALE). */
 export const CONCERT_DECK_VIEWBOX_Y = Math.round(370 * STAGE_SCALE);
 
-export default function Concert({
-  live = false,
-  label,
-  channel = 'outside-lands' as StageChannel,
-}: {
-  live?: boolean;
-  /** Permanent festival name shown on the marquee banner (e.g. "Seattle Concerts"). */
+const crowdD = makeCrowd(BASE_W);
+const spkCones = speakerCones(6, 2);
+
+type ConcertChromeProps = {
   label?: string;
-  /** Synchronized playback channel for this stage. */
-  channel?: StageChannel;
-}) {
+  channel: StageChannel;
+  marqueeTitle: string;
+  screen: ReactNode;
+  showMotes?: boolean;
+};
+
+/** Shared truss + crowd SVG — no YouTube hooks. */
+function ConcertChrome({
+  label,
+  channel,
+  marqueeTitle,
+  screen,
+  showMotes = false,
+}: ConcertChromeProps) {
   const uid = useId().replace(/:/g, '');
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
-    live,
-    channel,
-    iframeRef,
-    onNowPlaying: setConcertNowPlaying,
-  });
-
-  const crowdD = useMemo(() => makeCrowd(BASE_W), []);
-  const spkCones = useMemo(() => speakerCones(6, 2), []);
   const isSeattle = channel === 'bumbershoot';
-  const venueLabel = label ?? 'Seattle Concerts';
-  const marqueeTitle = isSeattle
-    ? venueLabel
-    : (video?.title ?? (live ? 'Loading…' : label ?? 'Live Concert'));
+  const gid = (name: string) => `${uid}-${name}`;
 
   const motes = useMemo(() => Array.from({ length: 14 }, (_, i) => ({
     left: `${5 + (i * 79) % 90}%`,
@@ -134,13 +128,11 @@ export default function Concert({
     my: `-${28 + (i % 4) * 12}px`,
   })), []);
 
-  const gid = (name: string) => `${uid}-${name}`;
-
   return (
     <div className="stg-wrap" style={{ position: 'relative', width: CONCERT_WIDTH }}>
       <style>{S}</style>
 
-      {motes.map((m, i) => (
+      {showMotes && motes.map((m, i) => (
         <div key={i} className="stg-mote" style={{
           left: m.left, top: m.top, width: m.size, height: m.size,
           ['--mx' as string]: m.mx,
@@ -182,7 +174,6 @@ export default function Concert({
           </linearGradient>
         </defs>
 
-        {/* Permanent festival banner — SF / other cities; Seattle uses marquee only */}
         {label && !isSeattle && (
           <g>
             <line x1={150} y1={-6} x2={166} y2={14} stroke="#16241a" strokeWidth="3" />
@@ -262,39 +253,8 @@ export default function Concert({
         <rect x="103" y="126" width="314" height="192" rx="2" fill="none" stroke="rgba(56,216,128,.15)" strokeWidth="1" />
 
         <foreignObject x="105" y="127" width="310" height="190">
-          {/* The API replaces a child node with the player iframe; the host div
-              stays React-managed while the iframe lives inside it. overflow
-              hidden + the cropIframe() oversize hides YouTube's chrome. */}
           <div style={{ width: 310, height: 190, background: '#000', position: 'relative' }}>
-            {src && (
-              <iframe
-                key={vidKey}
-                ref={iframeRef}
-                src={src}
-                title={video?.title ?? 'Live'}
-                loading="lazy"
-                onLoad={onIframeLoad}
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                style={STAGE_IFRAME_STYLE}
-              />
-            )}
-            {src && (
-              <div style={{
-                position: 'absolute', inset: 0, zIndex: 10,
-                background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
-                opacity: playerVisible ? 0 : 1,
-                transition: playerVisible ? 'opacity 0.8s' : 'none',
-              }}>
-                <span style={{ fontFamily: 'sans-serif', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
-                {(isSeattle ? venueLabel : video?.title) && (
-                  <span style={{ fontFamily: 'sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 10px', lineHeight: 1.3 }}>
-                    {isSeattle ? venueLabel : video?.title}
-                  </span>
-                )}
-              </div>
-            )}
+            {screen}
           </div>
         </foreignObject>
 
@@ -326,4 +286,108 @@ export default function Concert({
       <div className="stg-ground-glow" />
     </div>
   );
+}
+
+type ConcertShellProps = {
+  label?: string;
+  channel?: StageChannel;
+};
+
+/** Static concert stage — no YouTube player or hooks. */
+export function ConcertShell({
+  label,
+  channel = 'outside-lands' as StageChannel,
+}: ConcertShellProps) {
+  const isSeattle = channel === 'bumbershoot';
+  const venueLabel = label ?? 'Seattle Concerts';
+  const marqueeTitle = isSeattle ? venueLabel : (label ?? 'Live Concert');
+
+  return (
+    <ConcertChrome
+      label={label}
+      channel={channel}
+      marqueeTitle={marqueeTitle}
+      showMotes={false}
+      screen={<div style={{ width: '100%', height: '100%', background: '#080e0a' }} />}
+    />
+  );
+}
+
+function ConcertLive({
+  label,
+  channel = 'outside-lands' as StageChannel,
+}: {
+  label?: string;
+  channel?: StageChannel;
+}) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
+    live: true,
+    channel,
+    iframeRef,
+    onNowPlaying: setConcertNowPlaying,
+  });
+
+  const isSeattle = channel === 'bumbershoot';
+  const venueLabel = label ?? 'Seattle Concerts';
+  const marqueeTitle = isSeattle
+    ? venueLabel
+    : (video?.title ?? 'Loading…');
+
+  const screen = (
+    <>
+      {src && (
+        <iframe
+          key={vidKey}
+          ref={iframeRef}
+          src={src}
+          title={video?.title ?? 'Live'}
+          loading="lazy"
+          onLoad={onIframeLoad}
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          style={STAGE_IFRAME_STYLE}
+        />
+      )}
+      {src && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 10,
+          background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
+          opacity: playerVisible ? 0 : 1,
+          transition: playerVisible ? 'opacity 0.8s' : 'none',
+        }}>
+          <span style={{ fontFamily: 'sans-serif', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
+          {(isSeattle ? venueLabel : video?.title) && (
+            <span style={{ fontFamily: 'sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 10px', lineHeight: 1.3 }}>
+              {isSeattle ? venueLabel : video?.title}
+            </span>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <ConcertChrome
+      label={label}
+      channel={channel}
+      marqueeTitle={marqueeTitle}
+      showMotes
+      screen={screen}
+    />
+  );
+}
+
+export default function Concert({
+  live = false,
+  label,
+  channel = 'outside-lands' as StageChannel,
+}: {
+  live?: boolean;
+  label?: string;
+  channel?: StageChannel;
+}) {
+  if (!live) return <ConcertShell label={label} channel={channel} />;
+  return <ConcertLive label={label} channel={channel} />;
 }

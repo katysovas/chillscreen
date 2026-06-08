@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from 'react';
-import Cinema, { CINEMA_SCALE, CINEMA_WIDTH } from '../Cinema';
-import Concert, { CONCERT_SCALE, CONCERT_WIDTH } from '../Concert';
+import Cinema, { CINEMA_SCALE, CINEMA_WIDTH, CinemaShell } from '../Cinema';
+import Concert, { CONCERT_SCALE, CONCERT_WIDTH, ConcertShell } from '../Concert';
 import { StageToiletsBeside } from './street/StageToiletRow';
 import { cinemaMidX, concertChannel, concertLabel, concertMidX, type VenueKind } from '@/lib/venues';
 import type { VenueRoute } from '@/lib/venueRoutes';
@@ -86,11 +86,18 @@ export function CityVenuesTile({
               pointerEvents: concertLiveNow ? 'auto' : 'none',
             }}
           >
-            <Concert
-              live={concertLiveNow}
-              label={concertLabel(t) ?? undefined}
-              channel={concertChannel(t)}
-            />
+            {concertLiveNow ? (
+              <Concert
+                live
+                label={concertLabel(t) ?? undefined}
+                channel={concertChannel(t)}
+              />
+            ) : (
+              <ConcertShell
+                label={concertLabel(t) ?? undefined}
+                channel={concertChannel(t)}
+              />
+            )}
           </div>
         </foreignObject>
         <StageToiletsBeside
@@ -139,7 +146,7 @@ export function CityVenuesTile({
               pointerEvents: cinemaLiveNow ? 'auto' : 'none',
             }}
           >
-            <Cinema live={cinemaLiveNow} />
+            {cinemaLiveNow ? <Cinema live /> : <CinemaShell />}
           </div>
         </foreignObject>
         <StageToiletsBeside

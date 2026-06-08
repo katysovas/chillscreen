@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { setCinemaNowPlaying } from '@/lib/cinemaNow';
 import { cinemaEmbedSrc } from '@/lib/cinemaVideoPool';
 import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
@@ -308,86 +308,19 @@ function Crown() {
   );
 }
 
-export default function Cinema({ live = true }: { live?: boolean }) {
-  const { video, vidKey } = useStageChannel('cinema', live);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  useEffect(() => {
-    if (live && video?.title) setCinemaNowPlaying(video.title);
-    else if (live) setCinemaNowPlaying(null);
-    return () => { if (live) setCinemaNowPlaying(null); };
-  }, [live, video?.title]);
-
-  // Embed URL depends on syncedNow() — set after mount to avoid SSR/client mismatch.
-  const [src, setSrc] = useState('');
-  useEffect(() => {
-    if (!live || !video) {
-      setSrc('');
-      return;
-    }
-    const sched = currentSchedule('cinema');
-    setSrc(cinemaEmbedSrc(video.id, sched?.offsetSec ?? 0));
-  }, [live, video?.id, vidKey]);
-
-  useEffect(() => {
-    if (!live || !src) return;
-    let cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
-    const afterPaint = requestAnimationFrame(() => {
-      cancelRetries();
-      cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
-    });
-    const keepMuted = () => applyYouTubeAudio(iframeRef.current, true);
-    const onSync = () => {
-      nudgeYouTubePlayback(iframeRef.current);
-      keepMuted();
-    };
-    const onGesture = () => {
-      nudgeYouTubePlayback(iframeRef.current);
-      keepMuted();
-    };
-    const unsub = subscribeStageSync(onSync);
-    window.addEventListener('pointerdown', onGesture, { passive: true });
-    window.addEventListener('keydown', onGesture);
-    return () => {
-      cancelAnimationFrame(afterPaint);
-      cancelRetries();
-      unsub();
-      window.removeEventListener('pointerdown', onGesture);
-      window.removeEventListener('keydown', onGesture);
-    };
-  }, [live, src, vidKey]);
-
-  const onIframeLoad = () => {
-    primeYouTubePlayback(iframeRef.current);
-  };
-
-  const [playerVisible, setPlayerVisible] = useState(false);
-  useEffect(() => {
-    if (!live) return;
-    setPlayerVisible(false);
-    const onMessage = (e: MessageEvent) => {
-      try {
-        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
-          setPlayerVisible(true);
-          applyYouTubeAudio(iframeRef.current, true);
-        }
-      } catch { /* ignore */ }
-    };
-    window.addEventListener('message', onMessage);
-    const fallback = setTimeout(() => {
-      setPlayerVisible(true);
-      applyYouTubeAudio(iframeRef.current, true);
-    }, 5000);
-    return () => { window.removeEventListener('message', onMessage); clearTimeout(fallback); };
-  }, [vidKey, live]);
-
+function CinemaView({
+  screen,
+  marqueeTitle,
+  titleKey = 'idle',
+}: {
+  screen: ReactNode;
+  marqueeTitle: string;
+  titleKey?: string | number;
+}) {
   const bulbs = useMemo(() => Array.from({ length: 18 }), []);
-  const marqueeTitle = video?.title ?? (live ? 'Loading…' : 'Cute Animals');
 
   return (
-    <div ref={wrapRef} className="cin-wrap">
+    <div className="cin-wrap">
       <style>{S}</style>
 
       <Crown />
@@ -400,41 +333,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
 
       <div className="cin-screen-section">
         <div className="cin-mist-top" />
-        <div className="cin-screen-frame">
-          {live && video && src ? (
-            <>
-              <iframe
-                key={vidKey}
-                ref={iframeRef}
-                className="cin-iframe"
-                src={src}
-                title={video.title}
-                width={IFRAME_W}
-                height={IFRAME_H}
-                loading="lazy"
-                onLoad={onIframeLoad}
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                style={{ display: 'block', border: 'none', background: '#000' }}
-              />
-              <div style={{
-                position: 'absolute', inset: 0, zIndex: 10,
-                background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-                opacity: playerVisible ? 0 : 1,
-                transition: playerVisible ? 'opacity 0.8s' : 'none',
-              }}>
-                <span style={{ fontFamily: 'sans-serif', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
-                {video?.title && <span style={{ fontFamily: 'sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 16px', lineHeight: 1.3 }}>{video.title}</span>}
-              </div>
-            </>
-          ) : (
-            <div
-              className="cin-iframe"
-              style={{ width: IFRAME_W, height: IFRAME_H, background: '#0a0e18' }}
-            />
-          )}
-        </div>
+        <div className="cin-screen-frame">{screen}</div>
       </div>
 
       <div className="cin-film" />
@@ -444,7 +343,7 @@ export default function Cinema({ live = true }: { live?: boolean }) {
           {bulbs.map((_, i) => <div key={i} className="cin-bulb" />)}
         </div>
         <div className="cin-now">Now Playing</div>
-        <div key={vidKey} className="cin-title">{marqueeTitle}</div>
+        <div key={titleKey} className="cin-title">{marqueeTitle}</div>
       </div>
 
       <div className="cin-facade">
@@ -472,6 +371,143 @@ export default function Cinema({ live = true }: { live?: boolean }) {
       <div className="cin-street-glow" />
     </div>
   );
+}
+
+/** Static cinema facade — no YouTube player or hooks. */
+export function CinemaShell() {
+  return (
+    <CinemaView
+      marqueeTitle="Cute Animals"
+      screen={
+        <div
+          className="cin-iframe"
+          style={{ width: IFRAME_W, height: IFRAME_H, background: '#0a0e18' }}
+        />
+      }
+    />
+  );
+}
+
+function CinemaLive() {
+  const { video, vidKey } = useStageChannel('cinema', true);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    if (video?.title) setCinemaNowPlaying(video.title);
+    else setCinemaNowPlaying(null);
+    return () => { setCinemaNowPlaying(null); };
+  }, [video?.title]);
+
+  const [src, setSrc] = useState('');
+  useEffect(() => {
+    if (!video) {
+      setSrc('');
+      return;
+    }
+    const sched = currentSchedule('cinema');
+    setSrc(cinemaEmbedSrc(video.id, sched?.offsetSec ?? 0));
+  }, [video?.id, vidKey]);
+
+  useEffect(() => {
+    if (!src) return;
+    let cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
+    const afterPaint = requestAnimationFrame(() => {
+      cancelRetries();
+      cancelRetries = scheduleYouTubePlaybackKicks(iframeRef.current);
+    });
+    const keepMuted = () => applyYouTubeAudio(iframeRef.current, true);
+    const onSync = () => {
+      nudgeYouTubePlayback(iframeRef.current);
+      keepMuted();
+    };
+    const onGesture = () => {
+      nudgeYouTubePlayback(iframeRef.current);
+      keepMuted();
+    };
+    const unsub = subscribeStageSync(onSync);
+    window.addEventListener('pointerdown', onGesture, { passive: true });
+    window.addEventListener('keydown', onGesture);
+    return () => {
+      cancelAnimationFrame(afterPaint);
+      cancelRetries();
+      unsub();
+      window.removeEventListener('pointerdown', onGesture);
+      window.removeEventListener('keydown', onGesture);
+    };
+  }, [src, vidKey]);
+
+  const onIframeLoad = () => {
+    primeYouTubePlayback(iframeRef.current);
+  };
+
+  const [playerVisible, setPlayerVisible] = useState(false);
+  useEffect(() => {
+    setPlayerVisible(false);
+    const onMessage = (e: MessageEvent) => {
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (data?.event === 'infoDelivery' && data?.info?.playerState === 1) {
+          setPlayerVisible(true);
+          applyYouTubeAudio(iframeRef.current, true);
+        }
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('message', onMessage);
+    const fallback = setTimeout(() => {
+      setPlayerVisible(true);
+      applyYouTubeAudio(iframeRef.current, true);
+    }, 5000);
+    return () => { window.removeEventListener('message', onMessage); clearTimeout(fallback); };
+  }, [vidKey]);
+
+  const marqueeTitle = video?.title ?? 'Loading…';
+
+  return (
+    <CinemaView
+      titleKey={vidKey}
+      marqueeTitle={marqueeTitle}
+      screen={
+        video && src ? (
+          <>
+            <iframe
+              key={vidKey}
+              ref={iframeRef}
+              className="cin-iframe"
+              src={src}
+              title={video.title}
+              width={IFRAME_W}
+              height={IFRAME_H}
+              loading="lazy"
+              onLoad={onIframeLoad}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+              style={{ display: 'block', border: 'none', background: '#000' }}
+            />
+            <div style={{
+              position: 'absolute', inset: 0, zIndex: 10,
+              background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+              opacity: playerVisible ? 0 : 1,
+              transition: playerVisible ? 'opacity 0.8s' : 'none',
+            }}>
+              <span style={{ fontFamily: 'sans-serif', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
+              {video?.title && <span style={{ fontFamily: 'sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 16px', lineHeight: 1.3 }}>{video.title}</span>}
+            </div>
+          </>
+        ) : (
+          <div
+            className="cin-iframe"
+            style={{ width: IFRAME_W, height: IFRAME_H, background: '#0a0e18' }}
+          />
+        )
+      }
+    />
+  );
+}
+
+export default function Cinema({ live = true }: { live?: boolean }) {
+  if (!live) return <CinemaShell />;
+  return <CinemaLive />;
 }
 
 export { CINEMA_MID_X } from '@/lib/venues';
