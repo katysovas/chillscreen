@@ -7,7 +7,7 @@ import {
   nearGndTiles,
 } from '@/lib/parallax';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
-import { skipGroundStreetTree } from '@/lib/stageTreeExclusion';
+import { skipGroundStreetProp, skipGroundStreetTree } from '@/lib/stageTreeExclusion';
 import { SleepingCatsGround } from '../SleepingCat';
 import { StreetDogsGround } from '../StreetDog';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
@@ -98,10 +98,10 @@ function groundTileContent(tile: number) {
       <SleepingCatsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
       <StreetDogsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
       {LAMP_XS.map((x, i) => (
-        fits(x, 30) ? <LampPost key={i} x={x} y={GND_Y} /> : null
+        fits(x, 30) && !skipGroundStreetProp(tile, x, w) ? <LampPost key={i} x={x} y={GND_Y} /> : null
       ))}
       {HYDRANTS.map((x, i) => (
-        fits(x, 24) ? (
+        fits(x, 24) && !skipGroundStreetProp(tile, x, w) ? (
         <g key={`h${i}`} transform={`translate(${x},${GND_Y})`}>
           <ellipse cx={8} cy={6} rx={10} ry={4} fill="rgba(20,40,80,.18)" />
           <rect x={2} y={-30} width={12} height={30} rx={3} fill="#c83028" />
@@ -113,7 +113,7 @@ function groundTileContent(tile: number) {
         ) : null
       ))}
       {BENCHES.map((x, i) => (
-        fits(x, 70) ? (
+        fits(x, 70) && !skipGroundStreetProp(tile, x, w) ? (
         <g key={`b${i}`} transform={`translate(${x},${GND_Y})`}>
           <ellipse cx={32} cy={6} rx={38} ry={7} fill="rgba(20,40,80,.16)" />
           <rect x={4} y={-28} width={5} height={28} rx={2} fill="#6a5038" />

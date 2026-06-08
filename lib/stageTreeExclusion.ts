@@ -12,23 +12,20 @@ const SEATTLE_EAST_TOWN = 7;
 /** City ground tiles are full-width; towns use TOWN_GND_W. */
 const CITY_GND_MIN = 3000;
 
-/**
- * Skip a sidewalk street tree when it would sit in front of a stage on this tile.
- * Other trees on the tile are kept — only the stage footprint band is cleared.
- */
-export function skipGroundStreetTree(tileIndex: number, treeX: number, tileWidth: number): boolean {
+/** Ground-x band where a stage sits — shared by trees, lamps, benches, etc. */
+function groundStageBand(tileIndex: number, propX: number, tileWidth: number): boolean {
   const slot = worldTileSlot(tileIndex);
 
   if (tileWidth >= CITY_GND_MIN) {
     switch (slot) {
       case SF_SLOT:
-        return (treeX >= 720 && treeX <= 1080) || (treeX >= 2080 && treeX <= 2780);
+        return (propX >= 720 && propX <= 1080) || (propX >= 2080 && propX <= 2780);
       case VEGAS_SLOT:
-        return treeX >= 2650 && treeX <= 3380;
+        return propX >= 2650 && propX <= 3380;
       case SOCAL_SLOT:
-        return treeX >= 2500 && treeX <= 3280;
+        return propX >= 2500 && propX <= 3280;
       case SEATTLE_SLOT:
-        return treeX >= 880 && treeX <= 1580;
+        return propX >= 880 && propX <= 1580;
       default:
         return false;
     }
@@ -36,16 +33,36 @@ export function skipGroundStreetTree(tileIndex: number, treeX: number, tileWidth
 
   switch (slot) {
     case SF_VEGAS_TOWN:
-      return treeX >= tileWidth - 300;
+      return propX >= tileWidth - 300;
     case VEGAS_SD_TOWN:
-      return treeX <= 260 || treeX >= tileWidth - 260;
+      return propX <= 260 || propX >= tileWidth - 260;
     case SOCAL_SEATTLE_TOWN:
-      return treeX <= 260 || treeX >= tileWidth - 260;
+      return propX <= 260 || propX >= tileWidth - 260;
     case SEATTLE_EAST_TOWN:
-      return treeX <= 300;
+      return propX <= 300;
     default:
       return false;
   }
+}
+
+/** Parallax desync — east-band sidewalk props can sit in front of SoCal/Vegas stages. */
+function parallaxStageSidewalkBand(propX: number, tileWidth: number): boolean {
+  return tileWidth >= CITY_GND_MIN && propX >= 2420 && propX <= 3380;
+}
+
+/**
+ * Skip a sidewalk street tree when it would sit in front of a stage on this tile.
+ * Other trees on the tile are kept — only the stage footprint band is cleared.
+ */
+export function skipGroundStreetTree(tileIndex: number, treeX: number, tileWidth: number): boolean {
+  return groundStageBand(tileIndex, treeX, tileWidth)
+    || parallaxStageSidewalkBand(treeX, tileWidth);
+}
+
+/** Skip lamps, benches, hydrants, etc. in the same stage footprint band as trees. */
+export function skipGroundStreetProp(tileIndex: number, propX: number, tileWidth: number): boolean {
+  return groundStageBand(tileIndex, propX, tileWidth)
+    || parallaxStageSidewalkBand(propX, tileWidth);
 }
 
 /** Skip a small-town mid-layer tree near the edge that faces a festival stage. */

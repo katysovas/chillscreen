@@ -19,6 +19,7 @@ import { SfMidFeatures } from './SfMidFeatures';
 import { SeattleBuildingsTile, SeattleMidFeatures } from './seattle';
 import { SouthernCaliforniaTile } from './sandiego';
 import { EDCStage, LasVegasSkyline } from './lasvegas';
+import { FestivalStage } from './sandiego/FestivalStage';
 import { SmallTownTile, SmallTownTerrain } from './town';
 import { TransitionWater } from './transition';
 import type { VenueRoute } from '@/lib/venueRoutes';
@@ -28,7 +29,7 @@ import { STAGE_ANCHOR_Y } from '@/lib/stageLayout';
 type MidLayerProps = {
   worldOff: number;
   deepLinkRoute?: VenueRoute;
-  /** Synced with the main mid layer — EDC renders here, above town cottages. */
+  /** Synced with the main mid layer — festival stages render here, above town cottages. */
   foregroundRef?: React.RefObject<SVGSVGElement | null>;
 };
 
@@ -47,6 +48,20 @@ function edcLiveOnTile(
 ) {
   return isVenueLive(
     'edc', t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute,
+  );
+}
+
+function coachellaLiveOnTile(
+  t: number,
+  cinemaLive: number,
+  concertLive: number,
+  coachellaLive: number,
+  edcLive: number,
+  focus: ReturnType<typeof venueInFocus>,
+  deepLinkRoute?: VenueRoute,
+) {
+  return isVenueLive(
+    'coachella', t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute,
   );
 }
 
@@ -106,12 +121,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             )}
             {kind === 'vegas' && <LasVegasSkyline />}
             {isSouthernCaliforniaTile(t) && (
-              <SouthernCaliforniaTile
-                tileIndex={t}
-                coachellaLive={isVenueLive(
-                  'coachella', t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute,
-                )}
-              />
+              <SouthernCaliforniaTile tileIndex={t} />
             )}
           </g>
           {kind === 'town' && <SmallTownTile tileIndex={t} tileWidth={w} />}
@@ -121,14 +131,25 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute]);
 
-    const renderVegasForeground = useCallback((t: number) => {
-      if (!isVegasTile(t)) return null;
+    const renderMidForeground = useCallback((t: number) => {
       const scale = tileContentScale(t);
-      return (
-        <g transform={scale === 1 ? undefined : `scale(${scale},1)`}>
-          <EDCStage live={edcLiveOnTile(t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute)} />
-        </g>
-      );
+      const tf = scale === 1 ? undefined : `scale(${scale},1)`;
+
+      if (isVegasTile(t)) {
+        return (
+          <g transform={tf}>
+            <EDCStage live={edcLiveOnTile(t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute)} />
+          </g>
+        );
+      }
+      if (isSouthernCaliforniaTile(t)) {
+        return (
+          <g transform={tf}>
+            <FestivalStage live={coachellaLiveOnTile(t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute)} />
+          </g>
+        );
+      }
+      return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute]);
 
@@ -164,7 +185,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             shapeRendering="optimizeSpeed"
             style={{ pointerEvents: 'none' }}
           >
-            {renderVegasForeground}
+            {renderMidForeground}
           </ParallaxSvgLayer>
         )}
       </>
