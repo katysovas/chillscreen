@@ -6,6 +6,7 @@ export {
   isSanDiegoTile,
   isCoachellaTile,
   isSouthernCaliforniaTile,
+  isTentarooTile,
   isTownTile,
   isVegasTile,
   WORLD_TILE_CYCLE,

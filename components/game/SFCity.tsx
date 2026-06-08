@@ -116,6 +116,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const cloudsRef = useRef<SVGSVGElement>(null);
   const lastMidScrollTileRef = useRef<number | null>(null);
   const lastGndScrollTileRef = useRef<number | null>(null);
+  const lastSignCullOffRef = useRef<number | null>(null);
 
   /** Update scrolling SVG viewBoxes directly — zero React overhead. */
   const updateViewBoxes = (off: number) => {
@@ -126,8 +127,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     skyRef.current?.setAttribute('viewBox', vb(skyVx));
     midRef.current?.setAttribute('viewBox', vb(midVx));
     midForegroundRef.current?.setAttribute('viewBox', vb(midVx));
-    cabanaRef.current?.setAttribute('viewBox', vb(gndVx));
     groundRef.current?.setAttribute('viewBox', vb(gndVx));
+    cabanaRef.current?.setAttribute('viewBox', vb(gndVx));
     signsRef.current?.setAttribute('viewBox', vb(gndVx));
     welcomeRef.current?.setAttribute('viewBox', vb(gndVx));
     cloudsRef.current?.setAttribute('viewBox', vb(skyVx));
@@ -214,6 +215,27 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     const next = unequipLoadoutItem(itemId, myColor);
     if (next) setPlayerLoadout({ ...next, ...TEST_PLAYER_LOADOUT });
   }, [myColor]);
+
+  const [vendorShopManualOpen, setVendorShopManualOpen] = useState(false);
+  const [vendorShopDismissed, setVendorShopDismissed] = useState(false);
+
+  const toggleVendorShop = useCallback(() => {
+    setVendorShopManualOpen(open => {
+      const next = !open;
+      if (next) setVendorShopDismissed(false);
+      return next;
+    });
+  }, []);
+
+  const closeVendorShop = useCallback(() => {
+    setVendorShopManualOpen(false);
+    setVendorShopDismissed(true);
+  }, []);
+
+  const warmVendorShop = useCallback(() => {
+    preloadVendorShopPanel();
+    void preloadAllLoadoutSlots();
+  }, []);
 
   // Peer (real human) 1:1 chat — mirrors the NPC greeting flow.
   const [peerChatId,  setPeerChatId]  = useState<string | null>(null);
@@ -763,6 +785,12 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           lastGndScrollTileRef.current = gndTile;
           setGndScrollWorldOff(off);
         }
+        // Ground signs parallax-drift over stages within a tile — re-cull often.
+        const lastCull = lastSignCullOffRef.current;
+        if (lastCull == null || Math.abs(off - lastCull) >= 32) {
+          lastSignCullOffRef.current = off;
+          setGndScrollWorldOff(off);
+        }
       }
 
       // Throttle proximity + dance checks to every 4 frames (~15 Hz).
@@ -832,19 +860,23 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const inConversation = greetingNpc !== null || peerChatId !== null;
   const showVendorShop =
     greetingNpc !== null && isBuzNpc(CHARACTERS[greetingNpc]?.id ?? '');
+  const showVendorPanel =
+    vendorShopManualOpen || (showVendorShop && !vendorShopDismissed);
+
+  useEffect(() => {
+    if (!showVendorShop) setVendorShopDismissed(false);
+  }, [showVendorShop]);
 
   useEffect(() => {
     if (nearNpc === null) return;
     if (!isBuzNpc(CHARACTERS[nearNpc]?.id ?? '')) return;
-    preloadVendorShopPanel();
-    void preloadAllLoadoutSlots();
-  }, [nearNpc]);
+    warmVendorShop();
+  }, [nearNpc, warmVendorShop]);
 
   useEffect(() => {
-    if (!showVendorShop) return;
-    preloadVendorShopPanel();
-    void preloadAllLoadoutSlots();
-  }, [showVendorShop]);
+    if (!showVendorPanel) return;
+    warmVendorShop();
+  }, [showVendorPanel, warmVendorShop]);
 
   const conversationPartnerName = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
@@ -854,7 +886,9 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     : null;
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', animation: 'fdi 1.5s ease' }}>
+    <div
+      style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', animation: 'fdi 1.5s ease' }}
+    >
       <style>{CHARACTER_STYLES}</style>
 
       <SkyLayer ref={skyRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
@@ -884,7 +918,10 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
               ? nearPeerName
               : null
         }
-        hidden={showWelcome || inConversation}
+        hidden={showWelcome}
+        vendorShopOpen={vendorShopManualOpen}
+        onToggleVendorShop={toggleVendorShop}
+        onVendorShopWarm={warmVendorShop}
       />
 
       {/* Autonomous NPCs */}
@@ -984,17 +1021,18 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         </div>
       )}
 
-      {showVendorShop && (
+      {showVendorPanel && (
         <VendorShopPanel
           loadout={playerLoadout}
           onPurchase={handleVendorPurchase}
           onUnequip={handleVendorUnequip}
+          onClose={closeVendorShop}
         />
       )}
 
       {/* Greeting status bar */}
       {inConversation && chatMode !== 'chat' && (
-        <div style={{
+        <div data-paraloid-ui style={{
           position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
           zIndex: 40, pointerEvents: 'none',
           background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(8px)',
@@ -1028,7 +1066,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
      
 
       {/* Keyboard hint + mute — hidden on mobile, bottom-right */}
-      <div className="hidden md:flex" style={{
+      <div data-paraloid-ui className="hidden md:flex" style={{
         position: 'absolute', bottom: 22, right: 22,
         gap: 10, alignItems: 'center', zIndex: 40,
       }}>
@@ -1058,7 +1096,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       </div>
 
       {/* Mobile D-pad + mute — shown only on touch devices */}
-      <div className="flex md:hidden" style={{
+      <div data-paraloid-ui className="flex md:hidden" style={{
         position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)',
         gap: 12, zIndex: 40, alignItems: 'center',
       }}>

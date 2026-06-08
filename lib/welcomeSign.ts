@@ -1,4 +1,5 @@
 import { COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
+import { WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
 import { EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
 import { MID_F } from '@/lib/parallax';
 import {
@@ -28,6 +29,7 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
   const sf = cityTileIndex('sf');
   const vegas = cityTileIndex('vegas');
   const socal = cityTileIndex('san_diego');
+  const tentaroo = cityTileIndex('tentaroo');
   const seattle = cityTileIndex('seattle');
 
   return [
@@ -62,6 +64,14 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
       accent: '#e85074',
       tileIndex: socal,
       venueMidX: COACHELLA_STAGE_MID_X,
+    },
+    {
+      id: 'which-stage',
+      label: 'Which Stage',
+      icon: '🎪',
+      accent: '#38f5b0',
+      tileIndex: tentaroo,
+      venueMidX: WHICH_STAGE_MID_X,
     },
     {
       id: 'seattle',

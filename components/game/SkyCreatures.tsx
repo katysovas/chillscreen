@@ -93,50 +93,6 @@ function BirdFlock({ birds, opacity }: { birds: BirdCfg[]; opacity: number }) {
   );
 }
 
-// ─── Plane ────────────────────────────────────────────────────────────────────
-function PlaneShape({ flip = false }: { flip?: boolean }) {
-  return (
-    <svg
-      width={180}
-      height={55}
-      viewBox="-90 -28 180 55"
-      style={{
-        overflow: 'visible',
-        display: 'block',
-        transform: flip ? 'scaleX(-1)' : undefined,
-      }}
-    >
-      <line
-        x1={-62} y1={1} x2={-265} y2={1}
-        stroke="rgba(255,255,255,0.38)"
-        strokeWidth={3.5}
-        strokeDasharray="26 18"
-        strokeLinecap="round"
-      />
-      <line
-        x1={-62} y1={-2} x2={-235} y2={-10}
-        stroke="rgba(255,255,255,0.18)"
-        strokeWidth={2}
-        strokeDasharray="18 22"
-        strokeLinecap="round"
-      />
-      <path
-        d="M-56,0 Q-34,-5 0,-5 L46,-3 L56,0 L46,3 L0,5 Q-34,5 -56,0 Z"
-        fill="#d4d8e6"
-      />
-      <path d="M46,-3 L62,0 L46,3 Z" fill="#b8c0d4" />
-      <path d="M10,-5 L-20,-27 L-36,-25 L-6,-5 Z" fill="#bcc4d8" opacity={0.95} />
-      <ellipse cx={-4} cy={-8} rx={10} ry={4} fill="#bcc4d8" />
-      <ellipse cx={-4} cy={-8} rx={10} ry={2.2} fill="#aab4c8" />
-      <path d="M-46,-5 L-58,-20 L-38,-5 Z" fill="#c0c8d8" />
-      <path d="M-44,3 L-59,12 L-48,3 Z" fill="#c4ccd8" opacity={0.8} />
-      {[-18, -6, 6, 18, 30].map((wx, i) => (
-        <ellipse key={i} cx={wx} cy={-2} rx={4} ry={3} fill="rgba(168,214,255,0.65)" />
-      ))}
-    </svg>
-  );
-}
-
 // ─── UFO ──────────────────────────────────────────────────────────────────────
 function UFOShape() {
   return (
@@ -195,7 +151,7 @@ function SkyCreaturesLayerInner({ period = 'day' }, _ref) {
   const fly = (dir: 'ltr' | 'rtl', period: number, delay: number) =>
     `${dir === 'ltr' ? 'sky-ltr' : 'sky-rtl'} ${period}s ${delay}s linear infinite`;
 
-  const showBirdsAndPlanes = period !== 'night';
+  const showBirds = period !== 'night';
 
   return (
     <div
@@ -206,7 +162,7 @@ function SkyCreaturesLayerInner({ period = 'day' }, _ref) {
       }}
     >
       <div style={{ position: 'absolute', inset: 0 }}>
-        {showBirdsAndPlanes && (
+        {showBirds && (
           <>
             <div style={{ position: 'absolute', top: '9%', animation: fly('ltr', 62, -5) }}>
               <BirdFlock birds={LARGE_FLOCK} opacity={0.82} />
@@ -226,14 +182,6 @@ function SkyCreaturesLayerInner({ period = 'day' }, _ref) {
 
             <div style={{ position: 'absolute', top: '8%', animation: fly('rtl', 68, -52) }}>
               <BirdFlock birds={SMALL_FLOCK} opacity={0.60} />
-            </div>
-
-            <div style={{ position: 'absolute', top: '6%', animation: fly('ltr', 95, -75) }}>
-              <PlaneShape flip={false} />
-            </div>
-
-            <div style={{ position: 'absolute', top: '14%', animation: fly('rtl', 115, -58) }}>
-              <PlaneShape flip={true} />
             </div>
           </>
         )}

@@ -6,9 +6,13 @@ import {
   coachellaLiveTile,
   concertLiveTile,
   edcLiveTile,
+  isVenueInView,
   venueInFocus,
+  whichStageLiveTile,
+  whichStageMidX,
 } from '@/lib/venues';
-import { isSouthernCaliforniaTile, isVegasTile, worldTileKind } from '@/lib/worldTiles';
+import { isSouthernCaliforniaTile, isTentarooTile, isVegasTile, worldTileKind } from '@/lib/worldTiles';
+import { WHICH_STAGE_HALF } from './tentaroo/constants';
 import { CITY_MID_W, MID_F, midOriginForTile, midWidthForTile, nearMidTiles } from '@/lib/parallax';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
 import { GradientMidTerrain } from './shared/GradientMidTerrain';
@@ -17,6 +21,7 @@ import { CityVenuesTile } from './CityVenuesLayer';
 import { MidBushes } from './MidBushes';
 import { SfMidFeatures } from './SfMidFeatures';
 import { SeattleBuildingsTile, SeattleMidFeatures } from './seattle';
+import { TentarooTile, WhichStage } from './tentaroo';
 import { SouthernCaliforniaTile } from './sandiego';
 import { EDCStage, LasVegasSkyline } from './lasvegas';
 import { FestivalStage } from './sandiego/FestivalStage';
@@ -43,11 +48,12 @@ function edcLiveOnTile(
   concertLive: number,
   coachellaLive: number,
   edcLive: number,
+  whichStageLive: number,
   focus: ReturnType<typeof venueInFocus>,
   deepLinkRoute?: VenueRoute,
 ) {
   return isVenueLive(
-    'edc', t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute,
+    'edc', t, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute,
   );
 }
 
@@ -57,15 +63,37 @@ function coachellaLiveOnTile(
   concertLive: number,
   coachellaLive: number,
   edcLive: number,
+  whichStageLive: number,
   focus: ReturnType<typeof venueInFocus>,
   deepLinkRoute?: VenueRoute,
 ) {
   return isVenueLive(
-    'coachella', t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute,
+    'coachella', t, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute,
   );
 }
 
-/** Mid parallax: SF → town → Vegas → town → San Diego+Coachella → town → Seattle → town. */
+function whichStageLiveOnTile(
+  t: number,
+  vx: number,
+  cinemaLive: number,
+  concertLive: number,
+  coachellaLive: number,
+  edcLive: number,
+  whichStageLive: number,
+  focus: ReturnType<typeof venueInFocus>,
+  deepLinkRoute?: VenueRoute,
+) {
+  if (!isTentarooTile(t)) return false;
+  const midX = whichStageMidX(t);
+  if (midX != null && isVenueInView(vx, t, midX, WHICH_STAGE_HALF)) {
+    return true;
+  }
+  return isVenueLive(
+    'which-stage', t, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute,
+  );
+}
+
+/** Mid parallax: SF → town → Vegas → town → SoCal → town → Tentaroo → town → Seattle → town. */
 export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
   function MidLayer({ worldOff, deepLinkRoute, foregroundRef }, ref) {
     const vx = worldOff * MID_F;
@@ -74,6 +102,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
     const concertLive  = concertLiveTile(vx);
     const coachellaLive = coachellaLiveTile(vx);
     const edcLive     = edcLiveTile(vx);
+    const whichStageLive = whichStageLiveTile(vx);
     const focus        = venueInFocus(vx);
 
     const stageGroundY = STAGE_ANCHOR_Y;
@@ -123,13 +152,14 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             {isSouthernCaliforniaTile(t) && (
               <SouthernCaliforniaTile tileIndex={t} />
             )}
+            {isTentarooTile(t) && <TentarooTile />}
           </g>
           {kind === 'town' && <SmallTownTile tileIndex={t} tileWidth={w} />}
           <rect x={0} y={0} width={w} height={900} fill="url(#atmo)" />
         </>
       );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute]);
+    }, [cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute]);
 
     const renderMidForeground = useCallback((t: number) => {
       const scale = tileContentScale(t);
@@ -138,20 +168,27 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
       if (isVegasTile(t)) {
         return (
           <g transform={tf}>
-            <EDCStage live={edcLiveOnTile(t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute)} />
+            <EDCStage live={edcLiveOnTile(t, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute)} />
           </g>
         );
       }
       if (isSouthernCaliforniaTile(t)) {
         return (
           <g transform={tf}>
-            <FestivalStage live={coachellaLiveOnTile(t, cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute)} />
+            <FestivalStage live={coachellaLiveOnTile(t, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute)} />
+          </g>
+        );
+      }
+      if (isTentarooTile(t)) {
+        return (
+          <g transform={tf}>
+            <WhichStage live={whichStageLiveOnTile(t, vx, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute)} />
           </g>
         );
       }
       return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [cinemaLive, concertLive, coachellaLive, edcLive, focus, deepLinkRoute]);
+    }, [cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute]);
 
     const atmoDefs = (
       <defs>

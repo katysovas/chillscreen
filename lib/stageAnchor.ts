@@ -3,10 +3,11 @@ import {
   liveCoachellaMidWorldX,
   liveConcertMidWorldX,
   liveEdcMidWorldX,
+  liveWhichStageMidWorldX,
 } from './concertDance';
 
 /** Festival stages that host a Buz merch cart. */
-export type StageAnchorKind = 'concert' | 'coachella' | 'edc';
+export type StageAnchorKind = 'concert' | 'coachella' | 'edc' | 'which-stage';
 
 /** How far Buz wanders from the cart spot (ground world px). */
 export const STAGE_VENDOR_WANDER_PX = 55;
@@ -16,6 +17,7 @@ const CROWD_OFFSET_PCT: Record<StageAnchorKind, number> = {
   concert: 11,
   coachella: 9,
   edc: 9,
+  'which-stage': 9,
 };
 
 export function liveAnchoredStageMidWorldX(
@@ -29,6 +31,8 @@ export function liveAnchoredStageMidWorldX(
       return liveCoachellaMidWorldX(worldOff);
     case 'edc':
       return liveEdcMidWorldX(worldOff);
+    case 'which-stage':
+      return liveWhichStageMidWorldX(worldOff);
   }
 }
 

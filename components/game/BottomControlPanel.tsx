@@ -14,6 +14,10 @@ type BottomControlPanelProps = {
   venueRoute?: VenueRoute;
   connectName?: string | null;
   hidden?: boolean;
+  onCapturePhoto?: () => void | Promise<void>;
+  vendorShopOpen?: boolean;
+  onToggleVendorShop?: () => void;
+  onVendorShopWarm?: () => void;
 };
 
 const hintText: React.CSSProperties = {
@@ -39,16 +43,85 @@ const ghostBtn: React.CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-/** Bottom-center panel — invite, connect hints, and future stage actions. */
+const panelDivider: React.CSSProperties = {
+  width: 1,
+  alignSelf: 'stretch',
+  background: 'rgba(255,255,255,.1)',
+  flexShrink: 0,
+};
+
+/** Re-enable when paraloid capture is ready. */
+const PARALOID_CAPTURE_ENABLED = false;
+
+function CameraIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      style={{ display: 'block' }}
+    >
+      {/* flat body */}
+      <rect x={3} y={7} width={18} height={13} rx={2} stroke="currentColor" strokeWidth={1.5} />
+      {/* viewfinder housing */}
+      <path
+        d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+      {/* eyepiece slot */}
+      <rect x={10.2} y={4.8} width={3.6} height={1.4} rx={0.35} fill="currentColor" />
+      {/* flash */}
+      <rect x={5} y={9.2} width={2.8} height={2} rx={0.45} stroke="currentColor" strokeWidth={1.25} />
+      {/* lens ring */}
+      <circle cx={12} cy={13.5} r={4.1} stroke="currentColor" strokeWidth={1.5} />
+      {/* lens glass — flat filled disc */}
+      <circle cx={12} cy={13.5} r={2.3} fill="currentColor" />
+    </svg>
+  );
+}
+
+function ShoppingCartIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      style={{ display: 'block' }}
+    >
+      <path
+        d="M4 5h1.2l1.4 9.2a1.5 1.5 0 0 0 1.48 1.3h8.76a1.5 1.5 0 0 0 1.48-1.3L19.8 7H7.2"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx={10} cy={19.5} r={1.25} fill="currentColor" />
+      <circle cx={16.5} cy={19.5} r={1.25} fill="currentColor" />
+    </svg>
+  );
+}
+
+/** Bottom-center panel — vendor cart, paraloid capture, invite, connect hints. */
 export function BottomControlPanel({
   worldOff,
   playerName,
   venueRoute,
   connectName = null,
   hidden = false,
+  onCapturePhoto,
+  vendorShopOpen = false,
+  onToggleVendorShop,
+  onVendorShopWarm,
 }: BottomControlPanelProps) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [capturing, setCapturing] = useState(false);
 
   const route = useMemo(
     () => activeVenueRoute(worldOff, venueRoute),
@@ -63,7 +136,8 @@ export function BottomControlPanel({
   const showInvite = Boolean(route && inviteUrl);
   const showConnect = Boolean(connectName?.trim());
   const showInviteBtn = showInvite && !showConnect;
-  const visible = !hidden && (showInviteBtn || showConnect);
+  const hasMessages = showConnect || showInviteBtn;
+  const showCart = Boolean(onToggleVendorShop);
 
   const copyLink = useCallback(async () => {
     if (!inviteUrl) return;
@@ -76,6 +150,16 @@ export function BottomControlPanel({
     }
   }, [inviteUrl]);
 
+  const handleCapture = useCallback(async () => {
+    if (!onCapturePhoto || capturing) return;
+    setCapturing(true);
+    try {
+      await onCapturePhoto();
+    } finally {
+      setCapturing(false);
+    }
+  }, [capturing, onCapturePhoto]);
+
   useEffect(() => {
     if (hidden || showConnect) setInviteOpen(false);
   }, [hidden, showConnect]);
@@ -84,10 +168,11 @@ export function BottomControlPanel({
     setInviteOpen(false);
   }, [route]);
 
-  if (!visible) return null;
+  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showCart && !hasMessages)) return null;
 
   return (
     <div
+      data-paraloid-ui
       className="bottom-[max(108px,calc(env(safe-area-inset-bottom)+100px))] md:bottom-5"
       style={{
         position: 'absolute',
@@ -101,55 +186,124 @@ export function BottomControlPanel({
       <div
         style={{
           borderRadius: 999,
-          padding: '7px 16px',
           background: 'rgba(0,0,0,.36)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
           border: '1px solid rgba(255,255,255,.1)',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 10,
-          flexWrap: 'nowrap',
+          alignItems: 'stretch',
+          overflow: 'hidden',
         }}
       >
-        {showConnect && (
-          <span style={hintText}>↵ connect with {connectName}</span>
-        )}
-        {showInviteBtn && (
+        {showCart && (
           <button
             type="button"
-            onClick={() => setInviteOpen(o => !o)}
-            aria-expanded={inviteOpen}
+            onClick={onToggleVendorShop}
+            onMouseEnter={onVendorShopWarm}
+            onFocus={onVendorShopWarm}
+            aria-label={vendorShopOpen ? 'Close festival store' : 'Open festival store'}
+            aria-pressed={vendorShopOpen}
+            title={vendorShopOpen ? 'Close store' : 'Festival store'}
             style={{
               ...ghostBtn,
-              color: inviteOpen ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.65)',
+              padding: '8px 14px',
+              background: vendorShopOpen ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.06)',
+              color: vendorShopOpen ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.78)',
+              cursor: 'pointer',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            Invite Friends
+            <ShoppingCartIcon />
           </button>
         )}
-        {inviteOpen && showInviteBtn && (
-          <>
-            <span style={{ color: 'rgba(255,255,255,.2)', fontSize: 10, userSelect: 'none' }}>·</span>
-            <span
-              style={{
-                maxWidth: 'min(42vw, 200px)',
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                fontSize: 10,
-                color: 'rgba(255,255,255,.5)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {inviteLinkLabel(inviteUrl)}
-            </span>
-            <span style={{ color: 'rgba(255,255,255,.2)', fontSize: 10, userSelect: 'none' }}>·</span>
-            <button type="button" onClick={copyLink} style={ghostBtn}>
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-          </>
+
+        {showCart && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
+          <div style={panelDivider} aria-hidden />
+        )}
+
+        {PARALOID_CAPTURE_ENABLED && (
+          <button
+            type="button"
+            onClick={handleCapture}
+            disabled={!onCapturePhoto || capturing}
+            aria-label={capturing ? 'Capturing photo' : 'Capture photo'}
+            aria-busy={capturing}
+            title="Capture photo"
+            style={{
+              ...ghostBtn,
+              padding: '8px 14px',
+              background: 'rgba(255,255,255,.06)',
+              color: capturing ? 'rgba(255,255,255,.45)' : 'rgba(255,255,255,.78)',
+              cursor: onCapturePhoto && !capturing ? 'pointer' : 'default',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <CameraIcon />
+          </button>
+        )}
+
+        {PARALOID_CAPTURE_ENABLED && hasMessages && (
+          <div style={panelDivider} aria-hidden />
+        )}
+
+        {hasMessages && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              flexWrap: 'nowrap',
+              padding: '7px 16px',
+              minWidth: 0,
+            }}
+          >
+              {showConnect && (
+                <span style={hintText}>↵ connect with {connectName}</span>
+              )}
+              {showInviteBtn && (
+                <button
+                  type="button"
+                  onClick={() => setInviteOpen(o => !o)}
+                  aria-expanded={inviteOpen}
+                  style={{
+                    ...ghostBtn,
+                    color: inviteOpen ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.65)',
+                  }}
+                >
+                  Invite Friends
+                </button>
+              )}
+              {inviteOpen && showInviteBtn && (
+                <>
+                  <span style={{ color: 'rgba(255,255,255,.2)', fontSize: 10, userSelect: 'none' }}>·</span>
+                  <span
+                    style={{
+                      maxWidth: 'min(42vw, 200px)',
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                      fontStyle: 'normal',
+                      fontSize: 10,
+                      color: 'rgba(255,255,255,.5)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {inviteLinkLabel(inviteUrl)}
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,.2)', fontSize: 10, userSelect: 'none' }}>·</span>
+                  <button type="button" onClick={copyLink} style={ghostBtn}>
+                    {copied ? 'Copied' : 'Copy'}
+                  </button>
+                </>
+              )}
+            </div>
         )}
       </div>
     </div>

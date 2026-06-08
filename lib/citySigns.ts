@@ -1,22 +1,10 @@
 import { worldTileSlot } from '@/lib/worldTiles';
 
-export type SingleCitySignDef = {
-  type: 'single';
-  label: string;
-  dir: 'left' | 'right';
-  icon: string;
-  accent: string;
-  xFrac: number;
-};
-
 export type CombinedTownSignDef = {
-  type: 'combined';
   xFrac: number;
   leftCity: { label: string; icon: string; accent: string };
   rightCity: { label: string; icon: string; accent: string };
 };
-
-export type RoadSignDef = SingleCitySignDef | CombinedTownSignDef;
 
 const SF = {
   label: 'San Francisco',
@@ -42,6 +30,13 @@ const COACHELLA = {
   accent: '#e85074',
 } as const;
 
+/** Tentaroo festival grounds — city name on road signs. */
+export const TENNESSEE = {
+  label: 'Tennessee',
+  icon: '🎸',
+  accent: '#50b87a',
+} as const;
+
 const VEGAS = {
   label: 'Las Vegas',
   icon: '🎰',
@@ -51,34 +46,23 @@ const VEGAS = {
 const TOWN_CENTER = 0.5;
 
 /**
- * SF → town → Vegas → town → San Diego+Coachella → town → Seattle → town
- * Never label the city you're already on.
+ * SF → town → Vegas → town → SoCal → town → Tentaroo → town → Seattle → town
+ * Junction poles only — one combined left/right sign per connector town.
  */
-export function citySignsForTile(tileIndex: number): RoadSignDef[] {
+export function citySignsForTile(tileIndex: number): CombinedTownSignDef[] {
   const slot = worldTileSlot(tileIndex);
 
-  // Single "exit" signs sit near the right edge of each city tile, clearly
-  // separated from the centrally-placed venue signs, and point to the next
-  // city in the +x (walk-right) direction.
-  const EXIT = 0.9;
-
   switch (slot) {
-    case 0:
-      return [{ type: 'single', ...VEGAS, dir: 'right', xFrac: EXIT }];
     case 1:
-      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: SF, rightCity: VEGAS }];
-    case 2:
-      return [{ type: 'single', ...SAN_DIEGO, dir: 'right', xFrac: EXIT }];
+      return [{ xFrac: TOWN_CENTER, leftCity: SF, rightCity: VEGAS }];
     case 3:
-      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: VEGAS, rightCity: SAN_DIEGO }];
-    case 4:
-      return [{ type: 'single', ...SEATTLE, dir: 'right', xFrac: EXIT }];
+      return [{ xFrac: TOWN_CENTER, leftCity: VEGAS, rightCity: SAN_DIEGO }];
     case 5:
-      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: COACHELLA, rightCity: SEATTLE }];
-    case 6:
-      return [{ type: 'single', ...SF, dir: 'right', xFrac: EXIT }];
+      return [{ xFrac: TOWN_CENTER, leftCity: COACHELLA, rightCity: TENNESSEE }];
     case 7:
-      return [{ type: 'combined', xFrac: TOWN_CENTER, leftCity: SEATTLE, rightCity: SF }];
+      return [{ xFrac: TOWN_CENTER, leftCity: TENNESSEE, rightCity: SEATTLE }];
+    case 9:
+      return [{ xFrac: TOWN_CENTER, leftCity: SEATTLE, rightCity: SF }];
     default:
       return [];
   }

@@ -207,7 +207,11 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
         <GlowstickAmbient active={glowstickAmbient} />
 
         {chatOverlay && (
-          <div ref={chatAnchorRef} style={chatAnchorStyle(bubbleSide, scale, mirrored)}>
+          <div
+            ref={chatAnchorRef}
+            data-paraloid-ui
+            style={chatAnchorStyle(bubbleSide, scale, mirrored)}
+          >
             {chatOverlay}
           </div>
         )}

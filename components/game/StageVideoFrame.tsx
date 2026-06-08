@@ -72,6 +72,7 @@ export function StageVideoFrame({
           opacity: playerVisible ? 0 : 1,
           transition: playerVisible ? 'opacity 0.8s' : 'none',
         }}
+        data-stage-video-veil
       >
         <span
           style={{

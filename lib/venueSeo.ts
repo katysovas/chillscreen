@@ -37,6 +37,12 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'Visit Chill Cinema in San Francisco on WhichStage — an outdoor movie screen ' +
       'with curated films while you explore the city.',
   },
+  tentaroo: {
+    title: 'Tennessee',
+    description:
+      'Explore Tennessee on WhichStage — Tentaroo campground, the Which Stage main rig, ' +
+      'and live Bonnaroo sets with friends in your browser.',
+  },
 };
 
 export function venueSeoForRoute(route: VenueRoute): VenueSeo {

@@ -18,6 +18,7 @@ type Props = {
   loadout: CharacterLoadout;
   onPurchase: (itemId: string) => void;
   onUnequip: (itemId: string) => void;
+  onClose?: () => void;
 };
 
 function SwordPreview() {
@@ -141,7 +142,7 @@ function ItemPreview({ itemId }: { itemId: VendorShopItemId }) {
 }
 
 /** Buz's merch panel — fixed on the right so chat stays clear. */
-export function VendorShopPanel({ loadout, onPurchase, onUnequip }: Props) {
+export function VendorShopPanel({ loadout, onPurchase, onUnequip, onClose }: Props) {
   const [categoryId, setCategoryId] = useState(DEFAULT_VENDOR_CATEGORY);
   const category =
     VENDOR_SHOP_CATEGORIES.find(c => c.id === categoryId) ?? VENDOR_SHOP_CATEGORIES[0]!;
@@ -164,24 +165,40 @@ export function VendorShopPanel({ loadout, onPurchase, onUnequip }: Props) {
         pointerEvents: 'auto',
       }}
     >
-      <div
-        style={{
-          fontSize: 8,
-          fontWeight: 700,
-          letterSpacing: 1.2,
-          textTransform: 'uppercase',
-          color: '#aaa',
-          marginBottom: 2,
-        }}
-      >
-        Buz&apos;s Cart
-      </div>
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close store"
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 24,
+            height: 24,
+            padding: 0,
+            border: 'none',
+            borderRadius: 6,
+            background: 'transparent',
+            color: '#999',
+            fontSize: 16,
+            lineHeight: 1,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          ×
+        </button>
+      )}
       <div
         style={{
           fontSize: 13,
           fontWeight: 700,
           color: '#222',
           marginBottom: 10,
+          paddingRight: onClose ? 20 : 0,
         }}
       >
         Festival Store

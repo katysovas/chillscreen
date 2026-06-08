@@ -5,9 +5,11 @@ const SF_VEGAS_TOWN = 1;
 const VEGAS_SLOT = 2;
 const VEGAS_SD_TOWN = 3;
 const SOCAL_SLOT = 4;
-const SOCAL_SEATTLE_TOWN = 5;
-const SEATTLE_SLOT = 6;
-const SEATTLE_EAST_TOWN = 7;
+const SOCAL_TENTAROO_TOWN = 5;
+const TENTAROO_SLOT = 6;
+const TENTAROO_SEATTLE_TOWN = 7;
+const SEATTLE_SLOT = 8;
+const SEATTLE_EAST_TOWN = 9;
 
 /** City ground tiles are full-width; towns use TOWN_GND_W. */
 const CITY_GND_MIN = 3000;
@@ -24,6 +26,8 @@ function groundStageBand(tileIndex: number, propX: number, tileWidth: number): b
         return propX >= 2650 && propX <= 3380;
       case SOCAL_SLOT:
         return propX >= 2500 && propX <= 3280;
+      case TENTAROO_SLOT:
+        return propX >= 1280 && propX <= 2100;
       case SEATTLE_SLOT:
         return propX >= 880 && propX <= 1580;
       default:
@@ -36,7 +40,9 @@ function groundStageBand(tileIndex: number, propX: number, tileWidth: number): b
       return propX >= tileWidth - 300;
     case VEGAS_SD_TOWN:
       return propX <= 260 || propX >= tileWidth - 260;
-    case SOCAL_SEATTLE_TOWN:
+    case SOCAL_TENTAROO_TOWN:
+      return propX <= 260 || propX >= tileWidth - 260;
+    case TENTAROO_SEATTLE_TOWN:
       return propX <= 260 || propX >= tileWidth - 260;
     case SEATTLE_EAST_TOWN:
       return propX <= 300;
@@ -73,7 +79,9 @@ export function skipTownMidTree(tileIndex: number, treeX: number, tileWidth: num
       return treeX >= tileWidth - 200;
     case VEGAS_SD_TOWN:
       return treeX <= 110 || treeX >= tileWidth - 200;
-    case SOCAL_SEATTLE_TOWN:
+    case SOCAL_TENTAROO_TOWN:
+      return treeX <= 110 || treeX >= tileWidth - 200;
+    case TENTAROO_SEATTLE_TOWN:
       return treeX <= 110 || treeX >= tileWidth - 200;
     case SEATTLE_EAST_TOWN:
       return treeX <= 130;

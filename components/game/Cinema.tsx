@@ -401,7 +401,7 @@ function CinemaLive() {
               allowFullScreen
               style={{ display: 'block', border: 'none', background: '#000' }}
             />
-            <div style={{
+            <div data-stage-video-veil style={{
               position: 'absolute', inset: 0, zIndex: 10,
               background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,

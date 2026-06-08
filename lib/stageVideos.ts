@@ -37,7 +37,8 @@ export type StageChannel =
   | 'bumbershoot'
   | 'outside-lands'
   | 'coachella'
-  | 'edc';
+  | 'edc'
+  | 'which-stage';
 
 /** Per-stage playlist rules — matched against video titles (case-insensitive). */
 export type StagePlaylistRules = {
@@ -156,6 +157,16 @@ export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
       { id: 'PeMr2TQEObc', title: 'John Summit', durationSec: 4776 },
     ],
   },
+  'which-stage': {
+    source: 'youtube-api',
+    searchQuery: 'bonnaroo live',
+    maxResults: 20,
+    fallbackVideos: [
+      { id: 'uQ588C9Ecp4', title: 'Fisher', durationSec: 4381 },
+      { id: '3NyGf1X_gFA', title: 'Kaytranada', durationSec: 4241 },
+      { id: 'PeMr2TQEObc', title: 'John Summit', durationSec: 4776 },
+    ],
+  },
 };
 
 function fallbackPlaylist(cfg: StageChannelConfig): StageVideo[] {
@@ -173,6 +184,7 @@ export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
   'outside-lands': fallbackPlaylist(STAGE_CHANNEL_CONFIG['outside-lands']),
   coachella: fallbackPlaylist(STAGE_CHANNEL_CONFIG.coachella),
   edc: fallbackPlaylist(STAGE_CHANNEL_CONFIG.edc),
+  'which-stage': fallbackPlaylist(STAGE_CHANNEL_CONFIG['which-stage']),
 };
 
 /**
@@ -204,6 +216,20 @@ export const DEFAULT_STAGE_SYNC: StageSync = {
   playlists: STAGE_PLAYLISTS,
 };
 
+/** Merge server playlists with local fallbacks so new channels always have videos. */
+export function mergeStagePlaylists(
+  remote: Partial<Record<StageChannel, StageVideo[]>> | undefined,
+): Record<StageChannel, StageVideo[]> {
+  return (Object.keys(STAGE_PLAYLISTS) as StageChannel[]).reduce(
+    (acc, channel) => {
+      const list = remote?.[channel];
+      acc[channel] = list?.length ? list : STAGE_PLAYLISTS[channel];
+      return acc;
+    },
+    {} as Record<StageChannel, StageVideo[]>,
+  );
+}
+
 export type ScheduledVideo = {
   video: StageVideo;
   /** Index into the channel playlist. */
@@ -227,8 +253,8 @@ export function scheduleFor(
   now: number,
   sync: StageSync = DEFAULT_STAGE_SYNC,
 ): ScheduledVideo | null {
-  const list = sync.playlists[channel];
-  if (!list || list.length === 0) return null;
+  const list = mergeStagePlaylists(sync.playlists)[channel];
+  if (!list.length) return null;
 
   // Build per-video durations (ms) and total cycle length.
   const durationsMs = list.map(v =>

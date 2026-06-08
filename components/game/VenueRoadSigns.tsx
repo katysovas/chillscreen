@@ -1,87 +1,6 @@
-import {
-  CINEMA_SIGN_MID_X,
-  CONCERT_SIGN_MID_X,
-  MID_TILE,
-  VIEW_CENTER_X,
-  cinemaMidX,
-  concertLabel,
-  concertMidX,
-} from '@/lib/venues';
 import { citySignsForTile } from '@/lib/citySigns';
-import {
-  isSanFranciscoTile,
-  isSeattleTile,
-  isSouthernCaliforniaTile,
-  isVegasTile,
-} from '@/lib/worldTiles';
-import { MID_F } from '@/lib/parallax';
-import { gndOriginForTile, midOriginForTile } from '@/lib/worldTileGeometry';
-import { COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
-import { EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
-import { ArrowSignBoard, SignPost } from './city/ArrowSignBoard';
-
-/** Ground-tile x — locked to sidewalk scroll (GND_F). */
-export function venueSignGroundX(midX: number, groundTile: number) {
-  return Math.round((midX / MID_TILE) * groundTile);
-}
-
-export function concertSignGroundX(groundTile = 3600) {
-  return venueSignGroundX(CONCERT_SIGN_MID_X, groundTile);
-}
-
-export function cinemaSignGroundX(groundTile = 3600) {
-  return venueSignGroundX(CINEMA_SIGN_MID_X, groundTile);
-}
-
-export type StreetSignProps = {
-  x: number;
-  y: number;
-  dir: 'left' | 'right';
-  label: string;
-  accent: string;
-  icon: string;
-};
-
-const ARROW_HALF_LEN = 58;
-const ARROW_HALF_H = 19;
-const ARROW_TIP_LEN = 17;
-const WING_OFFSET = ARROW_HALF_LEN + 16;
-
-export function StreetSign({ x, y, dir, label, accent, icon }: StreetSignProps) {
-  const basePostH = 28;
-  const arrowCy = -basePostH - ARROW_HALF_H - 2;
-  const postTop = arrowCy - ARROW_HALF_H - 6;
-  const postH = -postTop;
-  const wingX = dir === 'left' ? -WING_OFFSET : WING_OFFSET;
-
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <ellipse cx={0} cy={3} rx={WING_OFFSET + 12} ry={7} fill="rgba(0,0,0,.22)" />
-
-      <SignPost
-        postTop={postTop}
-        postH={postH}
-        armCy={arrowCy}
-        armDir={dir}
-        wingOffset={WING_OFFSET}
-        arrowHalfLen={ARROW_HALF_LEN}
-      />
-
-      <g transform={`translate(${wingX},0)`}>
-        <ArrowSignBoard
-          cy={arrowCy}
-          dir={dir}
-          label={label}
-          icon={icon}
-          accent={accent}
-          halfLen={ARROW_HALF_LEN}
-          halfH={ARROW_HALF_H}
-          tipLen={ARROW_TIP_LEN}
-        />
-      </g>
-    </g>
-  );
-}
+import { resolveSignGroundLocalX, signParallaxOverlapsStage } from '@/lib/signPlacement';
+import { ArrowSignBoard } from './city/ArrowSignBoard';
 
 type CombinedTownSignProps = {
   x: number;
@@ -181,155 +100,29 @@ type TileRoadSignsProps = {
   tileIndex: number;
   y: number;
   groundTile?: number;
+  worldOff: number;
 };
 
-/**
- * Walk-direction-accurate venue sign.
- *
- * Signs live on the GROUND layer (parallax 1.0) but venues live on the MID
- * layer (parallax 0.35), so comparing their on-screen x positions gives the
- * wrong answer. The only coordinate both share is `worldOff` (the master
- * travel offset). We compute the worldOff at which the venue centers vs. the
- * worldOff at which the sign centers; if the venue centers further right
- * (larger worldOff) the player must walk right, otherwise left. This is correct
- * no matter which side the player approaches from.
- */
-function VenueArrowSign({
-  tileIndex,
-  venueMidX,
-  label,
-  accent,
-  icon,
-  groundTile,
-  y,
-}: {
-  tileIndex: number;
-  venueMidX: number;
-  label: string;
-  accent: string;
-  icon: string;
-  groundTile: number;
-  y: number;
-}) {
-  const venueGround = venueSignGroundX(venueMidX, groundTile);
-  const signX = Math.min(Math.max(90, venueGround - 300), groundTile - 700);
-
-  const worldOffVenueCenters =
-    (midOriginForTile(tileIndex) + venueMidX - VIEW_CENTER_X) / MID_F;
-  const worldOffSignCenters =
-    gndOriginForTile(tileIndex) + signX - VIEW_CENTER_X;
-  const dir: 'left' | 'right' =
-    worldOffVenueCenters >= worldOffSignCenters ? 'right' : 'left';
-
-  return <StreetSign x={signX} y={y} dir={dir} label={label} accent={accent} icon={icon} />;
-}
-
-/** City direction signs + venue signs (only in their home city). */
-export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSignsProps) {
+/** Combined junction signs on connector towns only. */
+export function TileRoadSigns({ tileIndex, y, groundTile = 3600, worldOff }: TileRoadSignsProps) {
   const citySigns = citySignsForTile(tileIndex);
 
   return (
     <g className="road-signs">
-      {citySigns.map((sign, i) =>
-        sign.type === 'combined' ? (
+      {citySigns.map((sign, i) => {
+        const x = resolveSignGroundLocalX(tileIndex, Math.round(sign.xFrac * groundTile), groundTile);
+        if (signParallaxOverlapsStage(tileIndex, x, worldOff)) return null;
+
+        return (
           <CombinedTownSign
             key={`city-${i}`}
-            x={Math.round(sign.xFrac * groundTile)}
+            x={x}
             y={y}
             leftCity={sign.leftCity}
             rightCity={sign.rightCity}
           />
-        ) : (
-          <StreetSign
-            key={`city-${i}`}
-            x={Math.round(sign.xFrac * groundTile)}
-            y={y}
-            dir={sign.dir}
-            label={sign.label}
-            accent={sign.accent}
-            icon={sign.icon}
-          />
-        ),
-      )}
-      {isSeattleTile(tileIndex) && concertMidX(tileIndex) != null && (
-        <VenueArrowSign
-          tileIndex={tileIndex}
-          venueMidX={concertMidX(tileIndex)!}
-          label={concertLabel(tileIndex) ?? 'Seattle Concerts'}
-          accent="#1a9a52"
-          icon="♪"
-          groundTile={groundTile}
-          y={y}
-        />
-      )}
-      {isSanFranciscoTile(tileIndex) && (
-        <>
-          {concertMidX(tileIndex) != null && (
-            <VenueArrowSign
-              tileIndex={tileIndex}
-              venueMidX={concertMidX(tileIndex)!}
-              label={concertLabel(tileIndex) ?? 'Outside Hands'}
-              accent="#1a9a52"
-              icon="♪"
-              groundTile={groundTile}
-              y={y}
-            />
-          )}
-          <VenueArrowSign
-            tileIndex={tileIndex}
-            venueMidX={cinemaMidX(tileIndex) ?? CINEMA_SIGN_MID_X}
-            label="Cinema"
-            accent="#b8860b"
-            icon="🎬"
-            groundTile={groundTile}
-            y={y}
-          />
-        </>
-      )}
-      {isSouthernCaliforniaTile(tileIndex) && (
-        <VenueArrowSign
-          tileIndex={tileIndex}
-          venueMidX={COACHELLA_STAGE_MID_X}
-          label="Couchella"
-          accent="#e85074"
-          icon="🎡"
-          groundTile={groundTile}
-          y={y}
-        />
-      )}
-      {isVegasTile(tileIndex) && (
-        <VenueArrowSign
-          tileIndex={tileIndex}
-          venueMidX={EDC_STAGE_MID_X}
-          label="Electric Daze"
-          accent="#00e5ff"
-          icon="🦉"
-          groundTile={groundTile}
-          y={y}
-        />
-      )}
-    </g>
-  );
-}
-
-/** @deprecated Use TileRoadSigns per tile — kept for tests / imports. */
-export function VenueRoadSigns({
-  y,
-  concertX,
-  cinemaX,
-  groundTile = 3600,
-}: {
-  y: number;
-  concertX?: number;
-  cinemaX?: number;
-  groundTile?: number;
-}) {
-  const cX = concertX ?? concertSignGroundX(groundTile);
-  const mX = cinemaX ?? cinemaSignGroundX(groundTile);
-  return (
-    <g className="venue-road-signs">
-      <StreetSign x={cX} y={y} dir="left" label="Concert" accent="#1a9a52" icon="♪" />
-      <StreetSign x={mX} y={y} dir="right" label="Cinema" accent="#b8860b" icon="🎬" />
+        );
+      })}
     </g>
   );
 }

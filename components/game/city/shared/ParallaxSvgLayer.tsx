@@ -53,6 +53,7 @@ export const ParallaxSvgLayer = forwardRef<SVGSVGElement, ParallaxSvgLayerProps>
     return (
       <svg
         ref={ref}
+        data-paraloid-svg
         className={className}
         viewBox={`${viewBoxX} 0 1400 900`}
         width="100%"

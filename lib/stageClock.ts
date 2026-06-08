@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   DEFAULT_STAGE_SYNC,
+  mergeStagePlaylists,
   scheduleFor,
   type ScheduledVideo,
   type StageChannel,
@@ -87,7 +88,11 @@ export function bootstrapStageSyncFromApi() {
 }
 
 export function getStageSync(): StageSync {
-  return serverSync ?? DEFAULT_STAGE_SYNC;
+  const base = serverSync ?? DEFAULT_STAGE_SYNC;
+  return {
+    ...base,
+    playlists: mergeStagePlaylists(base.playlists),
+  };
 }
 
 /** Wall-clock time aligned to the server (falls back to local time pre-sync). */

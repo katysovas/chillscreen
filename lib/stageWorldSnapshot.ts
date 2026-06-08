@@ -13,6 +13,7 @@ const STAGE_META: { channel: StageChannel; stageName: string; city: string }[] =
   { channel: 'outside-lands', stageName: 'Outside Hands', city: 'San Francisco' },
   { channel: 'edc', stageName: 'Electric Daze', city: 'Las Vegas' },
   { channel: 'coachella', stageName: 'Couchella', city: 'Southern California' },
+  { channel: 'which-stage', stageName: 'Which Stage', city: 'Tennessee' },
   { channel: 'bumbershoot', stageName: 'Seattle Concerts', city: 'Seattle' },
 ];
 

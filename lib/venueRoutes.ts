@@ -1,7 +1,8 @@
 import { cityTileIndex } from '@/lib/spawn';
-import { isSouthernCaliforniaTile, isVegasTile } from '@/lib/worldTiles';
-import { cinemaMidX, coachellaMidX, concertMidX, edcMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
+import { isSouthernCaliforniaTile, isTentarooTile, isVegasTile } from '@/lib/worldTiles';
+import { cinemaMidX, coachellaMidX, concertMidX, edcMidX, whichStageMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
 import { midOriginForTile } from '@/lib/worldTileGeometry';
+import { WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
 export type { VenueRoute } from '@/lib/venueSlugs';
 export {
   parseVenueSlug,
@@ -50,6 +51,10 @@ export function worldOffForVenueRoute(route: VenueRoute): number {
       if (midX == null) throw new Error('cinema midX missing');
       return worldOffCenteringMidX(tile, midX);
     }
+    case 'tentaroo': {
+      const tile = cityTileIndex('tentaroo');
+      return worldOffCenteringMidX(tile, WHICH_STAGE_MID_X);
+    }
   }
 }
 
@@ -61,6 +66,7 @@ export function isScrollVenueLive(
   concertLive: number,
   coachellaLive: number,
   edcLive: number,
+  whichStageLive: number,
   focus: VenueKind,
 ): boolean {
   switch (kind) {
@@ -72,6 +78,8 @@ export function isScrollVenueLive(
       return tileIndex === coachellaLive && focus === 'coachella';
     case 'edc':
       return tileIndex === edcLive && focus === 'edc';
+    case 'which-stage':
+      return tileIndex === whichStageLive;
   }
 }
 
@@ -95,6 +103,8 @@ export function isDeepLinkVenueLive(
       return kind === 'coachella' && isSouthernCaliforniaTile(tileIndex);
     case 'edc':
       return kind === 'edc' && isVegasTile(tileIndex);
+    case 'tentaroo':
+      return kind === 'which-stage' && isTentarooTile(tileIndex);
   }
 }
 
@@ -105,11 +115,14 @@ export function isVenueLive(
   concertLive: number,
   coachellaLive: number,
   edcLive: number,
+  whichStageLive: number,
   focus: VenueKind,
   deepLinkRoute?: VenueRoute,
 ): boolean {
   if (deepLinkRoute && isDeepLinkVenueLive(deepLinkRoute, kind, tileIndex)) {
     return true;
   }
-  return isScrollVenueLive(kind, tileIndex, cinemaLive, concertLive, coachellaLive, edcLive, focus);
+  return isScrollVenueLive(
+    kind, tileIndex, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus,
+  );
 }
