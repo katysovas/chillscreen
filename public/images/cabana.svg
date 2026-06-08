@@ -1,0 +1,115 @@
+<!--
+  VIP CABANA  -  drop-in scene prop for whichstage.com
+  ============================================================================
+  viewBox      : 0 0 620 560   (cabana body spans x50-450; flag faces right to ~x604)
+  GROUND LINE  : y = 470  (post bases / where the structure meets the ground)
+  CARPET FRONT : y = 548  (red carpet flares toward the viewer)
+  PLACEMENT    : wrap in <g transform="translate(X, GROUND_Y - 470) scale(s)"> ...
+                 so the cabana base sits on your scene ground (ground at y~660 in
+                 your tiles => translate Y = 660 - 470 = 190 at scale 1).
+  THEME        : edit the CSS custom props on the root <svg style> below
+                 (flag, carpet, canopy, accent, banner, banner-ink ...).
+                 Vars are scoped to this svg root, so multiple cabanas with
+                 different style overrides can coexist on one page.
+  SIGN         : festival flag on a single pole, planted to the right; edit its <text>.
+  LOGO SLOT    : see "LOGO SLOT" group; swap the dashed circle for an <image>.
+  ANIMATED     : flag flutters (rotate + skew) on a single pole.
+-->
+<svg viewBox="0 0 620 560" xmlns="http://www.w3.org/2000/svg"
+     style="--canopy:#ffffff;--canopy-shade:#e6e8f0;--canopy-edge:#d2d6e2;
+            --post:#eef0f6;--post-shade:#cdd2df;--wall:#dfe2ec;--interior:#0d1712;
+            --curtain:#ffffff;--curtain-fold:#dadeea;
+            --carpet:#c0202e;--carpet-hi:#d83948;--carpet-shade:#9a141f;
+            --accent:#d4af37;--sign:#ffffff;--sign-edge:#d2d6e2;--ink:#1c2030;
+            --banner:#ffffff;--banner-ink:#1c2030;--flag:#ff4500;">
+
+  <!-- ground shadow -->
+  <ellipse cx="250" cy="476" rx="200" ry="22" fill="#000" opacity="0.12"/>
+
+  <!-- RED CARPET (on ground, behind the structure base) -->
+  <g>
+    <path d="M205 470 L295 470 L342 548 L158 548 Z" style="fill:var(--carpet, #c0202e)"/>
+    <path d="M250 470 L295 470 L342 548 L250 548 Z" style="fill:var(--carpet-shade, #9a141f)" opacity="0.35"/>
+    <path d="M232 470 L268 470 L286 548 L214 548 Z" style="fill:var(--carpet-hi, #d83948)" opacity="0.5"/>
+    <path d="M205 470 L158 548 M295 470 L342 548" style="fill:none;stroke:var(--accent, #d4af37);stroke-width:3" opacity="0.9"/>
+    <path d="M193 502 L307 502 M180 526 L320 526" style="fill:none;stroke:var(--accent, #d4af37);stroke-width:1.5" opacity="0.5"/>
+  </g>
+
+  <!-- back wall -->
+  <rect x="92" y="232" width="316" height="240" rx="4" style="fill:var(--wall, #dfe2ec)"/>
+
+  <!-- posts -->
+  <rect x="70" y="228" width="20" height="246" rx="4" style="fill:var(--post, #eef0f6)"/>
+  <rect x="82" y="228" width="8" height="246" style="fill:var(--post-shade, #cdd2df)" opacity="0.6"/>
+  <rect x="410" y="228" width="20" height="246" rx="4" style="fill:var(--post, #eef0f6)"/>
+  <rect x="422" y="228" width="8" height="246" style="fill:var(--post-shade, #cdd2df)" opacity="0.6"/>
+
+  <!-- curtains (tied back to posts) -->
+  <path d="M92 236 L198 236 Q196 295 176 326 Q150 352 130 360 Q152 384 152 432 Q152 458 168 468 Q130 460 96 468 L92 236 Z" style="fill:var(--curtain, #ffffff)"/>
+  <path d="M120 246 Q116 320 134 358 M150 244 Q150 320 150 360" style="fill:none;stroke:var(--curtain-fold, #dadeea);stroke-width:3;stroke-linecap:round" opacity="0.7"/>
+  <rect x="118" y="350" width="26" height="14" rx="7" transform="rotate(-12 131 357)" style="fill:var(--accent, #d4af37)"/>
+
+  <path d="M408 236 L302 236 Q304 295 324 326 Q350 352 370 360 Q348 384 348 432 Q348 458 332 468 Q370 460 404 468 L408 236 Z" style="fill:var(--curtain, #ffffff)"/>
+  <path d="M380 246 Q384 320 366 358 M350 244 Q350 320 350 360" style="fill:none;stroke:var(--curtain-fold, #dadeea);stroke-width:3;stroke-linecap:round" opacity="0.7"/>
+  <rect x="356" y="350" width="26" height="14" rx="7" transform="rotate(12 369 357)" style="fill:var(--accent, #d4af37)"/>
+
+  <!-- CANOPY (domed awning with scalloped valance) -->
+  <path d="M50 210 Q250 135 450 210 L450 232 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 L50 210 Z"
+        style="fill:var(--canopy, #ffffff);stroke:var(--canopy-edge, #d2d6e2);stroke-width:1.5"/>
+  <path d="M50 210 Q250 165 450 210 L450 232 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 L50 210 Z"
+        style="fill:var(--canopy-shade, #e6e8f0)" opacity="0.55"/>
+  <path d="M450 232 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0 q-25 28 -50 0"
+        style="fill:none;stroke:var(--accent, #d4af37);stroke-width:2.5" opacity="0.8"/>
+
+  <!-- ===== LOGO SLOT =====  center (250,236) r 24.
+       To use an image, replace the dashed circle + LOGO text with:
+       <image href="YOUR_LOGO" x="226" y="212" width="48" height="48"/>
+       (alt placement: above the doorway, ~x250 y320). -->
+  <g>
+    <circle cx="250" cy="236" r="24" style="fill:var(--sign, #ffffff)"/>
+    <circle cx="250" cy="236" r="24" style="fill:none;stroke:var(--accent, #d4af37);stroke-width:3"/>
+    <circle cx="250" cy="236" r="17" style="fill:none;stroke:var(--canopy-edge, #d2d6e2);stroke-width:1.5;stroke-dasharray:4 4"/>
+    <text x="250" y="240" text-anchor="middle" style="fill:var(--canopy-edge, #d2d6e2);font:600 9px sans-serif;letter-spacing:0.5px">LOGO</text>
+  </g>
+
+  <!-- VIP stanchions + rope (front of carpet) -->
+  <g>
+    <rect x="162" y="506" width="6" height="42" rx="3" style="fill:var(--accent, #d4af37)"/>
+    <circle cx="165" cy="504" r="6" style="fill:var(--accent, #d4af37)"/>
+    <rect x="332" y="506" width="6" height="42" rx="3" style="fill:var(--accent, #d4af37)"/>
+    <circle cx="335" cy="504" r="6" style="fill:var(--accent, #d4af37)"/>
+    <path d="M165 504 Q250 540 335 504" style="fill:none;stroke:var(--accent, #d4af37);stroke-width:3" opacity="0.85"/>
+  </g>
+
+  <!-- ===== SIGN (festival flag on a single pole) ===== planted to the right; flutters.
+       Edit the <text> lines for the venue name; recolor via the banner / banner-ink vars. -->
+  <ellipse cx="458" cy="471" rx="20" ry="5" fill="#000" opacity="0.12"/>
+  <line x1="458" y1="470" x2="458" y2="40" style="stroke:var(--post-shade, #cdd2df);stroke-width:4;stroke-linecap:round"/>
+  <circle cx="458" cy="38" r="4.5" style="fill:var(--accent, #d4af37)"/>
+  <g>
+    <animateTransform attributeName="transform" type="rotate"
+      values="-1.6 458 54;1.6 458 54;-1.6 458 54" keyTimes="0;0.5;1"
+      dur="3.2s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1"
+      repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="skewX" additive="sum"
+      values="-1.5;1.5;-1.5" keyTimes="0;0.5;1" dur="1.9s" calcMode="spline"
+      keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"/>
+    <!-- swallowtail flag cloth (faces right, away from the cabana) -->
+    <path d="M458 46 C508 44 558 47 604 48 L566 77 L604 106 C558 107 508 110 458 108 Z"
+          style="fill:var(--banner, #ffffff)"/>
+    <!-- soft lower-edge shade -->
+    <path d="M458 108 C508 110 558 107 604 106 L594 99 C556 101 508 99 458 98 Z"
+          style="fill:#000" opacity="0.07"/>
+    <!-- crease -->
+    <path d="M496 49 C498 70 496 90 496 105" style="fill:none;stroke:#000;stroke-width:1" opacity="0.05"/>
+    <!-- gold edge -->
+    <path d="M458 46 C508 44 558 47 604 48 L566 77 L604 106 C558 107 508 110 458 108"
+          style="fill:none;stroke:var(--accent, #d4af37);stroke-width:1.5" opacity="0.7"/>
+    <!-- text (two lines) -->
+    <text x="512" y="72" text-anchor="middle"
+          style="fill:var(--banner-ink, #1c2030);font:700 11px system-ui,'Segoe UI',Roboto,sans-serif;letter-spacing:2px">VIP</text>
+    <text x="512" y="95" text-anchor="middle"
+          style="fill:var(--banner-ink, #1c2030);font:800 16px system-ui,'Segoe UI',Roboto,sans-serif;letter-spacing:0.5px">REDDITORS</text>
+  </g>
+
+</svg>

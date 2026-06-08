@@ -58,6 +58,7 @@ import { SkyLayer } from './city/SkyLayer';
 import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 import { MidLayer } from './city/MidLayer';
 import { GroundLayer } from './city/GroundLayer';
+import { CabanaForegroundLayer } from './city/CabanaForegroundLayer';
 import { VenueSignsLayer } from './city/VenueSignsLayer';
 import { WelcomeSignLayer } from './city/WelcomeSignLayer';
 import { PlayerVariantGallery } from './PlayerVariantGallery';
@@ -109,6 +110,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const midRef    = useRef<SVGSVGElement>(null);
   const midForegroundRef = useRef<SVGSVGElement>(null);
   const groundRef = useRef<SVGSVGElement>(null);
+  const cabanaRef = useRef<SVGSVGElement>(null);
   const signsRef  = useRef<SVGSVGElement>(null);
   const welcomeRef = useRef<SVGSVGElement>(null);
   const cloudsRef = useRef<SVGSVGElement>(null);
@@ -124,6 +126,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     skyRef.current?.setAttribute('viewBox', vb(skyVx));
     midRef.current?.setAttribute('viewBox', vb(midVx));
     midForegroundRef.current?.setAttribute('viewBox', vb(midVx));
+    cabanaRef.current?.setAttribute('viewBox', vb(gndVx));
     groundRef.current?.setAttribute('viewBox', vb(gndVx));
     signsRef.current?.setAttribute('viewBox', vb(gndVx));
     welcomeRef.current?.setAttribute('viewBox', vb(gndVx));
@@ -859,6 +862,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       <SkyCreaturesLayer period={skyPeriod} />
       <MidLayer ref={midRef} foregroundRef={midForegroundRef} worldOff={midScrollWorldOff} deepLinkRoute={venueRoute} />
       <GroundLayer      ref={groundRef} worldOff={gndScrollWorldOff} />
+      <CabanaForegroundLayer ref={cabanaRef} worldOff={gndScrollWorldOff} />
       <VenueSignsLayer  ref={signsRef}  worldOff={gndScrollWorldOff} />
       {!venueRoute && (
         <WelcomeSignLayer
