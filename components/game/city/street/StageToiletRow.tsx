@@ -1,6 +1,6 @@
 import { STAGE_TOILET, stageToiletStartX, type StageToiletRow as StageToiletRowDef } from '@/lib/stageToilets';
 
-/** Three porta-potties in a row on the sidewalk. */
+/** Five porta-potties in a row on the sidewalk. */
 export function StageToiletRow({ startX, y }: StageToiletRowDef) {
   const { width, height, gap, count, src } = STAGE_TOILET;
 

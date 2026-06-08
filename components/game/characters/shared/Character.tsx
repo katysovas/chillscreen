@@ -4,7 +4,11 @@ import type { BubbleSide } from '../../ChatBubble';
 import {
   equippedLoadoutItemIds,
   getLoadoutRegistryVersion,
+  GlowstickAmbient,
+  GLOWSTICK_AMBIENT_TWEAK,
+  hasPurchasedLoadoutItem,
   loadoutHoldSide,
+  PARTY_GLOWSTICKS_ID,
   preloadLoadoutItems,
   renderLoadoutBottom,
   renderLoadoutFloat,
@@ -150,6 +154,8 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   const partyHandClass = dancing
     ? holdRight ? ' ch-free-hand-left' : ' ch-free-hand-right'
     : '';
+  const glowstickAmbient = GLOWSTICK_AMBIENT_TWEAK
+    || (equipped ? hasPurchasedLoadoutItem(equipped, PARTY_GLOWSTICKS_ID) : false);
 
   return (
     <div
@@ -198,6 +204,8 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
             <div className="ch-legs"><span /><span /></div>
           </div>
         </div>
+
+        <GlowstickAmbient active={glowstickAmbient} />
 
         {chatOverlay && (
           <div ref={chatAnchorRef} style={chatAnchorStyle(bubbleSide, scale, mirrored)}>

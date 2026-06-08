@@ -22,6 +22,7 @@ export type PlayerLoadoutSync = {
   top?: string | null;
   bottom?: string | null;
   hand?: string | null;
+  owned?: string[];
 };
 
 /** Identity a player chooses for the session (random color, optional name). */

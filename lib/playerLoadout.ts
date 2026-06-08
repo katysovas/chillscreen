@@ -52,7 +52,14 @@ export function equipLoadoutItem(
 ): CharacterLoadout | null {
   const def = loadoutItem(itemId);
   if (!def) return null;
-  return equipLoadoutSlot(def.slot, itemId, balloonColor);
+  const saved = readPlayerLoadout();
+  const owned = new Set([...(saved?.owned ?? []), itemId]);
+  const next = normalizeLoadout(
+    { ...saved, [def.slot]: itemId, owned: [...owned] },
+    balloonColor,
+  );
+  writePlayerLoadout(next);
+  return next;
 }
 
 /** Remove a catalog item from its slot if currently equipped. */

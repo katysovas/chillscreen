@@ -92,4 +92,6 @@ export const LOADOUT_STYLES = `
   .ch-lo-water-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-juice{position:absolute;left:-99px;top:-22px;width:220px;height:138px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
   .ch-lo-juice-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-glowsticks{position:absolute;left:16px;top:-6px;width:96px;height:96px;transform:rotate(339deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-glowsticks-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
 `;

@@ -26,6 +26,8 @@ export type CharacterLoadout = {
   hand?: string | null;
   /** Tint for the default heart balloon and other colorized props. */
   balloonColor?: string;
+  /** Vendor items bought this session / saved locally. */
+  owned?: string[];
 };
 
 export type LoadoutItemProps = Record<string, string | undefined>;

@@ -200,6 +200,16 @@ export const LOADOUT_CATALOG: Record<string, LoadoutItemDef> = {
     holdSide: 'right',
     defaultProps: {},
   },
+  'party-glowsticks': {
+    id: 'party-glowsticks',
+    slot: 'hand',
+    name: 'Glowsticks',
+    description: 'Crossed sticks for the drop and the afterglow.',
+    vendorPrice: 55,
+    handMounted: true,
+    holdSide: 'right',
+    defaultProps: {},
+  },
 
   // ── Hat ──────────────────────────────────────────────────────────────────
   'hat-beanie': {

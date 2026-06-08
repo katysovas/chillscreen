@@ -4,7 +4,7 @@ import type { PlayerLoadoutSync } from './protocol';
 
 /** Strip local-only fields before sending over PartyKit. */
 export function serializeLoadout(loadout: CharacterLoadout): PlayerLoadoutSync {
-  return {
+  const sync: PlayerLoadoutSync = {
     hat: loadout.hat ?? null,
     sunglasses: loadout.sunglasses ?? null,
     necklace: loadout.necklace ?? null,
@@ -12,6 +12,8 @@ export function serializeLoadout(loadout: CharacterLoadout): PlayerLoadoutSync {
     bottom: loadout.bottom ?? null,
     hand: loadout.hand ?? null,
   };
+  if (loadout.owned?.length) sync.owned = loadout.owned;
+  return sync;
 }
 
 /** Rebuild a renderable loadout from networked slot ids + balloon color. */

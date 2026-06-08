@@ -209,3 +209,36 @@
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-6px); }
 }
+
+/* ── Party glowstick ambient bursts ────────────────────────────────────────── */
+
+.ch-glowstick-ambient {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -80px;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 14;
+  overflow: visible;
+}
+.ch-glowstick-thrown {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  animation: ch-glowstick-throw 2s ease-out forwards;
+}
+@keyframes ch-glowstick-throw {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(var(--rot)) scale(0.45);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) rotate(calc(var(--rot) + 180deg)) scale(1.25);
+  }
+}

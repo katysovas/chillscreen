@@ -3,7 +3,7 @@ export const STAGE_TOILET = {
   width: 58,
   height: 72,
   gap: 2,
-  count: 3,
+  count: 5,
   /** Sidewalk band — toilet bottoms align near y≈668. */
   sidewalkY: 596,
   /** Gap between stage edge and first unit. */

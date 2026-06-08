@@ -26,12 +26,15 @@ const FOOD_ITEMS = ['food-hotdog', 'food-donut', 'food-fries', 'food-pizza', 'fo
 
 const DRINK_ITEMS = ['drink-martini', 'drink-lemonade', 'drink-beer', 'drink-bottle', 'drink-water', 'drink-juice'] as const;
 
+const PARTY_FAVOR_ITEMS = ['party-glowsticks'] as const;
+
 export type VendorShopItemId =
   | (typeof HAT_ITEMS)[number]
   | (typeof GLASSES_ITEMS)[number]
   | (typeof HAND_ITEMS)[number]
   | (typeof FOOD_ITEMS)[number]
-  | (typeof DRINK_ITEMS)[number];
+  | (typeof DRINK_ITEMS)[number]
+  | (typeof PARTY_FAVOR_ITEMS)[number];
 
 export type VendorShopCategory = {
   id: string;
@@ -72,6 +75,12 @@ export const VENDOR_SHOP_CATEGORIES: VendorShopCategory[] = [
     slot: 'hand',
     items: DRINK_ITEMS,
   },
+  {
+    id: 'party-favors',
+    label: 'Party Favors',
+    slot: 'hand',
+    items: PARTY_FAVOR_ITEMS,
+  },
 ];
 
 export const DEFAULT_VENDOR_CATEGORY = VENDOR_SHOP_CATEGORIES[0]!.id;
@@ -83,6 +92,7 @@ export const VENDOR_SHOP_ITEMS: VendorShopItemId[] = [
   ...HAND_ITEMS,
   ...FOOD_ITEMS,
   ...DRINK_ITEMS,
+  ...PARTY_FAVOR_ITEMS,
 ];
 
 /** Legacy id — prefer `isBuzNpc()`. */
@@ -126,6 +136,7 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'drink-bottle': '/images/props/drinks_bottle.svg',
   'drink-water': '/images/props/drinks_water.svg',
   'drink-juice': '/images/props/drinks_juice.svg',
+  'party-glowsticks': '/images/props/festival_glowsticks.png',
 };
 
 /** Thumbnail sizing tweaks per item in the shop panel. */
@@ -162,4 +173,5 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'drink-bottle': { width: 28, height: 32 },
   'drink-water': { width: 28, height: 32 },
   'drink-juice': { width: 28, height: 32 },
+  'party-glowsticks': { width: 32, height: 32 },
 };
