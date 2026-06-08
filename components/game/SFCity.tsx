@@ -14,6 +14,7 @@ import {
 import { setAudioMuted } from '@/lib/audioMute';
 import CHARACTERS from './characters';
 import RemotePlayer from './RemotePlayer';
+import { scheduleIdleCallback } from '@/lib/scheduleIdleCallback';
 import { PLAYER_AMBIENT_VISIBLE_MS, useMultiplayer } from '@/lib/multiplayer/useMultiplayer';
 import { filterChatMessage } from '@/lib/messageFilter';
 import {
@@ -328,9 +329,13 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     if (stored) {
       setPlayerName(stored);
       identifyPlayer(stored);
-    } else {
-      setShowWelcome(true);
+      const cancelIdle = scheduleIdleCallback(
+        () => mpRef.current?.requestConnect(),
+        { timeout: 4_000 },
+      );
+      return cancelIdle;
     }
+    setShowWelcome(true);
   }, []);
 
   useEffect(() => {
@@ -512,9 +517,17 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   const handleWelcomeName = (name: string) => {
     savePlayerName(name);
+    const profile = {
+      name,
+      balloonColor: myColor,
+      loadout: serializeLoadout(playerLoadout),
+    };
+    profileRef.current = profile;
     setPlayerName(name);
     setShowWelcome(false);
     trackCharacterCreated(name);
+    mpRef.current?.sendProfile(profile);
+    mpRef.current?.requestConnect();
   };
 
   // ── Stage audio mute (YouTube players only) ────────────────────────────────
@@ -598,6 +611,12 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
       if (['ArrowLeft',  'a', 'A'].includes(e.key)) { keysRef.current.left  = true;  e.preventDefault(); }
       if (['ArrowRight', 'd', 'D'].includes(e.key)) { keysRef.current.right = true;  e.preventDefault(); }
+      if (
+        !showWelcomeRef.current
+        && ['ArrowLeft', 'a', 'A', 'ArrowRight', 'd', 'D'].includes(e.key)
+      ) {
+        mpRef.current?.requestConnect();
+      }
       if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) {
         e.preventDefault();
         if (greetingRef.current !== null || peerChatRef.current !== null) {
@@ -662,6 +681,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
     // Stream the local player's position to the room (~15 Hz, only on change).
     const broadcastMove = () => {
+      if (showWelcomeRef.current) return;
       const last = lastSentRef.current;
       const wx = worldRef.current;
       const f  = facingRef.current;

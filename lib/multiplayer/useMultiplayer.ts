@@ -69,7 +69,9 @@ function partyKitHost(): string {
 export type Multiplayer = {
   selfId: string | null;
   connected: boolean;
-  /** Stable ref to the live roster (positions update here every tick). */
+  /** Start the WebSocket handshake (idempotent). Deferred until gameplay begins. */
+  requestConnect: () => void;
+  /** Shared live roster (positions update here every tick). */
   remoteStateRef: React.RefObject<Map<string, RemotePlayerState>>;
   /** Live ambient shouts keyed by player id. */
   ambientRef: React.RefObject<Map<string, RemoteAmbientMessage>>;
@@ -88,15 +90,32 @@ export type Multiplayer = {
  * Connects to the PartyKit presence room. Resilient by design: if the room is
  * unreachable the game keeps working single-player (no remote avatars). All
  * movement flows through a ref to avoid re-rendering the world on every packet.
+ *
+ * The socket is not opened on mount — call {@link requestConnect} (or send a
+ * move) once the player is past first paint / welcome. Stage sync still works
+ * via {@link bootstrapStageSyncFromApi} without PartyKit.
  */
 export function useMultiplayer(opts: Options): Multiplayer {
   const socketRef = useRef<PartySocket | null>(null);
   const remoteStateRef = useRef<Map<string, RemotePlayerState>>(new Map());
   const ambientRef = useRef<Map<string, RemoteAmbientMessage>>(new Map());
+  /** Latest position — used for join when the socket opens mid-movement. */
+  const lastMoveRef = useRef<{ worldX: number; facing: Facing; walking: boolean } | null>(null);
+  /** Profile updates that arrive before the socket is open. */
+  const pendingProfileRef = useRef<PlayerProfile | null>(null);
 
   const [selfId, setSelfId] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [shouldConnect, setShouldConnect] = useState(false);
   const [remoteIds, setRemoteIds] = useState<string[]>([]);
+
+  const connectRequestedRef = useRef(false);
+
+  const requestConnect = useCallback(() => {
+    if (connectRequestedRef.current) return;
+    connectRequestedRef.current = true;
+    setShouldConnect(true);
+  }, []);
 
   // Keep callbacks + lazily-read identity in refs so the socket effect can stay
   // mounted once and never goes stale.
@@ -105,29 +124,48 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const profileRef = opts.profileRef;
   const spawnRef = opts.spawnWorldOffRef;
 
-  const send = useCallback((data: object) => {
+  const sendNow = useCallback((data: object) => {
     const s = socketRef.current;
     if (s && s.readyState === WebSocket.OPEN) s.send(encode(data as never));
   }, []);
 
   useEffect(() => {
+    if (!shouldConnect) return;
+
     const socket = new PartySocket({ host: partyKitHost(), room: ROOM_ID });
     socketRef.current = socket;
 
     const announceJoin = () => {
-      send({
+      const last = lastMoveRef.current;
+      const profile = pendingProfileRef.current
+        ?? profileRef.current
+        ?? { name: null, balloonColor: '#ef4023' };
+      sendNow({
         t: 'join',
-        profile: profileRef.current ?? { name: null, balloonColor: '#ef4023' },
-        worldX: spawnRef.current ?? 0,
-        facing: 'right',
-        walking: false,
+        profile,
+        worldX: last?.worldX ?? spawnRef.current ?? 0,
+        facing: last?.facing ?? 'right',
+        walking: last?.walking ?? false,
       });
+    };
+
+    const flushProfile = () => {
+      const profile = pendingProfileRef.current ?? profileRef.current;
+      if (profile) sendNow({ t: 'profile', profile });
+    };
+
+    const flushMove = () => {
+      const last = lastMoveRef.current;
+      if (last) sendNow({ t: 'move', ...last });
     };
 
     const onOpen = () => {
       setConnected(true);
       announceJoin();
+      // Catch profile/loadout that landed while the handshake was in flight.
+      flushProfile();
     };
+
     const onClose = () => setConnected(false);
 
     const onMessage = (e: MessageEvent) => {
@@ -156,6 +194,8 @@ export function useMultiplayer(opts: Options): Multiplayer {
             });
           }
           setRemoteIds([...roster.keys()]);
+          // Server ignores moves until join is processed — safe to flush now.
+          flushMove();
           break;
         }
         case 'joined': {
@@ -219,24 +259,32 @@ export function useMultiplayer(opts: Options): Multiplayer {
     };
   // PARTYKIT_HOST is constant; refs are stable.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [shouldConnect]);
 
   const sendMove = useCallback((worldX: number, facing: Facing, walking: boolean) => {
-    send({ t: 'move', worldX, facing, walking });
-  }, [send]);
+    requestConnect();
+    lastMoveRef.current = { worldX, facing, walking };
+    sendNow({ t: 'move', worldX, facing, walking });
+  }, [requestConnect, sendNow]);
 
   const sendProfile = useCallback((profile: PlayerProfile) => {
-    send({ t: 'profile', profile });
-  }, [send]);
+    pendingProfileRef.current = profile;
+    sendNow({ t: 'profile', profile });
+  }, [sendNow]);
 
-  const openPeerChat   = useCallback((to: string) => send({ t: 'chat-open', to }), [send]);
-  const closePeerChat  = useCallback((to: string) => send({ t: 'chat-close', to }), [send]);
-  const sendPeerTyping = useCallback((to: string, typing: boolean) => send({ t: 'chat-typing', to, typing }), [send]);
-  const sendPeerMessage = useCallback((to: string, text: string) => send({ t: 'chat-msg', to, text }), [send]);
-  const sendAmbientMessage = useCallback((text: string) => send({ t: 'ambient-msg', text }), [send]);
+  const connectAndSend = useCallback((data: object) => {
+    requestConnect();
+    sendNow(data);
+  }, [requestConnect, sendNow]);
+
+  const openPeerChat   = useCallback((to: string) => connectAndSend({ t: 'chat-open', to }), [connectAndSend]);
+  const closePeerChat  = useCallback((to: string) => connectAndSend({ t: 'chat-close', to }), [connectAndSend]);
+  const sendPeerTyping = useCallback((to: string, typing: boolean) => connectAndSend({ t: 'chat-typing', to, typing }), [connectAndSend]);
+  const sendPeerMessage = useCallback((to: string, text: string) => connectAndSend({ t: 'chat-msg', to, text }), [connectAndSend]);
+  const sendAmbientMessage = useCallback((text: string) => connectAndSend({ t: 'ambient-msg', text }), [connectAndSend]);
 
   return {
-    selfId, connected, remoteStateRef, ambientRef, remoteIds,
+    selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
     sendAmbientMessage,
   };
