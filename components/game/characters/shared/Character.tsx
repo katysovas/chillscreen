@@ -6,9 +6,8 @@ import {
   getLoadoutRegistryVersion,
   GlowstickAmbient,
   GLOWSTICK_AMBIENT_TWEAK,
-  hasPurchasedLoadoutItem,
+  hasGlowsticksEquipped,
   loadoutHoldSide,
-  PARTY_GLOWSTICKS_ID,
   preloadLoadoutItems,
   renderLoadoutBottom,
   renderLoadoutFloat,
@@ -155,7 +154,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     ? holdRight ? ' ch-free-hand-left' : ' ch-free-hand-right'
     : '';
   const glowstickAmbient = GLOWSTICK_AMBIENT_TWEAK
-    || (equipped ? hasPurchasedLoadoutItem(equipped, PARTY_GLOWSTICKS_ID) : false);
+    || (loadout ? hasGlowsticksEquipped(loadout) : false);
 
   return (
     <div

@@ -34,5 +34,5 @@ export {
 export { defaultLoadout, normalizeLoadout } from './defaults';
 export { loadoutFromAccessory } from './bridge';
 export { GlowstickAmbient, GLOWSTICK_AMBIENT_TWEAK } from './GlowstickAmbient';
-export { hasPurchasedLoadoutItem, PARTY_GLOWSTICKS_ID } from './ownership';
+export { hasPurchasedLoadoutItem, hasGlowsticksEquipped, PARTY_GLOWSTICKS_ID } from './ownership';
 export { LOADOUT_STYLES } from './styles';

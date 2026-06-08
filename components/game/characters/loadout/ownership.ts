@@ -12,3 +12,8 @@ export function hasPurchasedLoadoutItem(
   // Legacy saves: treat currently equipped as purchased.
   return loadout.hand === itemId;
 }
+
+/** Glowstick ambient throws — only while party glowsticks are in the hand slot. */
+export function hasGlowsticksEquipped(loadout: CharacterLoadout | undefined): boolean {
+  return loadout?.hand === PARTY_GLOWSTICKS_ID;
+}

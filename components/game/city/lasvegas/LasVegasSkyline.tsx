@@ -7,8 +7,8 @@ import {
   StratTower,
   VenetianCampanile,
   VegasSphere,
-  WelcomeSign,
 } from './stripBuildings';
+import { LasVegasSign } from './LasVegasSign';
 import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 
 /** Las Vegas Strip skyline — render before EDC so the stage sits in front. */
@@ -21,9 +21,9 @@ export function LasVegasSkyline() {
       <EiffelReplica x={760} />
       <Bellagio x={1000} />
       <VenetianCampanile x={1190} />
+      <LasVegasSign x={1150} />
       <VegasSphere cx={1470} r={185} />
       <HighRoller cx={1760} cy={400} r={130} />
-      <WelcomeSign x={1880} />
     </g>
   );
 }
