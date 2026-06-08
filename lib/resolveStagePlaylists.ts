@@ -9,6 +9,9 @@ import {
 
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
+/** Shared TTL for in-memory, Next.js data cache, and HTTP cache headers. */
+export const STAGE_PLAYLIST_CACHE_SECONDS = CACHE_TTL_MS / 1000;
+
 let cache: { playlists: Record<StageChannel, StageVideo[]>; fetchedAt: number } | null = null;
 
 function clonePlaylists(): Record<StageChannel, StageVideo[]> {

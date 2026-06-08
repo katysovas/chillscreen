@@ -46,9 +46,17 @@ export function bootstrapStageSyncFromApi() {
   bootstrapStarted = true;
 
   fetch('/api/stage/sync')
-    .then(res => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
-    .then((body: { serverNow: number; stage: StageSync }) => {
-      applyServerStageSync(body.serverNow, body.stage);
+    .then(res => {
+      if (!res.ok) return Promise.reject(new Error(String(res.status)));
+      const ageSec = parseInt(res.headers.get('Age') ?? '0', 10);
+      return res.json().then((body: { serverNow: number; stage: StageSync }) => ({
+        // Cached responses freeze serverNow at generation time; Age keeps the clock aligned.
+        serverNow: body.serverNow + ageSec * 1000,
+        stage: body.stage,
+      }));
+    })
+    .then(({ serverNow, stage }) => {
+      applyServerStageSync(serverNow, stage);
     })
     .catch(() => {
       // Offline or API unavailable — DEFAULT_STAGE_SYNC fallbacks still work.
