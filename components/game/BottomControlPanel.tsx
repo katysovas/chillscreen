@@ -140,7 +140,7 @@ export function BottomControlPanel({
   );
 
   const showInvite = Boolean(route && inviteUrl);
-  const showConnect = Boolean(connectName?.trim());
+  const showConnect = Boolean(connectName?.trim()) && !isMobile;
   const showInviteBtn = !isMobile && showInvite && !showConnect;
   const hasMessages = showConnect || showInviteBtn;
   const showCart = Boolean(onToggleVendorShop) && !isMobile;
