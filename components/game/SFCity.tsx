@@ -601,6 +601,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     const message = `Ground Score! ${value} Coins!`;
     showPlayerAmbient(message);
     mpRef.current?.sendAmbientMessage(message);
+    try { new Audio('/audio/found.wav').play(); } catch { /* ignore */ }
     // Celebrate — same jump as the keyboard/mobile triggers.
     if (!jumpingRef.current) {
       jumpingRef.current = true;
@@ -774,8 +775,9 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         return;
       }
 
-      // Let the chat input handle its own keys without interference
-      if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
+      // Let the chat input / contact form handle their own keys without interference
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
       if (mobileLoungeRef.current) {
         if (['ArrowLeft', 'a', 'A', 'ArrowRight', 'd', 'D', 'ArrowUp', 'w', 'W', ' '].includes(e.key)) {

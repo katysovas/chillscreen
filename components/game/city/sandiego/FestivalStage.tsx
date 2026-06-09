@@ -81,7 +81,7 @@ function FestivalStageShell({
   const deck = SD_GND;
   // Trusses occupy [L, L+20] and [R, R+20] — interior is [L+20, R], so +54 centers the screen.
   const screenX = L + 54;
-  const screenY = 446;
+  const screenY = 420;
   const screenW = R - L - 88;
   const screenH = 168;
   const ox = COACHELLA_STAGE_MID_X;
@@ -242,7 +242,7 @@ function FestivalStageLive() {
   const deck = SD_GND;
   // Must match FestivalStageShell — screen centered in the truss interior.
   const screenX = L + 54;
-  const screenY = 446;
+  const screenY = 420;
   const screenW = R - L - 88;
   const screenH = 168;
   const iframeX = screenX + 6;

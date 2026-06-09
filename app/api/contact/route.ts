@@ -21,13 +21,13 @@ export async function POST(req: Request) {
     }
 
     await resend.emails.send({
-      from: 'ChillScreen <onboarding@resend.dev>',
+      from: 'WhichStage <onboarding@resend.dev>',
       to: ['support@smartmetrics.com'],
       replyTo: email.trim(),
       subject: `New collaboration request from ${name.trim()}`,
       html: `
         <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
-          <h2 style="margin:0 0 20px;font-size:20px;color:#111;">New collaboration request</h2>
+          <h2 style="margin:0 0 20px;font-size:20px;color:#111;">New WhichStage collaboration request</h2>
           <table style="width:100%;border-collapse:collapse;">
             <tr>
               <td style="padding:8px 0;color:#666;font-size:13px;width:80px;vertical-align:top;">Name</td>
