@@ -5,7 +5,7 @@ import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
 import { AmbientPlayerOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
 import { CHAR_BOTTOM, CHAR_BOTTOM_MOBILE_LOUNGE, MOBILE_CROWD_DEPTH_PX } from './groundLayout';
-import { SKY_F, MID_F, GND_F, midScrollTile } from '@/lib/parallax';
+import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/parallax';
 import {
   getClientSpawnWorldOff,
   serverSpawnWorldOff,
@@ -152,6 +152,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const welcomeRef = useRef<SVGSVGElement>(null);
   const cloudsRef = useRef<SVGSVGElement>(null);
   const lastMidScrollTileRef = useRef<number | null>(null);
+  const lastGndScrollTileRef = useRef<number | null>(null);
 
   /** Update scrolling SVG viewBoxes directly — zero React overhead. */
   const updateViewBoxes = (off: number) => {
@@ -396,6 +397,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     updateViewBoxes(spawnWorldOff);
     npcWorldXRefs.current = CHARACTERS.map(() => Infinity);
     lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
+    lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
     updateRoadSignVisibility(signsRef.current, spawnWorldOff);
   // updateViewBoxes is stable (no deps); spawnWorldOff is the only meaningful dep
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -927,12 +929,17 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       tickNpcs();
       tickStagePlayers();
 
-      // Re-render mid layer only when the visible tile window changes (venue live/shell).
+      // Re-render layers only when the visible tile window changes — avoids per-frame React re-renders.
       if (isWalking) {
         const midTile = midScrollTile(off);
         if (midTile !== lastMidScrollTileRef.current) {
           lastMidScrollTileRef.current = midTile;
           setMidScrollWorldOff(off);
+        }
+        const gndTile = gndScrollTile(off);
+        if (gndTile !== lastGndScrollTileRef.current) {
+          lastGndScrollTileRef.current = gndTile;
+          setGndScrollWorldOff(off);
         }
       }
 

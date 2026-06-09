@@ -12,7 +12,14 @@ import {
   whichStageMidX,
 } from '@/lib/venues';
 import { isSouthernCaliforniaTile, isTentarooTile, isVegasTile, worldTileKind } from '@/lib/worldTiles';
-import { WHICH_STAGE_HALF } from './tentaroo/constants';
+import { WHICH_STAGE_HALF, WHICH_STAGE_TOILET_HALF } from './tentaroo/constants';
+import {
+  COACHELLA_STAGE_MID_X,
+  COACHELLA_TOILET_LEFT_HALF,
+  COACHELLA_TOILET_RIGHT_HALF,
+} from './sandiego/constants';
+import { StageToiletRow, StageToiletsBeside, StageToiletsFlanking } from './street/StageToiletRow';
+import { STAGE_TOILET, stageToiletStartX } from '@/lib/stageToilets';
 import { CITY_MID_W, MID_F, midOriginForTile, midWidthForTile, nearMidTiles } from '@/lib/parallax';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
 import { GradientMidTerrain } from './shared/GradientMidTerrain';
@@ -23,7 +30,8 @@ import { SfMidFeatures } from './SfMidFeatures';
 import { SeattleBuildingsTile, SeattleMidFeatures } from './seattle';
 import { TentarooTile, WhichStage } from './tentaroo';
 import { SouthernCaliforniaTile } from './sandiego';
-import { EDCStage, LasVegasSkyline } from './lasvegas';
+import { EDCStage, LasVegasSkyline, EDC_STAGE_MID_X, EDC_STAGE_HALF } from './lasvegas';
+import { WHICH_STAGE_MID_X } from './tentaroo';
 import { FestivalStage } from './sandiego/FestivalStage';
 import { SmallTownTile, SmallTownTerrain } from './town';
 import { TransitionWater } from './transition';
@@ -43,6 +51,14 @@ type MidLayerProps = {
 function tileContentScale(tileIndex: number) {
   return midWidthForTile(tileIndex) / CITY_MID_W;
 }
+
+// The Vegas and Coachella stages are scaled wider than their 2600px tile, so
+// their right-hand toilet rows land past the tile edge. Those rows render on
+// the NEXT tile (at the overflow offset) so the neighbour's art doesn't cover them.
+const EDC_TOILET_RIGHT_OVERFLOW_X =
+  stageToiletStartX(EDC_STAGE_MID_X, EDC_STAGE_HALF, 'right') - CITY_MID_W;
+const COACHELLA_TOILET_RIGHT_OVERFLOW_X =
+  stageToiletStartX(COACHELLA_STAGE_MID_X, COACHELLA_TOILET_RIGHT_HALF, 'right') - CITY_MID_W;
 
 function edcLiveOnTile(
   t: number,
@@ -150,13 +166,40 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
                 deepLinkRoute={deepLinkRoute}
               />
             )}
+            {/* Toilets live on the tile (not the stage component) so they slide in
+                from the screen edge ahead of the foreground stage. */}
+            {/* Vegas: no left-side toilets (right row renders on the next tile below). */}
             {kind === 'vegas' && <LasVegasSkyline />}
             {isSouthernCaliforniaTile(t) && (
-              <SouthernCaliforniaTile tileIndex={t} />
+              <>
+                <SouthernCaliforniaTile tileIndex={t} />
+                {/* Right row overflows the tile — rendered on the next tile below. */}
+                <StageToiletsBeside
+                  centerX={COACHELLA_STAGE_MID_X}
+                  stageHalfWidth={COACHELLA_TOILET_LEFT_HALF}
+                  side="left"
+                />
+              </>
             )}
-            {isTentarooTile(t) && <TentarooTile />}
+            {isTentarooTile(t) && (
+              <>
+                <TentarooTile />
+                <StageToiletsFlanking
+                  centerX={WHICH_STAGE_MID_X}
+                  stageHalfWidth={WHICH_STAGE_TOILET_HALF}
+                />
+              </>
+            )}
           </g>
           {kind === 'town' && <SmallTownTile tileIndex={t} tileWidth={w} hideTrees={hideTrees} />}
+          {/* Right-side toilet rows of oversized neighbour stages (unscaled coords,
+              outside the town squeeze transform). */}
+          {isVegasTile(t - 1) && (
+            <StageToiletRow startX={EDC_TOILET_RIGHT_OVERFLOW_X} y={STAGE_TOILET.sidewalkY} />
+          )}
+          {isSouthernCaliforniaTile(t - 1) && (
+            <StageToiletRow startX={COACHELLA_TOILET_RIGHT_OVERFLOW_X} y={STAGE_TOILET.sidewalkY} />
+          )}
           <rect x={0} y={0} width={w} height={900} fill="url(#atmo)" />
         </>
       );
@@ -222,7 +265,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             tileOrigin={midOriginForTile}
             nearTileIndices={nearMidTiles}
             shapeRendering="optimizeSpeed"
-            style={{ pointerEvents: 'none' }}
+            style={{ pointerEvents: 'none', zIndex: 4 }}
           >
             {renderMidForeground}
           </ParallaxSvgLayer>

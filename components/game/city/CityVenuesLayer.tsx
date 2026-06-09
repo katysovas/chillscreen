@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from 'react';
 import Cinema, { CINEMA_SCALE, CINEMA_WIDTH, CinemaShell } from '../Cinema';
 import Concert, { CONCERT_SCALE, CONCERT_WIDTH, ConcertShell } from '../Concert';
-import { StageToiletsBeside } from './street/StageToiletRow';
+import { StageToiletsFlanking } from './street/StageToiletRow';
 import { cinemaMidX, concertChannel, concertLabel, concertMidX, type VenueKind } from '@/lib/venues';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isVenueLive } from '@/lib/venueRoutes';
@@ -100,10 +100,9 @@ export function CityVenuesTile({
             )}
           </div>
         </foreignObject>
-        <StageToiletsBeside
+        <StageToiletsFlanking
           centerX={concertX}
           stageHalfWidth={concertFoW / 2 + 18}
-          side="right"
         />
       </>
     ) : null;
@@ -149,10 +148,9 @@ export function CityVenuesTile({
             {cinemaLiveNow ? <Cinema live /> : <CinemaShell />}
           </div>
         </foreignObject>
-        <StageToiletsBeside
+        <StageToiletsFlanking
           centerX={cinemaX}
           stageHalfWidth={cinemaFoW / 2 + 14}
-          side="left"
         />
       </>
     ) : null;

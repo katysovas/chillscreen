@@ -49,3 +49,36 @@ export function StageToiletsBeside({
     />
   );
 }
+
+/** Porta-potty rows on both sides of a stage. Half-widths may differ when the
+ *  stage is scaled about an off-center origin (e.g. the desert festival rig). */
+export function StageToiletsFlanking({
+  centerX,
+  stageHalfWidth,
+  leftHalfWidth,
+  rightHalfWidth,
+  y = STAGE_TOILET.sidewalkY,
+}: {
+  centerX: number;
+  stageHalfWidth: number;
+  leftHalfWidth?: number;
+  rightHalfWidth?: number;
+  y?: number;
+}) {
+  return (
+    <>
+      <StageToiletsBeside
+        centerX={centerX}
+        stageHalfWidth={leftHalfWidth ?? stageHalfWidth}
+        side="left"
+        y={y}
+      />
+      <StageToiletsBeside
+        centerX={centerX}
+        stageHalfWidth={rightHalfWidth ?? stageHalfWidth}
+        side="right"
+        y={y}
+      />
+    </>
+  );
+}

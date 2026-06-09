@@ -6,33 +6,81 @@ import {
   COACHELLA_STAGE_PUSH_Y,
   COACHELLA_STAGE_SCALE,
   COACHELLA_STAGE_MID_X,
-  COACHELLA_STAGE_HALF,
   FEST_COLORS,
   SD_GND,
 } from './constants';
 import { setCoachellaNowPlaying } from '@/lib/coachellaNowPlaying';
 import { useStagePlayer, STAGE_IFRAME_STYLE } from '../../useStagePlayer';
-import { StageToiletsBeside } from '../street/StageToiletRow';
 
 /** Stage center x — used for venue focus / in-view checks. */
 export { COACHELLA_STAGE_MID_X };
 
+const STAGE_L = 2010;
+const STAGE_R = 2440;
+const STAGE_TOP = 404;
+
+const FOOTLIGHTS = Array.from({ length: 13 }, (_, i) => ({
+  x: STAGE_L + 26 + i * ((STAGE_R - STAGE_L - 32) / 12),
+  color: FEST_COLORS[i % FEST_COLORS.length]!,
+  dur: 1.4 + (i % 5) * 0.35,
+  del: (i % 7) * 0.18,
+}));
+
+/** Truss-mounted festival lights — small bulbs with a soft cone wash.
+ *  Rendered after the video in live mode so the cones glow over the screen. */
+function TrussLights() {
+  const top = STAGE_TOP;
+  return (
+    <>
+      {FOOTLIGHTS.map((f, i) => (
+        <g key={`foot${i}`}>
+          <rect x={f.x - 4} y={top + 4} width={8} height={8} rx={2} fill="#101016" />
+          <polygon
+            points={`${f.x - 3},${top + 12} ${f.x + 3},${top + 12} ${f.x + 12},${top + 52} ${f.x - 12},${top + 52}`}
+            fill={f.color}
+            opacity={0.22}
+            style={{
+              animation: `sdc-shine ${f.dur}s ease-in-out infinite`,
+              animationDelay: `${f.del}s`,
+              mixBlendMode: 'screen',
+            }}
+          />
+          <polygon
+            points={`${f.x - 3},${top + 12} ${f.x + 3},${top + 12} ${f.x + 12},${top + 52} ${f.x - 12},${top + 52}`}
+            fill="url(#sdc-beamgrad)"
+            opacity={0.35}
+            style={{ mixBlendMode: 'screen' }}
+          />
+          <circle cx={f.x} cy={top + 12} r={6} fill={f.color} opacity={0.5}
+            filter="url(#sdc-blur)"
+            style={{ animation: `sdc-shine ${f.dur}s ease-in-out infinite`, animationDelay: `${f.del}s` }} />
+          <circle cx={f.x} cy={top + 12} r={2.5} fill="#fff" opacity={0.9} />
+          <circle cx={f.x} cy={top + 12} r={3.5} fill={f.color}
+            style={{ animation: `sdc-shine ${f.dur}s ease-in-out infinite`, animationDelay: `${f.del}s` }} />
+        </g>
+      ))}
+    </>
+  );
+}
+
 type FestivalStageShellProps = {
-  marquee?: string;
   /** Dark LED fill + scanlines when no video is mounted. */
   idleScreen?: boolean;
+  /** Live mode renders the lights separately, above the video. */
+  hideLights?: boolean;
 };
 
 /** Static truss portal + LED frame — no YouTube hooks. */
 function FestivalStageShell({
-  marquee = '',
   idleScreen = true,
+  hideLights = false,
 }: FestivalStageShellProps) {
-  const L = 2010;
-  const R = 2440;
-  const top = 404;
+  const L = STAGE_L;
+  const R = STAGE_R;
+  const top = STAGE_TOP;
   const deck = SD_GND;
-  const screenX = L + 44;
+  // Trusses occupy [L, L+20] and [R, R+20] — interior is [L+20, R], so +54 centers the screen.
+  const screenX = L + 54;
   const screenY = 446;
   const screenW = R - L - 88;
   const screenH = 168;
@@ -61,15 +109,6 @@ function FestivalStageShell({
     { x: R - 150, color: '#22c7e0', anim: 'sdc-beam-c', dur: 4.9 },
     { x: R - 34,  color: '#f0a840', anim: 'sdc-beam-d', dur: 4.1 },
   ];
-
-  const footlights = Array.from({ length: 13 }, (_, i) => ({
-    x: L + 26 + i * ((R - L - 32) / 12),
-    color: FEST_COLORS[i % FEST_COLORS.length],
-    dur: 1.4 + (i % 5) * 0.35,
-    del: (i % 7) * 0.18,
-  }));
-
-  const fontFamily = 'system-ui, sans-serif';
 
   return (
     <>
@@ -188,43 +227,8 @@ function FestivalStageShell({
           <ellipse cx={midX} cy={deck - 6} rx={(R - L) / 2} ry={22} fill="rgba(240,168,64,.18)"
             style={{ animation: 'sdc-glow 5s ease-in-out infinite' }} />
 
-          {footlights.map((f, i) => (
-            <g key={`foot${i}`}>
-              <ellipse cx={f.x} cy={deck - 18} rx={11} ry={30} fill={f.color} opacity={0.18}
-                style={{ animation: `sdc-shine ${f.dur}s ease-in-out infinite`, animationDelay: `${f.del}s`, mixBlendMode: 'screen' }} />
-              <ellipse cx={f.x} cy={deck - 8} rx={9} ry={9} fill="url(#sdc-foot)"
-                style={{ animation: `sdc-shine ${f.dur}s ease-in-out infinite`, animationDelay: `${f.del}s` }} />
-              <circle cx={f.x} cy={deck - 8} r={3} fill={f.color}
-                style={{ animation: `sdc-shine ${f.dur}s ease-in-out infinite`, animationDelay: `${f.del}s` }} />
-            </g>
-          ))}
-
-          <g fill="#23202a">
-            <path
-              d={`M${L - 120},${deck + 22}
-              ${Array.from({ length: 40 }, (_, i) => `Q${L - 120 + i * 16 + 8},${deck + 6 + (i % 3) * 5} ${L - 120 + (i + 1) * 16},${deck + 18}`).join(' ')}
-              L${R + 130},${deck + 60} L${L - 120},${deck + 60} Z`}
-            />
-            {Array.from({ length: 26 }, (_, i) => (
-              <circle key={i} cx={L - 110 + i * 24} cy={deck + 14 + (i % 4) * 3} r={4.5} />
-            ))}
-          </g>
-
-          <rect x={midX - 168} y={deck + 28} width={336} height={24} rx={3}
-            fill="#15151c" stroke="rgba(232,80,116,.4)" strokeWidth={1} />
-          <text x={midX} y={deck + 44} textAnchor="middle"
-            fontFamily={fontFamily} fontWeight="700" fontSize="9"
-            letterSpacing="1.5" fill="rgba(255,140,170,.85)"
-            style={{ animation: 'sdc-marquee 3s ease-in-out infinite' }}>
-            {marquee.toUpperCase()}
-          </text>
+          {!hideLights && <TrussLights />}
         </g>
-        <StageToiletsBeside
-          centerX={COACHELLA_STAGE_MID_X}
-          stageHalfWidth={COACHELLA_STAGE_HALF}
-          side="left"
-          y={deck - 66}
-        />
       </g>
     </>
   );
@@ -236,7 +240,8 @@ function FestivalStageLive() {
   const R = 2440;
   const top = 404;
   const deck = SD_GND;
-  const screenX = L + 44;
+  // Must match FestivalStageShell — screen centered in the truss interior.
+  const screenX = L + 54;
   const screenY = 446;
   const screenW = R - L - 88;
   const screenH = 168;
@@ -261,11 +266,10 @@ function FestivalStageLive() {
   const videoFoY = oy + S * (iframeY - oy) + pushY;
   const videoFoW = iframeW * S;
   const videoFoH = iframeH * S;
-  const marquee = video?.title ?? 'LOADING…';
 
   return (
     <>
-      <FestivalStageShell marquee={marquee} idleScreen={false} />
+      <FestivalStageShell idleScreen={false} hideLights />
       <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>
         <div
           {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
@@ -305,6 +309,12 @@ function FestivalStageLive() {
           </div>
         </div>
       </foreignObject>
+      {/* Lights re-rendered above the video so the cones glow over the screen. */}
+      <g transform={`translate(0, ${pushY})`} pointerEvents="none">
+        <g transform={`translate(${ox},${oy}) scale(${S}) translate(${-ox},${-oy})`}>
+          <TrussLights />
+        </g>
+      </g>
     </>
   );
 }

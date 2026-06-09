@@ -5,7 +5,6 @@ import type { HTMLAttributes } from 'react';
 import { setWhichStageNowPlaying } from '@/lib/whichStageNowPlaying';
 import { useStagePlayer } from '../../useStagePlayer';
 import { StageVideoFrame } from '../../StageVideoFrame';
-import { StageToiletsBeside } from '../street/StageToiletRow';
 import { stageChannelForVenueKind } from '@/lib/venues';
 import {
   TENTAROO_GND,
@@ -14,7 +13,6 @@ import {
   WHICH_STAGE_MID_X,
   WHICH_STAGE_PUSH_Y,
   WHICH_STAGE_SCALE,
-  WHICH_STAGE_TOILET_HALF,
 } from './constants';
 
 export { WHICH_STAGE_MID_X, WHICH_STAGE_HALF };
@@ -56,15 +54,6 @@ type WhichStageShellProps = {
   idleScreen?: boolean;
 };
 
-function WhichStageToilets() {
-  return (
-    <StageToiletsBeside
-      centerX={cx}
-      stageHalfWidth={WHICH_STAGE_TOILET_HALF}
-      side="right"
-    />
-  );
-}
 
 /** Bioluminescent glass-world rig — truss, towers, LED frame (no video). */
 function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true }: WhichStageShellProps) {
@@ -296,7 +285,6 @@ function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true }: WhichSt
           </text>
         </g>
       </g>
-      <WhichStageToilets />
     </>
   );
 }
