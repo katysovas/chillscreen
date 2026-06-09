@@ -8,25 +8,25 @@ export type VenueSeo = {
 
 export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
   coachella: {
-    title: 'Couchella',
+    title: 'The Desert',
     description:
-      'Walk the Couchella festival grounds on WhichStage and watch synchronized live sets ' +
+      'Walk the desert festival grounds on WhichStage and watch synchronized live sets ' +
       'with other players — no download required.',
   },
   edc: {
-    title: 'Electric Daze',
+    title: 'Las Vegas',
     description:
-      'Visit Electric Daze in Las Vegas on WhichStage. Walk the Strip, feel the bass, ' +
-      'and watch live EDC-style sets with friends in your browser.',
+      'Visit Las Vegas on WhichStage. Walk the Strip, feel the bass, ' +
+      'and watch live festival sets with friends in your browser.',
   },
   'outside-hands': {
-    title: 'Outside Hands',
+    title: 'San Francisco',
     description:
-      'Catch live sets at Outside Hands in San Francisco on WhichStage — a street-side ' +
+      'Catch live sets in San Francisco on WhichStage — a street-side ' +
       'concert stage with a big LED wall.',
   },
   'seattle-concerts': {
-    title: 'Seattle Concerts',
+    title: 'Seattle',
     description:
       'Explore Seattle on WhichStage and watch live sets at the outdoor festival stage ' +
       'along the Emerald City skyline.',
@@ -38,9 +38,9 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'with curated films while you explore the city.',
   },
   tentaroo: {
-    title: 'Tennessee',
+    title: 'The Farm',
     description:
-      'Explore Tennessee on WhichStage — Tentaroo campground, the Which Stage main rig, ' +
+      'Explore The Farm on WhichStage — campground vibes, the Which Stage main rig, ' +
       'and live Bonnaroo sets with friends in your browser.',
   },
 };

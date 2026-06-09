@@ -11,43 +11,48 @@ export type VenueRoute =
 export function venueSlugForRoute(route: VenueRoute): string {
   switch (route) {
     case 'coachella':
-      return 'couchella';
+      return 'thedesert';
     case 'edc':
-      return 'electric-daze';
+      return 'lasvegas';
     case 'outside-hands':
-      return 'outside-hands';
+      return 'sanfrancisco';
     case 'seattle-concerts':
-      return 'seattle-concerts';
+      return 'seattle';
     case 'cinema':
       return 'chill-cinema';
     case 'tentaroo':
-      return 'tentaroo';
+      return 'thefarm';
   }
 }
 
 /** Static paths for `[venue]` pages and sitemap. */
 export const VENUE_SLUGS = [
-  'couchella',
-  'electric-daze',
-  'outside-hands',
-  'seattle-concerts',
+  'thedesert',
+  'lasvegas',
+  'sanfrancisco',
+  'seattle',
   'chill-cinema',
-  'tentaroo',
+  'thefarm',
 ] as const;
 
 const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
+  thedesert: 'coachella',
   couchella: 'coachella',
   coachella: 'coachella',
+  lasvegas: 'edc',
   'electric-daze': 'edc',
   edc: 'edc',
+  sanfrancisco: 'outside-hands',
   'outside-hands': 'outside-hands',
+  seattle: 'seattle-concerts',
   'seattle-concerts': 'seattle-concerts',
   'chill-cinema': 'cinema',
   cinema: 'cinema',
+  thefarm: 'tentaroo',
   tentaroo: 'tentaroo',
 };
 
-/** Parse a URL segment like `couchella` or legacy `Coachella`. */
+/** Parse a URL segment like `thedesert` or legacy `couchella`. */
 export function parseVenueSlug(slug: string): VenueRoute | null {
   return SLUG_TO_ROUTE[slug.toLowerCase().replace(/_/g, '-')] ?? null;
 }

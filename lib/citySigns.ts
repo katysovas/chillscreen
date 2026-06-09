@@ -24,15 +24,15 @@ const SAN_DIEGO = {
   accent: '#4a90b8',
 } as const;
 
-const COACHELLA = {
-  label: 'Coachella',
+const THE_DESERT = {
+  label: 'The Desert',
   icon: '🎡',
   accent: '#e85074',
 } as const;
 
-/** Tentaroo festival grounds — city name on road signs. */
-export const TENNESSEE = {
-  label: 'Tennessee',
+/** The Farm festival grounds — city name on road signs. */
+export const THE_FARM = {
+  label: 'The Farm',
   icon: '🎸',
   accent: '#50b87a',
 } as const;
@@ -58,9 +58,9 @@ export function citySignsForTile(tileIndex: number): CombinedTownSignDef[] {
     case 3:
       return [{ xFrac: TOWN_CENTER, leftCity: VEGAS, rightCity: SAN_DIEGO }];
     case 5:
-      return [{ xFrac: TOWN_CENTER, leftCity: COACHELLA, rightCity: TENNESSEE }];
+      return [{ xFrac: TOWN_CENTER, leftCity: THE_DESERT, rightCity: THE_FARM }];
     case 7:
-      return [{ xFrac: TOWN_CENTER, leftCity: TENNESSEE, rightCity: SEATTLE }];
+      return [{ xFrac: TOWN_CENTER, leftCity: THE_FARM, rightCity: SEATTLE }];
     case 9:
       return [{ xFrac: TOWN_CENTER, leftCity: SEATTLE, rightCity: SF }];
     default:

@@ -10,11 +10,11 @@ export type StageWorldEntry = {
 
 const STAGE_META: { channel: StageChannel; stageName: string; city: string }[] = [
   { channel: 'cinema', stageName: 'Chill Cinema', city: 'San Francisco' },
-  { channel: 'outside-lands', stageName: 'Outside Hands', city: 'San Francisco' },
-  { channel: 'edc', stageName: 'Electric Daze', city: 'Las Vegas' },
-  { channel: 'coachella', stageName: 'Couchella', city: 'Southern California' },
-  { channel: 'which-stage', stageName: 'Which Stage', city: 'Tennessee' },
-  { channel: 'bumbershoot', stageName: 'Seattle Concerts', city: 'Seattle' },
+  { channel: 'outside-lands', stageName: 'San Francisco Stage', city: 'San Francisco' },
+  { channel: 'edc', stageName: 'Vegas Stage', city: 'Las Vegas' },
+  { channel: 'coachella', stageName: 'The Desert Stage', city: 'Southern California' },
+  { channel: 'which-stage', stageName: 'The Farm', city: 'The Farm' },
+  { channel: 'bumbershoot', stageName: 'Seattle Stage', city: 'Seattle' },
 ];
 
 /** What's on every stage channel right now (sync clock — not viewport-dependent). */

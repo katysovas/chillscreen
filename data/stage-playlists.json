@@ -1,0 +1,390 @@
+{
+  "version": 1,
+  "updatedAt": "2026-06-09T01:25:49.235Z",
+  "channels": {
+    "cinema": {
+      "label": "Chill Cinema",
+      "source": "curated",
+      "videos": [
+        {
+          "id": "RhOwyHWGqWg",
+          "title": "Cute Baby Animals",
+          "durationSec": 11673
+        },
+        {
+          "id": "lTRiuFIWV54",
+          "title": "Ocean Waves",
+          "durationSec": 3674
+        }
+      ]
+    },
+    "bumbershoot": {
+      "label": "Seattle",
+      "source": "youtube-api",
+      "searchQuery": "Seattle Full Concert",
+      "maxResults": 20,
+      "excludeTitlePatterns": [
+        "pearl jam"
+      ],
+      "fallbackVideos": [
+        {
+          "id": "iqQvfMi4UIk",
+          "title": "AURORA",
+          "durationSec": 4251
+        },
+        {
+          "id": "SDHXMAxVe5Q",
+          "title": "Elliott Smith",
+          "durationSec": 4148
+        },
+        {
+          "id": "0rkjl7oJfLc",
+          "title": "st",
+          "durationSec": 3838
+        }
+      ]
+    },
+    "outside-lands": {
+      "label": "San Francisco",
+      "source": "curated",
+      "videos": [
+        {
+          "id": "uQ588C9Ecp4",
+          "title": "Fisher",
+          "durationSec": 4381
+        },
+        {
+          "id": "fauxnAUc-c4",
+          "title": "Phoebe Bridgers",
+          "durationSec": 4214
+        },
+        {
+          "id": "Yysc6zA1lUY",
+          "title": "Hozier",
+          "durationSec": 5773
+        },
+        {
+          "id": "PeMr2TQEObc",
+          "title": "Jhon Summit ",
+          "durationSec": 4776
+        },
+        {
+          "id": "KDVQA5oL7sQ",
+          "title": "GRYFFIN",
+          "durationSec": 4477
+        },
+        {
+          "id": "Ca2XXPfWdqU",
+          "title": "flipturn",
+          "durationSec": 2755
+        },
+        {
+          "id": "3NyGf1X_gFA",
+          "title": "Kaytranada",
+          "durationSec": 4241
+        },
+        {
+          "id": "xPOHO1IASIA",
+          "title": "Royel Otis",
+          "durationSec": 2713
+        },
+        {
+          "id": "XlCjUPZCKfo",
+          "title": "Gracie Abrams",
+          "durationSec": 3550
+        },
+        {
+          "id": "048WNnE6Un8",
+          "title": "DOJA CAT",
+          "durationSec": 4255
+        },
+        {
+          "id": "jWAYwqdeePs",
+          "title": "Beck with Berkeley Symphony",
+          "durationSec": 4661
+        },
+        {
+          "id": "lEeg6rUFB4I",
+          "title": "Sturgill Simpson",
+          "durationSec": 5413
+        },
+        {
+          "id": "Kq1iA7XNJfA",
+          "title": "Artemas",
+          "durationSec": 2891
+        },
+        {
+          "id": "g0x172YBqy0",
+          "title": "Gracie Abrams",
+          "durationSec": 3426
+        },
+        {
+          "id": "tVWGigkYBgU",
+          "title": "Wallows",
+          "durationSec": 3010
+        },
+        {
+          "id": "ijGHk8NSQBc",
+          "title": "Green Day",
+          "durationSec": 6337
+        },
+        {
+          "id": "AVYJWfjnEfA",
+          "title": "Anderson .Paak & The Free Nationals",
+          "durationSec": 4406
+        },
+        {
+          "id": "b3lbLWae_rE",
+          "title": "Lord Huron",
+          "durationSec": 4357
+        },
+        {
+          "id": "AkUMdR_a19g",
+          "title": "Tyler, The Creator",
+          "durationSec": 4341
+        },
+        {
+          "id": "Dz6OF5NLVS8",
+          "title": "Zeds Dead",
+          "durationSec": 4506
+        },
+        {
+          "id": "xr3aTmSn5Gw",
+          "title": "The Strokes",
+          "durationSec": 3726
+        },
+        {
+          "id": "FbvoYytgYEo",
+          "title": "Jorja Smith (Live at Outside Lands 2025)",
+          "durationSec": 1845
+        },
+        {
+          "id": "ZVepHsO-6l4",
+          "title": "Sabrina Carpenter Live Outside Lands Festival 2024",
+          "durationSec": 3946
+        },
+        {
+          "id": "zjQ23U24emc",
+          "title": "Lorde - Outside Lands Music & Arts Festival[HD 1080p]",
+          "durationSec": 3848
+        },
+        {
+          "id": "wCTizriqubo",
+          "title": "Role Model - Outside Lands 2025, Friday August 8, 2025, San Francisco,  CA",
+          "durationSec": 2718
+        },
+        {
+          "id": "YB2BB6_03Og",
+          "title": "[FULL SET] Post Malone Performs Country Classics at Outside Lands Festival [2024-08-11]",
+          "durationSec": 3476
+        },
+        {
+          "id": "3kMD1eybIsA",
+          "title": "Hozier - Full Show (4k, HQ Audio) - Syracuse, NY 5/21/2024",
+          "durationSec": 6704
+        },
+        {
+          "id": "98VcG6JuzzU",
+          "title": "Grace Jones- Live at Outside Lands -August 10, 2024- FULL SHOW",
+          "durationSec": 2945
+        },
+        {
+          "id": "OH7F-bc_8bs",
+          "title": "Tape B Live at Lost Lands 2025",
+          "durationSec": 3262
+        },
+        {
+          "id": "3hxcKur8Ej0",
+          "title": "Excision Nexus Tour 2024 Day 2 @ Bill Graham San Francisco Full Movie 4K HD 2160P",
+          "durationSec": 4989
+        }
+      ]
+    },
+    "coachella": {
+      "label": "The Desert",
+      "source": "curated",
+      "videos": [
+        {
+          "id": "EkIfxAHlgJA",
+          "title": "Coachella"
+        }
+      ]
+    },
+    "edc": {
+      "label": "Las Vegas",
+      "source": "curated",
+      "videos": [
+        {
+          "id": "VJrd9doSRwA",
+          "title": "EDC Las Vegas 2026"
+        }
+      ]
+    },
+    "which-stage": {
+      "label": "The Farm",
+      "source": "curated",
+      "videos": [
+        {
+          "id": "1hgXZAHonLs",
+          "title": "Radiohead — Bonnaroo 2006",
+          "durationSec": 3503
+        },
+        {
+          "id": "1OpJa-QNopU",
+          "title": "Chappell Roan — Bonnaroo 2024",
+          "durationSec": 3503
+        },
+        {
+          "id": "8qXhFMkxDXM",
+          "title": "Pretty Lights — Bonnaroo Sunrise 2024",
+          "durationSec": 7475
+        },
+        {
+          "id": "JVIbi8ggfbE",
+          "title": "Radiohead - Bonnaroo 2012 - Full Concert HD",
+          "durationSec": 8385
+        },
+        {
+          "id": "dIXy-upkD-w",
+          "title": "Cage The Elephant Live at Bonnaroo Music and Arts Festival 2017",
+          "durationSec": 3663
+        },
+        {
+          "id": "-Ctylz7Yi90",
+          "title": "GRiZ - Chasing The Golden Hour (Full Set) - Live at Bonnaroo 2023",
+          "durationSec": 3473
+        },
+        {
+          "id": "vN6lpwiBgo0",
+          "title": "Grace Potter – Full Concert (Live at Bonnaroo 2016, What Stage, Manchester TN)",
+          "durationSec": 3549
+        },
+        {
+          "id": "oUuur5PwDKw",
+          "title": "Paramore - Live At Bonnaroo Music Festival 2023 (Full Concert HD)",
+          "durationSec": 4282
+        },
+        {
+          "id": "z1bgqUlMerI",
+          "title": "Vulfpeck Live at Bonnaroo",
+          "durationSec": 4517
+        },
+        {
+          "id": "djbWbdXujRE",
+          "title": "The White Stripes - Bonnaroo 2007 - Full Show",
+          "durationSec": 4796
+        },
+        {
+          "id": "1nEemZY9a2s",
+          "title": "Cage the Elephant Bonnaroo 2024 Live",
+          "durationSec": 4022
+        },
+        {
+          "id": "OpCrHc37syo",
+          "title": "Knocked Loose - Live At Bonnaroo Festival 2023 - Full Set HD",
+          "durationSec": 2559
+        },
+        {
+          "id": "iVbtnKsYcdQ",
+          "title": "Insane Clown Posse Bonnaroo 2025",
+          "durationSec": 3084
+        },
+        {
+          "id": "pdeF8dHCnkM",
+          "title": "Foo Fighters @ Bonnaroo Music & Arts Festival 2023, Manchester, TN, USA (Complete show)",
+          "durationSec": 7044
+        },
+        {
+          "id": "7_OREgfO1ro",
+          "title": "Korn - Lollapalooza 2025 - Full Set",
+          "durationSec": 5090
+        },
+        {
+          "id": "21cQUBOJlI4",
+          "title": "KoRn - Bonnaroo 2023 - Full Show HD",
+          "durationSec": 2301
+        },
+        {
+          "id": "Dx5WO-9WIQg",
+          "title": "Death Cab for Cutie - Live at Bonnaroo 2016",
+          "durationSec": 3451
+        },
+        {
+          "id": "YUZBFR2391E",
+          "title": "GRYFFIN LIVE @ ULTRA MIAMI 2025",
+          "durationSec": 3538
+        },
+        {
+          "id": "nOndQVYx7n0",
+          "title": "D'Angelo & the Vanguard - Full Concert [HD] | Live at North Sea Jazz Festival 2015",
+          "durationSec": 3743
+        },
+        {
+          "id": "Eokqh2NXqIw",
+          "title": "Mumford and Sons - Complete Bonnaroo 2011",
+          "durationSec": 5017
+        },
+        {
+          "id": "24tG0rYBbAg",
+          "title": "Widespread Panic - Never Miss A Sunday Show - 6/17/2007 at Bonnaroo Music Festival",
+          "durationSec": 12106
+        },
+        {
+          "id": "URK_45Xis_g",
+          "title": "POST MALONE LIVE @ BONNAROO 2024 FULL SET",
+          "durationSec": 5536
+        },
+        {
+          "id": "4x_GKhZ6e8I",
+          "title": "Primus - Bonnaroo Festival - 2011-06-10 (Full Show) [1080p]",
+          "durationSec": 5805
+        },
+        {
+          "id": "RhMgieH_6Nw",
+          "title": "THUNDERCAT LIVE @ BONNAROO 2024 FULL SET",
+          "durationSec": 4592
+        },
+        {
+          "id": "ghJX0SFn4Eo",
+          "title": "Elton John LIVE FULL HD - Bonnaroo Festival | 2014",
+          "durationSec": 7650
+        },
+        {
+          "id": "BlilOlvHSLU",
+          "title": "Bad Suns Bonnaroo 2017 Full Performance",
+          "durationSec": 3390
+        },
+        {
+          "id": "MQuiiIkI2q0",
+          "title": "Nine Inch Nails 2009-06-13 Manchester, Bonnaroo Music Festival - Full Show - NIN Live Archive",
+          "durationSec": 7829
+        },
+        {
+          "id": "5BJjekLsWT4",
+          "title": "BONNAROO MAIN STAGE - Full Set - Pretty Lights Live - 2024 - Manchester, TN - 🎛️  Remastered Audio",
+          "durationSec": 11138
+        },
+        {
+          "id": "XhhonU_HeGA",
+          "title": "Joey Valence & Brae | Bonnaroo 2025 | FULL SET",
+          "durationSec": 3219
+        },
+        {
+          "id": "Jrvdy4vwRgY",
+          "title": "MILKY CHANCE LIVE @ BONNAROO 2024 FULL SET",
+          "durationSec": 3479
+        },
+        {
+          "id": "4A3wNNljx0g",
+          "title": "Phish @ BONNAROO 2012 - Set 1 (HD)",
+          "durationSec": 4738
+        },
+        {
+          "id": "YS-Olwzwg7M",
+          "title": "Beastie Boys - Live Bonnaroo Music and Arts Festival, 2009 (Last Performance)",
+          "durationSec": 4813
+        }
+      ]
+    }
+  }
+}

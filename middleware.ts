@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { parseVenueSlug } from '@/lib/venueSlugs';
 
 /** App routes that are not venue deep links. */
-const PASSTHROUGH = new Set(['privacy', 'support']);
+const PASSTHROUGH = new Set(['privacy', 'support', 'admin']);
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,6 +24,8 @@ export function middleware(request: NextRequest) {
   if (path === '/') return NextResponse.next();
 
   const segments = path.split('/').filter(Boolean);
+
+  if (segments[0] === 'admin') return NextResponse.next();
 
   if (segments.length === 1) {
     const segment = segments[0]!;

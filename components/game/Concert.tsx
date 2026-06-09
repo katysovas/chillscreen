@@ -280,7 +280,7 @@ export function ConcertShell({
   channel = 'outside-lands' as StageChannel,
 }: ConcertShellProps) {
   const isSeattle = channel === 'bumbershoot';
-  const venueLabel = label ?? 'Seattle Concerts';
+  const venueLabel = label ?? 'Seattle';
   const marqueeTitle = isSeattle ? venueLabel : (label ?? 'Live Concert');
 
   return (
@@ -310,7 +310,7 @@ function ConcertLive({
   });
 
   const isSeattle = channel === 'bumbershoot';
-  const venueLabel = label ?? 'Seattle Concerts';
+  const venueLabel = label ?? 'Seattle';
   const marqueeTitle = isSeattle
     ? venueLabel
     : (video?.title ?? 'Loading…');

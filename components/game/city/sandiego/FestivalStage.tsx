@@ -294,7 +294,7 @@ function FestivalStageLive() {
                 key={vidKey}
                 ref={iframeRef}
                 src={src}
-                title={video?.title ?? 'Couchella'}
+                title={video?.title ?? 'The Desert'}
                 loading="lazy"
                 onLoad={onIframeLoad}
                 allow="autoplay; encrypted-media; picture-in-picture"

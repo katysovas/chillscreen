@@ -35,7 +35,7 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
   return [
     {
       id: 'outside-hands',
-      label: concertLabel(sf) ?? 'Outside Hands',
+      label: concertLabel(sf) ?? 'San Francisco',
       icon: '♪',
       accent: '#1a9a52',
       tileIndex: sf,
@@ -51,7 +51,7 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
     },
     {
       id: 'edc',
-      label: 'Electric Daze',
+      label: 'Las Vegas',
       icon: '🦉',
       accent: '#00e5ff',
       tileIndex: vegas,
@@ -59,7 +59,7 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
     },
     {
       id: 'coachella',
-      label: 'Couchella',
+      label: 'The Desert',
       icon: '🎡',
       accent: '#e85074',
       tileIndex: socal,
@@ -67,7 +67,7 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
     },
     {
       id: 'which-stage',
-      label: 'Which Stage',
+      label: 'The Farm',
       icon: '🎪',
       accent: '#38f5b0',
       tileIndex: tentaroo,
@@ -75,7 +75,7 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
     },
     {
       id: 'seattle',
-      label: concertLabel(seattle) ?? 'Seattle Concerts',
+      label: concertLabel(seattle) ?? 'Seattle',
       icon: '♪',
       accent: '#1a9a52',
       tileIndex: seattle,

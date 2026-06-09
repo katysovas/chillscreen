@@ -180,7 +180,7 @@ export function WelcomePopup({ balloonColor, onEnter }: Props) {
             What&apos;s New
           </div>
           {[
-            'New state - Tentaroo!',
+            'New state - The Farm!',
             'Fresh party favors dropped at our merch stand',
             'Bring your crew - share link to stage',
           ].map(item => (

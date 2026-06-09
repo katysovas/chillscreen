@@ -1,12 +1,15 @@
 /**
  * Predefined, server-pinned video playlists for every venue ("stage channel").
  *
+ * Channel config is edited via `data/stage-playlists.json` (use the localhost
+ * admin at `/admin/stage-playlists` to search YouTube and curate lists).
+ *
  * Synchronized playback is purely deterministic: every client derives the same
  * "current video + position" from a shared clock + these playlists, so everyone
  * sees the same thing at the same time on loop.
  *
  * Channels use either:
- *   • `source: 'curated'` — hardcoded video IDs in this file
+ *   • `source: 'curated'` — hardcoded video IDs in JSON
  *   • `source: 'youtube-api'` — playlist built from a YouTube search query
  *     (resolved server-side via YouTube Data API v3; see resolveStagePlaylists)
  *
@@ -18,6 +21,16 @@
  * imports cleanly into both the browser bundle and the PartyKit server
  * (esbuild) where it is the authoritative source of truth.
  */
+
+import rawStagePlaylists from '../data/stage-playlists.json';
+
+type StagePlaylistChannelEntry = StageChannelConfig & { label?: string };
+
+const stagePlaylistsFile = rawStagePlaylists as {
+  version: 1;
+  updatedAt: string;
+  channels: Record<StageChannel, StagePlaylistChannelEntry>;
+};
 
 export type StageVideo = {
   id: string;
@@ -67,7 +80,8 @@ export const GLOBAL_EXCLUDE_TITLE_PATTERNS = ['monster'];
 
 /** Merge global + per-stage exclusion patterns. */
 export function mergeExcludePatterns(stagePatterns?: string[]): string[] {
-  return [...GLOBAL_EXCLUDE_TITLE_PATTERNS, ...(stagePatterns ?? [])];
+  const stage = (stagePatterns ?? []).filter(p => p.trim().length > 0);
+  return [...GLOBAL_EXCLUDE_TITLE_PATTERNS, ...stage];
 }
 
 function titleMatchesPatterns(title: string, patterns: string[]): boolean {
@@ -90,92 +104,19 @@ export function filterStageVideos<T extends { title: string }>(
   return videos.filter(v => !titleMatchesPatterns(v.title, all));
 }
 
-/**
- * Per-channel playback source. Edit this to curate venues or point a stage at
- * YouTube search results instead of hardcoded IDs.
- */
-export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
-  cinema: {
-    source: 'curated',
-    videos: [
-      { id: 'RhOwyHWGqWg', title: 'Cute Baby Animals', durationSec: 11673 },
-      { id: 'lTRiuFIWV54', title: 'Ocean Waves', durationSec: 3674 },
-    ],
-  },
-  bumbershoot: {
-    source: 'youtube-api',
-    searchQuery: 'Seattle Full Concert',
-    maxResults: 20,
-    excludeTitlePatterns: ['pearl jam'],
-    fallbackVideos: [
-      { id: 'iqQvfMi4UIk', title: 'AURORA', durationSec: 4251 },
-      { id: 'SDHXMAxVe5Q', title: 'Elliott Smith', durationSec: 4148 },
-      { id: '0rkjl7oJfLc', title: 'st', durationSec: 3838 },
-    ],
-  },
-  'outside-lands': {
-    source: 'curated',
-    videos: [
-      { id: 'uQ588C9Ecp4', title: 'Fisher', durationSec: 4381 },
-      { id: 'fauxnAUc-c4', title: 'Phoebe Bridgers', durationSec: 4214 },
-      { id: 'Yysc6zA1lUY', title: 'Hozier', durationSec: 5773 },
-      { id: 'PeMr2TQEObc', title: 'Jhon Summit ', durationSec: 4776 },
-      { id: 'KDVQA5oL7sQ', title: 'GRYFFIN', durationSec: 4477 },
-      { id: 'Ca2XXPfWdqU', title: 'flipturn', durationSec: 2755 },
-      { id: '3NyGf1X_gFA', title: 'Kaytranada', durationSec: 4241 },
-      { id: 'xPOHO1IASIA', title: 'Royel Otis', durationSec: 2713 },
-      { id: 'XlCjUPZCKfo', title: 'Gracie Abrams', durationSec: 3550 },
-      { id: '048WNnE6Un8', title: 'DOJA CAT', durationSec: 4255 },
-      { id: 'KDVQA5oL7sQ', title: 'GRYFFIN', durationSec: 4477 },
-      { id: 'jWAYwqdeePs', title: 'Beck with Berkeley Symphony', durationSec: 4661 },
-      { id: 'lEeg6rUFB4I', title: 'Sturgill Simpson', durationSec: 5413 },
-      { id: 'Kq1iA7XNJfA', title: 'Artemas', durationSec: 2891 },
-      { id: 'g0x172YBqy0', title: 'Gracie Abrams', durationSec: 3426 },
-      { id: 'tVWGigkYBgU', title: 'Wallows', durationSec: 3010 },
-      { id: 'ijGHk8NSQBc', title: 'Green Day', durationSec: 6337 },
-      { id: 'AVYJWfjnEfA', title: 'Anderson .Paak & The Free Nationals', durationSec: 4406 },
-      { id: 'b3lbLWae_rE', title: 'Lord Huron', durationSec: 4357 },
-      { id: 'AkUMdR_a19g', title: 'Tyler, The Creator', durationSec: 4341 },
-      { id: 'Dz6OF5NLVS8', title: 'Zeds Dead', durationSec: 4506 },
-      { id: 'xr3aTmSn5Gw', title: 'The Strokes', durationSec: 3726 },
+function channelConfigFromFile(entry: StagePlaylistChannelEntry): StageChannelConfig {
+  const { label: _label, ...cfg } = entry;
+  return cfg as StageChannelConfig;
+}
 
-    ],
-  },
-  coachella: {
-    source: 'curated',
-    videos: [
-      { id: 'EkIfxAHlgJA', title: 'Coachella' },
-    ],
-  },
-  edc: {
-    source: 'youtube-api',
-    searchQuery: 'Vegas EDC Full Set',
-    maxResults: 20,
-    fallbackVideos: [
-      { id: 'uQ588C9Ecp4', title: 'Fisher', durationSec: 4381 },
-      { id: '3NyGf1X_gFA', title: 'Kaytranada', durationSec: 4241 },
-      { id: 'PeMr2TQEObc', title: 'John Summit', durationSec: 4776 },
-    ],
-  },
-  'which-stage': {
-    source: 'youtube-api',
-    searchQuery: 'bonnaroo live',
-    maxResults: 20,
-    excludeTitlePatterns: [
-      'outside lands',
-      'outside hands',
-      'coachella',
-      'electric daisy',
-      'edc ',
-      'edc orlando',
-      'ultra miami',
-    ],
-    fallbackVideos: [
-      { id: '1OpJa-QNopU', title: 'Chappell Roan — Bonnaroo 2024', durationSec: 3503 },
-      { id: '8qXhFMkxDXM', title: 'Pretty Lights — Bonnaroo Sunrise 2024', durationSec: 7475 },
-      { id: 'jfKfPfyJRdk', title: 'Bonnaroo Live', durationSec: 3600 },
-    ],
-  },
+/** Loaded from `data/stage-playlists.json` — edit via localhost admin UI. */
+export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
+  cinema: channelConfigFromFile(stagePlaylistsFile.channels.cinema),
+  bumbershoot: channelConfigFromFile(stagePlaylistsFile.channels.bumbershoot),
+  'outside-lands': channelConfigFromFile(stagePlaylistsFile.channels['outside-lands']),
+  coachella: channelConfigFromFile(stagePlaylistsFile.channels.coachella),
+  edc: channelConfigFromFile(stagePlaylistsFile.channels.edc),
+  'which-stage': channelConfigFromFile(stagePlaylistsFile.channels['which-stage']),
 };
 
 function fallbackPlaylist(cfg: StageChannelConfig): StageVideo[] {
