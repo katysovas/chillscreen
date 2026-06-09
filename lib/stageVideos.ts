@@ -166,12 +166,25 @@ export const DEFAULT_STAGE_SYNC: StageSync = {
   playlists: STAGE_PLAYLISTS,
 };
 
-/** Merge server playlists with local fallbacks so new channels always have videos. */
+function isCuratedChannel(channel: StageChannel): boolean {
+  return STAGE_CHANNEL_CONFIG[channel].source === 'curated';
+}
+
+/**
+ * Merge server playlists with local fallbacks.
+ * Curated channels always use the bundled JSON — remote sync must not override
+ * them (stale PartyKit payloads have shipped wrong/longer lists and "won" via
+ * preferResolvedStagePlaylist length heuristics).
+ */
 export function mergeStagePlaylists(
   remote: Partial<Record<StageChannel, StageVideo[]>> | undefined,
 ): Record<StageChannel, StageVideo[]> {
   return (Object.keys(STAGE_PLAYLISTS) as StageChannel[]).reduce(
     (acc, channel) => {
+      if (isCuratedChannel(channel)) {
+        acc[channel] = STAGE_PLAYLISTS[channel];
+        return acc;
+      }
       const list = remote?.[channel];
       acc[channel] = list?.length ? list : STAGE_PLAYLISTS[channel];
       return acc;
@@ -217,11 +230,15 @@ export function mergeStageSyncPlaylists(
   const base = mergeStagePlaylists(existing);
   const out = { ...merged };
   for (const channel of Object.keys(STAGE_PLAYLISTS) as StageChannel[]) {
-    out[channel] = preferResolvedStagePlaylist(
-      channel,
-      base[channel],
-      merged[channel],
-    );
+    if (isCuratedChannel(channel)) {
+      out[channel] = STAGE_PLAYLISTS[channel];
+    } else {
+      out[channel] = preferResolvedStagePlaylist(
+        channel,
+        base[channel],
+        merged[channel],
+      );
+    }
   }
   return out;
 }
