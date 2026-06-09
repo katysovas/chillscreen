@@ -117,7 +117,7 @@ const S = `
   }
 
   .cin-marquee {
-    width: 420px;
+    width: ${CIN_W}px;
     background: #4a5688;
     border: 1.5px solid rgba(212,168,48,.32);
     border-top: none;
@@ -152,9 +152,12 @@ const S = `
   }
   .cin-title {
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: 14px; letter-spacing: 2px; font-weight: 400;
+    font-size: 13px; letter-spacing: 1.5px; font-weight: 400;
     color: rgba(255,240,200,.85); text-align: center;
-    padding: 0 16px;
+    padding: 0 20px;
+    max-width: 100%;
+    line-height: 1.3;
+    word-break: break-word;
     animation: cin-title-in .4s ease;
   }
 

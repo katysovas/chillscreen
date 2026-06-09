@@ -280,19 +280,19 @@ function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true }: WhichSt
             </circle>
           ))}
 
-          <rect x={cx - 110} y={deck + 22} width={220} height={18} rx={3} fill="#081a12" stroke="rgba(56,245,176,.25)" strokeWidth={1} />
+          <rect x={cx - 168} y={deck + 20} width={336} height={22} rx={3} fill="#081a12" stroke="rgba(56,245,176,.25)" strokeWidth={1} />
           <text
             x={cx}
             y={deck + 35}
             textAnchor="middle"
             fontFamily={fontFamily}
             fontWeight={700}
-            fontSize={9}
-            letterSpacing={3}
+            fontSize={8.5}
+            letterSpacing={1.5}
             fill={WHICH_NEON.green}
             opacity={0.9}
           >
-            {(marquee || 'WHICH STAGE').toUpperCase().slice(0, 28)}
+            {(marquee || 'WHICH STAGE').toUpperCase()}
           </text>
         </g>
       </g>

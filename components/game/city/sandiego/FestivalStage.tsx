@@ -222,13 +222,13 @@ function FestivalStageShell({
             ))}
           </g>
 
-          <rect x={midX - 96} y={deck + 30} width={192} height={20} rx={3}
+          <rect x={midX - 168} y={deck + 28} width={336} height={24} rx={3}
             fill="#15151c" stroke="rgba(232,80,116,.4)" strokeWidth={1} />
           <text x={midX} y={deck + 44} textAnchor="middle"
-            fontFamily={fontFamily} fontWeight="700" fontSize="10"
-            letterSpacing="3" fill="rgba(255,140,170,.85)"
+            fontFamily={fontFamily} fontWeight="700" fontSize="9"
+            letterSpacing="1.5" fill="rgba(255,140,170,.85)"
             style={{ animation: 'sdc-marquee 3s ease-in-out infinite' }}>
-            {marquee.toUpperCase().slice(0, 30)}
+            {marquee.toUpperCase()}
           </text>
         </g>
         <StageToiletsBeside

@@ -142,18 +142,18 @@ function EDCStageShell({ marquee = 'ELECTRIC DAZE', idleScreen = true }: EDCStag
             <animate attributeName="fill" values={`${NEON.cyan};${NEON.pink};${NEON.cyan}`} dur="4s" repeatCount="indefinite" />
           </text>
 
-          <rect x={cx - 110} y={GND + 30} width={220} height={20} rx={3} fill="#15101c" stroke="rgba(0,229,255,.4)" strokeWidth={1} />
+          <rect x={cx - 190} y={GND + 28} width={380} height={24} rx={3} fill="#15101c" stroke="rgba(0,229,255,.4)" strokeWidth={1} />
           <text
             x={cx}
             y={GND + 44}
             textAnchor="middle"
             fontFamily="system-ui, sans-serif"
             fontWeight={700}
-            fontSize={10}
-            letterSpacing={2}
+            fontSize={9}
+            letterSpacing={1.5}
             fill="rgba(0,229,255,.85)"
           >
-            {marquee.toUpperCase().slice(0, 30)}
+            {marquee.toUpperCase()}
           </text>
         </g>
         <StageToiletsBeside

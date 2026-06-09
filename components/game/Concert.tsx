@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useId, type ReactNode } from 'react';
+import { useMemo, useRef, useId, type HTMLAttributes, type ReactNode } from 'react';
 import { setConcertNowPlaying } from '@/lib/concertNowPlaying';
 import { useStagePlayer, STAGE_IFRAME_STYLE } from './useStagePlayer';
 import { DECORATIVE_SHAPE } from './city/shared/parallaxLayerStyle';
@@ -255,12 +255,32 @@ function ConcertChrome({
         </g>
         <ellipse cx="260" cy="395" rx="240" ry="12" fill="rgba(56,216,128,.07)" filter={`url(#${gid('gb8')})`} />
 
-        <rect x="160" y="92" width="200" height="30" rx="2" fill="#0a1610" stroke="rgba(56,216,128,.3)" strokeWidth="1" />
-        <text x="260" y="111" textAnchor="middle"
-          fontFamily="system-ui, sans-serif" fontWeight="600" fontSize="11" letterSpacing="4"
-          fill="rgba(56,216,128,.75)" style={{ animation: 'glow-a 3s ease-in-out infinite' }}>
-          {marqueeTitle.toUpperCase()}
-        </text>
+        <rect x="100" y="90" width="320" height="34" rx="2" fill="#0a1610" stroke="rgba(56,216,128,.3)" strokeWidth="1" />
+        <foreignObject x="100" y="90" width="320" height="34">
+          <div
+            {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2px 12px',
+              boxSizing: 'border-box',
+              fontFamily: 'system-ui, sans-serif',
+              fontWeight: 600,
+              fontSize: 10,
+              letterSpacing: 1.5,
+              lineHeight: 1.2,
+              color: 'rgba(56,216,128,.75)',
+              textAlign: 'center',
+              wordBreak: 'break-word',
+              overflow: 'hidden',
+            }}
+          >
+            {marqueeTitle.toUpperCase()}
+          </div>
+        </foreignObject>
         </g>
       </svg>
 
