@@ -1,5 +1,6 @@
 'use client';
 
+import { trackMobileControl } from '@/lib/gameInputAnalytics';
 import { ShoppingCartIcon } from './BottomControlPanel';
 import { DPadBtn } from './DPadBtn';
 
@@ -155,9 +156,21 @@ export function MobileGameControls({
         className="mobile-controls-dpad"
         style={loungeMode ? { display: 'none' } : undefined}
       >
-        <DPadBtn label="←" onStart={onLeftStart} onEnd={onLeftEnd} />
-        <DPadBtn label="↑" onStart={onJump} onEnd={() => {}} />
-        <DPadBtn label="→" onStart={onRightStart} onEnd={onRightEnd} />
+        <DPadBtn
+          label="←"
+          onStart={() => { trackMobileControl('ArrowLeft'); onLeftStart(); }}
+          onEnd={onLeftEnd}
+        />
+        <DPadBtn
+          label="↑"
+          onStart={() => { trackMobileControl('ArrowUp'); onJump(); }}
+          onEnd={() => {}}
+        />
+        <DPadBtn
+          label="→"
+          onStart={() => { trackMobileControl('ArrowRight'); onRightStart(); }}
+          onEnd={onRightEnd}
+        />
       </div>
 
       <div data-paraloid-ui className="mobile-controls-tray">
@@ -169,7 +182,10 @@ export function MobileGameControls({
             aria-pressed={ambientChatOpen}
             title={ambientChatOpen ? 'Close shout' : 'Shout'}
             onPointerDown={e => e.preventDefault()}
-            onClick={onOpenAmbientChat}
+            onClick={() => {
+              trackMobileControl(ambientChatOpen ? 'Escape' : 'Enter');
+              onOpenAmbientChat?.();
+            }}
             style={{
               ...mobileActionBtn,
               background: ambientChatOpen ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.42)',
@@ -187,7 +203,10 @@ export function MobileGameControls({
             aria-label="Change stage"
             title="Change stage"
             onPointerDown={e => e.preventDefault()}
-            onClick={onOpenStageSwap}
+            onClick={() => {
+              trackMobileControl('stage_swap');
+              onOpenStageSwap?.();
+            }}
             style={{
               ...mobileActionBtn,
               color: 'rgba(255,255,255,.78)',
@@ -206,6 +225,7 @@ export function MobileGameControls({
             title={vendorShopOpen ? 'Close store' : 'Festival store'}
             onPointerDown={e => e.preventDefault()}
             onClick={() => {
+              trackMobileControl(vendorShopOpen ? 'cart_close' : 'cart_open');
               onVendorShopWarm?.();
               onToggleVendorShop?.();
             }}
@@ -224,7 +244,10 @@ export function MobileGameControls({
           className="mobile-controls-mute mobile-controls-action-btn"
           aria-label={muted ? 'Unmute' : 'Mute'}
           onPointerDown={e => e.preventDefault()}
-          onClick={onToggleMute}
+          onClick={() => {
+            trackMobileControl(muted ? 'unmute' : 'mute');
+            onToggleMute();
+          }}
           style={{
             ...mobileActionBtn,
             fontSize: 22,

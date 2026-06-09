@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import { trackMobileControl } from '@/lib/gameInputAnalytics';
 
 const IDLE_BOTTOM =
   'calc(max(env(safe-area-inset-bottom, 0px), 36px) + 12px + 56px + 8px)';
@@ -82,7 +83,9 @@ export function MobileChatInputBar({
   }, [inputRef]);
 
   const trySend = () => {
-    if (value.trim()) onSend();
+    if (!value.trim()) return;
+    trackMobileControl('Enter');
+    onSend();
   };
 
   const canSend = value.trim().length > 0;
@@ -115,7 +118,10 @@ export function MobileChatInputBar({
       <button
         type="button"
         aria-label="Close chat"
-        onClick={onClose}
+        onClick={() => {
+          trackMobileControl('Escape');
+          onClose();
+        }}
         style={{
           flexShrink: 0,
           width: 36,

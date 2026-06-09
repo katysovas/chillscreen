@@ -47,6 +47,7 @@ import {
   setPlayerName as savePlayerName,
 } from '@/lib/playerStorage';
 import { identifyPlayer, trackCharacterCreated } from '@/lib/analytics';
+import { trackMobileControl } from '@/lib/gameInputAnalytics';
 import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
@@ -349,6 +350,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     nearNpcRef.current = null;  setNearNpc(null);
     if (announce) mpRef.current?.openPeerChat(peerId);
     else playChatInviteBeep();
+    if (isMobileLoungeDevice()) trackMobileControl('connect_peer');
     setChatMode('chat');
     setTimeout(() => chatInputRef.current?.focus(), 120);
   }, []);
@@ -703,6 +705,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       setWalking(false);
       walkingRef.current = false;
       if (mobileLoungeRef.current) {
+        trackMobileControl('connect_npc');
         setChatMode('chat');
         setTimeout(() => chatInputRef.current?.focus(), 120);
       }
