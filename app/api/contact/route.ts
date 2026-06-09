@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     await resend.emails.send({
-      from: 'ChillScreen <hello@chillscreen.world>',
+      from: 'ChillScreen <onboarding@resend.dev>',
       to: ['support@smartmetrics.com'],
       replyTo: email.trim(),
       subject: `New collaboration request from ${name.trim()}`,
