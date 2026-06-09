@@ -27,7 +27,7 @@ const FOOD_ITEMS = ['food-hotdog', 'food-donut', 'food-fries', 'food-pizza', 'fo
 
 const DRINK_ITEMS = ['drink-martini', 'drink-lemonade', 'drink-beer', 'drink-bottle', 'drink-water', 'drink-juice'] as const;
 
-const PARTY_FAVOR_ITEMS = ['party-glowsticks', 'party-sticker'] as const;
+const PARTY_FAVOR_ITEMS = ['party-glowsticks', 'party-confetti', 'party-fireworks', 'party-sticker'] as const;
 
 export type VendorShopItemId =
   | (typeof HAT_ITEMS)[number]
@@ -140,6 +140,8 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'drink-water': '/images/props/drinks_water.svg',
   'drink-juice': '/images/props/drinks_juice.svg',
   'party-glowsticks': '/images/props/festival_glowsticks.png',
+  'party-confetti': '/images/props/festival_confetti.svg',
+  'party-fireworks': '/images/props/festival_fireworks.svg',
   'party-sticker': '/images/props/sticker.svg',
 };
 
@@ -180,5 +182,7 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'drink-water': { width: 28, height: 32 },
   'drink-juice': { width: 28, height: 32 },
   'party-glowsticks': { width: 32, height: 32 },
+  'party-confetti': { width: 52, height: 52 },
+  'party-fireworks': { width: 48, height: 48 },
   'party-sticker': { width: 34, height: 34 },
 };

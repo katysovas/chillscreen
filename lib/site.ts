@@ -23,7 +23,7 @@ export const SITE_KEYWORDS = [
   'live stages',
 ];
 
-export const FAVICON_PATH = '/images/logos/fav_dark.png';
+export const FAVICON_PATH = '/images/logos/fav_white.png';
 export const LOGO_PATH = '/images/logos/logo_dark.png';
 
 export const TWITTER_HANDLE = '@whichstage';

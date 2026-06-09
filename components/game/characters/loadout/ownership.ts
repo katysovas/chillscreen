@@ -2,6 +2,8 @@ import type { CharacterLoadout } from './types';
 
 export const PARTY_GLOWSTICKS_ID = 'party-glowsticks';
 export const PARTY_STICKER_ID = 'party-sticker';
+export const PARTY_CONFETTI_ID = 'party-confetti';
+export const PARTY_FIREWORKS_ID = 'party-fireworks';
 
 /** True once a vendor item has been bought (persists after unequip). */
 export function hasPurchasedLoadoutItem(
@@ -28,4 +30,14 @@ export function hasStickerTripActive(loadout: CharacterLoadout | undefined): boo
 /** @deprecated use hasStickerTripActive */
 export function hasStickerEquipped(loadout: CharacterLoadout | undefined): boolean {
   return loadout?.hand === PARTY_STICKER_ID;
+}
+
+/** Confetti cannon bursts — while confetti cannon is in the hand slot. */
+export function hasConfettiEquipped(loadout: CharacterLoadout | undefined): boolean {
+  return loadout?.hand === PARTY_CONFETTI_ID;
+}
+
+/** Fireworks overlay — while the fireworks item is in the hand slot. */
+export function hasFireworksEquipped(loadout: CharacterLoadout | undefined): boolean {
+  return loadout?.hand === PARTY_FIREWORKS_ID;
 }

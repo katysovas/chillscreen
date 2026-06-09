@@ -21,11 +21,13 @@ const BOTTLE_SRC = '/images/props/drinks_bottle.svg';
 const WATER_SRC = '/images/props/drinks_water.svg';
 const JUICE_SRC = '/images/props/drinks_juice.svg';
 const GLOWSTICKS_SRC = '/images/props/festival_glowsticks.png';
+const CONFETTI_SRC = '/images/props/festival_confetti.svg';
+const FIREWORKS_SRC = '/images/props/festival_fireworks.svg';
 const STICKER_SRC = '/images/props/sticker.svg';
 const TOTEM_SRC = '/images/props/hands_totem.svg';
 
 type HandPropProps = {
-  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza' | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle' | 'water' | 'juice' | 'glowsticks' | 'sticker' | 'totem';
+  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza' | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle' | 'water' | 'juice' | 'glowsticks' | 'confetti' | 'fireworks' | 'sticker' | 'totem';
   ctx: LoadoutRenderCtx;
 };
 
@@ -230,6 +232,28 @@ export function HandProp({ variant, ctx }: HandPropProps) {
             src={GLOWSTICKS_SRC}
             alt=""
             className="ch-lo-glowsticks-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'confetti':
+      return (
+        <div className="ch-lo-confetti">
+          <img
+            src={CONFETTI_SRC}
+            alt=""
+            className="ch-lo-confetti-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'fireworks':
+      return (
+        <div className="ch-lo-fireworks">
+          <img
+            src={FIREWORKS_SRC}
+            alt=""
+            className="ch-lo-fireworks-img"
             draggable={false}
           />
         </div>

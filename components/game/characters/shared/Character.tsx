@@ -6,7 +6,12 @@ import {
   getLoadoutRegistryVersion,
   GlowstickAmbient,
   GLOWSTICK_AMBIENT_TWEAK,
+  ConfettiAmbient,
+  CONFETTI_AMBIENT_TWEAK,
+  FireworksOverlay,
   hasGlowsticksEquipped,
+  hasConfettiEquipped,
+  hasFireworksEquipped,
   loadoutHoldSide,
   preloadLoadoutItems,
   renderLoadoutBottom,
@@ -155,6 +160,9 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     : '';
   const glowstickAmbient = GLOWSTICK_AMBIENT_TWEAK
     || (loadout ? hasGlowsticksEquipped(loadout) : false);
+  const confettiAmbient = CONFETTI_AMBIENT_TWEAK
+    || (loadout ? hasConfettiEquipped(loadout) : false);
+  const fireworksActive = loadout ? hasFireworksEquipped(loadout) : false;
 
   return (
     <div
@@ -205,6 +213,8 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
         </div>
 
         <GlowstickAmbient active={glowstickAmbient} />
+        <ConfettiAmbient active={confettiAmbient} />
+        <FireworksOverlay active={fireworksActive} />
 
         {chatOverlay && (
           <div

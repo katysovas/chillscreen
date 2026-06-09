@@ -231,6 +231,26 @@ export const LOADOUT_CATALOG: Record<string, LoadoutItemDef> = {
     holdSide: 'right',
     defaultProps: {},
   },
+  'party-confetti': {
+    id: 'party-confetti',
+    slot: 'hand',
+    name: 'Confetti Cannon',
+    description: 'One pop and the whole crowd pops with you.',
+    vendorPrice: 300,
+    handMounted: true,
+    holdSide: 'right',
+    defaultProps: {},
+  },
+  'party-fireworks': {
+    id: 'party-fireworks',
+    slot: 'hand',
+    name: 'Fireworks',
+    description: 'Light the sky. Everyone looks up.',
+    vendorPrice: 400,
+    handMounted: true,
+    holdSide: 'right',
+    defaultProps: {},
+  },
 
   // ── Hat ──────────────────────────────────────────────────────────────────
   'hat-beanie': {

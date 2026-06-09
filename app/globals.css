@@ -321,6 +321,42 @@
   }
 }
 
+/* ── Confetti cannon ambient burst ──────────────────────────────────────── */
+
+.ch-confetti-ambient {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -80px;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 14;
+  overflow: visible;
+}
+.ch-confetti-piece {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  animation: ch-confetti-fly var(--dur, 2s) ease-out forwards;
+}
+@keyframes ch-confetti-fly {
+  0% {
+    opacity: 0;
+    transform: translate(0px, 0px) rotate(var(--rot, 0deg)) scale(0.35);
+  }
+  8% {
+    opacity: 1;
+  }
+  38% {
+    opacity: 1;
+    transform: translate(var(--tx, 0px), calc(-1 * var(--up, 200px))) rotate(calc(var(--rot, 0deg) + var(--spin, 270deg) * 0.4)) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx, 0px), var(--down, 150px)) rotate(calc(var(--rot, 0deg) + var(--spin, 270deg))) scale(0.6);
+  }
+}
+
 /* ── Mystery sticker — transparent WebGL noise overlay ───────────────────── */
 
 .ws-sticker-trip-canvas {
