@@ -153,7 +153,11 @@ export function useStageChannel(channel: StageChannel, live: boolean): StageChan
       const next = currentSchedule(channel);
 
       if (next) {
-        if (lastIndexRef.current !== null && lastIndexRef.current !== next.index) {
+        const prevIndex = lastIndexRef.current;
+        if (prevIndex === null || prevIndex !== next.index) {
+          console.log(`[${channel}]`, next.video.id);
+        }
+        if (prevIndex !== null && prevIndex !== next.index) {
           setVidKey(k => k + 1);
         }
         lastIndexRef.current = next.index;
