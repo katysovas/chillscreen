@@ -88,6 +88,14 @@ function CameraIcon({ size = 18 }: { size?: number }) {
   );
 }
 
+const FAQ_ITEMS: { q: string; a: string }[] = [
+  { q: 'How do I move?', a: 'Arrow keys or A / D. Jump with W, ↑ or space.' },
+  { q: 'How do I get more coins?', a: 'Keep an eye on the sidewalk — Ground Score!' },
+  { q: 'How do I chat?', a: 'Press Enter to shout. Walk up to someone and press Enter to connect.' },
+  { q: 'What are coins for?', a: 'Spend them at the festival store (cart icon) — hats, balloons, stickers.' },
+  { q: 'Where\u2019s the music?', a: 'Walk to any stage. It plays when you\u2019re close.' },
+];
+
 export function ShoppingCartIcon({ size = 18 }: { size?: number }) {
   return (
     <svg
@@ -128,6 +136,7 @@ export function BottomControlPanel({
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const route = useMemo(
     () => activeVenueRoute(worldOff, venueRoute),
@@ -144,6 +153,7 @@ export function BottomControlPanel({
   const showInviteBtn = !isMobile && showInvite && !showConnect;
   const hasMessages = showConnect || showInviteBtn;
   const showCart = Boolean(onToggleVendorShop) && !isMobile;
+  const showHelp = !isMobile;
 
   const copyLink = useCallback(async () => {
     if (!inviteUrl) return;
@@ -168,13 +178,14 @@ export function BottomControlPanel({
 
   useEffect(() => {
     if (hidden || showConnect) setInviteOpen(false);
+    if (hidden) setHelpOpen(false);
   }, [hidden, showConnect]);
 
   useEffect(() => {
     setInviteOpen(false);
   }, [route]);
 
-  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showCart && !hasMessages)) return null;
+  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showCart && !showHelp && !hasMessages)) return null;
 
   return (
     <div
@@ -189,6 +200,53 @@ export function BottomControlPanel({
         maxWidth: 'min(96vw, 560px)',
       }}
     >
+      {helpOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 10px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'min(92vw, 340px)',
+            borderRadius: 14,
+            background: 'rgba(0,0,0,.55)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,.12)',
+            padding: '14px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          {FAQ_ITEMS.map(({ q, a }) => (
+            <div key={q}>
+              <div
+                style={{
+                  color: 'rgba(255,255,255,.85)',
+                  fontSize: 11,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  fontFamily: "Georgia,'Times New Roman',serif",
+                  marginBottom: 2,
+                }}
+              >
+                {q}
+              </div>
+              <div
+                style={{
+                  color: 'rgba(255,255,255,.55)',
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  fontFamily: 'system-ui, sans-serif',
+                }}
+              >
+                {a}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div
         style={{
           borderRadius: 999,
@@ -229,7 +287,35 @@ export function BottomControlPanel({
           </button>
         )}
 
-        {showCart && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
+        {showCart && showHelp && <div style={panelDivider} aria-hidden />}
+
+        {showHelp && (
+          <button
+            type="button"
+            onClick={() => setHelpOpen(o => !o)}
+            aria-label={helpOpen ? 'Close help' : 'Open help'}
+            aria-expanded={helpOpen}
+            title="Help"
+            style={{
+              ...ghostBtn,
+              padding: '8px 14px',
+              background: helpOpen ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.06)',
+              color: helpOpen ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.78)',
+              cursor: 'pointer',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 13,
+              fontWeight: 700,
+              fontFamily: 'system-ui, sans-serif',
+            }}
+          >
+            ?
+          </button>
+        )}
+
+        {showHelp && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
           <div style={panelDivider} aria-hidden />
         )}
 
