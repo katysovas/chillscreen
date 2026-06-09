@@ -1,34 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 const IDLE_BOTTOM =
   'calc(max(env(safe-area-inset-bottom, 0px), 36px) + 12px + 56px + 8px)';
 
-function useKeyboardGap(): number {
-  const [gap, setGap] = useState(0);
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const sync = () => {
-      const next = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setGap(next);
-    };
-
-    vv.addEventListener('resize', sync);
-    vv.addEventListener('scroll', sync);
-    sync();
-
-    return () => {
-      vv.removeEventListener('resize', sync);
-      vv.removeEventListener('scroll', sync);
-    };
-  }, []);
-
-  return gap;
-}
+/** Keyboard visible once the viewport shrinks by at least this much. */
+const KEYBOARD_THRESHOLD_PX = 60;
 
 type Props = {
   value: string;
@@ -50,26 +28,75 @@ export function MobileChatInputBar({
   inputRef,
   maxLength = 120,
 }: Props) {
-  const keyboardGap = useKeyboardGap();
+  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = window.setTimeout(() => inputRef.current?.focus(), 50);
     return () => window.clearTimeout(id);
   }, [inputRef]);
 
+  // Position via DOM ref — avoids React re-renders when the keyboard jitters.
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    const vv = window.visualViewport;
+    if (!bar || !vv) return;
+
+    let lockedGap: number | null = null;
+
+    const applyBottom = () => {
+      if (lockedGap !== null) {
+        bar.style.bottom = `${lockedGap}px`;
+      } else {
+        bar.style.bottom = IDLE_BOTTOM;
+      }
+    };
+
+    const sync = () => {
+      const gap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const focused = document.activeElement === inputRef.current;
+
+      if (focused && gap >= KEYBOARD_THRESHOLD_PX) {
+        lockedGap = Math.max(lockedGap ?? 0, gap);
+      } else if (!focused) {
+        lockedGap = null;
+      }
+
+      applyBottom();
+    };
+
+    const onBlur = () => {
+      lockedGap = null;
+      applyBottom();
+    };
+
+    const input = inputRef.current;
+
+    vv.addEventListener('resize', sync);
+    input?.addEventListener('blur', onBlur);
+    sync();
+
+    return () => {
+      vv.removeEventListener('resize', sync);
+      input?.removeEventListener('blur', onBlur);
+    };
+  }, [inputRef]);
+
   const trySend = () => {
     if (value.trim()) onSend();
   };
 
+  const canSend = value.trim().length > 0;
+
   return (
     <div
+      ref={barRef}
       data-paraloid-ui
       className="mobile-chat-input-bar"
       style={{
         position: 'fixed',
         left: 0,
         right: 0,
-        bottom: keyboardGap > 0 ? keyboardGap : IDLE_BOTTOM,
+        bottom: IDLE_BOTTOM,
         zIndex: 100,
         display: 'flex',
         alignItems: 'center',
@@ -78,10 +105,11 @@ export function MobileChatInputBar({
         paddingLeft: 'max(12px, env(safe-area-inset-left, 0px))',
         paddingRight: 'max(12px, env(safe-area-inset-right, 0px))',
         background: 'rgba(18, 18, 22, 0.94)',
-        backdropFilter: 'blur(12px)',
         borderTop: '1px solid rgba(255,255,255,0.12)',
         boxShadow: '0 -4px 24px rgba(0,0,0,0.35)',
         pointerEvents: 'auto',
+        transform: 'translateZ(0)',
+        willChange: 'bottom',
       }}
     >
       <button
@@ -140,19 +168,20 @@ export function MobileChatInputBar({
       <button
         type="button"
         aria-label="Send message"
-        disabled={!value.trim()}
+        disabled={!canSend}
         onClick={trySend}
         style={{
           flexShrink: 0,
           height: 40,
+          minWidth: 58,
           padding: '0 14px',
           border: 'none',
           borderRadius: 10,
-          background: value.trim() ? 'rgba(99, 179, 237, 0.9)' : 'rgba(255,255,255,0.12)',
-          color: value.trim() ? '#0d1b2a' : 'rgba(255,255,255,0.35)',
+          background: canSend ? 'rgba(99, 179, 237, 0.9)' : 'rgba(255,255,255,0.12)',
+          color: canSend ? '#0d1b2a' : 'rgba(255,255,255,0.35)',
           fontSize: 14,
           fontWeight: 600,
-          cursor: value.trim() ? 'pointer' : 'default',
+          cursor: canSend ? 'pointer' : 'default',
           WebkitTapHighlightColor: 'transparent',
         }}
       >
