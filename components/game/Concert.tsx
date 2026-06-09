@@ -344,7 +344,7 @@ function ConcertLive({
           data-stage-embed
           src={src}
           title={video?.title ?? 'Live'}
-          loading="lazy"
+          loading="eager"
           onLoad={onIframeLoad}
           allow="autoplay; encrypted-media; picture-in-picture"
           allowFullScreen

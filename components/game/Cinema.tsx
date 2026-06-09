@@ -398,7 +398,7 @@ function CinemaLive() {
               title={video.title}
               width={IFRAME_W}
               height={IFRAME_H}
-              loading="lazy"
+              loading="eager"
               onLoad={onIframeLoad}
               allow="autoplay; encrypted-media; picture-in-picture"
               allowFullScreen

@@ -27,7 +27,7 @@ const oy = GND;
 const scrW = 340;
 const scrH = 192;
 const scrX = cx - scrW / 2;
-const scrY = 430;
+const scrY = 406;
 const trussY = 368;
 const rigW = 480;
 

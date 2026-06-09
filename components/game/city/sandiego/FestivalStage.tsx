@@ -81,7 +81,7 @@ function FestivalStageShell({
   const deck = SD_GND;
   // Trusses occupy [L, L+20] and [R, R+20] — interior is [L+20, R], so +54 centers the screen.
   const screenX = L + 54;
-  const screenY = 420;
+  const screenY = 426;
   const screenW = R - L - 88;
   const screenH = 168;
   const ox = COACHELLA_STAGE_MID_X;
@@ -240,9 +240,8 @@ function FestivalStageLive() {
   const R = 2440;
   const top = 404;
   const deck = SD_GND;
-  // Must match FestivalStageShell — screen centered in the truss interior.
   const screenX = L + 54;
-  const screenY = 420;
+  const screenY = 446;
   const screenW = R - L - 88;
   const screenH = 168;
   const iframeX = screenX + 6;
@@ -287,7 +286,7 @@ function FestivalStageLive() {
                 ref={iframeRef}
                 src={src}
                 title={video?.title ?? 'The Desert'}
-                loading="lazy"
+                loading="eager"
                 onLoad={onIframeLoad}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
