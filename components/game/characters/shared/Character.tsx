@@ -210,6 +210,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
           <div
             ref={chatAnchorRef}
             data-paraloid-ui
+            className="game-chat-anchor"
             style={chatAnchorStyle(bubbleSide, scale, mirrored)}
           >
             {chatOverlay}

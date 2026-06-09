@@ -36,6 +36,8 @@ type MidLayerProps = {
   deepLinkRoute?: VenueRoute;
   /** Synced with the main mid layer — festival stages render here, above town cottages. */
   foregroundRef?: React.RefObject<SVGSVGElement | null>;
+  /** Hide ridge trees on mobile — less clutter + perf. */
+  hideTrees?: boolean;
 };
 
 function tileContentScale(tileIndex: number) {
@@ -95,7 +97,7 @@ function whichStageLiveOnTile(
 
 /** Mid parallax: SF → town → Vegas → town → SoCal → town → Tentaroo → town → Seattle → town. */
 export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
-  function MidLayer({ worldOff, deepLinkRoute, foregroundRef }, ref) {
+  function MidLayer({ worldOff, deepLinkRoute, foregroundRef, hideTrees = false }, ref) {
     const vx = worldOff * MID_F;
 
     const cinemaLive   = cinemaLiveTile(vx);
@@ -129,7 +131,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             {kind === 'sf' && (
               <>
                 <CityBuildingsTile />
-                <MidBushes />
+                {!hideTrees && <MidBushes />}
                 <SfMidFeatures />
               </>
             )}
@@ -154,12 +156,12 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             )}
             {isTentarooTile(t) && <TentarooTile />}
           </g>
-          {kind === 'town' && <SmallTownTile tileIndex={t} tileWidth={w} />}
+          {kind === 'town' && <SmallTownTile tileIndex={t} tileWidth={w} hideTrees={hideTrees} />}
           <rect x={0} y={0} width={w} height={900} fill="url(#atmo)" />
         </>
       );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute]);
+    }, [cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus, deepLinkRoute, hideTrees]);
 
     const renderMidForeground = useCallback((t: number) => {
       const scale = tileContentScale(t);

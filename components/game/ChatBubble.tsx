@@ -54,6 +54,7 @@ export function AttachedChatBubble({
 }) {
   return (
     <div
+      className="game-chat-bubble"
       style={{
         ...bubbleShell,
         padding: name ? '7px 13px 8px' : '8px 13px',
@@ -86,7 +87,7 @@ export function AttachedTypingBubble({
   side?: BubbleSide;
 }) {
   return (
-    <div style={{ ...bubbleShell, minWidth: 72, animation: 'chat-in-left 0.22s ease-out both' }}>
+    <div className="game-chat-bubble" style={{ ...bubbleShell, minWidth: 72, animation: 'chat-in-left 0.22s ease-out both' }}>
       {name && (
         <div style={{
           fontWeight: 700,
@@ -132,6 +133,7 @@ export function AttachedInputBubble({
 }) {
   return (
     <div
+      className="game-chat-input-bubble"
       style={{
         ...bubbleShell,
         padding: '7px 10px',
@@ -178,12 +180,16 @@ export function getConversationSpread(
   viewportWidth: number,
   bubbleSide: BubbleSide,
 ): CSSProperties | undefined {
+  const isMobile = viewportWidth <= 767;
+  const threshold = isMobile ? 120 : 220;
   const distPx = (Math.abs(50 - greetNpcX) / 100) * viewportWidth;
-  if (distPx >= 220) return undefined;
-  const spread = Math.round((220 - distPx) / 2);
+  if (distPx >= threshold) return undefined;
+  const spread = Math.round((threshold - distPx) / 2);
+  const cap = isMobile ? Math.round(viewportWidth * 0.1) : spread;
+  const nudge = Math.min(spread, cap);
   return bubbleSide === 'left'
-    ? { marginLeft: -spread }
-    : { marginRight: -spread };
+    ? { marginLeft: -nudge }
+    : { marginRight: -nudge };
 }
 
 export const CHAT_LAYER_Z = 1000;

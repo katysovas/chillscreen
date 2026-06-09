@@ -13,11 +13,15 @@ type BottomControlPanelProps = {
   playerName: string | null;
   venueRoute?: VenueRoute;
   connectName?: string | null;
+  /** Tap-to-connect on mobile (replaces ↵ keyboard hint). */
+  onConnectTap?: () => void;
   hidden?: boolean;
   onCapturePhoto?: () => void | Promise<void>;
   vendorShopOpen?: boolean;
   onToggleVendorShop?: () => void;
   onVendorShopWarm?: () => void;
+  /** Hides invite + cart — those move to MobileGameControls on phone. */
+  isMobile?: boolean;
 };
 
 const hintText: React.CSSProperties = {
@@ -84,7 +88,7 @@ function CameraIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function ShoppingCartIcon({ size = 18 }: { size?: number }) {
+export function ShoppingCartIcon({ size = 18 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -113,11 +117,13 @@ export function BottomControlPanel({
   playerName,
   venueRoute,
   connectName = null,
+  onConnectTap,
   hidden = false,
   onCapturePhoto,
   vendorShopOpen = false,
   onToggleVendorShop,
   onVendorShopWarm,
+  isMobile = false,
 }: BottomControlPanelProps) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -135,9 +141,9 @@ export function BottomControlPanel({
 
   const showInvite = Boolean(route && inviteUrl);
   const showConnect = Boolean(connectName?.trim());
-  const showInviteBtn = showInvite && !showConnect;
+  const showInviteBtn = !isMobile && showInvite && !showConnect;
   const hasMessages = showConnect || showInviteBtn;
-  const showCart = Boolean(onToggleVendorShop);
+  const showCart = Boolean(onToggleVendorShop) && !isMobile;
 
   const copyLink = useCallback(async () => {
     if (!inviteUrl) return;
@@ -267,9 +273,21 @@ export function BottomControlPanel({
               minWidth: 0,
             }}
           >
-              {showConnect && (
+              {showConnect && onConnectTap ? (
+                <button
+                  type="button"
+                  onClick={onConnectTap}
+                  style={{
+                    ...ghostBtn,
+                    color: 'rgba(255,255,255,.72)',
+                    padding: '4px 2px',
+                  }}
+                >
+                  Tap to connect with {connectName}
+                </button>
+              ) : showConnect ? (
                 <span style={hintText}>↵ connect with {connectName}</span>
-              )}
+              ) : null}
               {showInviteBtn && (
                 <button
                   type="button"

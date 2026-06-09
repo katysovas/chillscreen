@@ -23,9 +23,10 @@ const BUS_STOPS = [880, 2200];
 
 type GroundLayerProps = {
   worldOff: number;
+  hideTrees?: boolean;
 };
 
-function groundTileContent(tile: number) {
+function groundTileContent(tile: number, hideTrees = false) {
   // Draw the road/sidewalk at the tile's natural width and show only the props
   // that fit. Short town tiles previously squeezed everything with a non-uniform
   // scale(scale,1), distorting trees, hydrants, benches and cats — never scale
@@ -76,12 +77,12 @@ function groundTileContent(tile: number) {
           opacity={0.6}
         />
       ))}
-      {GROUND_TREE_XS.map((x, i) => (
+      {!hideTrees && GROUND_TREE_XS.map((x, i) => (
         fits(x, 90) && !skipGroundStreetTree(tile, x, w) ? (
           <ellipse key={`sh${i}`} cx={x + 28} cy={GND_Y + 8} rx={50} ry={11} fill="rgba(20,50,0,.2)" />
         ) : null
       ))}
-      {GROUND_TREE_XS.map((x, i) => (
+      {!hideTrees && GROUND_TREE_XS.map((x, i) => (
         fits(x, 90) && !skipGroundStreetTree(tile, x, w) ? (
           <g
             key={i}
@@ -141,7 +142,7 @@ function groundTileContent(tile: number) {
 }
 
 export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
-  function GroundLayer({ worldOff }, ref) {
+  function GroundLayer({ worldOff, hideTrees = false }, ref) {
     const vx = worldOff * GND_F;
 
     return (
@@ -152,8 +153,7 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
         tileOrigin={gndOriginForTile}
         nearTileIndices={nearGndTiles}
         shapeRendering="optimizeSpeed"
-        // groundTileContent is a module-level pure function — always the same reference.
-        children={groundTileContent}
+        children={tile => groundTileContent(tile, hideTrees)}
       />
     );
   },

@@ -17,6 +17,41 @@
   -webkit-user-select: text;
 }
 
+/* Mobile lounge — same composition as desktop (sky + stage + ground), zoomed to fit. */
+@media (max-width: 767px) {
+  .game-surface[data-mobile-lounge] .mobile-lounge-scene {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    transform: scale(var(--lounge-scale, 1.08));
+    transform-origin: 50% var(--lounge-origin-y, 56%);
+  }
+
+  /* Scene zoom sits feet below the sidewalk — nudge player + NPCs up. */
+  .game-surface[data-mobile-lounge] .game-character {
+    bottom: var(--char-bottom-mobile, 20%) !important;
+  }
+
+  /* Chat bubbles — fit narrow viewports, stay above thumb controls. */
+  .game-surface .game-chat-bubble {
+    max-width: min(260px, calc(100vw - 40px)) !important;
+    min-width: 0 !important;
+    word-break: break-word;
+  }
+
+  .game-surface .game-chat-input-bubble {
+    max-width: min(280px, calc(100vw - 32px)) !important;
+    min-width: min(200px, calc(100vw - 48px)) !important;
+    width: min(280px, calc(100vw - 32px));
+    box-sizing: border-box;
+  }
+
+  .game-surface .game-character .game-chat-anchor {
+    z-index: 50 !important;
+    max-width: calc(100vw - 16px);
+  }
+}
+
 /* ── SFCity scene (clouds, signs, chat, sky creatures) ─────────────────────── */
 
 @keyframes cloud1 {

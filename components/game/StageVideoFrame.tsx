@@ -16,6 +16,7 @@ type StageVideoFrameProps = {
   width?: number | string;
   height?: number | string;
   borderRadius?: number;
+  loading?: 'eager' | 'lazy';
 };
 
 /**
@@ -32,6 +33,7 @@ export function StageVideoFrame({
   width = '100%',
   height = '100%',
   borderRadius = 0,
+  loading = 'lazy',
 }: StageVideoFrameProps) {
   const hostStyle: CSSProperties = {
     width,
@@ -49,9 +51,10 @@ export function StageVideoFrame({
       <iframe
         key={vidKey}
         ref={iframeRef}
+        data-stage-embed
         src={src}
         title={title ?? 'Live stage'}
-        loading="lazy"
+        loading={loading}
         onLoad={onIframeLoad}
         allow={STAGE_IFRAME_ALLOW}
         tabIndex={-1}

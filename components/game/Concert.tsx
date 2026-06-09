@@ -341,6 +341,7 @@ function ConcertLive({
         <iframe
           key={vidKey}
           ref={iframeRef}
+          data-stage-embed
           src={src}
           title={video?.title ?? 'Live'}
           loading="lazy"

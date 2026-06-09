@@ -372,6 +372,7 @@ export default function NPC({
   return (
     <div
       ref={divRef}
+      className="game-character"
       style={{
         position: 'absolute',
         bottom: CHAR_BOTTOM,

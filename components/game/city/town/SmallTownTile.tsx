@@ -120,6 +120,7 @@ type SmallTownTileProps = {
   tileIndex: number;
   /** Natural tile width (town tiles are short); props are laid out to fit. */
   tileWidth?: number;
+  hideTrees?: boolean;
 };
 
 /**
@@ -127,7 +128,7 @@ type SmallTownTileProps = {
  * (no horizontal squeeze). Laid out within the tile's real width so short town
  * connectors simply show fewer buildings rather than squashed ones.
  */
-export function SmallTownTile({ tileIndex, tileWidth = MID_W }: SmallTownTileProps) {
+export function SmallTownTile({ tileIndex, tileWidth = MID_W, hideTrees = false }: SmallTownTileProps) {
   const compact = isSfToVegasTown(tileIndex) || isVegasToSdTown(tileIndex) || isTownTile(tileIndex);
   const buildings = townLayout(tileIndex, compact, tileWidth);
   const trees = townTrees(tileIndex, compact, tileWidth);
@@ -148,7 +149,7 @@ export function SmallTownTile({ tileIndex, tileWidth = MID_W }: SmallTownTilePro
           />
         ),
       )}
-      {trees.map((tr, i) => (
+      {!hideTrees && trees.map((tr, i) => (
         <g key={`t${i}`}>
           <rect x={tr.x - 2} y={tr.y - tr.r * 1.6} width={4} height={tr.r * 1.6} fill="#4a3828" rx={1} />
           <circle cx={tr.x} cy={tr.y - tr.r * 1.8} r={tr.r} fill="#3a6838" />
