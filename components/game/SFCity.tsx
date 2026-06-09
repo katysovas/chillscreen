@@ -5,7 +5,7 @@ import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
 import { AmbientPlayerOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
 import { CHAR_BOTTOM } from './groundLayout';
-import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/parallax';
+import { SKY_F, MID_F, GND_F, midScrollTile } from '@/lib/parallax';
 import {
   getClientSpawnWorldOff,
   serverSpawnWorldOff,
@@ -52,11 +52,11 @@ import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
 import { getConcertNowPlaying, subscribeConcertNowPlaying } from '@/lib/concertNowPlaying';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
+import { updateRoadSignVisibility } from '@/lib/roadSignVisibility';
 import { isNearStage } from '@/lib/concertDance';
 import { LovingCarLayer } from './LovingCar';
 import { WelcomePopup } from './WelcomePopup';
 import { SkyCreaturesLayer } from './SkyCreatures';
-import { CHARACTER_STYLES } from './characterStyles';
 import { SkyLayer } from './city/SkyLayer';
 import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 import { MidLayer } from './city/MidLayer';
@@ -118,8 +118,6 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const welcomeRef = useRef<SVGSVGElement>(null);
   const cloudsRef = useRef<SVGSVGElement>(null);
   const lastMidScrollTileRef = useRef<number | null>(null);
-  const lastGndScrollTileRef = useRef<number | null>(null);
-  const lastSignCullOffRef = useRef<number | null>(null);
 
   /** Update scrolling SVG viewBoxes directly — zero React overhead. */
   const updateViewBoxes = (off: number) => {
@@ -147,7 +145,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const disconnectUntil   = useRef(0);
 
   // Venue deep links pin scroll on first paint; home uses SSR default then random spawn.
-  // Mid scroll drives venue live/shell + invite UI; ground scroll drives sign tiles.
+  // Mid scroll drives venue live/shell + invite UI; ground layers scroll imperatively.
   const [midScrollWorldOff, setMidScrollWorldOff] = useState(
     () => spawnOverride ?? serverSpawnWorldOff(),
   );
@@ -363,7 +361,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     updateViewBoxes(spawnWorldOff);
     npcWorldXRefs.current = CHARACTERS.map(() => Infinity);
     lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
-    lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
+    updateRoadSignVisibility(signsRef.current, spawnWorldOff);
   // updateViewBoxes is stable (no deps); spawnWorldOff is the only meaningful dep
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spawnWorldOff]);
@@ -754,6 +752,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         frameCountRef.current++;
         tickNpcs();
         tickStagePlayers();
+        updateRoadSignVisibility(signsRef.current, worldRef.current);
         if (frameCountRef.current % 4 === 0) { updateDanceState(worldRef.current); broadcastMove(); }
         gameWorldOffRef.current = worldRef.current;
         rafRef.current = requestAnimationFrame(loop);
@@ -778,29 +777,19 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         setWalking(isWalking);
       }
 
-      // Always update viewBoxes imperatively — no React re-render
-      updateViewBoxes(worldRef.current);
+      // Always update viewBoxes + sign overlap imperatively — no React re-render
+      const off = worldRef.current;
+      updateViewBoxes(off);
+      updateRoadSignVisibility(signsRef.current, off);
       tickNpcs();
       tickStagePlayers();
 
-      // Re-render tile-bound layers only when the visible tile window changes.
+      // Re-render mid layer only when the visible tile window changes (venue live/shell).
       if (isWalking) {
-        const off = worldRef.current;
         const midTile = midScrollTile(off);
-        const gndTile = gndScrollTile(off);
         if (midTile !== lastMidScrollTileRef.current) {
           lastMidScrollTileRef.current = midTile;
           setMidScrollWorldOff(off);
-        }
-        if (gndTile !== lastGndScrollTileRef.current) {
-          lastGndScrollTileRef.current = gndTile;
-          setGndScrollWorldOff(off);
-        }
-        // Ground signs parallax-drift over stages within a tile — re-cull often.
-        const lastCull = lastSignCullOffRef.current;
-        if (lastCull == null || Math.abs(off - lastCull) >= 32) {
-          lastSignCullOffRef.current = off;
-          setGndScrollWorldOff(off);
         }
       }
 
@@ -910,8 +899,6 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         userSelect: 'none',
       }}
     >
-      <style>{CHARACTER_STYLES}</style>
-
       <SkyLayer ref={skyRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
       <SkyCloudsLayer ref={cloudsRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
       <SkyCreaturesLayer period={skyPeriod} />

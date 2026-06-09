@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
 import { currentSchedule, useStageChannel } from '@/lib/stageClock';
-import type { StageChannel } from '@/lib/stageVideos';
+import type { StageChannel, StageVideo } from '@/lib/stageVideos';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import { isStageChannelInView } from '@/lib/venues';
 import { registerStagePlayerNudge, registerStagePlayerPlayingListener, registerStagePlayerSync } from '@/lib/stagePlayerRegistry';
@@ -45,7 +45,7 @@ type UseStagePlayerOptions = {
 };
 
 type UseStagePlayerResult = {
-  video: import('@/lib/stageVideos').StageVideo | undefined;
+  video: StageVideo | undefined;
   /** iframe src — empty string when nothing should be mounted. */
   src: string;
   /** Forces a fresh iframe element on each video change. */
@@ -66,15 +66,15 @@ type UseStagePlayerResult = {
  * — reliable inside SVG <foreignObject> — that autoplays muted so it never
  * sits black or shows the center play button.
  *
- * The current synced position is baked into the embed URL (`start=N`) when the
- * iframe is mounted, so every user who loads the page sees the video at the
- * same timestamp with no postMessage race conditions. The video + schedule come
- * from the shared, server-pinned playlist (`@/lib/stageClock`).
+ * The iframe only mounts while the stage channel is in view — off-screen live
+ * slots render the static shell with zero embed cost.
  */
 export function useStagePlayer({
   live, channel, iframeRef, onNowPlaying, alwaysMuted = false,
 }: UseStagePlayerOptions): UseStagePlayerResult {
   const { video, vidKey } = useStageChannel(channel, live);
+  const videoRef = useRef(video);
+  videoRef.current = video;
 
   const [siteMuted, setSiteMuted] = useState(false);
   const siteMutedRef = useRef(siteMuted);
@@ -96,29 +96,67 @@ export function useStagePlayer({
   const playerVisibleRef = useRef(false);
   playerVisibleRef.current = playerVisible;
 
-  const stageInViewRef = useRef(true);
+  const stageInViewRef = useRef(false);
+  const iframeMountedRef = useRef(false);
   const kickCancelRef = useRef<(() => void) | null>(null);
   const onPlayingRef = useRef<() => void>(() => {});
+  const onNowPlayingRef = useRef(onNowPlaying);
+  onNowPlayingRef.current = onNowPlaying;
 
   const isStageInView = useCallback(
     () => isStageChannelInView(channel, gameWorldOffRef.current),
     [channel],
   );
 
+  const [src, setSrc] = useState('');
+
+  const unmountIframe = useCallback(() => {
+    if (!iframeMountedRef.current) return;
+    iframeMountedRef.current = false;
+    kickCancelRef.current?.();
+    kickCancelRef.current = null;
+    stopYouTubePlayback(iframeRef.current);
+    setSrc('');
+    setPlayerVisible(false);
+    onNowPlayingRef.current?.(null);
+  }, [iframeRef]);
+
+  const mountIframe = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || iframeMountedRef.current) return;
+    iframeMountedRef.current = true;
+    setPlayerVisible(false);
+    const sched = currentSchedule(channel);
+    setSrc(embedSrc(v.id, sched?.offsetSec ?? 0));
+    onNowPlayingRef.current?.(v.title ?? null);
+  }, [channel]);
+
   const syncStageToView = useCallback(() => {
+    if (!live || !videoRef.current) {
+      stageInViewRef.current = false;
+      unmountIframe();
+      return;
+    }
+
     const inView = isStageInView();
     stageInViewRef.current = inView;
-    const f = iframeRef.current;
-    if (!f) return;
+
     if (!inView) {
-      kickCancelRef.current?.();
-      kickCancelRef.current = null;
-      stopYouTubePlayback(f);
-    } else if (playerVisibleRef.current) {
+      unmountIframe();
+      return;
+    }
+
+    if (!iframeMountedRef.current) {
+      mountIframe();
+      return;
+    }
+
+    const f = iframeRef.current;
+    if (f && playerVisibleRef.current) {
       postCommand(f, 'playVideo');
       applyAudio(f);
     }
-  }, [iframeRef, isStageInView, applyAudio]);
+  }, [live, isStageInView, unmountIframe, mountIframe, iframeRef, applyAudio]);
 
   onPlayingRef.current = () => {
     setPlayerVisible(true);
@@ -142,15 +180,10 @@ export function useStagePlayer({
     };
   }, [vidKey, live, iframeRef]);
 
-  const [src, setSrc] = useState('');
   useEffect(() => {
-    if (!live || !video) {
-      setSrc('');
-      return;
-    }
-    const sched = currentSchedule(channel);
-    setSrc(embedSrc(video.id, sched?.offsetSec ?? 0));
-  }, [live, video?.id, vidKey, channel]);
+    unmountIframe();
+    if (live) syncStageToView();
+  }, [vidKey, live, channel, video?.id, unmountIframe, syncStageToView]);
 
   const restoreAudio = useCallback(() => {
     if (!stageInViewRef.current || !playerVisibleRef.current) return;
@@ -179,7 +212,6 @@ export function useStagePlayer({
     };
   }, [live, src, vidKey, iframeRef]);
 
-  // Re-kick when sync handshake arrives or user interacts (autoplay policy).
   useEffect(() => {
     if (!live || !src) return;
     return registerStagePlayerNudge(nudgePlayback);
@@ -191,15 +223,15 @@ export function useStagePlayer({
     return subscribeAudioMuted(() => setSiteMuted(getAudioMuted()));
   }, [alwaysMuted]);
 
-  const onNowPlayingRef = useRef(onNowPlaying);
-  onNowPlayingRef.current = onNowPlaying;
   useEffect(() => {
     if (!live) return;
     return () => { onNowPlayingRef.current?.(null); };
   }, [live]);
 
   useEffect(() => {
-    if (live) onNowPlayingRef.current?.(video?.title ?? null);
+    if (live && iframeMountedRef.current && stageInViewRef.current) {
+      onNowPlayingRef.current?.(video?.title ?? null);
+    }
   }, [live, video?.title]);
 
   const onIframeLoad = useCallback(() => {
@@ -207,7 +239,6 @@ export function useStagePlayer({
     primeYouTubePlayback(iframeRef.current);
   }, [iframeRef]);
 
-  // Only adjust audio after playback has started — unmuting too early breaks autoplay.
   useEffect(() => {
     if (!playerVisible || !stageInViewRef.current) return;
     applyAudio(iframeRef.current);
@@ -215,25 +246,20 @@ export function useStagePlayer({
 
   useEffect(() => {
     if (live) return;
-    kickCancelRef.current?.();
-    kickCancelRef.current = null;
-    stopYouTubePlayback(iframeRef.current);
-  }, [live, iframeRef]);
+    unmountIframe();
+  }, [live, unmountIframe]);
 
   useEffect(() => {
     if (!live) return;
     return registerStagePlayerSync(syncStageToView);
   }, [live, syncStageToView]);
 
-  // Stop playback when the live player unmounts (shell/live swap on scroll-away).
   useEffect(() => {
     if (!live) return;
     return () => {
-      kickCancelRef.current?.();
-      kickCancelRef.current = null;
-      stopYouTubePlayback(iframeRef.current);
+      unmountIframe();
     };
-  }, [live, iframeRef]);
+  }, [live, unmountIframe]);
 
   return { video, src, vidKey, onIframeLoad, playerVisible };
 }

@@ -79,6 +79,9 @@ export function worldXToScreenPct(worldX: number, worldOff: number, width = vw()
 
 const SCREEN_MIN = -30;
 const SCREEN_MAX = 130;
+/** Pause wander AI when off-screen — same threshold on desktop and mobile. */
+const NPC_OFFSCREEN_LEFT = -22;
+const NPC_OFFSCREEN_RIGHT = 122;
 
 export default function NPC({
   index,
@@ -97,6 +100,7 @@ export default function NPC({
   const characterRef  = useRef<CharacterHandle>(null);
   const facingRef     = useRef<'left' | 'right'>(entryDirection);
   const walkingRef    = useRef(false);
+  const onScreenRef   = useRef(true);
 
   // ── World / movement refs ──────────────────────────────────────────────────
   const divRef              = useRef<HTMLDivElement>(null);
@@ -231,6 +235,11 @@ export default function NPC({
     let timer: ReturnType<typeof setTimeout>;
 
     const decide = () => {
+      if (!onScreenRef.current) {
+        timer = setTimeout(decide, 800);
+        return;
+      }
+
       if (pausedRef.current) {
         timer = setTimeout(decide, 500);
         return;
@@ -253,6 +262,7 @@ export default function NPC({
     timer = setTimeout(decide, rndBetween(800, 2000));
 
     const jumpInterval = setInterval(() => {
+      if (!onScreenRef.current) return;
       if (!pausedRef.current && Math.random() < personality.jumpiness && !jumpingRef.current) {
         jumpingRef.current = true;
         setJumping(true);
@@ -304,6 +314,25 @@ export default function NPC({
         }
       }
 
+      const pct = worldXToScreenPct(worldXRef.current, off, width);
+      const onScreen = pausedRef.current
+        || (pct >= NPC_OFFSCREEN_LEFT && pct <= NPC_OFFSCREEN_RIGHT);
+
+      if (onScreen !== onScreenRef.current) {
+        onScreenRef.current = onScreen;
+        if (divRef.current) {
+          divRef.current.style.visibility = onScreen ? 'visible' : 'hidden';
+          divRef.current.style.pointerEvents = onScreen ? '' : 'none';
+        }
+        if (!onScreen) applyWalking(false);
+      }
+
+      if (!onScreen) {
+        screenXRef.current = pct;
+        if (divRef.current) divRef.current.style.left = `${pct}%`;
+        return worldXRef.current;
+      }
+
       if (!pausedRef.current && stateRef.current === 'wandering') {
         const target = targetWorldRef.current;
         const cur    = worldXRef.current;
@@ -321,7 +350,6 @@ export default function NPC({
         }
       }
 
-      const pct = worldXToScreenPct(worldXRef.current, off, width);
       screenXRef.current = pct;
       if (divRef.current) divRef.current.style.left = `${pct}%`;
       return worldXRef.current;

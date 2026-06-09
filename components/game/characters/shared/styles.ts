@@ -1,6 +1,6 @@
 /** Base sprite — body, face, hands, legs, walk / dance / jump animations. */
 export const SHARED_CHARACTER_STYLES = `
-  .ch-wrapper{width:500px;height:240px;position:relative;}
+  .ch-wrapper{width:500px;height:240px;position:relative;will-change:transform;}
   .ch-animal{position:relative;animation:ch-animal 2s 1s infinite alternate;}
   .ch-body{background:#cccccc;border:2px solid #000;width:170px;height:170px;border-radius:30px;margin:0 auto;position:relative;}
   .ch-body:before{content:"";position:absolute;left:5px;right:5px;bottom:10px;top:0;border-radius:30px;background:#fff;}

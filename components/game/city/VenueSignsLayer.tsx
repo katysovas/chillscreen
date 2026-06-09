@@ -26,10 +26,9 @@ export const VenueSignsLayer = memo(forwardRef<SVGSVGElement, VenueSignsLayerPro
           tileIndex={t}
           y={GND_Y + 12}
           groundTile={gndWidthForTile(t)}
-          worldOff={worldOff}
         />
       ),
-      [worldOff],
+      [],
     );
 
     return (

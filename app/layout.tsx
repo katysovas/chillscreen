@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import { JsonLd } from '@/components/JsonLd';
 import { defaultSiteGraphJsonLd } from '@/lib/jsonLd';
 import { rootMetadata } from '@/lib/siteMetadata';
+import { CHARACTER_STYLES } from '@/components/game/characterStyles';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <JsonLd data={defaultSiteGraphJsonLd()} />
+        <style dangerouslySetInnerHTML={{ __html: CHARACTER_STYLES }} />
         {children}
       </body>
     </html>

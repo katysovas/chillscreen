@@ -1,5 +1,5 @@
 import { citySignsForTile } from '@/lib/citySigns';
-import { resolveSignGroundLocalX, signParallaxOverlapsStage } from '@/lib/signPlacement';
+import { resolveSignGroundLocalX } from '@/lib/signPlacement';
 import { ArrowSignBoard } from './city/ArrowSignBoard';
 
 type CombinedTownSignProps = {
@@ -100,27 +100,31 @@ type TileRoadSignsProps = {
   tileIndex: number;
   y: number;
   groundTile?: number;
-  worldOff: number;
 };
 
 /** Combined junction signs on connector towns only. */
-export function TileRoadSigns({ tileIndex, y, groundTile = 3600, worldOff }: TileRoadSignsProps) {
+export function TileRoadSigns({ tileIndex, y, groundTile = 3600 }: TileRoadSignsProps) {
   const citySigns = citySignsForTile(tileIndex);
 
   return (
     <g className="road-signs">
       {citySigns.map((sign, i) => {
         const x = resolveSignGroundLocalX(tileIndex, Math.round(sign.xFrac * groundTile), groundTile);
-        if (signParallaxOverlapsStage(tileIndex, x, worldOff)) return null;
 
         return (
-          <CombinedTownSign
+          <g
             key={`city-${i}`}
-            x={x}
-            y={y}
-            leftCity={sign.leftCity}
-            rightCity={sign.rightCity}
-          />
+            data-road-sign=""
+            data-sign-tile={tileIndex}
+            data-sign-x={x}
+          >
+            <CombinedTownSign
+              x={x}
+              y={y}
+              leftCity={sign.leftCity}
+              rightCity={sign.rightCity}
+            />
+          </g>
         );
       })}
     </g>
