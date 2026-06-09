@@ -63,8 +63,11 @@ export function buildPageMetadata({
       description,
       images: [
         {
-          url: LOGO_PATH,
+          url: `${SITE_URL}${LOGO_PATH}`,
+          width: 1200,
+          height: 630,
           alt: `${SITE_NAME} logo`,
+          type: 'image/png',
         },
       ],
     },
@@ -74,7 +77,7 @@ export function buildPageMetadata({
       creator: TWITTER_HANDLE,
       title: pageTitle,
       description,
-      images: [LOGO_PATH],
+      images: [`${SITE_URL}${LOGO_PATH}`],
     },
     robots: noIndex
       ? { index: false, follow: false }
@@ -89,7 +92,7 @@ export function buildPageMetadata({
           },
         },
     other: {
-      'theme-color': '#0d0122',
+      'theme-color': '#000000',
     },
   };
 }
