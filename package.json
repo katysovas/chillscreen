@@ -19,7 +19,8 @@
     "partysocket": "^1.1.19",
     "posthog-js": "^1.382.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "resend": "^6.12.4"
   },
   "devDependencies": {
     "@types/node": "^20",

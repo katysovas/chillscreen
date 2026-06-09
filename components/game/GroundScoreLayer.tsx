@@ -9,7 +9,7 @@ import {
   GROUND_SCORE_PICKUP_DIST_PX,
   GROUND_SCORE_TEST_DROP_ON_LOAD,
   groundCoinSpawnDelayMs,
-  groundCoinSpawnOffsetPx,
+  groundCoinWorldX,
   groundCoinValue,
   type GroundCoin as GroundCoinDef,
 } from '@/lib/groundScore';
@@ -121,7 +121,7 @@ export function GroundScoreLayer({ active, onPickup }: GroundScoreLayerProps) {
         if (prev.length >= GROUND_SCORE_MAX_COINS) return prev;
         const coin: GroundCoinDef = {
           id: ++idRef.current,
-          worldX: gameWorldOffRef.current + groundCoinSpawnOffsetPx(),
+          worldX: groundCoinWorldX(gameWorldOffRef.current),
           value: groundCoinValue(),
         };
         return [...prev, coin];

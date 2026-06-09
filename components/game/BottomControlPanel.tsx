@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   activeVenueRoute,
   buildInviteUrl,
@@ -133,10 +133,17 @@ export function BottomControlPanel({
   onVendorShopWarm,
   isMobile = false,
 }: BottomControlPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactNotes, setContactNotes] = useState('');
+  const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [contactError, setContactError] = useState('');
 
   const route = useMemo(
     () => activeVenueRoute(worldOff, venueRoute),
@@ -176,19 +183,65 @@ export function BottomControlPanel({
     }
   }, [capturing, onCapturePhoto]);
 
+  const handleContactSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactStatus('sending');
+    setContactError('');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: contactName, email: contactEmail, notes: contactNotes }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        setContactError(data.error ?? 'Something went wrong.');
+        setContactStatus('error');
+      } else {
+        setContactStatus('sent');
+      }
+    } catch {
+      setContactError('Network error. Please try again.');
+      setContactStatus('error');
+    }
+  }, [contactName, contactEmail, contactNotes]);
+
   useEffect(() => {
     if (hidden || showConnect) setInviteOpen(false);
-    if (hidden) setHelpOpen(false);
+    if (hidden) { setHelpOpen(false); setContactOpen(false); }
   }, [hidden, showConnect]);
 
   useEffect(() => {
     setInviteOpen(false);
   }, [route]);
 
+  useEffect(() => {
+    if (!helpOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setHelpOpen(false);
+        setContactOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setHelpOpen(false);
+        setContactOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [helpOpen]);
+
   if (hidden || (!PARALOID_CAPTURE_ENABLED && !showCart && !showHelp && !hasMessages)) return null;
 
   return (
     <div
+      ref={panelRef}
       data-paraloid-ui
       className="bottom-[max(124px,calc(env(safe-area-inset-bottom)+112px))] md:bottom-5"
       style={{
@@ -219,32 +272,170 @@ export function BottomControlPanel({
             gap: 10,
           }}
         >
-          {FAQ_ITEMS.map(({ q, a }) => (
-            <div key={q}>
-              <div
-                style={{
-                  color: 'rgba(255,255,255,.85)',
+          {!contactOpen ? (
+            <>
+              {FAQ_ITEMS.map(({ q, a }) => (
+                <div key={q}>
+                  <div
+                    style={{
+                      color: 'rgba(255,255,255,.85)',
+                      fontSize: 11,
+                      letterSpacing: 1.2,
+                      textTransform: 'uppercase',
+                      fontFamily: "Georgia,'Times New Roman',serif",
+                      marginBottom: 2,
+                    }}
+                  >
+                    {q}
+                  </div>
+                  <div
+                    style={{
+                      color: 'rgba(255,255,255,.55)',
+                      fontSize: 12,
+                      lineHeight: 1.45,
+                      fontFamily: 'system-ui, sans-serif',
+                    }}
+                  >
+                    {a}
+                  </div>
+                </div>
+              ))}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 10, marginTop: 2 }}>
+                <button
+                  type="button"
+                  onClick={() => { setContactOpen(true); setContactStatus('idle'); setContactError(''); }}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,.07)',
+                    border: '1px solid rgba(255,255,255,.14)',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    color: 'rgba(255,255,255,.75)',
+                    fontSize: 11,
+                    letterSpacing: 1.3,
+                    textTransform: 'uppercase',
+                    fontFamily: "Georgia,'Times New Roman',serif",
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                >
+                  Help building this world
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <button
+                  type="button"
+                  onClick={() => { setContactOpen(false); setContactStatus('idle'); }}
+                  aria-label="Back to FAQ"
+                  style={{
+                    background: 'none', border: 'none', padding: 0,
+                    color: 'rgba(255,255,255,.45)', cursor: 'pointer', fontSize: 16, lineHeight: 1,
+                  }}
+                >
+                  ←
+                </button>
+                <span style={{
+                  color: 'rgba(255,255,255,.7)',
                   fontSize: 11,
-                  letterSpacing: 1.2,
+                  letterSpacing: 1.3,
                   textTransform: 'uppercase',
                   fontFamily: "Georgia,'Times New Roman',serif",
-                  marginBottom: 2,
-                }}
-              >
-                {q}
+                }}>
+                  Get involved
+                </span>
               </div>
-              <div
-                style={{
-                  color: 'rgba(255,255,255,.55)',
-                  fontSize: 12,
-                  lineHeight: 1.45,
+
+              {contactStatus === 'sent' ? (
+                <div style={{
+                  color: 'rgba(255,255,255,.6)',
+                  fontSize: 13,
+                  lineHeight: 1.5,
                   fontFamily: 'system-ui, sans-serif',
-                }}
-              >
-                {a}
-              </div>
-            </div>
-          ))}
+                  textAlign: 'center',
+                  padding: '12px 0',
+                }}>
+                  ✓ Message sent! We'll be in touch.
+                </div>
+              ) : (
+                <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { label: 'Name', value: contactName, setter: setContactName, type: 'text', placeholder: 'Your name' },
+                    { label: 'Email', value: contactEmail, setter: setContactEmail, type: 'email', placeholder: 'your@email.com' },
+                  ].map(({ label, value, setter, type, placeholder }) => (
+                    <div key={label}>
+                      <div style={{ color: 'rgba(255,255,255,.45)', fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: "Georgia,'Times New Roman',serif", marginBottom: 4 }}>{label}</div>
+                      <input
+                        type={type}
+                        value={value}
+                        onChange={e => setter(e.target.value)}
+                        placeholder={placeholder}
+                        required
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          background: 'rgba(255,255,255,.06)',
+                          border: '1px solid rgba(255,255,255,.14)',
+                          borderRadius: 7,
+                          padding: '7px 10px',
+                          color: 'rgba(255,255,255,.85)',
+                          fontSize: 12,
+                          fontFamily: 'system-ui, sans-serif',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                  ))}
+                  <div>
+                    <div style={{ color: 'rgba(255,255,255,.45)', fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: "Georgia,'Times New Roman',serif", marginBottom: 4 }}>Notes</div>
+                    <textarea
+                      value={contactNotes}
+                      onChange={e => setContactNotes(e.target.value)}
+                      placeholder="How would you like to contribute?"
+                      required
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        background: 'rgba(255,255,255,.06)',
+                        border: '1px solid rgba(255,255,255,.14)',
+                        borderRadius: 7,
+                        padding: '7px 10px',
+                        color: 'rgba(255,255,255,.85)',
+                        fontSize: 12,
+                        fontFamily: 'system-ui, sans-serif',
+                        outline: 'none',
+                        resize: 'none',
+                      }}
+                    />
+                  </div>
+                  {contactError && (
+                    <div style={{ color: '#ff7070', fontSize: 11, fontFamily: 'system-ui, sans-serif' }}>{contactError}</div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={contactStatus === 'sending'}
+                    style={{
+                      background: contactStatus === 'sending' ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.12)',
+                      border: '1px solid rgba(255,255,255,.2)',
+                      borderRadius: 8,
+                      padding: '8px 12px',
+                      color: contactStatus === 'sending' ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.85)',
+                      fontSize: 11,
+                      letterSpacing: 1.3,
+                      textTransform: 'uppercase',
+                      fontFamily: "Georgia,'Times New Roman',serif",
+                      cursor: contactStatus === 'sending' ? 'default' : 'pointer',
+                    }}
+                  >
+                    {contactStatus === 'sending' ? 'Sending…' : 'Send'}
+                  </button>
+                </form>
+              )}
+            </>
+          )}
         </div>
       )}
       <div
