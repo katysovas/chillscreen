@@ -4,6 +4,11 @@ import { DjHeadphones, DjSpeaker } from './accessories/dj/accessory';
 import { LightsaberAccessory } from './accessories/lightsaber/accessory';
 import { MicrophoneAccessory } from './accessories/microphone/accessory';
 import { NecklaceAccessory } from './accessories/necklace/accessory';
+import { SupportHeadAccessory } from './accessories/support/accessory';
+import {
+  UndercoverCopHandAccessory,
+  UndercoverCopHeadAccessory,
+} from './undercoverCop/accessory';
 import { VendorCartAccessory } from './accessories/vendorCart/accessory';
 import { BalloonAccessory } from './main/accessory';
 import { PirateHeadAccessory, PirateSwordAccessory } from './pirate/accessory';
@@ -80,4 +85,17 @@ export const ACCESSORY_LIBRARY: Record<AccessoryType, AccessoryDefinition> = {
       hand: () => <PirateSwordAccessory />,
     },
   }),
+  support: define<'support'>({
+    slots: {
+      head: () => <SupportHeadAccessory />,
+    },
+  }),
+  undercoverCop: define<'undercoverCop'>({
+    handMounted: true,
+    slots: {
+      head: () => <UndercoverCopHeadAccessory />,
+      hand: () => <UndercoverCopHandAccessory />,
+    },
+  }),
+  none: define<'none'>({ slots: {} }),
 };

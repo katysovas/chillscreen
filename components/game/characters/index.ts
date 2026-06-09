@@ -29,6 +29,7 @@ export { LightsaberAccessory } from './accessories/lightsaber/accessory';
 export { MicrophoneAccessory } from './accessories/microphone/accessory';
 export { NecklaceAccessory } from './accessories/necklace/accessory';
 export { PirateHeadAccessory, PirateSwordAccessory } from './pirate/accessory';
+export { SupportHeadAccessory } from './accessories/support/accessory';
 export { VendorCartAccessory } from './accessories/vendorCart/accessory';
 
 export type {

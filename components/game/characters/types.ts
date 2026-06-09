@@ -12,7 +12,10 @@ export type CharacterAccessory =
   | { type: 'dj'; headphoneColor?: string; speakerColor?: string }
   | { type: 'necklace'; symbol?: string; color: string; chainColor?: string; balloonColor?: string }
   | { type: 'vendorCart'; color: string; emoji?: string }
-  | { type: 'pirate' };
+  | { type: 'pirate' }
+  | { type: 'support' }
+  | { type: 'undercoverCop' }
+  | { type: 'none' };
 
 export type AccessoryType = CharacterAccessory['type'];
 

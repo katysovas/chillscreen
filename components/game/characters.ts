@@ -285,6 +285,29 @@ const CHARACTERS: CharacterDef[] = [
       'everyone\'s buddy. Will happily tell you his favorite player, do a dramatic "I am ' +
       'your father" impression, or stop to pet any animal. Wholesome, playful, never mean.He has a dog named "Atlas". His nickname is "Atlas". His nickname is waffles.',
   },
+  {
+    id: 'chad',
+    name: 'chad',
+    balloonColor: '#2a4a7a', // cop-navy — keep, it's a quiet little joke
+    outfit: 'undercover-cop',
+    accessory: { type: 'undercoverCop' },
+    startX: 108,
+    entryDirection: 'left',
+    entryDelay: 74000,
+    personality: {
+      speed: 0.05,            // slightly slower — he loiters, "playing it cool"
+      idleMs: [3000, 7000],   // longer pauses = "observing." reads as surveillance
+      wanderRange: [10, 90],  // wide patrol — he's casing the whole stage
+      jumpiness: 0.08,        // low — trying very hard to act casual
+    },
+    personalityNotes:
+      'Undercover festival cop who thinks he is blending in and is not. ' +
+      'Tourist shirt, lanyard, shades, badge half-showing, notepad. ' +
+      'Mutters surveillance notes to HIMSELF, ambient — never addresses or questions players directly. ' +
+      'Vice-squad energy: clocks "suspicious" merch, secret sets, glowsticks, like everyone is running something. ' +
+      'Insists he is normal and definitely not a cop. Says "off the record" then keeps talking. ' +
+      'Lines are short, lowercase, 2-5 word fragments. Wink-nudge, never threatening, never real enforcement. comedy only.',
+  },
 
   {
     id: 'giggle',

@@ -51,6 +51,33 @@ export function getAmbientVisibleMs(characterId: string): { baseMs: number; jitt
 const STAGE_MUMBLE_WEIGHT = 0.92;
 const BUZ_VENDOR_SHOUT_WEIGHT = 0.9;
 
+/** Ambient bubbles are quick asides — keep them scannable in-game. */
+export const AMBIENT_MAX_CHARS = 40;
+
+/** Trim long YouTube titles to a short artist / label for ambient bubbles. */
+export function shortActName(title: string): string {
+  let t = title.trim();
+  if (!t) return 'this set';
+  const dashSplit = t.split(/\s[—–-]\s+/);
+  if (dashSplit[0] && dashSplit[0].length >= 3 && dashSplit[0].length < t.length) {
+    t = dashSplit[0].trim();
+  }
+  t = t.replace(/\s*(full\s*(set|concert|show|performance)|live\s*@.*|@.*)$/i, '').trim();
+  if (t.length > 22) t = `${t.slice(0, 20).trimEnd()}…`;
+  return t;
+}
+
+function shortStage(stage: StageWorldEntry): StageWorldEntry {
+  if (!stage.nowPlaying) return stage;
+  return { ...stage, nowPlaying: shortActName(stage.nowPlaying) };
+}
+
+function clampAmbientLine(line: string): string {
+  const s = line.replace(/\s+/g, ' ').trim();
+  if (s.length <= AMBIENT_MAX_CHARS) return s;
+  return `${s.slice(0, AMBIENT_MAX_CHARS - 1).trimEnd()}…`;
+}
+
 function pick<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]!;
 }
@@ -65,40 +92,28 @@ type StageFlavorFn = (stage: StageWorldEntry) => string[];
 // ── shared base lines (generic, no character voice) ──────────────────────
 
 function playingLines(stage: StageWorldEntry): string[] {
-  const { stageName, nowPlaying: act, city } = stage;
+  const { stageName, nowPlaying: act } = stage;
   return [
     `${act} at ${stageName}`,
-    `${stageName} has ${act} on right now`,
-    `heard ${act} from ${stageName}`,
-    `${act} at ${stageName} sounds good`,
-    `${city} — ${act} at ${stageName}`,
-    `${stageName} is playing ${act}`,
-    `${act} going off at ${stageName}`,
-    `people are at ${stageName} for ${act}`,
-    `${act} live at ${stageName}`,
-    `${stageName} is busy — ${act}`,
-    `caught ${act} at ${stageName}`,
-    `${act} again at ${stageName}`,
-    `${stageName} with ${act} rn`,
-    `${act} hits different at ${stageName}`,
-    `worth walking to ${stageName} for ${act}`,
+    `${stageName}: ${act}`,
+    `heard ${act}`,
+    `${act} live`,
+    `${stageName} is on`,
+    `walk to ${stageName}`,
+    `${act} hits`,
+    `${stageName} is busy`,
   ];
 }
 
 function quietLines(stage: StageWorldEntry): string[] {
-  const { stageName, city } = stage;
+  const { stageName } = stage;
   return [
     `${stageName} between sets`,
-    `nothing on at ${stageName} yet`,
-    `${stageName} is quiet right now`,
-    `${city} — ${stageName} is empty`,
-    `waiting on ${stageName}`,
-    `${stageName} taking a break`,
-    `${stageName} should start soon`,
     `quiet at ${stageName}`,
+    `waiting on ${stageName}`,
     `${stageName} intermission`,
-    `next set soon at ${stageName}`,
-    `${stageName} loading up`,
+    `next up: ${stageName}`,
+    `${stageName} loading`,
   ];
 }
 
@@ -173,20 +188,16 @@ const CHARACTER_STAGE_FLAVOR: Partial<Record<string, StageFlavorFn>> = {
   kova: stage =>
     stage.nowPlaying
       ? [
-          `${stage.nowPlaying} at ${stage.stageName} — worth the walk`,
-          `cardio to ${stage.stageName} for ${stage.nowPlaying}`,
-          `${stage.stageName}: ${stage.nowPlaying}. elite.`,
-          `${stage.nowPlaying} pace is unsustainable. going anyway`,
-          `${stage.stageName} putting in work`,
-          `${stage.nowPlaying} — peak performance`,
-          `${stage.nowPlaying} is doing rehab on my legs`,
-          `${stage.stageName} stats are off the charts`,
+          `${stage.nowPlaying} at ${stage.stageName}`,
+          `cardio to ${stage.stageName}`,
+          `${stage.stageName}: elite`,
+          `legs cooked. still going`,
+          `${stage.nowPlaying} — PR pace`,
         ]
       : [
-          `${stage.stageName} on a water break`,
-          `${stage.stageName} recovery zone`,
-          `gap between ${stage.stageName} sets. stretch.`,
-          `${stage.stageName}: loading next interval`,
+          `${stage.stageName} water break`,
+          `stretch at ${stage.stageName}`,
+          `${stage.stageName} loading`,
         ],
 
   dub: stage =>
@@ -211,20 +222,15 @@ const CHARACTER_STAGE_FLAVOR: Partial<Record<string, StageFlavorFn>> = {
   satosh: stage =>
     stage.nowPlaying
       ? [
-          `${stage.stageName}: ${stage.nowPlaying} — bullish`,
-          `${stage.nowPlaying} pumping at ${stage.stageName}`,
-          `long ${stage.stageName} / long ${stage.nowPlaying}`,
-          `${stage.nowPlaying} at ${stage.stageName}: accumulating`,
-          `${stage.stageName} printing rn`,
+          `${stage.stageName}: bullish`,
+          `${stage.nowPlaying} pumping`,
+          `long ${stage.stageName}`,
           `${stage.nowPlaying} is the signal`,
-          `ngmi missing ${stage.nowPlaying} at ${stage.stageName}`,
-          `${stage.nowPlaying}: not financial advice. go.`,
+          `ngmi skipping ${stage.stageName}`,
         ]
       : [
-          `${stage.stageName} ranging. no volume.`,
+          `${stage.stageName} ranging`,
           `${stage.stageName} consolidating`,
-          `${stage.stageName} finding support`,
-          `${stage.stageName} in accumulation`,
         ],
 
   solo: stage =>
@@ -248,58 +254,57 @@ const CHARACTER_STAGE_FLAVOR: Partial<Record<string, StageFlavorFn>> = {
   buz: stage =>
     stage.nowPlaying
       ? [
-          `${stage.nowPlaying} at ${stage.stageName} — merch first!`,
-          `heading to ${stage.stageName}? grab a hat on the way`,
-          `${stage.stageName} is popping — stock up at my cart`,
-          `${stage.nowPlaying} crowd needs PIRATE HATS`,
-          `everyone at ${stage.stageName} — headphones!`,
-          `${stage.nowPlaying} at ${stage.stageName}. lightsabers ready.`,
-          `walk to ${stage.stageName} — cutlass optional`,
-          `${stage.stageName} set + festival merch = perfect night`,
+          `${stage.nowPlaying} at ${stage.stageName}`,
+          `merch first! ${stage.stageName}`,
+          `${stage.stageName} is popping`,
+          `hats for ${stage.nowPlaying}`,
+          `stock up — ${stage.stageName}`,
         ]
       : [
-          `between sets? browse my cart`,
-          `${stage.stageName} quiet — good time to shop`,
-          `restock while ${stage.stageName} loads up`,
-          `merch tent open while ${stage.stageName} waits`,
+          `browse my cart`,
+          `${stage.stageName} quiet — shop`,
+          `merch while you wait`,
         ],
 
   atlas: stage =>
     stage.nowPlaying
       ? [
-          `${stage.stageName}: ${stage.nowPlaying}. noted.`,
-          `${stage.nowPlaying} live at ${stage.stageName}`,
-          `currently ${stage.stageName} — ${stage.nowPlaying}`,
-          `${stage.nowPlaying} crowd behavior: fascinating`,
-          `documenting ${stage.nowPlaying} at ${stage.stageName}`,
-          `${stage.stageName} + ${stage.nowPlaying} = communal euphoria`,
-          `${stage.nowPlaying} at ${stage.stageName}. making notes.`,
+          `${stage.nowPlaying} at ${stage.stageName}`,
+          `${stage.stageName}: noted`,
+          `documenting ${stage.nowPlaying}`,
+          `fascinating crowd`,
         ]
       : [
-          `${stage.stageName} between acts`,
           `${stage.stageName} intermission`,
-          `gap at ${stage.stageName}: sociological pause`,
-          `${stage.stageName} between chapters`,
+          `gap at ${stage.stageName}`,
         ],
 
   giggle: stage =>
     stage.nowPlaying
       ? [
           `${stage.nowPlaying} at ${stage.stageName}… heh`,
-          `what's ${stage.nowPlaying} doing at ${stage.stageName}`,
           `${stage.stageName}? more like ${stage.nowPlaying}`,
-          `why did ${stage.nowPlaying} go to ${stage.stageName}? for the set`,
-          `${stage.stageName} walks into a ${stage.nowPlaying}`,
-          `${stage.nowPlaying}? I barely know playing`,
-          `${stage.stageName} dropping ${stage.nowPlaying} and also bars`,
-          `${stage.nowPlaying} at ${stage.stageName}: the punchline`,
+          `${stage.nowPlaying}? I barely know her`,
+          `${stage.stageName}: punchline`,
         ]
       : [
           `${stage.stageName} took a break lol`,
-          `${stage.stageName}: stage fright. heh`,
-          `why is ${stage.stageName} quiet? needs more stage presence`,
-          `${stage.stageName} loading the punchline`,
-          `${stage.stageName} intermission: setup phase`,
+          `${stage.stageName}: stage fright`,
+          `${stage.stageName} loading punchline`,
+        ],
+
+  chad: stage =>
+    stage.nowPlaying
+      ? [
+          `activity at ${stage.stageName}`,
+          `who booked ${stage.nowPlaying}`,
+          `${stage.stageName} feels suspicious`,
+          `heard ${stage.nowPlaying}… interesting`,
+      ]
+      : [
+          `${stage.stageName} went dark`,
+          `quiet at ${stage.stageName}. hmm.`,
+          `watching ${stage.stageName}`,
         ],
 };
 
@@ -383,68 +388,32 @@ const CHARACTER_GENERIC: Partial<Record<string, string[]>> = {
   solo: [
     'bad feeling about this',
     'never tell me the odds',
-    'I have a bad feeling',
     'the force is loud',
-    'a long time ago in a festival',
-    'do or do not. I did.',
+    'do or do not',
     'this is the way',
-    'I find your lack of water disturbing',
-    'rebellions are built on vibes',
+    'need more water',
   ],
   buz: [
-    'HUNTER HATS! CAMO UP!',
-    'BASEBALL CAPS! FESTIVAL EDITION!',
-    'PAMELA HATS! MAIN CHARACTER ENERGY!',
-    'GLASSES! LOOK COOL STAY MYSTERIOUS!',
-    'BLUE GLASSES! FESTIVAL NIGHT VISION!',
-    'GREEN GLASSES! LAWN CROWD ENERGY!',
-    'CIRCLE GLASSES! RETRO FESTIVAL VIBES!',
-    'YELLOW GLASSES! SUNNY SET ENERGY!',
-    'OPTIC GLASSES! READ THE SETLIST!',
-    'SKI GOGGLES! SLOPE-READY SHADES!',
-    'HORNS UP! VIKING HATS HERE!',
-    'HEADPHONES! BLOCK OUT THE CROWD!',
-    'CUTLASS IN STOCK! WHO NEEDS A BLADE?',
-    'LIGHTSABERS! LIMITED RUN!',
-    'BOOMBOXES! PORTABLE BASS!',
-    'HOT DOGS! FESTIVAL FUEL!',
-    'DONUTS! SWEET FESTIVAL SNACKS!',
-    'FRIES! SALTY FESTIVAL FUEL!',
-    'PIZZA! CHEESY SLICE ENERGY!',
-    'TACOS! STREET FOOD ENERGY!',
-    'MARTINIS! SHAKEN OR STIRRED!',
-    'LEMONADE! ICE-COLD REFRESH!',
-    'BEER! COLD PINTS HERE!',
-    'WATER BOTTLES! STAY HYDRATED!',
-    'WATER! BEAT THE HEAT!',
-    'JUICE! FRUITY FESTIVAL FUEL!',
-    'STEP RIGHT UP! FESTIVAL MERCH!',
-    'BUZ HAS THE GOODS!',
-    'MERCH TENT IS OPEN!',
-    'TALK TO BUZ — BEST STUFF HERE!',
-    'WHO NEEDS A NICE HAT?',
-    'HEADPHONES FOR THE HEADLINER IN YOU!',
-    'SWORDS AND SABERS! STEP UP!',
-    "DON'T WALK PAST WITHOUT LOOKING!",
-    'FRESH MERCH! RIGHT HERE!',
-    "I GOT WHAT YOU'RE MISSING!",
-    'PIRATE OR DJ — PICK YOUR LOOK!',
-    'EVERYONE NEEDS MERCH!',
-    'CHAT WITH ME — I\'LL HOOK YOU UP!',
-    'CUTLASS CHECK! WHO\'S READY?',
-    'LIGHTSABER ENERGY ONLY!',
-    'TRICORNS! … WELL, PIRATE HATS!',
-    'MERCH OVER HERE!',
-    "DON'T BE SHY — COME LOOK!",
-    'ONLY THE GOOD STUFF!',
-    'FESTIVAL MERCH! RIGHT THIS WAY!',
-    'WHO WANTS A LIGHTSABER?',
-    'HEADPHONES! FEEL THE BASS IN PEACE!',
-    'BEST CART AT THE FESTIVAL!',
-    'STOCK UP BEFORE THE NEXT SET!',
-    'I SEE YOU LOOKING — COME CHAT!',
-    'MERCH MERCH MERCH!',
-    'GET EQUIPPED! TALK TO BUZ!',
+    'HATS!',
+    'MERCH!',
+    'WATER!',
+    'HOT DOGS!',
+    'HEADPHONES!',
+    'LIGHTSABERS!',
+    'CUTLASS HERE!',
+    'GRAB A HAT!',
+    'PIZZA!',
+    'TACOS!',
+    'BEER!',
+    'JUICE!',
+    'GLASSES!',
+    'BOOMBOX!',
+    'STEP UP!',
+    'BUZ HAS GOODS!',
+    'STOCK UP!',
+    'COME LOOK!',
+    'FESTIVAL MERCH!',
+    'CHAT WITH BUZ!',
   ],
   atlas: [
     'fascinating',
@@ -470,39 +439,54 @@ const CHARACTER_GENERIC: Partial<Record<string, string[]>> = {
     'encore? I barely know her',
     'crowd surfing: 10/10 would fall again',
   ],
+  chad: [
+    'hypothetically though',
+    'off the record',
+    'just asking questions',
+    'seen anything shady',
+    'who sold you that',
+    'between us…',
+    'routine inquiry',
+    'keep it quiet',
+    'not judging',
+    'eyes open out here',
+    'nothing illegal. right?',
+    'asking for a friend',
+    'totally normal question',
+  ],
 };
 
 const GENERIC_MUMBLES: string[] = [
-  'vibes right now',
+  'vibes rn',
   'my feet though',
-  'need water maybe',
-  'brain is offline',
+  'need water',
+  'brain offline',
   'ok this slaps',
-  'not leaving ever',
-  'send help and snacks',
-  'where did the time go',
-  'everyone is so cool here',
+  'not leaving',
+  'need snacks',
+  "where'd the time go",
   'this crowd though',
   'I love it here',
   "ok I'm obsessed",
   'the energy rn',
-  "can't feel my legs. vibing.",
-  'who authorized this banger',
-  'eyes: closed. vibes: open',
-  'festival math: hours feel like minutes',
-  'the sky right now though',
-  "everyone is dancing and it's beautiful",
-  'this is what alive feels like',
-  'ok the light show though',
-  "genuinely can't leave",
-  'forgot real life exists',
+  'legs gone. vibing.',
+  'who authorized this',
+  'eyes closed',
+  'time evaporated',
+  'sky looks good',
+  "everyone's dancing",
+  'alive rn',
+  'light show though',
+  "can't leave",
+  'forgot real life',
   'I live here now',
-  'peak moment. no notes.',
+  'peak moment',
 ];
 
 function pickStageMumble(character: CharacterDef, stage: StageWorldEntry): string {
+  const s = shortStage(stage);
   const flavor = CHARACTER_STAGE_FLAVOR[character.id];
-  const pool = flavor ? [...flavor(stage), ...baseStageLines(stage)] : baseStageLines(stage);
+  const pool = flavor ? [...flavor(s), ...baseStageLines(s)] : baseStageLines(s);
   return pick(pool);
 }
 
@@ -523,10 +507,10 @@ function pickBuzAmbientMumble(): string {
 }
 
 export function pickAmbientMumble(character: CharacterDef): string {
-  if (isBuzNpc(character.id)) return pickBuzAmbientMumble();
-
-  const snapshot = getStageWorldSnapshot();
-  const stage = pickStage(snapshot);
-  if (Math.random() < STAGE_MUMBLE_WEIGHT) return pickStageMumble(character, stage);
-  return pickGenericMumble(character);
+  const line = isBuzNpc(character.id)
+    ? pickBuzAmbientMumble()
+    : Math.random() < STAGE_MUMBLE_WEIGHT
+      ? pickStageMumble(character, pickStage(getStageWorldSnapshot()))
+      : pickGenericMumble(character);
+  return clampAmbientLine(line);
 }

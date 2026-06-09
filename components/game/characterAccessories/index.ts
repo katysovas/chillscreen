@@ -35,5 +35,6 @@ export {
   PirateHeadAccessory,
   PirateSwordAccessory,
   renderAccessorySlot,
+  SupportHeadAccessory,
   VendorCartAccessory,
 } from '../characters/index';

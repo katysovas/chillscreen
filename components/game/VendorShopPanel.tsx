@@ -188,6 +188,34 @@ const actionBtnBase = {
   flexShrink: 0,
 };
 
+const VENDOR_BUY_BTN_STYLES = `
+  .vendor-buy-btn {
+    border: none;
+    background: linear-gradient(180deg, #ffb347 0%, #e67e22 100%);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(230, 126, 34, 0.28);
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+  }
+  @media (hover: hover) {
+    .vendor-buy-btn:not(:disabled):hover {
+      background: linear-gradient(180deg, #ffc96b 0%, #f39c12 100%);
+      box-shadow: 0 4px 12px rgba(230, 126, 34, 0.42);
+      transform: translateY(-1px);
+    }
+    .vendor-buy-btn:not(:disabled):active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(230, 126, 34, 0.3);
+    }
+  }
+  .vendor-buy-btn:disabled {
+    background: #f0f0f0;
+    color: #aaa;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+`;
+
 function BuyButton({
   price,
   disabled,
@@ -200,19 +228,11 @@ function BuyButton({
   return (
     <button
       type="button"
+      className="vendor-buy-btn"
       disabled={disabled}
       onClick={onClick}
       aria-label={disabled ? `Buy for ${price} coins — insufficient funds` : `Buy for ${price} coins`}
-      style={{
-        ...actionBtnBase,
-        border: 'none',
-        background: disabled
-          ? '#f0f0f0'
-          : 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
-        color: disabled ? '#aaa' : '#fff',
-        boxShadow: disabled ? 'none' : '0 2px 6px rgba(230, 126, 34, 0.28)',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-      }}
+      style={actionBtnBase}
     >
       <span>Buy</span>
       <CoinAmount
@@ -293,6 +313,7 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
         pointerEvents: 'auto',
       }}
     >
+      <style>{VENDOR_BUY_BTN_STYLES}</style>
       {onClose && (
         <button
           type="button"
@@ -324,15 +345,12 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
+          justifyContent: 'center',
           marginBottom: 10,
-          paddingRight: onClose ? 20 : 0,
+          paddingLeft: onClose ? 24 : 0,
+          paddingRight: onClose ? 24 : 0,
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#222' }}>
-          Festival Store
-        </div>
         <div
           style={{
             display: 'inline-flex',
@@ -349,7 +367,7 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
             letterSpacing: 0.15,
           }}
         >
-          <span>Coins:</span>
+          <span>My Coins:</span>
           <CoinAmount amount={coins} iconSize={11} fontSize={11} fontWeight={700} />
         </div>
       </div>
