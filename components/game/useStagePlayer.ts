@@ -40,7 +40,7 @@ type UseStagePlayerOptions = {
   iframeRef: RefObject<HTMLIFrameElement | null>;
   /** Called with the current video title (or null) while this stage is live. */
   onNowPlaying?: (title: string | null) => void;
-  /** Ignore the global mute toggle — cinema stays silent. */
+  /** Force muted regardless of the global mute toggle. */
   alwaysMuted?: boolean;
 };
 

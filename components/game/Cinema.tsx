@@ -378,7 +378,6 @@ function CinemaLive() {
     channel: 'cinema',
     iframeRef,
     onNowPlaying: setCinemaNowPlaying,
-    alwaysMuted: true,
   });
 
   const marqueeTitle = video?.title ?? 'Loading…';
