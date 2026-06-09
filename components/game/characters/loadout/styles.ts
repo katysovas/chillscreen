@@ -22,6 +22,8 @@ export const LOADOUT_STYLES = `
   .ch-lo-baseball-hat-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-lo-hat-pamela-hat{top:-123px;width:340px;height:184px;}
   .ch-lo-pamela-hat-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-lo-hat-mando-hat{top:-110px;width:280px;height:280px;}
+  .ch-lo-mando-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   /* ── Sunglasses ───────────────────────────────────────────────────────── */
   .ch-lo-shades{position:absolute;left:50%;top:18px;width:118px;height:28px;transform:translateX(-50%);z-index:11;display:flex;align-items:center;justify-content:center;gap:6px;pointer-events:none;}
   .ch-lo-shades-lens{width:42px;height:22px;background:var(--lo-lens,#222);border:3px solid var(--lo-frame,#111);box-sizing:border-box;}

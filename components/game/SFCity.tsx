@@ -32,7 +32,7 @@ import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
 import { isBuzNpc } from '@/lib/vendorShop';
 
 /** Set to an NPC id to spawn only that character immediately (testing). */
-const TEST_SPAWN_NPC_ID: string | null = null;
+const TEST_SPAWN_NPC_ID: string | null = 'atlas';
 
 /** Force all characters into dance mode regardless of stage proximity (testing). */
 const TEST_FORCE_DANCE = false;

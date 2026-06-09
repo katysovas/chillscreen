@@ -310,6 +310,14 @@ export const LOADOUT_CATALOG: Record<string, LoadoutItemDef> = {
     vendorPrice: 200,
     defaultProps: {},
   },
+  'hat-mando': {
+    id: 'hat-mando',
+    slot: 'hat',
+    name: 'Mando Helmet',
+    description: 'This is the way.',
+    vendorPrice: 200,
+    defaultProps: {},
+  },
   // ── Sunglasses ───────────────────────────────────────────────────────────
   'shades-round': {
     id: 'shades-round',

@@ -7,9 +7,10 @@ const LADY_HAT_SRC = '/images/props/hat_lady.svg';
 const HUNTER_HAT_SRC = '/images/props/hat_hunter.svg';
 const BASEBALL_HAT_SRC = '/images/props/hat_baseball.svg';
 const PAMELA_HAT_SRC = '/images/props/hat_pamela.svg';
+const MANDO_HELMET_SRC = '/images/props/mando.svg';
 
 type HatPropProps = {
-  variant: 'beanie' | 'cap' | 'chef' | 'pirate-hat' | 'headphones' | 'viking-hat' | 'lady-hat' | 'hunter-hat' | 'baseball-hat' | 'pamela-hat';
+  variant: 'beanie' | 'cap' | 'chef' | 'pirate-hat' | 'headphones' | 'viking-hat' | 'lady-hat' | 'hunter-hat' | 'baseball-hat' | 'pamela-hat' | 'mando-hat';
   ctx: LoadoutRenderCtx;
 };
 
@@ -81,6 +82,14 @@ export function HatProp({ variant, ctx }: HatPropProps) {
           src={PAMELA_HAT_SRC}
           alt=""
           className="ch-lo-pamela-hat-img"
+          draggable={false}
+        />
+      )}
+      {variant === 'mando-hat' && (
+        <img
+          src={MANDO_HELMET_SRC}
+          alt=""
+          className="ch-lo-mando-img"
           draggable={false}
         />
       )}

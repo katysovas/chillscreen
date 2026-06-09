@@ -264,21 +264,26 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'atlas',
     name: 'Atlas',
-    balloonColor: '#7c9eb2',       // faded parchment blue
-    accessory: { type: 'balloon', color: '#b5a642' },
+    balloonColor: '#3aa0e0',       // bright baseball-sky blue
+    loadout: {
+      hat: 'hat-mando',
+      hand: 'hand-balloon',
+      balloonColor: '#ffd23f',     // sunny yellow
+    },
     startX: -22,
     entryDirection: 'right',
     entryDelay: 59000,
     personality: {
-      speed: 0.05,                  // slow, deliberate scholar
-      idleMs: [2800, 6000],
-      wanderRange: [5, 75],
-      jumpiness: 0.08,              // rarely abrupt
+      speed: 0.16,                  // zoomy, can't sit still
+      idleMs: [800, 2400],          // short attention span
+      wanderRange: [5, 90],         // roams everywhere
+      jumpiness: 0.45,              // bouncy and unpredictable
     },
     personalityNotes:
-      'History nerd with a search engine for a brain. Calm, measured sentences — drops dates ' +
-      'and facts as easily as weather. Can pull historical events, recipes, forgotten wars, ' +
-      'or etymology on request. Loves a good "did you know" but never lectures.',
+      'A goofy, super-friendly kid who LOVES baseball, Star Wars, kitties, and doggies. ' +
+      'Talks fast and excited, makes silly jokes and lightsaber noises, and wants to be ' +
+      'everyone\'s buddy. Will happily tell you his favorite player, do a dramatic "I am ' +
+      'your father" impression, or stop to pet any animal. Wholesome, playful, never mean.He has a dog named "Atlas". His nickname is "Atlas". His nickname is waffles.',
   },
 
   {

@@ -8,6 +8,7 @@ const HAT_ITEMS = [
   'hat-baseball',
   'hat-pamela',
   'hat-headphones',
+  'hat-mando',
 ] as const;
 
 const GLASSES_ITEMS = [
@@ -113,6 +114,7 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'hat-baseball': '/images/props/hat_baseball.svg',
   'hat-pamela': '/images/props/hat_pamela.svg',
   'hat-headphones': '/images/props/headphones.svg',
+  'hat-mando': '/images/props/mando.svg',
   'shades-glasses': '/images/props/glasses.svg',
   'shades-glasses-blue': '/images/props/glasses_blue.svg',
   'shades-glasses-green': '/images/props/glasses_green.svg',
@@ -152,6 +154,7 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'hat-baseball': { width: 36, height: 24 },
   'hat-pamela': { width: 36, height: 26 },
   'hat-headphones': { width: 32, height: 28 },
+  'hat-mando': { width: 32, height: 32 },
   'shades-glasses': { width: 36, height: 16 },
   'shades-glasses-blue': { width: 36, height: 16 },
   'shades-glasses-green': { width: 36, height: 16 },

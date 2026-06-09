@@ -12,4 +12,5 @@ export const RENDERERS: Record<string, ItemRenderer> = {
   'hat-hunter': ctx => <HatProp variant="hunter-hat" ctx={ctx} />,
   'hat-baseball': ctx => <HatProp variant="baseball-hat" ctx={ctx} />,
   'hat-pamela': ctx => <HatProp variant="pamela-hat" ctx={ctx} />,
+  'hat-mando': ctx => <HatProp variant="mando-hat" ctx={ctx} />,
 };
