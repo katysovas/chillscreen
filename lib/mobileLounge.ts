@@ -75,6 +75,13 @@ export const MOBILE_LOUNGE_STAGES: MobileLoungeStageOption[] = [
     originYPercent: 57,
   },
   {
+    route: 'forest',
+    title: 'The Forest',
+    tagline: 'Glowing woods stage',
+    scale: 1.08,
+    originYPercent: 57,
+  },
+  {
     route: 'cinema',
     title: 'Chill Cinema',
     tagline: 'Outdoor screen',

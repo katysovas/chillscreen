@@ -51,7 +51,8 @@ export type StageChannel =
   | 'outside-lands'
   | 'coachella'
   | 'edc'
-  | 'which-stage';
+  | 'which-stage'
+  | 'forest';
 
 /** Per-stage playlist rules — matched against video titles (case-insensitive). */
 export type StagePlaylistRules = {
@@ -117,6 +118,7 @@ export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
   coachella: channelConfigFromFile(stagePlaylistsFile.channels.coachella),
   edc: channelConfigFromFile(stagePlaylistsFile.channels.edc),
   'which-stage': channelConfigFromFile(stagePlaylistsFile.channels['which-stage']),
+  forest: channelConfigFromFile(stagePlaylistsFile.channels.forest),
 };
 
 function fallbackPlaylist(cfg: StageChannelConfig): StageVideo[] {
@@ -135,6 +137,7 @@ export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
   coachella: fallbackPlaylist(STAGE_CHANNEL_CONFIG.coachella),
   edc: fallbackPlaylist(STAGE_CHANNEL_CONFIG.edc),
   'which-stage': fallbackPlaylist(STAGE_CHANNEL_CONFIG['which-stage']),
+  forest: fallbackPlaylist(STAGE_CHANNEL_CONFIG.forest),
 };
 
 /**

@@ -13,6 +13,7 @@ export const STAGE_CHANNEL_META: StageChannelMeta[] = [
   { id: 'edc', label: 'Las Vegas', description: 'EDC main stage' },
   { id: 'coachella', label: 'The Desert', description: 'Southern California festival stage' },
   { id: 'which-stage', label: 'The Farm', description: 'Which Stage — Bonnaroo-style main rig' },
+  { id: 'forest', label: 'The Forest', description: 'The Forest Stage — glowing woods main rig' },
   { id: 'bumbershoot', label: 'Seattle', description: 'Seattle outdoor concert stage' },
 ];
 

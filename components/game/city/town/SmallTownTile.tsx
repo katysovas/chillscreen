@@ -3,8 +3,16 @@ import { SimpleBuilding } from '../buildings/SimpleBuilding';
 import { Victorian } from '../buildings/Victorian';
 import { skipTownMidTree } from '@/lib/stageTreeExclusion';
 import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
-import { isSfToVegasTown, isSocalToTentarooTown, isTownTile, isVegasToSdTown, tileRand } from '@/lib/worldTiles';
+import {
+  isSfToVegasTown,
+  isSocalToTentarooTown,
+  isTentarooToForestTown,
+  isTownTile,
+  isVegasToSdTown,
+  tileRand,
+} from '@/lib/worldTiles';
 import { TownDesertEdge } from './TownDesertEdge';
+import { TownForestEdge } from './TownForestEdge';
 
 const PALETTE = [
   '#a8b0b8',
@@ -111,6 +119,9 @@ export function SmallTownTerrain({ tileIndex }: { tileIndex: number }) {
       )}
       {compact && (isSfToVegasTown(tileIndex) || isVegasToSdTown(tileIndex) || isSocalToTentarooTown(tileIndex)) && (
         <TownDesertEdge tileIndex={tileIndex} />
+      )}
+      {compact && isTentarooToForestTown(tileIndex) && (
+        <TownForestEdge tileIndex={tileIndex} />
       )}
     </g>
   );

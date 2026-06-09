@@ -14,6 +14,7 @@ const STAGE_META: { channel: StageChannel; stageName: string; city: string }[] =
   { channel: 'edc', stageName: 'Vegas Stage', city: 'Las Vegas' },
   { channel: 'coachella', stageName: 'The Desert Stage', city: 'Southern California' },
   { channel: 'which-stage', stageName: 'The Farm', city: 'The Farm' },
+  { channel: 'forest', stageName: 'The Forest Stage', city: 'The Forest' },
   { channel: 'bumbershoot', stageName: 'Seattle Stage', city: 'Seattle' },
 ];
 

@@ -15,6 +15,8 @@ const LEGACY_VENUE_REDIRECTS: Record<string, string> = {
   'outside-hands': 'sanfrancisco',
   'seattle-concerts': 'seattle',
   cinema: 'chill-cinema',
+  'the-forest': 'forest',
+  theforest: 'forest',
 };
 
 export function middleware(request: NextRequest) {

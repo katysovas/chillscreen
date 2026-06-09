@@ -173,6 +173,7 @@ export function WelcomePopup({ balloonColor, onEnter }: Props) {
             What&apos;s New
           </div>
           {[
+            'New world - The Forest!',
             'New state - The Farm!',
             'Fresh party favors dropped at our merch stand',
             'Bring your crew - share link to stage',

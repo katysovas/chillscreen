@@ -262,6 +262,28 @@ const CHARACTERS: CharacterDef[] = [
   },
 
   {
+    id: 'buz-forest',
+    name: 'Buz',
+    balloonColor: '#d4893a',
+    accessory: { type: 'vendorCart', color: '#e8520a', emoji: '🛍️' },
+    startX: 50,
+    entryDirection: 'right',
+    entryDelay: 0,
+    stageAnchor: 'forest',
+    personality: {
+      speed: 0.02,
+      idleMs: [6000, 14000],
+      wanderRange: [18, 42],
+      jumpiness: 0,
+    },
+    personalityNotes:
+      'Festival vendor who opens by offering something — a snack, a glowstick, a mystery bag. ' +
+      'Warm and theatrical about the goods, not pushy about the sale. Knows food stalls, ' +
+      'merch worth buying, shortcuts, and which sets are worth the crowd. Tips like a friend. ' +
+      'Never takes no personally — just pivots to something else.',
+  },
+
+  {
     id: 'atlas',
     name: 'Atlas',
     balloonColor: '#3aa0e0',       // bright baseball-sky blue

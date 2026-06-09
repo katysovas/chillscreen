@@ -43,6 +43,12 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'Explore The Farm on WhichStage — campground vibes, the Which Stage main rig, ' +
       'and live Bonnaroo sets with friends in your browser.',
   },
+  forest: {
+    title: 'The Forest',
+    description:
+      'Wander The Forest on WhichStage — glowing woods, firefly tent camps, lasers ' +
+      'through the pines, and live festival sets with friends in your browser.',
+  },
 };
 
 export function venueSeoForRoute(route: VenueRoute): VenueSeo {

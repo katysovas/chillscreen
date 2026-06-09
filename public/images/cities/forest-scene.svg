@@ -1,0 +1,333 @@
+<svg viewBox="0 0 2600 800" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+<!-- ============================================================
+     THE FOREST - glowing woods festival grounds (Electric Forest vibe)
+     2600 x 800 | ground line y=660 | SMIL animations
+     Stage band: mid x ~1040-1960 (ForestStage renders in front on the
+     foreground layer) - keep huge foreground trunks out of that band.
+     ============================================================ -->
+
+<!-- far treeline (sky stays transparent — game SkyLayer shows through) -->
+<path fill="#123528" opacity="0.92" d="M0,520 L64,515 L128,455 L183,515 L253,440 L306,515 L365,440 L417,425 L486,470 L566,515 L636,440 L705,425 L781,430 L832,425 L888,455 L957,425 L1031,515 L1091,515 L1159,455 L1225,455 L1295,460 L1360,425 L1431,430 L1495,460 L1558,430 L1630,460 L1690,455 L1756,460 L1806,430 L1874,430 L1936,430 L2013,460 L2075,430 L2155,425 L2232,425 L2288,455 L2367,425 L2432,470 L2504,470 L2567,430 L2600,440 L2600,660 L0,660 Z"/>
+
+<!-- laser fans -->
+<g opacity="0.8">
+  <g>
+    <animateTransform attributeName="transform" type="rotate" values="-7 650 640;7 650 640;-7 650 640" dur="9s" repeatCount="indefinite"/>
+    <polygon fill="#39ff88" opacity="0.14" points="650,640 470,40 514,40"/>
+    <polygon fill="#ff4fd8" opacity="0.18" points="650,640 600,40 630,40"/>
+    <polygon fill="#4fd8ff" opacity="0.16" points="650,640 690,40 722,40"/>
+    <polygon fill="#39ff88" opacity="0.12" points="650,640 800,40 844,40"/>
+  </g>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" values="6 2080 640;-6 2080 640;6 2080 640" dur="11s" repeatCount="indefinite"/>
+    <polygon fill="#4fd8ff" opacity="0.14" points="2080,640 1900,40 1944,40"/>
+    <polygon fill="#39ff88" opacity="0.18" points="2080,640 2030,40 2060,40"/>
+    <polygon fill="#ff4fd8" opacity="0.16" points="2080,640 2120,40 2152,40"/>
+    <polygon fill="#4fd8ff" opacity="0.12" points="2080,640 2230,40 2274,40"/>
+  </g>
+</g>
+
+<!-- mixed forest: oaks, birches -->
+<g>
+  <path fill="#0e2418" transform="translate(170,660) scale(0.8)" d="M-9,0 L-6,-120 Q-7,-150 -16,-170 L-4,-158 L0,-185 L5,-160 L17,-172 Q8,-150 7,-120 L10,0 Z"/>
+  <g fill="#15392a" transform="translate(170,660) scale(0.8)">
+    <circle cx="-52" cy="-188" r="46"/><circle cx="50" cy="-192" r="44"/><circle cx="0" cy="-238" r="56"/>
+    <circle cx="-28" cy="-156" r="38"/><circle cx="30" cy="-152" r="36"/><circle cx="0" cy="-180" r="52"/>
+  </g>
+  <g fill="#1f5439" transform="translate(170,660) scale(0.8)">
+    <circle cx="-40" cy="-210" r="22"/><circle cx="18" cy="-248" r="24"/><circle cx="44" cy="-176" r="18"/>
+  </g>
+
+  <path fill="#0e2418" transform="translate(1020,660) scale(1.15)" d="M-9,0 L-6,-120 Q-7,-150 -16,-170 L-4,-158 L0,-185 L5,-160 L17,-172 Q8,-150 7,-120 L10,0 Z"/>
+  <g fill="#15392a" transform="translate(1020,660) scale(1.15)">
+    <circle cx="-52" cy="-188" r="46"/><circle cx="50" cy="-192" r="44"/><circle cx="0" cy="-238" r="56"/>
+    <circle cx="-28" cy="-156" r="38"/><circle cx="30" cy="-152" r="36"/><circle cx="0" cy="-180" r="52"/>
+  </g>
+  <g fill="#1f5439" transform="translate(1020,660) scale(1.15)">
+    <circle cx="-40" cy="-210" r="22"/><circle cx="18" cy="-248" r="24"/><circle cx="44" cy="-176" r="18"/>
+  </g>
+
+  <path fill="#0e2418" transform="translate(1980,660) scale(1.0)" d="M-9,0 L-6,-120 Q-7,-150 -16,-170 L-4,-158 L0,-185 L5,-160 L17,-172 Q8,-150 7,-120 L10,0 Z"/>
+  <g fill="#15392a" transform="translate(1980,660) scale(1.0)">
+    <circle cx="-52" cy="-188" r="46"/><circle cx="50" cy="-192" r="44"/><circle cx="0" cy="-238" r="56"/>
+    <circle cx="-28" cy="-156" r="38"/><circle cx="30" cy="-152" r="36"/><circle cx="0" cy="-180" r="52"/>
+  </g>
+  <g fill="#1f5439" transform="translate(1980,660) scale(1.0)">
+    <circle cx="-40" cy="-210" r="22"/><circle cx="18" cy="-248" r="24"/><circle cx="44" cy="-176" r="18"/>
+  </g>
+
+  <g transform="translate(1464,660) scale(0.8)">
+    <path fill="#b9d6c4" opacity="0.75" d="M-5,0 L-3,-150 Q-4,-185 -10,-205 L0,-198 L10,-208 Q4,-185 4,-150 L6,0 Z"/>
+    <g fill="#0e2418"><rect x="-5" y="-46" width="7" height="5" rx="2"/><rect x="-2" y="-92" width="7" height="5" rx="2"/><rect x="-5" y="-132" width="6" height="5" rx="2"/></g>
+    <g fill="#1b4831"><circle cx="-26" cy="-198" r="26"/><circle cx="24" cy="-204" r="24"/><circle cx="0" cy="-232" r="28"/></g>
+  </g>
+  <g transform="translate(2310,660) scale(0.9)">
+    <path fill="#b9d6c4" opacity="0.75" d="M-5,0 L-3,-150 Q-4,-185 -10,-205 L0,-198 L10,-208 Q4,-185 4,-150 L6,0 Z"/>
+    <g fill="#0e2418"><rect x="-5" y="-46" width="7" height="5" rx="2"/><rect x="-2" y="-92" width="7" height="5" rx="2"/><rect x="-5" y="-132" width="6" height="5" rx="2"/></g>
+    <g fill="#1b4831"><circle cx="-26" cy="-198" r="26"/><circle cx="24" cy="-204" r="24"/><circle cx="0" cy="-232" r="28"/></g>
+  </g>
+</g>
+
+<!-- pines -->
+<g fill="#10331f">
+  <path transform="translate(403,660) scale(0.7)" d="M0,-300 L55,-200 L30,-200 L85,-105 L48,-105 L110,0 L-110,0 L-48,-105 L-85,-105 L-30,-200 L-55,-200 Z"/>
+  <path transform="translate(596,660) scale(1.2)" d="M0,-300 L55,-200 L30,-200 L85,-105 L48,-105 L110,0 L-110,0 L-48,-105 L-85,-105 L-30,-200 L-55,-200 Z"/>
+  <path transform="translate(808,660) scale(1.0)" d="M0,-300 L55,-200 L30,-200 L85,-105 L48,-105 L110,0 L-110,0 L-48,-105 L-85,-105 L-30,-200 L-55,-200 Z"/>
+  <path transform="translate(1262,660) scale(1.05)" d="M0,-300 L55,-200 L30,-200 L85,-105 L48,-105 L110,0 L-110,0 L-48,-105 L-85,-105 L-30,-200 L-55,-200 Z"/>
+  <path transform="translate(1740,660) scale(0.95)" d="M0,-300 L55,-200 L30,-200 L85,-105 L48,-105 L110,0 L-110,0 L-48,-105 L-85,-105 L-30,-200 L-55,-200 Z"/>
+  <path transform="translate(2160,660) scale(1.2)" d="M0,-300 L55,-200 L30,-200 L85,-105 L48,-105 L110,0 L-110,0 L-48,-105 L-85,-105 L-30,-200 L-55,-200 Z"/>
+  <path transform="translate(2480,660) scale(0.8)" d="M0,-300 L55,-200 L30,-200 L85,-105 L48,-105 L110,0 L-110,0 L-48,-105 L-85,-105 L-30,-200 L-55,-200 Z"/>
+</g>
+<g fill="none" stroke="#2dd4a0" stroke-opacity="0.25" stroke-width="2">
+  <path transform="translate(596,660) scale(1.2)" d="M0,-300 L55,-200 L30,-200 L85,-105 L48,-105 L110,0"/>
+  <path transform="translate(2160,660) scale(1.2)" d="M0,-300 L-55,-200 L-30,-200 L-85,-105 L-48,-105 L-110,0"/>
+</g>
+
+<!-- string lights -->
+<g fill="none" stroke="#1b4334" stroke-width="2">
+  <path d="M596,350 Q702,465 808,395"/>
+  <path d="M1020,360 Q1141,430 1262,365"/>
+  <path d="M1740,395 Q1860,460 1980,400"/>
+  <path d="M2160,340 Q2320,440 2480,400"/>
+</g>
+<g fill="#ffe9a8">
+  <circle cx="638" cy="389" r="4"><animate attributeName="opacity" values="0.35;1;0.35" dur="3.4s" repeatCount="indefinite"/></circle>
+  <circle cx="681" cy="412" r="4"><animate attributeName="opacity" values="1;0.35;1" dur="2.6s" repeatCount="indefinite"/></circle>
+  <circle cx="723" cy="421" r="4"><animate attributeName="opacity" values="0.35;1;0.35" dur="2.1s" repeatCount="indefinite"/></circle>
+  <circle cx="766" cy="416" r="4"><animate attributeName="opacity" values="1;0.4;1" dur="3.1s" repeatCount="indefinite"/></circle>
+  <circle cx="1068" cy="384" r="4"><animate attributeName="opacity" values="0.35;1;0.35" dur="3.4s" repeatCount="indefinite"/></circle>
+  <circle cx="1117" cy="397" r="4"><animate attributeName="opacity" values="1;0.35;1" dur="2.6s" repeatCount="indefinite"/></circle>
+  <circle cx="1165" cy="397" r="4"><animate attributeName="opacity" values="0.4;1;0.4" dur="2.9s" repeatCount="indefinite"/></circle>
+  <circle cx="1214" cy="385" r="4"><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" repeatCount="indefinite"/></circle>
+  <circle cx="1800" cy="416" r="4"><animate attributeName="opacity" values="0.35;1;0.35" dur="2.7s" repeatCount="indefinite"/></circle>
+  <circle cx="1860" cy="428" r="4"><animate attributeName="opacity" values="1;0.4;1" dur="3.3s" repeatCount="indefinite"/></circle>
+  <circle cx="1920" cy="421" r="4"><animate attributeName="opacity" values="0.4;1;0.4" dur="2.4s" repeatCount="indefinite"/></circle>
+  <circle cx="2240" cy="372" r="4"><animate attributeName="opacity" values="0.35;1;0.35" dur="3.0s" repeatCount="indefinite"/></circle>
+  <circle cx="2320" cy="395" r="4"><animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite"/></circle>
+  <circle cx="2400" cy="402" r="4"><animate attributeName="opacity" values="0.4;1;0.4" dur="3.6s" repeatCount="indefinite"/></circle>
+</g>
+
+<!-- hanging orb strands -->
+<g>
+  <path fill="none" stroke="#1b4334" stroke-width="1.5" d="M656,390 L656,468"/>
+  <circle cx="656" cy="420" r="10" fill="#4fd8ff" opacity="0.3"><animate attributeName="opacity" values="0.15;0.5;0.15" dur="4s" repeatCount="indefinite"/></circle>
+  <circle cx="656" cy="420" r="4.5" fill="#4fd8ff" opacity="0.9"/>
+  <circle cx="656" cy="446" r="10" fill="#4fd8ff" opacity="0.3"><animate attributeName="opacity" values="0.5;0.15;0.5" dur="5.2s" repeatCount="indefinite"/></circle>
+  <circle cx="656" cy="446" r="4.5" fill="#4fd8ff" opacity="0.9"/>
+  <circle cx="656" cy="472" r="10" fill="#4fd8ff" opacity="0.3"><animate attributeName="opacity" values="0.2;0.55;0.2" dur="3.4s" repeatCount="indefinite"/></circle>
+  <circle cx="656" cy="472" r="4.5" fill="#4fd8ff" opacity="0.9"/>
+</g>
+<g>
+  <path fill="none" stroke="#1b4334" stroke-width="1.5" d="M748,435 L748,513"/>
+  <circle cx="748" cy="465" r="10" fill="#b07bff" opacity="0.3"><animate attributeName="opacity" values="0.15;0.5;0.15" dur="4.6s" repeatCount="indefinite"/></circle>
+  <circle cx="748" cy="465" r="4.5" fill="#b07bff" opacity="0.9"/>
+  <circle cx="748" cy="491" r="10" fill="#b07bff" opacity="0.3"><animate attributeName="opacity" values="0.5;0.15;0.5" dur="3.8s" repeatCount="indefinite"/></circle>
+  <circle cx="748" cy="491" r="4.5" fill="#b07bff" opacity="0.9"/>
+  <circle cx="748" cy="517" r="10" fill="#b07bff" opacity="0.3"><animate attributeName="opacity" values="0.2;0.55;0.2" dur="5s" repeatCount="indefinite"/></circle>
+  <circle cx="748" cy="517" r="4.5" fill="#b07bff" opacity="0.9"/>
+</g>
+<g>
+  <path fill="none" stroke="#1b4334" stroke-width="1.5" d="M2243,415 L2243,493"/>
+  <circle cx="2243" cy="445" r="10" fill="#39ff88" opacity="0.3"><animate attributeName="opacity" values="0.15;0.5;0.15" dur="4.2s" repeatCount="indefinite"/></circle>
+  <circle cx="2243" cy="445" r="4.5" fill="#39ff88" opacity="0.9"/>
+  <circle cx="2243" cy="471" r="10" fill="#39ff88" opacity="0.3"><animate attributeName="opacity" values="0.5;0.15;0.5" dur="5.4s" repeatCount="indefinite"/></circle>
+  <circle cx="2243" cy="471" r="4.5" fill="#39ff88" opacity="0.9"/>
+  <circle cx="2243" cy="497" r="10" fill="#39ff88" opacity="0.3"><animate attributeName="opacity" values="0.2;0.55;0.2" dur="3.6s" repeatCount="indefinite"/></circle>
+  <circle cx="2243" cy="497" r="4.5" fill="#39ff88" opacity="0.9"/>
+</g>
+
+<!-- glow totems -->
+<g>
+  <rect x="876" y="547" width="8" height="113" fill="#17402f"/>
+  <circle cx="880" cy="535" r="25" fill="#4fd8ff" opacity="0.3"><animate attributeName="opacity" values="0.15;0.5;0.15" dur="3.4s" repeatCount="indefinite"/></circle>
+  <circle cx="880" cy="535" r="10" fill="#4fd8ff" opacity="0.9"/>
+</g>
+<g>
+  <rect x="2436" y="550" width="8" height="110" fill="#17402f"/>
+  <circle cx="2440" cy="538" r="25" fill="#39ff88" opacity="0.3"><animate attributeName="opacity" values="0.5;0.2;0.5" dur="4s" repeatCount="indefinite"/></circle>
+  <circle cx="2440" cy="538" r="10" fill="#39ff88" opacity="0.9"/>
+</g>
+<g>
+  <rect x="1180" y="540" width="8" height="120" fill="#17402f"/>
+  <circle cx="1184" cy="528" r="25" fill="#ff4fd8" opacity="0.3"><animate attributeName="opacity" values="0.2;0.55;0.2" dur="5.2s" repeatCount="indefinite"/></circle>
+  <circle cx="1184" cy="528" r="10" fill="#ff4fd8" opacity="0.9"/>
+</g>
+
+<!-- mossy ground -->
+<rect x="0" y="660" width="2600" height="140" fill="#0b1f15"/>
+<path fill="#123124" d="M0,705 Q650,688 1300,706 Q1950,724 2600,702 L2600,740 Q1950,760 1300,744 Q650,728 0,748 Z"/>
+<g fill="#1c5a3e" opacity="0.16">
+  <ellipse cx="300" cy="772" rx="138" ry="15"/>
+  <ellipse cx="860" cy="688" rx="143" ry="16"/>
+  <ellipse cx="1420" cy="688" rx="129" ry="16"/>
+  <ellipse cx="1980" cy="690" rx="140" ry="12"/>
+  <ellipse cx="2440" cy="772" rx="154" ry="14"/>
+</g>
+
+<!-- tent camps -->
+<g>
+  <path d="M301,690 Q337,604 373,690 Z" fill="#4a2d5e"/>
+  <path d="M301,690 Q337,604 373,690" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <path d="M325,690 Q337,643 349,690 Z" fill="#ffd98a" opacity="0.9"/>
+</g>
+<g>
+  <polygon points="373,690 414,648 455,690" fill="#1c3a5e"/>
+  <polyline points="373,690 414,648 455,690" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <polygon points="401,690 414,664 427,690" fill="#ffd98a"/>
+  <path d="M414,648 L359,690 M414,648 L469,690" stroke="#1b4334" stroke-width="1"/>
+</g>
+<g>
+  <polygon points="721,674 752,623 783,674" fill="#4a2d5e"/>
+  <polyline points="721,674 752,623 783,674" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <polygon points="742,674 752,642 762,674" fill="#06100b"/>
+  <path d="M752,623 L707,674 M752,623 L797,674" stroke="#1b4334" stroke-width="1"/>
+</g>
+<g>
+  <path d="M813,666 Q846,584 879,666 Z" fill="#14463a"/>
+  <path d="M813,666 Q846,584 879,666" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <path d="M835,666 Q846,621 857,666 Z" fill="#06100b"/>
+</g>
+<g>
+  <polygon points="952,690 987,638 1022,690" fill="#5e3a1c"/>
+  <polyline points="952,690 987,638 1022,690" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <polygon points="976,690 987,658 998,690" fill="#06100b"/>
+  <path d="M987,638 L938,690 M987,638 L1036,690" stroke="#1b4334" stroke-width="1"/>
+</g>
+<g>
+  <path d="M1962,682 Q1995,610 2028,682 Z" fill="#4a2d5e"/>
+  <path d="M1962,682 Q1995,610 2028,682" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <path d="M1984,682 Q1995,642 2006,682 Z" fill="#ffd98a" opacity="0.9"/>
+</g>
+<g>
+  <polygon points="2043,690 2080,653 2117,690" fill="#1c3a5e"/>
+  <polyline points="2043,690 2080,653 2117,690" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <polygon points="2068,690 2080,667 2092,690" fill="#ffd98a"/>
+  <path d="M2080,653 L2029,690 M2080,653 L2131,690" stroke="#1b4334" stroke-width="1"/>
+</g>
+<g>
+  <path d="M2348,674 Q2378,576 2408,674 Z" fill="#5e3a1c"/>
+  <path d="M2348,674 Q2378,576 2408,674" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <path d="M2368,674 Q2378,620 2388,674 Z" fill="#ffd98a" opacity="0.9"/>
+</g>
+<g>
+  <polygon points="2429,666 2464,614 2499,666" fill="#4a2d5e"/>
+  <polyline points="2429,666 2464,614 2499,666" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <polygon points="2453,666 2464,634 2475,666" fill="#06100b"/>
+  <path d="M2464,614 L2415,666 M2464,614 L2513,666" stroke="#1b4334" stroke-width="1"/>
+</g>
+<g>
+  <path d="M1536,682 Q1568,602 1600,682 Z" fill="#14463a"/>
+  <path d="M1536,682 Q1568,602 1600,682" fill="none" stroke="#2dd4a0" stroke-opacity="0.3" stroke-width="1.5"/>
+  <path d="M1558,682 Q1568,638 1578,682 Z" fill="#06100b"/>
+</g>
+
+<!-- glow crystals -->
+<g>
+  <circle cx="620" cy="664" r="26" fill="#4fd8ff" opacity="0.18"><animate attributeName="opacity" values="0.08;0.28;0.08" dur="4s" repeatCount="indefinite"/></circle>
+  <polygon points="602,668 612,634 620,668" fill="#4fd8ff" opacity="0.75"/>
+  <polygon points="616,668 626,622 636,668" fill="#4fd8ff" opacity="0.9"/>
+  <polygon points="632,668 640,642 648,668" fill="#4fd8ff" opacity="0.6"/>
+</g>
+<g>
+  <circle cx="2200" cy="664" r="26" fill="#b07bff" opacity="0.18"><animate attributeName="opacity" values="0.28;0.08;0.28" dur="3.4s" repeatCount="indefinite"/></circle>
+  <polygon points="2182,668 2192,634 2200,668" fill="#b07bff" opacity="0.75"/>
+  <polygon points="2196,668 2206,622 2216,668" fill="#b07bff" opacity="0.9"/>
+  <polygon points="2212,668 2220,642 2228,668" fill="#b07bff" opacity="0.6"/>
+</g>
+
+<!-- ferns -->
+<g fill="none" stroke="#1d4a33" stroke-width="3" stroke-linecap="round">
+  <path d="M250,678 Q240,648 222,634"/><path d="M250,678 Q251,644 245,628"/><path d="M250,678 Q262,650 288,638"/>
+  <path d="M1090,678 Q1080,648 1062,634"/><path d="M1090,678 Q1091,644 1085,628"/><path d="M1090,678 Q1102,650 1128,638"/>
+  <path d="M1940,672 Q1930,642 1912,628"/><path d="M1940,672 Q1941,638 1935,622"/><path d="M1940,672 Q1952,644 1978,632"/>
+  <path d="M2560,678 Q2550,648 2532,634"/><path d="M2560,678 Q2561,644 2555,628"/><path d="M2560,678 Q2572,650 2598,638"/>
+</g>
+<g fill="#2dd4a0" opacity="0.6">
+  <circle cx="222" cy="634" r="2.5"/><circle cx="245" cy="628" r="2.5"/><circle cx="288" cy="638" r="2.5"/>
+  <circle cx="1062" cy="634" r="2.5"/><circle cx="1085" cy="628" r="2.5"/><circle cx="1128" cy="638" r="2.5"/>
+  <circle cx="1912" cy="628" r="2.5"/><circle cx="1935" cy="622" r="2.5"/><circle cx="1978" cy="632" r="2.5"/>
+  <circle cx="2532" cy="634" r="2.5"/><circle cx="2555" cy="628" r="2.5"/><circle cx="2598" cy="638" r="2.5"/>
+</g>
+
+<!-- glowing mushroom clusters -->
+<g>
+  <rect x="466" y="660" width="8" height="14" rx="3" fill="#cfeee0" opacity="0.85"/>
+  <path d="M455,662 Q470,640 485,662 Z" fill="#58f5c9"/>
+  <rect x="486" y="666" width="6" height="10" rx="3" fill="#cfeee0" opacity="0.85"/>
+  <path d="M479,668 Q489,654 499,668 Z" fill="#58f5c9"/>
+  <rect x="448" y="668" width="5" height="8" rx="2" fill="#cfeee0" opacity="0.85"/>
+  <path d="M443,670 Q451,658 459,670 Z" fill="#58f5c9"/>
+</g>
+<g>
+  <rect x="1006" y="664" width="8" height="14" rx="3" fill="#cfeee0" opacity="0.85"/>
+  <path d="M995,666 Q1010,644 1025,666 Z" fill="#b07bff"/>
+  <rect x="1026" y="670" width="6" height="10" rx="3" fill="#cfeee0" opacity="0.85"/>
+  <path d="M1019,672 Q1029,658 1039,672 Z" fill="#b07bff"/>
+</g>
+<g>
+  <rect x="2146" y="656" width="8" height="14" rx="3" fill="#cfeee0" opacity="0.85"/>
+  <path d="M2135,658 Q2150,636 2165,658 Z" fill="#ff9ad5"/>
+  <rect x="2166" y="662" width="6" height="10" rx="3" fill="#cfeee0" opacity="0.85"/>
+  <path d="M2159,664 Q2169,650 2179,664 Z" fill="#ff9ad5"/>
+</g>
+<g>
+  <rect x="2516" y="660" width="8" height="14" rx="3" fill="#cfeee0" opacity="0.85"/>
+  <path d="M2505,662 Q2520,640 2535,662 Z" fill="#58f5c9"/>
+  <rect x="2536" y="666" width="6" height="10" rx="3" fill="#cfeee0" opacity="0.85"/>
+  <path d="M2529,668 Q2539,654 2549,668 Z" fill="#58f5c9"/>
+</g>
+
+<!-- fireflies -->
+<g fill="#d9ffb0">
+  <circle cx="156" cy="599" r="2.5">
+    <animate attributeName="opacity" values="0.15;0.95;0.3;0.85;0.15" dur="4.5s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;9,-14;-7,-7;0,0" dur="7s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="511" cy="512" r="2.5">
+    <animate attributeName="opacity" values="0.85;0.2;0.95;0.3;0.85" dur="5.5s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;-8,-12;7,-6;0,0" dur="9s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="688" cy="534" r="2.5">
+    <animate attributeName="opacity" values="0.3;0.9;0.15;0.8;0.3" dur="3.8s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;10,-10;-6,-9;0,0" dur="6s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="975" cy="539" r="2.5">
+    <animate attributeName="opacity" values="0.15;0.95;0.3;0.85;0.15" dur="6.2s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;8,-15;-9,-5;0,0" dur="8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="1229" cy="597" r="2.5">
+    <animate attributeName="opacity" values="0.85;0.2;0.95;0.3;0.85" dur="4.1s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;-10,-11;6,-8;0,0" dur="7.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="1536" cy="551" r="2.5">
+    <animate attributeName="opacity" values="0.3;0.9;0.15;0.8;0.3" dur="5s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;9,-12;-7,-8;0,0" dur="6.6s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="1864" cy="555" r="2.5">
+    <animate attributeName="opacity" values="0.15;0.95;0.3;0.85;0.15" dur="4.7s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;-9,-13;8,-6;0,0" dur="8.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="2075" cy="589" r="2.5">
+    <animate attributeName="opacity" values="0.85;0.2;0.95;0.3;0.85" dur="5.8s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;10,-9;-6,-10;0,0" dur="7.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="2379" cy="523" r="2.5">
+    <animate attributeName="opacity" values="0.3;0.9;0.15;0.8;0.3" dur="4.3s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;-8,-14;7,-7;0,0" dur="6.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="2551" cy="562" r="2.5">
+    <animate attributeName="opacity" values="0.15;0.95;0.3;0.85;0.15" dur="5.3s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0,0;9,-11;-8,-7;0,0" dur="7.8s" repeatCount="indefinite"/>
+  </circle>
+</g>
+
+<!-- foreground trunks (kept clear of the stage band 1040-1960) -->
+<g fill="#08160d">
+  <path d="M70,660 L78,300 Q80,250 70,210 L102,210 Q94,250 96,300 L106,660 Z"/>
+  <path d="M52,420 Q90,400 88,370 L94,386 Q92,412 60,430 Z"/>
+  <path d="M118,360 Q86,344 90,316 L84,332 Q84,356 112,372 Z"/>
+  <path d="M2500,660 L2508,300 Q2510,250 2500,210 L2532,210 Q2524,250 2526,300 L2536,660 Z"/>
+  <path d="M2482,420 Q2520,400 2518,370 L2524,386 Q2522,412 2490,430 Z"/>
+  <path d="M2548,360 Q2516,344 2520,316 L2514,332 Q2514,356 2542,372 Z"/>
+</g>
+</svg>

@@ -37,6 +37,13 @@ export const THE_FARM = {
   accent: '#50b87a',
 } as const;
 
+/** The Forest — glowing woods festival grounds. */
+export const THE_FOREST = {
+  label: 'The Forest',
+  icon: '🌲',
+  accent: '#2dd4a0',
+} as const;
+
 const VEGAS = {
   label: 'Las Vegas',
   icon: '🎰',
@@ -46,7 +53,7 @@ const VEGAS = {
 const TOWN_CENTER = 0.5;
 
 /**
- * SF → town → Vegas → town → SoCal → town → Tentaroo → town → Seattle → town
+ * SF → town → Vegas → town → SoCal → town → Tentaroo → town → Forest → town → Seattle → town
  * Junction poles only — one combined left/right sign per connector town.
  */
 export function citySignsForTile(tileIndex: number): CombinedTownSignDef[] {
@@ -60,8 +67,10 @@ export function citySignsForTile(tileIndex: number): CombinedTownSignDef[] {
     case 5:
       return [{ xFrac: TOWN_CENTER, leftCity: THE_DESERT, rightCity: THE_FARM }];
     case 7:
-      return [{ xFrac: TOWN_CENTER, leftCity: THE_FARM, rightCity: SEATTLE }];
+      return [{ xFrac: TOWN_CENTER, leftCity: THE_FARM, rightCity: THE_FOREST }];
     case 9:
+      return [{ xFrac: TOWN_CENTER, leftCity: THE_FOREST, rightCity: SEATTLE }];
+    case 11:
       return [{ xFrac: TOWN_CENTER, leftCity: SEATTLE, rightCity: SF }];
     default:
       return [];

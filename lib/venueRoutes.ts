@@ -1,8 +1,9 @@
 import { cityTileIndex } from '@/lib/spawn';
-import { isSouthernCaliforniaTile, isTentarooTile, isVegasTile } from '@/lib/worldTiles';
+import { isForestTile, isSouthernCaliforniaTile, isTentarooTile, isVegasTile } from '@/lib/worldTiles';
 import { cinemaMidX, coachellaMidX, concertMidX, edcMidX, whichStageMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
 import { midOriginForTile } from '@/lib/worldTileGeometry';
 import { WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
+import { FOREST_STAGE_MID_X } from '@/components/game/city/forest/constants';
 export type { VenueRoute } from '@/lib/venueSlugs';
 export {
   parseVenueSlug,
@@ -55,6 +56,10 @@ export function worldOffForVenueRoute(route: VenueRoute): number {
       const tile = cityTileIndex('tentaroo');
       return worldOffCenteringMidX(tile, WHICH_STAGE_MID_X);
     }
+    case 'forest': {
+      const tile = cityTileIndex('forest');
+      return worldOffCenteringMidX(tile, FOREST_STAGE_MID_X);
+    }
   }
 }
 
@@ -67,6 +72,7 @@ export function isScrollVenueLive(
   coachellaLive: number,
   edcLive: number,
   whichStageLive: number,
+  forestLive: number,
   focus: VenueKind,
 ): boolean {
   switch (kind) {
@@ -80,6 +86,8 @@ export function isScrollVenueLive(
       return tileIndex === edcLive && focus === 'edc';
     case 'which-stage':
       return tileIndex === whichStageLive;
+    case 'forest':
+      return tileIndex === forestLive;
   }
 }
 
@@ -105,6 +113,8 @@ export function isDeepLinkVenueLive(
       return kind === 'edc' && isVegasTile(tileIndex);
     case 'tentaroo':
       return kind === 'which-stage' && isTentarooTile(tileIndex);
+    case 'forest':
+      return kind === 'forest' && isForestTile(tileIndex);
   }
 }
 
@@ -116,6 +126,7 @@ export function isVenueLive(
   coachellaLive: number,
   edcLive: number,
   whichStageLive: number,
+  forestLive: number,
   focus: VenueKind,
   deepLinkRoute?: VenueRoute,
 ): boolean {
@@ -123,6 +134,6 @@ export function isVenueLive(
     return true;
   }
   return isScrollVenueLive(
-    kind, tileIndex, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, focus,
+    kind, tileIndex, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, forestLive, focus,
   );
 }

@@ -1,5 +1,6 @@
 import {
   isCoachellaTile,
+  isForestTile,
   isSanFranciscoTile,
   isSeattleTile,
   isTentarooTile,
@@ -11,6 +12,7 @@ import { midCycleWidth, midOriginForTile, midTileAtX } from '@/lib/worldTileGeom
 import { COACHELLA_STAGE_HALF, COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
 import { EDC_STAGE_HALF, EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
 import { WHICH_STAGE_HALF, WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
+import { FOREST_STAGE_HALF, FOREST_STAGE_MID_X } from '@/components/game/city/forest/constants';
 import type { StageChannel } from '@/lib/stageVideos';
 
 /** Mid-layer venues — one type per tile, revealed as you scroll past the screen edge. */
@@ -56,13 +58,14 @@ export function isEvenTile(tile: number) {
   return isSanFranciscoTile(tile);
 }
 
-export type VenueKind = 'cinema' | 'concert' | 'coachella' | 'edc' | 'which-stage';
+export type VenueKind = 'cinema' | 'concert' | 'coachella' | 'edc' | 'which-stage' | 'forest';
 
 export function tileKind(tile: number): VenueKind {
   if (isSanFranciscoTile(tile)) return 'cinema';
   if (isCoachellaTile(tile)) return 'coachella';
   if (isVegasTile(tile)) return 'edc';
   if (isTentarooTile(tile)) return 'which-stage';
+  if (isForestTile(tile)) return 'forest';
   return 'concert';
 }
 
@@ -109,6 +112,8 @@ export function stageChannelForVenueKind(kind: VenueKind, tile: number): StageCh
       return 'edc';
     case 'which-stage':
       return 'which-stage';
+    case 'forest':
+      return 'forest';
   }
 }
 
@@ -135,6 +140,12 @@ export function edcMidX(tile: number): number | null {
 export function whichStageMidX(tile: number): number | null {
   if (!isTentarooTile(tile)) return null;
   return WHICH_STAGE_MID_X;
+}
+
+/** Forest Stage x (Forest tiles only). */
+export function forestStageMidX(tile: number): number | null {
+  if (!isForestTile(tile)) return null;
+  return FOREST_STAGE_MID_X;
 }
 
 export function midVxFromWorldOff(worldOff: number) {
@@ -174,6 +185,11 @@ export function whichStageLiveTile(vx: number) {
   return nearestTileOfKind(viewportCenterTile(vx), 'tentaroo');
 }
 
+/** Tile whose Forest Stage is nearest the viewport center. */
+export function forestLiveTile(vx: number) {
+  return nearestTileOfKind(viewportCenterTile(vx), 'forest');
+}
+
 /** Which venue the viewport center is closer to (uses per-tile anchors). */
 export function venueInFocus(vx: number): VenueKind {
   const center = vx + VIEW_CENTER_X;
@@ -182,21 +198,25 @@ export function venueInFocus(vx: number): VenueKind {
   const lt = coachellaLiveTile(vx);
   const et = edcLiveTile(vx);
   const wt = whichStageLiveTile(vx);
+  const ft = forestLiveTile(vx);
   const cx = concertMidX(ct);
   const mx = cinemaMidX(mt);
   const lx = coachellaMidX(lt);
   const ex = edcMidX(et);
   const wx = whichStageMidX(wt);
+  const fx = forestStageMidX(ft);
   const concertDist = cx != null ? Math.abs(center - venueWorldX(ct, cx)) : Infinity;
   const cinemaDist = mx != null ? Math.abs(center - venueWorldX(mt, mx)) : Infinity;
   const coachellaDist = lx != null ? Math.abs(center - venueWorldX(lt, lx)) : Infinity;
   const edcDist = ex != null ? Math.abs(center - venueWorldX(et, ex)) : Infinity;
   const whichDist = wx != null ? Math.abs(center - venueWorldX(wt, wx)) : Infinity;
-  const min = Math.min(cinemaDist, concertDist, coachellaDist, edcDist, whichDist);
+  const forestDist = fx != null ? Math.abs(center - venueWorldX(ft, fx)) : Infinity;
+  const min = Math.min(cinemaDist, concertDist, coachellaDist, edcDist, whichDist, forestDist);
   if (min === cinemaDist) return 'cinema';
   if (min === coachellaDist) return 'coachella';
   if (min === edcDist) return 'edc';
   if (min === whichDist) return 'which-stage';
+  if (min === forestDist) return 'forest';
   return 'concert';
 }
 
@@ -219,6 +239,7 @@ export function anyVenueInView(
   coachellaHalf = COACHELLA_STAGE_HALF,
   edcHalf = EDC_STAGE_HALF,
   whichHalf = WHICH_STAGE_HALF,
+  forestHalf = FOREST_STAGE_HALF,
 ) {
   const centerTile = viewportCenterTile(vx);
   for (let t = centerTile - 1; t <= centerTile + 1; t++) {
@@ -232,6 +253,8 @@ export function anyVenueInView(
     if (ex != null && isVenueInView(vx, t, ex, edcHalf)) return true;
     const wx = whichStageMidX(t);
     if (wx != null && isVenueInView(vx, t, wx, whichHalf)) return true;
+    const fx = forestStageMidX(t);
+    if (fx != null && isVenueInView(vx, t, fx, forestHalf)) return true;
   }
   return false;
 }
@@ -246,16 +269,17 @@ export function initialWorldOff(
   coachellaHalf = COACHELLA_STAGE_HALF,
   edcHalf = EDC_STAGE_HALF,
   whichHalf = WHICH_STAGE_HALF,
+  forestHalf = FOREST_STAGE_HALF,
 ) {
   for (let vx = 0; vx >= -midCycleWidth(); vx -= 40) {
-    if (!anyVenueInView(vx, cinemaHalf, concertHalf, coachellaHalf, edcHalf, whichHalf)) {
+    if (!anyVenueInView(vx, cinemaHalf, concertHalf, coachellaHalf, edcHalf, whichHalf, forestHalf)) {
       return vx / MID_PARALLAX;
     }
   }
   return 0;
 }
 
-export const START_WORLD_OFF = initialWorldOff(220, 320, COACHELLA_STAGE_HALF, EDC_STAGE_HALF, WHICH_STAGE_HALF);
+export const START_WORLD_OFF = initialWorldOff(220, 320, COACHELLA_STAGE_HALF, EDC_STAGE_HALF, WHICH_STAGE_HALF, FOREST_STAGE_HALF);
 
 export function isConcertTileInView(vx: number) {
   return concertLiveTile(vx) === viewportCenterTile(vx);
@@ -271,7 +295,7 @@ const CONCERT_VIEW_HALF = 320;
  */
 export function anyStageInView(worldOff: number): boolean {
   const vx = worldOff * MID_PARALLAX;
-  return anyVenueInView(vx, CINEMA_VIEW_HALF, CONCERT_VIEW_HALF, COACHELLA_STAGE_HALF, EDC_STAGE_HALF, WHICH_STAGE_HALF);
+  return anyVenueInView(vx, CINEMA_VIEW_HALF, CONCERT_VIEW_HALF, COACHELLA_STAGE_HALF, EDC_STAGE_HALF, WHICH_STAGE_HALF, FOREST_STAGE_HALF);
 }
 
 /** True when this channel's stage footprint intersects the viewport. */
@@ -298,6 +322,11 @@ export function isStageChannelInView(channel: StageChannel, worldOff: number): b
     if (channel === 'which-stage') {
       const wx = whichStageMidX(t);
       if (wx != null && isVenueInView(vx, t, wx, WHICH_STAGE_HALF)) return true;
+      continue;
+    }
+    if (channel === 'forest') {
+      const fx = forestStageMidX(t);
+      if (fx != null && isVenueInView(vx, t, fx, FOREST_STAGE_HALF)) return true;
       continue;
     }
     // outside-lands + bumbershoot share the concert footprint

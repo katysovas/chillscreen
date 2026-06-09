@@ -1,5 +1,6 @@
 import { COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
 import { WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
+import { FOREST_STAGE_MID_X } from '@/components/game/city/forest/constants';
 import { EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
 import { MID_F } from '@/lib/parallax';
 import {
@@ -30,6 +31,7 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
   const vegas = cityTileIndex('vegas');
   const socal = cityTileIndex('san_diego');
   const tentaroo = cityTileIndex('tentaroo');
+  const forest = cityTileIndex('forest');
   const seattle = cityTileIndex('seattle');
 
   return [
@@ -74,6 +76,14 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
       venueMidX: WHICH_STAGE_MID_X,
     },
     {
+      id: 'forest',
+      label: 'The Forest',
+      icon: '🌲',
+      accent: '#2dd4a0',
+      tileIndex: forest,
+      venueMidX: FOREST_STAGE_MID_X,
+    },
+    {
       id: 'seattle',
       label: concertLabel(seattle) ?? 'Seattle',
       icon: '♪',
@@ -100,6 +110,17 @@ export function welcomeSignGroundX(spawnWorldOff: number): number {
   return spawnWorldOff + WELCOME_SIGN_OFFSET_X;
 }
 
+export type WelcomeSignSlot = {
+  entry: WelcomeStageEntry;
+  /** True walk direction — arrow always points this way regardless of wing. */
+  dir: 'left' | 'right';
+};
+
+export type WelcomeSignRow = {
+  left?: WelcomeSignSlot;
+  right?: WelcomeSignSlot;
+};
+
 /** Stages grouped by walk direction from the welcome sign at spawn. */
 export function welcomeStagesByDirection(signGroundX: number): {
   left: WelcomeStageEntry[];
@@ -115,4 +136,52 @@ export function welcomeStagesByDirection(signGroundX: number): {
   }
 
   return { left, right };
+}
+
+/**
+ * Welcome junction rows — pair opposite directions when possible, then alternate
+ * overflow across wings so the post stays visually balanced (arrows stay true).
+ */
+export function welcomeStageSignRows(signGroundX: number): WelcomeSignRow[] {
+  const tagged: WelcomeSignSlot[] = welcomeStageEntries().map(entry => ({
+    entry,
+    dir: walkDirectionFromGroundX(signGroundX, entry.tileIndex, entry.venueMidX),
+  }));
+
+  const leftPool = tagged.filter(s => s.dir === 'left');
+  const rightPool = tagged.filter(s => s.dir === 'right');
+
+  const rows: WelcomeSignRow[] = [];
+
+  while (leftPool.length > 0 && rightPool.length > 0) {
+    rows.push({ left: leftPool.shift()!, right: rightPool.shift()! });
+  }
+
+  const overflow = [...leftPool, ...rightPool];
+  let leftCount = rows.reduce((n, r) => n + (r.left ? 1 : 0), 0);
+  let rightCount = rows.reduce((n, r) => n + (r.right ? 1 : 0), 0);
+
+  for (const slot of overflow) {
+    const partial = rows.find(r => !r.left || !r.right);
+    if (partial) {
+      if (!partial.left) {
+        partial.left = slot;
+        leftCount++;
+      } else {
+        partial.right = slot;
+        rightCount++;
+      }
+      continue;
+    }
+
+    if (leftCount <= rightCount) {
+      rows.push({ left: slot });
+      leftCount++;
+    } else {
+      rows.push({ right: slot });
+      rightCount++;
+    }
+  }
+
+  return rows.length > 0 ? rows : [{}];
 }

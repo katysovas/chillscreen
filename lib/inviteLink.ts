@@ -26,6 +26,8 @@ export function venueKindToRoute(kind: VenueKind, concertTile: number): VenueRou
       return isSeattleTile(concertTile) ? 'seattle-concerts' : 'outside-hands';
     case 'which-stage':
       return 'tentaroo';
+    case 'forest':
+      return 'forest';
   }
 }
 

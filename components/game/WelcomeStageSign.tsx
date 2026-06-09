@@ -1,7 +1,7 @@
 import {
   welcomeSignGroundX,
-  welcomeStagesByDirection,
-  type WelcomeStageEntry,
+  welcomeStageSignRows,
+  type WelcomeSignSlot,
 } from '@/lib/welcomeSign';
 import { ArrowSignBoard } from './city/ArrowSignBoard';
 
@@ -15,7 +15,7 @@ function ArrowSign({
 }: {
   cy: number;
   dir: 'left' | 'right';
-  entry: WelcomeStageEntry;
+  entry: WelcomeSignSlot['entry'];
   halfLen: number;
   halfH: number;
   tipLen: number;
@@ -90,8 +90,8 @@ type WelcomeStageSignProps = {
  */
 export function WelcomeStageSign({ spawnWorldOff, y = 697 }: WelcomeStageSignProps) {
   const signGroundX = welcomeSignGroundX(spawnWorldOff);
-  const { left, right } = welcomeStagesByDirection(signGroundX);
-  const rowCount = Math.max(left.length, right.length, 1);
+  const rows = welcomeStageSignRows(signGroundX);
+  const rowCount = rows.length;
 
   const postW = 8;
   const basePostH = 30;
@@ -139,11 +139,11 @@ export function WelcomeStageSign({ spawnWorldOff, y = 697 }: WelcomeStageSignPro
       />
       <circle cx={0} cy={postTop + 2} r={3} fill="#6b5344" stroke="#3a342c" strokeWidth={0.8} />
 
-      {Array.from({ length: rowCount }, (_, i) => {
+      {rows.map((row, i) => {
         const cy = rowCy(i);
         return (
           <g key={`arm-${i}`}>
-            {left[i] && (
+            {row.left && (
               <line
                 x1={-postW / 2}
                 y1={cy}
@@ -154,7 +154,7 @@ export function WelcomeStageSign({ spawnWorldOff, y = 697 }: WelcomeStageSignPro
                 strokeLinecap="round"
               />
             )}
-            {right[i] && (
+            {row.right && (
               <line
                 x1={postW / 2}
                 y1={cy}
@@ -171,28 +171,28 @@ export function WelcomeStageSign({ spawnWorldOff, y = 697 }: WelcomeStageSignPro
 
       <HeaderBoard topY={headerTop} boardW={headerW} boardH={headerH} />
 
-      {Array.from({ length: rowCount }, (_, i) => {
+      {rows.map((row, i) => {
         const cy = rowCy(i);
         return (
           <g key={`row-${i}`}>
-            {left[i] && (
+            {row.left && (
               <g transform={`translate(${-wingOffset},0)`}>
                 <ArrowSign
                   cy={cy}
-                  dir="left"
-                  entry={left[i]!}
+                  dir={row.left.dir}
+                  entry={row.left.entry}
                   halfLen={arrowHalfLen}
                   halfH={arrowHalfH}
                   tipLen={arrowTipLen}
                 />
               </g>
             )}
-            {right[i] && (
+            {row.right && (
               <g transform={`translate(${wingOffset},0)`}>
                 <ArrowSign
                   cy={cy}
-                  dir="right"
-                  entry={right[i]!}
+                  dir={row.right.dir}
+                  entry={row.right.entry}
                   halfLen={arrowHalfLen}
                   halfH={arrowHalfH}
                   tipLen={arrowTipLen}
