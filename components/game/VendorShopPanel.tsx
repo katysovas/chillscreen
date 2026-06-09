@@ -122,13 +122,14 @@ function LightsaberPreview() {
 }
 
 const COIN_SRC = '/images/coin.svg';
-const COIN_LIGHT_SRC = '/images/coin-light.svg';
+const VENDOR_COIN_SRC = '/images/vendor-coin.svg';
 
 function CoinAmount({
   amount,
   iconSize = 12,
   muted = false,
   light = false,
+  buttonCoin = false,
   fontSize = 11,
   fontWeight = 800,
 }: {
@@ -136,6 +137,8 @@ function CoinAmount({
   iconSize?: number;
   muted?: boolean;
   light?: boolean;
+  /** Compact coin art for orange buy buttons. */
+  buttonCoin?: boolean;
   fontSize?: number;
   fontWeight?: number;
 }) {
@@ -154,7 +157,7 @@ function CoinAmount({
       }}
     >
       <img
-        src={light ? COIN_LIGHT_SRC : COIN_SRC}
+        src={buttonCoin ? VENDOR_COIN_SRC : COIN_SRC}
         alt=""
         width={iconSize}
         height={iconSize}
@@ -164,6 +167,9 @@ function CoinAmount({
           objectFit: 'contain',
           opacity: muted && !light ? 0.55 : 1,
           flexShrink: 0,
+          filter: buttonCoin
+            ? muted ? 'grayscale(0.9)' : undefined
+            : light ? 'brightness(1.45) saturate(0.9)' : undefined,
         }}
       />
       {amount}
@@ -237,9 +243,10 @@ function BuyButton({
       <span>Buy</span>
       <CoinAmount
         amount={price}
-        iconSize={11}
+        iconSize={12}
         fontSize={10}
         fontWeight={700}
+        buttonCoin
         light={!disabled}
         muted={disabled}
       />

@@ -52,6 +52,10 @@ import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
 import { getConcertNowPlaying, subscribeConcertNowPlaying } from '@/lib/concertNowPlaying';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
+import {
+  moveBroadcastFrameInterval,
+  moveBroadcastWorldEpsilon,
+} from '@/lib/presenceBroadcast';
 import { updateRoadSignVisibility } from '@/lib/roadSignVisibility';
 import { isNearStage } from '@/lib/concertDance';
 import { LovingCarLayer } from './LovingCar';
@@ -720,18 +724,22 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       }
     };
 
-    // Stream the local player's position to the room (~15 Hz, only on change).
+    // Stream local position to PartyKit — ~15 Hz desktop, ~7.5 Hz mobile, only on change.
     const broadcastMove = () => {
       if (showWelcomeRef.current) return;
       const last = lastSentRef.current;
       const wx = worldRef.current;
       const f  = facingRef.current;
       const w  = walkingRef.current;
-      if (Math.abs(wx - last.worldX) > 1 || f !== last.facing || w !== last.walking) {
+      const eps = moveBroadcastWorldEpsilon();
+      if (Math.abs(wx - last.worldX) > eps || f !== last.facing || w !== last.walking) {
         last.worldX = wx; last.facing = f; last.walking = w;
         mpRef.current?.sendMove(wx, f, w);
       }
     };
+
+    const shouldBroadcastMove = () =>
+      frameCountRef.current % moveBroadcastFrameInterval() === 0;
 
     const tickNpcs = () => {
       runAllNpcMovementTicks(
@@ -753,7 +761,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         tickNpcs();
         tickStagePlayers();
         updateRoadSignVisibility(signsRef.current, worldRef.current);
-        if (frameCountRef.current % 4 === 0) { updateDanceState(worldRef.current); broadcastMove(); }
+        if (frameCountRef.current % 4 === 0) updateDanceState(worldRef.current);
+        if (shouldBroadcastMove()) broadcastMove();
         gameWorldOffRef.current = worldRef.current;
         rafRef.current = requestAnimationFrame(loop);
         return;
@@ -797,8 +806,6 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       // These don't need 60 Hz precision — 15 Hz is imperceptibly snappy.
       frameCountRef.current++;
       if (frameCountRef.current % 4 === 0) {
-        broadcastMove();
-
         // Proximity check only — connection requires Enter. Picks the single
         // closest interactable (NPC or real player) within touch range.
         if (greetingRef.current === null && peerChatRef.current === null) {
@@ -843,6 +850,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
         updateDanceState(worldRef.current);
       }
+
+      if (shouldBroadcastMove()) broadcastMove();
 
       gameWorldOffRef.current = worldRef.current;
       rafRef.current = requestAnimationFrame(loop);
