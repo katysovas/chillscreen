@@ -179,7 +179,7 @@ export function BottomControlPanel({
   return (
     <div
       data-paraloid-ui
-      className="bottom-[max(108px,calc(env(safe-area-inset-bottom)+100px))] md:bottom-5"
+      className="bottom-[max(124px,calc(env(safe-area-inset-bottom)+112px))] md:bottom-5"
       style={{
         position: 'absolute',
         left: '50%',

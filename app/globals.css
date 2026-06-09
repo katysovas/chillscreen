@@ -17,6 +17,25 @@
   -webkit-user-select: text;
 }
 
+/* Mobile — dynamic viewport + thumb controls above system gesture bar (Pixel, etc.). */
+@media (max-width: 767px) {
+  .game-surface {
+    height: 100dvh !important;
+    max-height: 100dvh;
+  }
+
+  .mobile-controls-dpad,
+  .mobile-controls-tray {
+    bottom: calc(max(env(safe-area-inset-bottom, 0px), 36px) + 12px) !important;
+  }
+
+  .mobile-controls-action-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+  }
+}
+
 /* Mobile lounge — same composition as desktop (sky + stage + ground), zoomed to fit. */
 @media (max-width: 767px) {
   .game-surface[data-mobile-lounge] .mobile-lounge-scene {
@@ -49,6 +68,15 @@
   .game-surface .game-character .game-chat-anchor {
     z-index: 50 !important;
     max-width: calc(100vw - 16px);
+  }
+
+  /* Crowd depth — stagger NPCs / remotes on the sidewalk. */
+  .game-surface[data-mobile-lounge] .game-character-crowd[data-depth="0"] {
+    bottom: calc(var(--char-bottom-mobile, 20%) - var(--crowd-depth-px, 10px)) !important;
+  }
+
+  .game-surface[data-mobile-lounge] .game-character-crowd[data-depth="2"] {
+    bottom: calc(var(--char-bottom-mobile, 20%) + var(--crowd-depth-px, 10px)) !important;
   }
 }
 

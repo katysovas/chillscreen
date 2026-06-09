@@ -4,7 +4,7 @@ import Character from './Character';
 import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
 import { AmbientPlayerOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
-import { CHAR_BOTTOM, CHAR_BOTTOM_MOBILE_LOUNGE } from './groundLayout';
+import { CHAR_BOTTOM, CHAR_BOTTOM_MOBILE_LOUNGE, MOBILE_CROWD_DEPTH_PX } from './groundLayout';
 import { SKY_F, MID_F, GND_F, midScrollTile } from '@/lib/parallax';
 import {
   getClientSpawnWorldOff,
@@ -72,6 +72,7 @@ import { PlayerVariantGallery } from './PlayerVariantGallery';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
 import { MobileGameControls } from './MobileGameControls';
+import { MobileChatInputBar } from './MobileChatInputBar';
 import { MobileStagePicker } from './MobileStagePicker';
 import { MobileStageSwapModal } from './MobileStageSwapModal';
 import { worldOffForVenueRoute, type VenueRoute } from '@/lib/venueRoutes';
@@ -630,6 +631,17 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     mpRef.current?.requestConnect();
   };
 
+  const handleOpenAmbientChat = useCallback(() => {
+    if (greetingNpc !== null || peerChatId !== null) return;
+    if (chatMode === 'ambient') {
+      setChatMode(null);
+      setChatDraft('');
+      return;
+    }
+    setChatMode('ambient');
+    window.setTimeout(() => chatInputRef.current?.focus(), 30);
+  }, [greetingNpc, peerChatId, chatMode]);
+
   const handleMobileStageSwap = useCallback((route: VenueRoute) => {
     setStoredMobileLoungeStage(route);
     setMobileLoungeStage(route);
@@ -690,6 +702,10 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       setFacing(towardNpc);
       setWalking(false);
       walkingRef.current = false;
+      if (mobileLoungeRef.current) {
+        setChatMode('chat');
+        setTimeout(() => chatInputRef.current?.focus(), 120);
+      }
     };
 
     const disconnect = () => {
@@ -981,6 +997,13 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   }, []);
 
   const inConversation = greetingNpc !== null || peerChatId !== null;
+  const showMobileChatBar = mobileDevice
+    && !showWelcome
+    && !showMobilePicker
+    && (
+      (chatMode === 'ambient' && !inConversation)
+      || (chatMode === 'chat' && inConversation)
+    );
   const showVendorShop =
     greetingNpc !== null && isBuzNpc(CHARACTERS[greetingNpc]?.id ?? '');
   const showVendorPanel =
@@ -1027,6 +1050,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         userSelect: 'none',
         ...(mobileLoungeActive ? {
           ['--char-bottom-mobile' as string]: CHAR_BOTTOM_MOBILE_LOUNGE,
+          ['--crowd-depth-px' as string]: `${MOBILE_CROWD_DEPTH_PX}px`,
         } : {}),
       }}
     >
@@ -1139,6 +1163,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
                       setChatDraft={setChatDraft}
                       onSendMessage={handleSendMessage}
                       chatInputRef={chatInputRef}
+                      mobileNativeInput={mobileDevice}
                     />
                   ) : (
                     <AmbientPlayerOverlay
@@ -1150,6 +1175,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
                       onSendMessage={handleAmbientSend}
                       chatInputRef={chatInputRef}
                       side={facing === 'left' ? 'right' : 'left'}
+                      mobileNativeInput={mobileDevice}
                     />
                   )
                 }
@@ -1271,6 +1297,29 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         </button>
       </div>
 
+      {showMobileChatBar && (
+        <MobileChatInputBar
+          value={chatDraft}
+          onChange={setChatDraft}
+          placeholder={
+            chatMode === 'ambient'
+              ? 'Shout something…'
+              : 'Say something…'
+          }
+          inputRef={chatInputRef}
+          onSend={() => {
+            const text = chatDraft.trim();
+            if (!text) return;
+            if (chatMode === 'ambient') handleAmbientSend(text);
+            else handleSendMessage(text);
+          }}
+          onClose={() => {
+            setChatMode(null);
+            setChatDraft('');
+          }}
+        />
+      )}
+
       {!showWelcome && !showMobilePicker && (
         <MobileGameControls
           muted={muted}
@@ -1279,6 +1328,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
           onOpenStageSwap={mobileLoungeActive ? () => setShowStageSwap(true) : undefined}
+          onOpenAmbientChat={mobileDevice ? handleOpenAmbientChat : undefined}
+          ambientChatOpen={chatMode === 'ambient'}
           onToggleMute={() => setMuted(m => !m)}
           onLeftStart={() => { keysRef.current.left = true; }}
           onLeftEnd={() => { keysRef.current.left = false; }}

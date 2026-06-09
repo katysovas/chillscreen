@@ -42,6 +42,7 @@ export function PlayerChatOverlay({
   setChatDraft,
   onSendMessage,
   chatInputRef,
+  mobileNativeInput = false,
 }: {
   npcScreenX: number;
   chatMode: ChatMode;
@@ -51,6 +52,8 @@ export function PlayerChatOverlay({
   setChatDraft: (v: string) => void;
   onSendMessage: (text: string) => void;
   chatInputRef: React.RefObject<HTMLInputElement | null>;
+  /** Mobile uses a fixed bottom bar — only show sent bubbles here. */
+  mobileNativeInput?: boolean;
 }) {
   const [vw, setVw] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200,
@@ -85,26 +88,28 @@ export function PlayerChatOverlay({
             side={side}
           />
         )}
-        <AttachedInputBubble showTail side={side}>
-          <input
-            ref={chatInputRef}
-            value={chatDraft}
-            onChange={e => setChatDraft(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && chatDraft.trim()) {
-                onSendMessage(chatDraft.trim());
-              }
-            }}
-            placeholder="Say something…"
-            style={{
-              border: 'none', outline: 'none', fontSize: 13,
-              flex: 1, background: 'transparent', color: '#222',
-              fontFamily: 'inherit',
-            }}
-            autoComplete="off"
-          />
-          <span style={{ fontSize: 10, color: '#bbb', whiteSpace: 'nowrap' }}>↵ send</span>
-        </AttachedInputBubble>
+        {!mobileNativeInput && (
+          <AttachedInputBubble showTail side={side}>
+            <input
+              ref={chatInputRef}
+              value={chatDraft}
+              onChange={e => setChatDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && chatDraft.trim()) {
+                  onSendMessage(chatDraft.trim());
+                }
+              }}
+              placeholder="Say something…"
+              style={{
+                border: 'none', outline: 'none', fontSize: 13,
+                flex: 1, background: 'transparent', color: '#222',
+                fontFamily: 'inherit',
+              }}
+              autoComplete="off"
+            />
+            <span style={{ fontSize: 10, color: '#bbb', whiteSpace: 'nowrap' }}>↵ send</span>
+          </AttachedInputBubble>
+        )}
       </div>
     );
   }
@@ -128,6 +133,7 @@ export function AmbientPlayerOverlay({
   onSendMessage,
   chatInputRef,
   side,
+  mobileNativeInput = false,
 }: {
   chatMode: ChatMode;
   playerName: string | null;
@@ -137,10 +143,22 @@ export function AmbientPlayerOverlay({
   onSendMessage: (text: string) => void;
   chatInputRef: React.RefObject<HTMLInputElement | null>;
   side: BubbleSide;
+  mobileNativeInput?: boolean;
 }) {
   const stackAlign = side === 'left' ? 'flex-end' : 'flex-start';
 
   if (chatMode === 'ambient') {
+    if (mobileNativeInput) {
+      return ambientMessage ? (
+        <AttachedChatBubble
+          name={playerName ?? undefined}
+          message={ambientMessage}
+          showTail={false}
+          side={side}
+        />
+      ) : null;
+    }
+
     return (
       <div
         style={{

@@ -4,7 +4,7 @@ import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
-import { CHAR_BOTTOM } from './groundLayout';
+import { CHAR_BOTTOM, mobileCrowdDepthIndex } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import {
@@ -372,7 +372,8 @@ export default function NPC({
   return (
     <div
       ref={divRef}
-      className="game-character"
+      className="game-character game-character-crowd"
+      data-depth={mobileCrowdDepthIndex(index)}
       style={{
         position: 'absolute',
         bottom: CHAR_BOTTOM,
