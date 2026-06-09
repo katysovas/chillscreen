@@ -127,7 +127,9 @@ export function useStagePlayer({
     iframeMountedRef.current = true;
     setPlayerVisible(false);
     const sched = currentSchedule(channel);
-    setSrc(embedSrc(v.id, sched?.offsetSec ?? 0));
+    const url = embedSrc(v.id, sched?.offsetSec ?? 0);
+    console.log(`[${channel}] embed`, v.id, v.title, sched?.offsetSec ?? 0, url);
+    setSrc(url);
     onNowPlayingRef.current?.(v.title ?? null);
   }, [channel]);
 

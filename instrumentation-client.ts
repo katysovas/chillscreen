@@ -1,5 +1,4 @@
 import posthog from 'posthog-js';
-import { installGameInputAnalytics } from '@/lib/gameInputAnalytics';
 import { POSTHOG_DEFAULTS, POSTHOG_HOST, POSTHOG_KEY } from '@/lib/posthogConfig';
 
 posthog.init(POSTHOG_KEY, {
@@ -7,5 +6,3 @@ posthog.init(POSTHOG_KEY, {
   defaults: POSTHOG_DEFAULTS,
   autocapture: false,
 });
-
-installGameInputAnalytics();

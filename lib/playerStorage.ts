@@ -1,3 +1,5 @@
+'use client';
+
 const KEY = 'whichstage:playerName';
 const LEGACY_KEY = 'cs:playerName';
 const PLAYER_ID_KEY = 'whichstage:playerId';

@@ -155,7 +155,7 @@ export function useStageChannel(channel: StageChannel, live: boolean): StageChan
       if (next) {
         const prevIndex = lastIndexRef.current;
         if (prevIndex === null || prevIndex !== next.index) {
-          console.log(`[${channel}]`, next.video.id);
+          console.log(`[${channel}] scheduled`, next.video.id, next.video.title);
         }
         if (prevIndex !== null && prevIndex !== next.index) {
           setVidKey(k => k + 1);

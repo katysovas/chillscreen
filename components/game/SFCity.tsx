@@ -30,24 +30,12 @@ import { purchaseVendorItem } from '@/lib/vendorPurchase';
 import { preloadPurchaseSound, unlockPurchaseSound } from '@/lib/playPurchaseSound';
 import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
 import { isBuzNpc } from '@/lib/vendorShop';
-
-/** Set to an NPC id to spawn only that character immediately (testing). */
-const TEST_SPAWN_NPC_ID: string | null = null;
-
-/** Force all characters into dance mode regardless of stage proximity (testing). */
-const TEST_FORCE_DANCE = false;
-
-/** Show all four player variant skins side-by-side (testing). */
-const TEST_PLAYER_VARIANT_GALLERY = false;
-
-/** Equip loadout items on the player at startup (testing). */
-const TEST_PLAYER_LOADOUT = {} as const;
 import {
   getPlayerName,
   setPlayerName as savePlayerName,
 } from '@/lib/playerStorage';
 import { identifyPlayer, trackCharacterCreated } from '@/lib/analytics';
-import { trackMobileControl } from '@/lib/gameInputAnalytics';
+import { installGameInputAnalytics, trackMobileControl } from '@/lib/gameInputAnalytics';
 import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
@@ -91,6 +79,18 @@ import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { runAllStagePlayerSyncs } from '@/lib/stagePlayerRegistry';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
+
+/** Set to an NPC id to spawn only that character immediately (testing). */
+const TEST_SPAWN_NPC_ID: string | null = null;
+
+/** Force all characters into dance mode regardless of stage proximity (testing). */
+const TEST_FORCE_DANCE = false;
+
+/** Show all four player variant skins side-by-side (testing). */
+const TEST_PLAYER_VARIANT_GALLERY = false;
+
+/** Equip loadout items on the player at startup (testing). */
+const TEST_PLAYER_LOADOUT = {} as const;
 
 // ─── NPC cast ─────────────────────────────────────────────────────────────────
 
@@ -435,6 +435,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   useEffect(() => {
     bootstrapStageSyncFromApi();
+    installGameInputAnalytics();
   }, []);
 
   useEffect(() => { showWelcomeRef.current = showWelcome; }, [showWelcome]);
