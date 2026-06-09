@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent page scroll / pull-to-refresh stealing game touches on mobile. */
+.game-surface {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+}
+
+.game-surface input,
+.game-surface textarea {
+  touch-action: manipulation;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 /* ── SFCity scene (clouds, signs, chat, sky creatures) ─────────────────────── */
 
 @keyframes cloud1 {

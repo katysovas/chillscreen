@@ -67,7 +67,7 @@ import { WelcomeSignLayer } from './city/WelcomeSignLayer';
 import { PlayerVariantGallery } from './PlayerVariantGallery';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
-import { DPadBtn } from './DPadBtn';
+import { MobileGameControls } from './MobileGameControls';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { BottomControlPanel } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
@@ -898,7 +898,17 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   return (
     <div
-      style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', animation: 'fdi 1.5s ease' }}
+      className="game-surface"
+      style={{
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        position: 'relative',
+        animation: 'fdi 1.5s ease',
+        touchAction: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+      }}
     >
       <style>{CHARACTER_STYLES}</style>
 
@@ -1109,37 +1119,23 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         </button>
       </div>
 
-      {/* Mobile D-pad + mute — shown only on touch devices */}
-      <div data-paraloid-ui className="flex md:hidden" style={{
-        position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)',
-        gap: 12, zIndex: 40, alignItems: 'center',
-      }}>
-        <DPadBtn label="←"
-          onStart={() => { keysRef.current.left = true; }}
-          onEnd={()   => { keysRef.current.left = false; }} />
-        <DPadBtn label="↑"
-          onStart={() => {
+      {!showWelcome && (
+        <MobileGameControls
+          muted={muted}
+          onToggleMute={() => setMuted(m => !m)}
+          onLeftStart={() => { keysRef.current.left = true; }}
+          onLeftEnd={() => { keysRef.current.left = false; }}
+          onRightStart={() => { keysRef.current.right = true; }}
+          onRightEnd={() => { keysRef.current.right = false; }}
+          onJump={() => {
             if (!jumpingRef.current) {
               jumpingRef.current = true;
               setJumping(true);
               setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 560);
             }
           }}
-          onEnd={() => {}} />
-        <DPadBtn label="→"
-          onStart={() => { keysRef.current.right = true; }}
-          onEnd={()   => { keysRef.current.right = false; }} />
-        <button onClick={() => setMuted(m => !m)} style={{
-          width: 56, height: 56, borderRadius: 12,
-          border: '1px solid rgba(255,255,255,.2)',
-          background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(6px)',
-          color: muted ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.6)',
-          fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer',
-        }}>
-          {muted ? '🔇' : '🔊'}
-        </button>
-      </div>
+        />
+      )}
 
     </div>
   );
