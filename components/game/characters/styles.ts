@@ -7,6 +7,7 @@ import { SUPPORT_STYLES } from './accessories/support/styles';
 import { VENDOR_CART_STYLES } from './accessories/vendorCart/styles';
 import { LOADOUT_STYLES } from './loadout/styles';
 import { MAIN_CHARACTER_STYLES } from './main/styles';
+import { HIPPIE_CHARACTER_STYLES } from './hippie/styles';
 import { PIRATE_CHARACTER_STYLES } from './pirate/styles';
 import { UNDERCOVER_COP_STYLES } from './undercoverCop/styles';
 import { SHARED_CHARACTER_STYLES } from './shared/styles';
@@ -24,5 +25,6 @@ export const CHARACTER_STYLES = [
   LIGHTSABER_STYLES,
   PIRATE_CHARACTER_STYLES,
   UNDERCOVER_COP_STYLES,
+  HIPPIE_CHARACTER_STYLES,
   LOADOUT_STYLES,
 ].join('\n');

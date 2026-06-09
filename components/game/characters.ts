@@ -310,6 +310,35 @@ const CHARACTERS: CharacterDef[] = [
   },
 
   {
+    id: 'dale',
+    name: 'Dale',
+    balloonColor: '#b44ae8',        // tie-dye purple
+    outfit: 'hippie',
+    loadout: {
+      sunglasses: 'shades-round',   // little round Jerry glasses
+      hand: 'hand-totem',           // koinobori totem from the festival store
+    },
+    startX: -25,
+    entryDirection: 'right',
+    entryDelay: 7000,
+    personality: {
+      speed: 0.045,                 // unhurried — the show isn't going anywhere, man
+      idleMs: [3000, 8000],         // long mellow pauses, grooving in place
+      wanderRange: [-15, 95],       // drifts wherever the music takes him
+      jumpiness: 0.12,              // very chill, rarely changes course
+    },
+    personalityNotes:
+      'Retired electrician from Eugene named Dale — earned the nickname "Sunshine" on lot ' +
+      'in \'82 and it stuck. 200+ Dead shows, still chasing the perfect "Scarlet > Fire". ' +
+      'Keep it cheeky and PG-13 — winks and innuendo, nothing explicit; "herbal ' +
+      'enlightenment", "free love, man". Talks slow and warm, calls people "man" and ' +
+      '"sister", drops Dead lyrics naturally ("what a long strange trip"), trades tape-' +
+      'collection stories, and reviews jams like fine wine. Carries his totem so the family ' +
+      'can find him in the crowd. Peace-and-love energy, zero cynicism. Loves talking ' +
+      'setlists, Jerry solos, and where the bus is headed next.',
+  },
+
+  {
     id: 'giggle',
     name: 'Giggle',
     balloonColor: '#ffb74d',       // comedy spot gold
