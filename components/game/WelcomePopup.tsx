@@ -36,8 +36,8 @@ export function WelcomePopup({ balloonColor, onEnter }: Props) {
     }}>
 
       <div style={{
-        background: 'rgb(13,1,34)',
-        border: '1px solid rgba(255,255,255,0.12)',
+        background: '#000',
+        border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 24,
         padding: '44px 40px 36px',
         maxWidth: 460,
@@ -46,26 +46,19 @@ export function WelcomePopup({ balloonColor, onEnter }: Props) {
         flexDirection: 'column',
         alignItems: 'center',
         gap: 0,
-        boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.9)',
         fontFamily: "Georgia,'Times New Roman',serif",
       }}>
 
         {/* Logo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/images/logo_dark.svg"
+          src="/images/logos/logo_dark.png"
           alt="WhichStage"
           style={{ height: 48, marginBottom: 16, objectFit: 'contain' }}
         />
 
-        {/* Heading */}
-        <div style={{
-          fontSize: 22, fontWeight: 700, color: '#fff',
-          letterSpacing: 0.5, marginBottom: 6, textAlign: 'center',
-        }}>
-          Welcome to WhichStage
-        </div>
-
+        
         {/* Subtext */}
         <div style={{
           fontSize: 16, color: 'rgba(255,255,255,0.6)',

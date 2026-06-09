@@ -47,7 +47,7 @@ export function buildPageMetadata({
       telephone: false,
     },
     icons: {
-      icon: [{ url: FAVICON_PATH, type: 'image/svg+xml' }],
+      icon: [{ url: FAVICON_PATH, type: 'image/png' }],
       shortcut: FAVICON_PATH,
       apple: FAVICON_PATH,
     },
