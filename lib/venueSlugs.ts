@@ -37,22 +37,14 @@ export const VENUE_SLUGS = [
 
 const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
   thedesert: 'coachella',
-  couchella: 'coachella',
-  coachella: 'coachella',
   lasvegas: 'edc',
-  'electric-daze': 'edc',
-  edc: 'edc',
   sanfrancisco: 'outside-hands',
-  'outside-hands': 'outside-hands',
   seattle: 'seattle-concerts',
-  'seattle-concerts': 'seattle-concerts',
   'chill-cinema': 'cinema',
-  cinema: 'cinema',
   thefarm: 'tentaroo',
-  tentaroo: 'tentaroo',
 };
 
-/** Parse a URL segment like `thedesert` or legacy `couchella`. */
+/** Parse a URL segment like `thedesert`. */
 export function parseVenueSlug(slug: string): VenueRoute | null {
   return SLUG_TO_ROUTE[slug.toLowerCase().replace(/_/g, '-')] ?? null;
 }

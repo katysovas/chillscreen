@@ -5,6 +5,18 @@ import { parseVenueSlug } from '@/lib/venueSlugs';
 /** App routes that are not venue deep links. */
 const PASSTHROUGH = new Set(['privacy', 'support', 'admin']);
 
+/** Legacy venue slugs → canonical paths. */
+const LEGACY_VENUE_REDIRECTS: Record<string, string> = {
+  coachella: 'thedesert',
+  couchella: 'thedesert',
+  edc: 'lasvegas',
+  'electric-daze': 'lasvegas',
+  tentaroo: 'thefarm',
+  'outside-hands': 'sanfrancisco',
+  'seattle-concerts': 'seattle',
+  cinema: 'chill-cinema',
+};
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -30,6 +42,12 @@ export function middleware(request: NextRequest) {
   if (segments.length === 1) {
     const segment = segments[0]!;
     if (PASSTHROUGH.has(segment)) return NextResponse.next();
+    const canonical = LEGACY_VENUE_REDIRECTS[segment];
+    if (canonical) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${canonical}`;
+      return NextResponse.redirect(url, 308);
+    }
     if (parseVenueSlug(segment)) return NextResponse.next();
   }
 

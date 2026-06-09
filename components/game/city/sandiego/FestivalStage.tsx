@@ -25,7 +25,7 @@ type FestivalStageShellProps = {
 
 /** Static truss portal + LED frame — no YouTube hooks. */
 function FestivalStageShell({
-  marquee = 'COUCHELLA',
+  marquee = '',
   idleScreen = true,
 }: FestivalStageShellProps) {
   const L = 2010;
@@ -127,18 +127,6 @@ function FestivalStageShell({
               />
             </g>
           ))}
-
-          <rect
-            x={midX - 130} y={top - 64} width={260} height={32} rx={4}
-            fill="#15151c" stroke="#e85074" strokeWidth={1.5}
-          />
-          <text
-            x={midX} y={top - 41} textAnchor="middle"
-            fontFamily={fontFamily} fontWeight="900"
-            fontSize="16" letterSpacing="7" fill="#ff7a98"
-          >
-            COUCHELLA
-          </text>
 
           <path
             d={`M${L - 26},${top} L${R + 26},${top} L${R - 6},${top - 40} L${L + 6},${top - 40} Z`}
