@@ -11,9 +11,9 @@ export type GroundCoin = {
   value: GroundCoinValue;
 };
 
-/** New coin every ~2 minutes. */
-export const GROUND_SCORE_SPAWN_MIN_MS = 1.5 * 60_000;
-export const GROUND_SCORE_SPAWN_MAX_MS = 2.5 * 60_000;
+/** New coin every ~1 minute. */
+export const GROUND_SCORE_SPAWN_MIN_MS = 0.5 * 60_000;
+export const GROUND_SCORE_SPAWN_MAX_MS = 1.5 * 60_000;
 
 /** TESTING: drop a coin ~1s after page load. Set false before shipping. */
 export const GROUND_SCORE_TEST_DROP_ON_LOAD = false;

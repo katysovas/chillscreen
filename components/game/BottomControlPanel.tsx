@@ -155,7 +155,7 @@ export function BottomControlPanel({
     [route, playerName],
   );
 
-  const showInvite = Boolean(route && inviteUrl);
+  const showInvite = Boolean(inviteUrl);
   const showConnect = Boolean(connectName?.trim()) && !isMobile;
   const showInviteBtn = !isMobile && showInvite && !showConnect;
   const hasMessages = showConnect || showInviteBtn;
@@ -207,13 +207,14 @@ export function BottomControlPanel({
   }, [contactName, contactEmail, contactNotes]);
 
   useEffect(() => {
-    if (hidden || showConnect) setInviteOpen(false);
-    if (hidden) { setHelpOpen(false); setContactOpen(false); }
-  }, [hidden, showConnect]);
+    setInviteOpen(false);
+  }, [hidden, showConnect, route]);
 
   useEffect(() => {
-    setInviteOpen(false);
-  }, [route]);
+    if (!hidden) return;
+    setHelpOpen(false);
+    setContactOpen(false);
+  }, [hidden]);
 
   useEffect(() => {
     if (!helpOpen) return;

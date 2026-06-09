@@ -107,7 +107,7 @@ type GroundScoreLayerProps = {
   onPickup: (value: number) => void;
 };
 
-/** Ground Score — coins drop on the sidewalk every ~2 min; walk over to collect. */
+/** Ground Score — coins drop on the sidewalk every ~1 min; walk over to collect. */
 export function GroundScoreLayer({ active, onPickup }: GroundScoreLayerProps) {
   const [coins, setCoins] = useState<GroundCoinDef[]>([]);
   const idRef = useRef(0);

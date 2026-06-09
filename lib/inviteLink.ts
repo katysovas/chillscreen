@@ -2,7 +2,6 @@ import { SITE_URL } from '@/lib/site';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import {
-  anyStageInView,
   concertLiveTile,
   MID_PARALLAX,
   venueInFocus,
@@ -35,9 +34,8 @@ export function venueKindToRoute(kind: VenueKind, concertTile: number): VenueRou
 export function activeVenueRoute(
   worldOff: number,
   deepLinkRoute?: VenueRoute,
-): VenueRoute | null {
+): VenueRoute {
   if (deepLinkRoute) return deepLinkRoute;
-  if (!anyStageInView(worldOff)) return null;
   const vx = worldOff * MID_PARALLAX;
   return venueKindToRoute(venueInFocus(vx), concertLiveTile(vx));
 }
