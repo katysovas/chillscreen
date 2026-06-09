@@ -33,28 +33,16 @@ function StageSwapIcon({ size = 24 }: { size?: number }) {
       style={{ display: 'block' }}
     >
       <path
-        d="M4 18V8.5A1.5 1.5 0 0 1 5.5 7H14"
+        d="M20 7H4m4-4L4 7l4 4"
         stroke="currentColor"
-        strokeWidth={1.6}
-        strokeLinecap="round"
-      />
-      <path
-        d="M8 4.5 4 8l4 3.5"
-        stroke="currentColor"
-        strokeWidth={1.6}
+        strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M20 6v9.5A1.5 1.5 0 0 1 18.5 17H10"
+        d="M4 17h16m-4-4 4 4-4 4"
         stroke="currentColor"
-        strokeWidth={1.6}
-        strokeLinecap="round"
-      />
-      <path
-        d="m16 19.5 4-3.5-4-3.5"
-        stroke="currentColor"
-        strokeWidth={1.6}
+        strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
       />

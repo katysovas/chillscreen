@@ -84,18 +84,7 @@ export function MobileStageSwapModal({ currentRoute, onSwap, onClose }: Props) {
         >
           Change stage
         </div>
-        <p
-          style={{
-            margin: '0 0 18px',
-            fontSize: 14,
-            lineHeight: 1.55,
-            color: 'rgba(255,255,255,0.62)',
-            textAlign: 'center',
-            fontFamily: 'system-ui,sans-serif',
-          }}
-        >
-          Jump to another show — same paths as the welcome picker.
-        </p>
+        
 
         <div
           style={{
