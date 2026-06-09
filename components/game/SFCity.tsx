@@ -25,7 +25,8 @@ import {
 } from '@/lib/identity';
 import type { PlayerProfile } from '@/lib/multiplayer/protocol';
 import { getPlayerLoadout, unequipLoadoutItem } from '@/lib/playerLoadout';
-import { getPlayerCoins, STARTING_COINS } from '@/lib/playerCoins';
+import { addPlayerCoins, getPlayerCoins, STARTING_COINS } from '@/lib/playerCoins';
+import { GroundScoreLayer } from './GroundScoreLayer';
 import { purchaseVendorItem } from '@/lib/vendorPurchase';
 import { preloadPurchaseSound, unlockPurchaseSound } from '@/lib/playPurchaseSound';
 import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
@@ -594,6 +595,25 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   useEffect(() => () => { clearAmbientHide(); }, [clearAmbientHide]);
 
+  // ── Ground Score — sidewalk coin pickups ───────────────────────────────────
+  const handleGroundScore = useCallback((value: number) => {
+    setPlayerCoins(addPlayerCoins(value));
+    const message = `Ground Score! ${value} Coins!`;
+    showPlayerAmbient(message);
+    mpRef.current?.sendAmbientMessage(message);
+    // Celebrate — same jump as the keyboard/mobile triggers.
+    if (!jumpingRef.current) {
+      jumpingRef.current = true;
+      setJumping(true);
+      if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
+      jumpTimerRef.current = setTimeout(() => {
+        jumpTimerRef.current = null;
+        jumpingRef.current = false;
+        setJumping(false);
+      }, 560);
+    }
+  }, [showPlayerAmbient]);
+
   const handleSendMessage = (text: string) => {
     const filtered = filterChatMessage(text);
     if (!filtered.ok) {
@@ -1093,6 +1113,14 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         )}
 
         {!mobileLoungeActive && <LovingCarLayer />}
+
+        {/* Ground Score coins — real players only (NPCs never collect). */}
+        {!mobileLoungeActive && (
+          <GroundScoreLayer
+            active={!showWelcome && !showMobilePicker}
+            onPickup={handleGroundScore}
+          />
+        )}
 
         {/* Autonomous NPCs */}
         {CHARACTERS.map((cfg, i) => {

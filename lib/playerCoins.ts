@@ -31,6 +31,13 @@ export function getPlayerCoins(): number {
   return STARTING_COINS;
 }
 
+/** Add coins (e.g. Ground Score pickups). Returns the new balance. */
+export function addPlayerCoins(amount: number): number {
+  const next = getPlayerCoins() + Math.max(0, Math.floor(amount));
+  writePlayerCoins(next);
+  return next;
+}
+
 /** Deduct coins if the balance is sufficient. Returns the new balance, or null. */
 export function deductPlayerCoins(amount: number): number | null {
   if (amount <= 0) return getPlayerCoins();
