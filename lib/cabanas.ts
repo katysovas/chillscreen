@@ -18,7 +18,10 @@ export const CABANA_GROUND_Y = 685;
 
 /** Public asset — also used when rendering via `<image>` elsewhere. */
 export const CABANA_ASSET = '/images/cabana.svg';
-export const CABANA_LOGO_ASSET = '/images/cabanas/reddit.svg';
+export const CABANA_REDDIT_LOGO = '/images/cabanas/reddit.svg';
+export const CABANA_DISCORD_LOGO = '/images/cabanas/discord.svg';
+/** @deprecated use CABANA_REDDIT_LOGO or per-placement logoAsset */
+export const CABANA_LOGO_ASSET = CABANA_REDDIT_LOGO;
 
 export const CABANA_VIEW_W = 620;
 export const CABANA_VIEW_H = 560;
@@ -68,6 +71,7 @@ export type CabanaPlacement = {
   groundY?: number;
   bannerLine1?: string;
   bannerLine2?: string;
+  logoAsset?: string;
   theme?: CabanaTheme;
 };
 
@@ -108,7 +112,8 @@ const WHICH_STAGE_CABANA: CabanaPlacement = {
   scale: 0.44,
   groundY: CABANA_GROUND_Y,
   bannerLine1: 'VIP',
-  bannerLine2: 'r/bonnaroo',
+  bannerLine2: 'Festiverse',
+  logoAsset: CABANA_DISCORD_LOGO,
 };
 
 /** Static cabanas — always mounted; the scrolling viewBox handles visibility. */

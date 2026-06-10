@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { cabanaThemeStyle, CABANA_LOGO_ASSET, type CabanaPlacement } from '@/lib/cabanas';
+import { cabanaThemeStyle, CABANA_REDDIT_LOGO, type CabanaPlacement } from '@/lib/cabanas';
 
 /** Canopy sign — rectangular VIP plaque with title + subtitle. */
 const SIGN_CX = 250;
@@ -12,7 +12,7 @@ const SIGN_X = SIGN_CX - SIGN_W / 2;
 const SIGN_Y = SIGN_CY - SIGN_H / 2;
 const SIGN_R = 8;
 
-/** Rectangular flag on the pole — sized for the Reddit logo. */
+/** Rectangular flag on the pole — sized for the community logo. */
 const FLAG_POLE_X = 458;
 const FLAG_RIGHT_X = 562;
 const FLAG_TOP_Y = 49;
@@ -26,6 +26,7 @@ const FLAG_LOGO_CY = 77;
 type VipCabanaArtProps = {
   bannerLine1?: string;
   bannerLine2?: string;
+  logoAsset?: string;
   theme?: CabanaPlacement['theme'];
 };
 
@@ -33,6 +34,7 @@ type VipCabanaArtProps = {
 export function VipCabanaArt({
   bannerLine1 = 'VIP',
   bannerLine2 = 'r/electricdaisycarnival',
+  logoAsset = CABANA_REDDIT_LOGO,
   theme,
 }: VipCabanaArtProps) {
   return (
@@ -206,7 +208,7 @@ export function VipCabanaArt({
           opacity="0.7"
         />
         <image
-          href={CABANA_LOGO_ASSET}
+          href={logoAsset}
           x={FLAG_LOGO_CX - FLAG_LOGO_SIZE / 2}
           y={FLAG_LOGO_CY - FLAG_LOGO_SIZE / 2}
           width={FLAG_LOGO_SIZE}

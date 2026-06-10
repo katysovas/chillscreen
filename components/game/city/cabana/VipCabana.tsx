@@ -8,6 +8,7 @@ export function VipCabana({ placement }: { placement: CabanaPlacement }) {
       <VipCabanaArt
         bannerLine1={placement.bannerLine1}
         bannerLine2={placement.bannerLine2}
+        logoAsset={placement.logoAsset}
         theme={placement.theme}
       />
     </g>
