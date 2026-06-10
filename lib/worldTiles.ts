@@ -1,4 +1,4 @@
-/** World layout: SF → town → Vegas → town → SoCal → town → Tentaroo → town → Forest → town → Seattle → town */
+/** World layout: SF → town → Vegas → town → SoCal → town → Tentaroo → town → Forest → town → Silent Disco → town → Seattle → town */
 
 export type WorldTileKind =
   | 'sf'
@@ -7,11 +7,12 @@ export type WorldTileKind =
   | 'coachella'
   | 'tentaroo'
   | 'forest'
+  | 'silent_disco'
   | 'seattle'
   | 'vegas';
 
-/** Tiles per cycle — 6 cities + 6 short towns. */
-export const WORLD_TILE_CYCLE = 12;
+/** Tiles per cycle — 7 cities + 7 short towns. */
+export const WORLD_TILE_CYCLE = 14;
 
 const SF_SLOT = 0;
 const SF_VEGAS_TOWN_SLOT = 1;
@@ -24,9 +25,12 @@ const TENTAROO_SLOT = 6;
 const TENTAROO_FOREST_TOWN_SLOT = 7;
 /** Electric Forest — glowing woods city. */
 const FOREST_SLOT = 8;
-const FOREST_SEATTLE_TOWN_SLOT = 9;
-const SEATTLE_SLOT = 10;
-const SEATTLE_EAST_TOWN_SLOT = 11;
+const FOREST_SILENT_DISCO_TOWN_SLOT = 9;
+/** Silent Disco — headphone rave under a dark sky. */
+const SILENT_DISCO_SLOT = 10;
+const SILENT_DISCO_SEATTLE_TOWN_SLOT = 11;
+const SEATTLE_SLOT = 12;
+const SEATTLE_EAST_TOWN_SLOT = 13;
 
 export function worldTileSlot(tileIndex: number): number {
   return ((tileIndex % WORLD_TILE_CYCLE) + WORLD_TILE_CYCLE) % WORLD_TILE_CYCLE;
@@ -39,6 +43,7 @@ export function worldTileKind(tileIndex: number): WorldTileKind {
   if (slot === SOCAL_SLOT) return 'san_diego';
   if (slot === TENTAROO_SLOT) return 'tentaroo';
   if (slot === FOREST_SLOT) return 'forest';
+  if (slot === SILENT_DISCO_SLOT) return 'silent_disco';
   if (slot === SEATTLE_SLOT) return 'seattle';
   return 'town';
 }
@@ -54,6 +59,10 @@ export function isTentarooTile(tileIndex: number): boolean {
 
 export function isForestTile(tileIndex: number): boolean {
   return worldTileKind(tileIndex) === 'forest';
+}
+
+export function isSilentDiscoTile(tileIndex: number): boolean {
+  return worldTileKind(tileIndex) === 'silent_disco';
 }
 
 export function isSeattleTile(tileIndex: number): boolean {
@@ -100,9 +109,19 @@ export function isTentarooToForestTown(tileIndex: number): boolean {
   return isTownTile(tileIndex) && worldTileSlot(tileIndex) === TENTAROO_FOREST_TOWN_SLOT;
 }
 
-/** Connector town between The Forest and Seattle. */
+/** Connector town between The Forest and Silent Disco. */
+export function isForestToSilentDiscoTown(tileIndex: number): boolean {
+  return isTownTile(tileIndex) && worldTileSlot(tileIndex) === FOREST_SILENT_DISCO_TOWN_SLOT;
+}
+
+/** Connector town between Silent Disco and Seattle. */
+export function isSilentDiscoToSeattleTown(tileIndex: number): boolean {
+  return isTownTile(tileIndex) && worldTileSlot(tileIndex) === SILENT_DISCO_SEATTLE_TOWN_SLOT;
+}
+
+/** @deprecated Use isForestToSilentDiscoTown / isSilentDiscoToSeattleTown */
 export function isForestToSeattleTown(tileIndex: number): boolean {
-  return isTownTile(tileIndex) && worldTileSlot(tileIndex) === FOREST_SEATTLE_TOWN_SLOT;
+  return isForestToSilentDiscoTown(tileIndex);
 }
 
 /** @deprecated Use isTentarooToForestTown / isForestToSeattleTown */

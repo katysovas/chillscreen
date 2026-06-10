@@ -27,6 +27,8 @@ export function venueKindToRoute(kind: VenueKind, concertTile: number): VenueRou
       return 'tentaroo';
     case 'forest':
       return 'forest';
+    case 'silent-disco':
+      return 'silent-disco';
   }
 }
 

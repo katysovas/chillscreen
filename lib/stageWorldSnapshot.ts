@@ -15,6 +15,7 @@ const STAGE_META: { channel: StageChannel; stageName: string; city: string }[] =
   { channel: 'coachella', stageName: 'The Desert Stage', city: 'Southern California' },
   { channel: 'which-stage', stageName: 'The Farm', city: 'The Farm' },
   { channel: 'forest', stageName: 'The Forest Stage', city: 'The Forest' },
+  { channel: 'silent-disco', stageName: 'Silent Disco', city: 'Silent Disco' },
   { channel: 'bumbershoot', stageName: 'Seattle Stage', city: 'Seattle' },
 ];
 

@@ -24,6 +24,8 @@ export function cityTileForRoute(route: VenueRoute): number {
       return cityTileIndex('tentaroo');
     case 'forest':
       return cityTileIndex('forest');
+    case 'silent-disco':
+      return cityTileIndex('silent_disco');
     case 'seattle-concerts':
       return cityTileIndex('seattle');
   }
@@ -77,13 +79,14 @@ export function nearIsolatedGndTiles(_tileIndex: number): (x: number) => number[
   return x => nearGndTiles(x);
 }
 
-/** World geography (west→east): SF → Vegas → The Desert → The Farm → The Forest → Seattle. */
+/** World geography (west→east): SF → Vegas → The Desert → The Farm → The Forest → Silent Disco → Seattle. */
 const EDGE_ORDER: VenueRoute[] = [
   'outside-hands',
   'edc',
   'coachella',
   'tentaroo',
   'forest',
+  'silent-disco',
   'seattle-concerts',
 ];
 
@@ -104,7 +107,7 @@ export function nextCityRoute(route: VenueRoute): VenueRoute {
 
 /** Synced playback channel for this page's venue (audio stays on city-wide). */
 export function stageChannelForRoute(route: VenueRoute):
-  'cinema' | 'bumbershoot' | 'outside-lands' | 'coachella' | 'edc' | 'which-stage' | 'forest' {
+  'cinema' | 'bumbershoot' | 'outside-lands' | 'coachella' | 'edc' | 'which-stage' | 'forest' | 'silent-disco' {
   switch (route) {
     case 'outside-hands': return 'outside-lands';
     case 'seattle-concerts': return 'bumbershoot';
@@ -113,6 +116,7 @@ export function stageChannelForRoute(route: VenueRoute):
     case 'edc': return 'edc';
     case 'tentaroo': return 'which-stage';
     case 'forest': return 'forest';
+    case 'silent-disco': return 'silent-disco';
   }
 }
 

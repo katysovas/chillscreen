@@ -82,6 +82,13 @@ export const MOBILE_LOUNGE_STAGES: MobileLoungeStageOption[] = [
     originYPercent: 57,
   },
   {
+    route: 'silent-disco',
+    title: 'Silent Disco',
+    tagline: 'Headphone rave',
+    scale: 1.08,
+    originYPercent: 57,
+  },
+  {
     route: 'cinema',
     title: 'Chill Cinema',
     tagline: 'Outdoor screen',

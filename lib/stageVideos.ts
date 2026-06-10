@@ -52,7 +52,8 @@ export type StageChannel =
   | 'coachella'
   | 'edc'
   | 'which-stage'
-  | 'forest';
+  | 'forest'
+  | 'silent-disco';
 
 /** Per-stage playlist rules — matched against video titles (case-insensitive). */
 export type StagePlaylistRules = {
@@ -119,6 +120,7 @@ export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
   edc: channelConfigFromFile(stagePlaylistsFile.channels.edc),
   'which-stage': channelConfigFromFile(stagePlaylistsFile.channels['which-stage']),
   forest: channelConfigFromFile(stagePlaylistsFile.channels.forest),
+  'silent-disco': channelConfigFromFile(stagePlaylistsFile.channels['silent-disco']),
 };
 
 function fallbackPlaylist(cfg: StageChannelConfig): StageVideo[] {
@@ -138,6 +140,7 @@ export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
   edc: fallbackPlaylist(STAGE_CHANNEL_CONFIG.edc),
   'which-stage': fallbackPlaylist(STAGE_CHANNEL_CONFIG['which-stage']),
   forest: fallbackPlaylist(STAGE_CHANNEL_CONFIG.forest),
+  'silent-disco': fallbackPlaylist(STAGE_CHANNEL_CONFIG['silent-disco']),
 };
 
 /**

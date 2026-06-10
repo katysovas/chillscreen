@@ -35,6 +35,7 @@ const SIGN_STYLE: Record<VenueRoute, { icon: string; accent: string }> = {
   edc: { icon: '🎰', accent: '#ff2e9a' },
   tentaroo: { icon: '🎸', accent: '#50b87a' },
   forest: { icon: '🌲', accent: '#2dd4a0' },
+  'silent-disco': { icon: '🎧', accent: '#ff3df0' },
   cinema: { icon: '🎬', accent: '#b88c3d' },
 };
 

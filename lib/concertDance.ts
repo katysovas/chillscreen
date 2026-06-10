@@ -10,6 +10,8 @@ import {
   edcMidX,
   forestLiveTile,
   forestStageMidX,
+  silentDiscoLiveTile,
+  silentDiscoStageMidX,
   whichStageLiveTile,
   whichStageMidX,
   concertLiveTile,
@@ -22,6 +24,7 @@ import { COACHELLA_STAGE_HALF } from '@/components/game/city/sandiego/constants'
 import { EDC_STAGE_HALF } from '@/components/game/city/lasvegas/constants';
 import { WHICH_STAGE_HALF } from '@/components/game/city/tentaroo/constants';
 import { FOREST_STAGE_HALF } from '@/components/game/city/forest/constants';
+import { SILENT_DISCO_STAGE_HALF } from '@/components/game/city/silent-disco/constants';
 import { CINEMA_SCALE, CINEMA_WIDTH } from '@/components/game/Cinema';
 import { CONCERT_SCALE, CONCERT_WIDTH } from '@/components/game/Concert';
 
@@ -70,6 +73,10 @@ export function liveWhichStageMidWorldX(worldOff: number): number | null {
 
 export function liveForestStageMidWorldX(worldOff: number): number | null {
   return liveVenueMidWorldX(worldOff, forestLiveTile, forestStageMidX, FOREST_STAGE_HALF);
+}
+
+export function liveSilentDiscoMidWorldX(worldOff: number): number | null {
+  return liveVenueMidWorldX(worldOff, silentDiscoLiveTile, silentDiscoStageMidX, SILENT_DISCO_STAGE_HALF);
 }
 
 export function entityScreenPct(worldX: number, worldOff: number, width: number) {
@@ -133,7 +140,8 @@ export function isNearStage(
     isNearVenue(entityWorldX, worldOff, width, liveCoachellaMidWorldX(worldOff), radiusPct) ||
     isNearVenue(entityWorldX, worldOff, width, liveEdcMidWorldX(worldOff), radiusPct) ||
     isNearVenue(entityWorldX, worldOff, width, liveWhichStageMidWorldX(worldOff), radiusPct) ||
-    isNearVenue(entityWorldX, worldOff, width, liveForestStageMidWorldX(worldOff), radiusPct)
+    isNearVenue(entityWorldX, worldOff, width, liveForestStageMidWorldX(worldOff), radiusPct) ||
+    isNearVenue(entityWorldX, worldOff, width, liveSilentDiscoMidWorldX(worldOff), radiusPct)
   );
 }
 

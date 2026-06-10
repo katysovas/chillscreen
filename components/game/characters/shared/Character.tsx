@@ -19,12 +19,14 @@ import {
   renderLoadoutHand,
   renderLoadoutHat,
   renderLoadoutNecklace,
+  renderLoadoutSlot,
   renderLoadoutSunglasses,
   renderLoadoutTop,
   resolveLoadout,
   subscribeLoadoutRegistry,
 } from '../loadout';
 import type { CharacterLoadout } from '../loadout';
+import { getForcedHatId, subscribeDressCode } from '@/lib/dressCode';
 import {
   accessoryHoldSide,
   renderAccessorySlot,
@@ -123,10 +125,19 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     () => 0,
   );
 
+  // Silent Disco dress code — every character wears headphones, owned or not.
+  const forcedHat = useSyncExternalStore(
+    subscribeDressCode,
+    getForcedHatId,
+    () => null,
+  );
+
   useEffect(() => {
-    if (!loadout) return;
-    void preloadLoadoutItems(equippedLoadoutItemIds(loadout));
-  }, [loadout]);
+    const ids = loadout ? equippedLoadoutItemIds(loadout) : [];
+    if (forcedHat) ids.push(forcedHat);
+    if (ids.length === 0) return;
+    void preloadLoadoutItems(ids);
+  }, [loadout, forcedHat]);
 
   useImperativeHandle(ref, () => ({
     setFacing(f) {
@@ -151,7 +162,10 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   }), []);
 
   const mirrored = facing === 'left';
-  const equipped = loadout ? resolveLoadout(loadout, balloonColor) : null;
+  const effectiveLoadout = forcedHat && loadout
+    ? { ...loadout, hat: forcedHat }
+    : loadout;
+  const equipped = effectiveLoadout ? resolveLoadout(effectiveLoadout, balloonColor) : null;
   const holdRight = equipped
     ? loadoutHoldSide(equipped) === 'right'
     : accessoryHoldSide(accessory) === 'right';
@@ -191,7 +205,9 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
             <div className="ch-body">
               {equipped
                 ? renderLoadoutHat(equipped)
-                : renderAccessorySlot('head', accessory, balloonColor)}
+                : forcedHat
+                  ? renderLoadoutSlot('hat', forcedHat, balloonColor)
+                  : renderAccessorySlot('head', accessory, balloonColor)}
               <div className="ch-eyes" />
               {equipped && renderLoadoutSunglasses(equipped)}
               <div className="ch-nose"><span /><span /></div>

@@ -17,6 +17,7 @@ const LEGACY_VENUE_REDIRECTS: Record<string, string> = {
   cinema: 'chill-cinema',
   'the-forest': 'forest',
   theforest: 'forest',
+  silentdisco: 'silent-disco',
 };
 
 export function middleware(request: NextRequest) {

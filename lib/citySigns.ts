@@ -44,6 +44,13 @@ export const THE_FOREST = {
   accent: '#2dd4a0',
 } as const;
 
+/** Silent Disco — headphone rave grounds. */
+export const SILENT_DISCO = {
+  label: 'Silent Disco',
+  icon: '🎧',
+  accent: '#ff3df0',
+} as const;
+
 const VEGAS = {
   label: 'Las Vegas',
   icon: '🎰',
@@ -53,7 +60,7 @@ const VEGAS = {
 const TOWN_CENTER = 0.5;
 
 /**
- * SF → town → Vegas → town → SoCal → town → Tentaroo → town → Forest → town → Seattle → town
+ * SF → town → Vegas → town → SoCal → town → Tentaroo → town → Forest → town → Silent Disco → town → Seattle → town
  * Junction poles only — one combined left/right sign per connector town.
  */
 export function citySignsForTile(tileIndex: number): CombinedTownSignDef[] {
@@ -69,8 +76,10 @@ export function citySignsForTile(tileIndex: number): CombinedTownSignDef[] {
     case 7:
       return [{ xFrac: TOWN_CENTER, leftCity: THE_FARM, rightCity: THE_FOREST }];
     case 9:
-      return [{ xFrac: TOWN_CENTER, leftCity: THE_FOREST, rightCity: SEATTLE }];
+      return [{ xFrac: TOWN_CENTER, leftCity: THE_FOREST, rightCity: SILENT_DISCO }];
     case 11:
+      return [{ xFrac: TOWN_CENTER, leftCity: SILENT_DISCO, rightCity: SEATTLE }];
+    case 13:
       return [{ xFrac: TOWN_CENTER, leftCity: SEATTLE, rightCity: SF }];
     default:
       return [];

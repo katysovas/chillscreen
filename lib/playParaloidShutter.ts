@@ -10,6 +10,7 @@ export function playParaloidShutter() {
     if (!shutter) {
       shutter = new Audio(PARALOID_SHUTTER_SRC);
       shutter.preload = 'auto';
+      shutter.volume = 0.4;
     }
     shutter.currentTime = 0;
     void shutter.play().catch(() => {});

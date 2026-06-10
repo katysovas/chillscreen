@@ -6,7 +6,8 @@ export type VenueRoute =
   | 'seattle-concerts'
   | 'cinema'
   | 'tentaroo'
-  | 'forest';
+  | 'forest'
+  | 'silent-disco';
 
 /** Canonical URL path segments — slugified in-game venue names. */
 export function venueSlugForRoute(route: VenueRoute): string {
@@ -25,6 +26,8 @@ export function venueSlugForRoute(route: VenueRoute): string {
       return 'thefarm';
     case 'forest':
       return 'forest';
+    case 'silent-disco':
+      return 'silent-disco';
   }
 }
 
@@ -37,6 +40,7 @@ export const VENUE_SLUGS = [
   'chill-cinema',
   'thefarm',
   'forest',
+  'silent-disco',
 ] as const;
 
 const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
@@ -49,6 +53,8 @@ const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
   forest: 'forest',
   'the-forest': 'forest',
   theforest: 'forest',
+  'silent-disco': 'silent-disco',
+  silentdisco: 'silent-disco',
 };
 
 /** Parse a URL segment like `thedesert`. */

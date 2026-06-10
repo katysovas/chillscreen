@@ -1,5 +1,5 @@
 const PURCHASE_SRC = '/audio/purchase.mp3';
-const PURCHASE_GAIN = 3.5;
+const PURCHASE_GAIN = 0.35;
 
 let audioCtx: AudioContext | null = null;
 let buffer: AudioBuffer | null = null;
@@ -56,7 +56,7 @@ function playFallback(): void {
   if (typeof window === 'undefined') return;
   try {
     const audio = getFallbackAudio();
-    audio.volume = 1;
+    audio.volume = PURCHASE_GAIN;
     audio.pause();
     audio.currentTime = 0;
     void audio.play().catch(() => {});

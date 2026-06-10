@@ -51,6 +51,7 @@ import {
   stageWorldOffForRoute,
 } from '@/lib/isolatedCity';
 import { setPinnedStageChannel } from '@/lib/pinnedStageChannel';
+import { setVenueDressCode } from '@/lib/dressCode';
 import { LovingCarLayer } from './LovingCar';
 import { WelcomePopup } from './WelcomePopup';
 import { CityNavSigns } from './CityNavSigns';
@@ -432,7 +433,11 @@ export default function SFCity({
   // Keep this city's stage mounted + audible regardless of scroll position.
   useEffect(() => {
     setPinnedStageChannel(stageChannelForRoute(effectiveVenueRoute));
-    return () => setPinnedStageChannel(null);
+    setVenueDressCode(effectiveVenueRoute);
+    return () => {
+      setPinnedStageChannel(null);
+      setVenueDressCode(null);
+    };
   }, [effectiveVenueRoute]);
 
   useEffect(() => { showWelcomeRef.current = showWelcome; }, [showWelcome]);
@@ -588,7 +593,11 @@ export default function SFCity({
     const message = `Ground Score! ${value} Coins!`;
     showPlayerAmbient(message);
     mpRef.current?.sendAmbientMessage(message);
-    try { new Audio('/audio/found.wav').play(); } catch { /* ignore */ }
+    try {
+      const found = new Audio('/audio/found.wav');
+      found.volume = 0.35;
+      void found.play().catch(() => {});
+    } catch { /* ignore */ }
     // Celebrate — same jump as the keyboard/mobile triggers.
     if (!jumpingRef.current) {
       jumpingRef.current = true;

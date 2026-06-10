@@ -40,10 +40,10 @@ export function CityVenuesTile({
   const concertX = concertMidX(t);
   const cinemaX = cinemaMidX(t);
   const concertLiveNow = isVenueLive(
-    'concert', t, cinemaLive, concertLive, 0, 0, 0, 0, focus, deepLinkRoute,
+    'concert', t, cinemaLive, concertLive, 0, 0, 0, 0, 0, focus, deepLinkRoute,
   );
   const cinemaLiveNow = isVenueLive(
-    'cinema', t, cinemaLive, concertLive, 0, 0, 0, 0, focus, deepLinkRoute,
+    'cinema', t, cinemaLive, concertLive, 0, 0, 0, 0, 0, focus, deepLinkRoute,
   );
 
   // Always render on the tile — parallax viewBox scrolling slides them in from

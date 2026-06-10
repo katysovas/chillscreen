@@ -2,6 +2,7 @@ import { COACHELLA_STAGE_HALF, COACHELLA_STAGE_MID_X } from '@/components/game/c
 import { EDC_STAGE_HALF, EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
 import { WHICH_STAGE_HALF, WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
 import { FOREST_STAGE_HALF, FOREST_STAGE_MID_X } from '@/components/game/city/forest/constants';
+import { SILENT_DISCO_STAGE_HALF, SILENT_DISCO_STAGE_MID_X } from '@/components/game/city/silent-disco/constants';
 import { GND_F, MID_F } from '@/lib/parallax';
 import { cityTileIndex } from '@/lib/spawn';
 import { skipGroundStreetProp } from '@/lib/stageTreeExclusion';
@@ -31,6 +32,7 @@ function stageAnchorsForCycle(cycle: number): StageAnchor[] {
   const socal = base + cityTileIndex('san_diego');
   const tentaroo = base + cityTileIndex('tentaroo');
   const forest = base + cityTileIndex('forest');
+  const silentDisco = base + cityTileIndex('silent_disco');
   const seattle = base + cityTileIndex('seattle');
 
   const anchors: StageAnchor[] = [];
@@ -44,6 +46,7 @@ function stageAnchorsForCycle(cycle: number): StageAnchor[] {
   anchors.push({ tileIndex: socal, midX: COACHELLA_STAGE_MID_X, half: COACHELLA_STAGE_HALF });
   anchors.push({ tileIndex: tentaroo, midX: WHICH_STAGE_MID_X, half: WHICH_STAGE_HALF });
   anchors.push({ tileIndex: forest, midX: FOREST_STAGE_MID_X, half: FOREST_STAGE_HALF });
+  anchors.push({ tileIndex: silentDisco, midX: SILENT_DISCO_STAGE_MID_X, half: SILENT_DISCO_STAGE_HALF });
 
   const seaConcert = concertMidX(seattle);
   if (seaConcert != null) anchors.push({ tileIndex: seattle, midX: seaConcert, half: CONCERT_HALF });

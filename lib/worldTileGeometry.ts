@@ -12,11 +12,13 @@ const MID_W_BY_SLOT = [
   CITY_MID_W, TOWN_MID_W, CITY_MID_W, TOWN_MID_W,
   CITY_MID_W, TOWN_MID_W, CITY_MID_W, TOWN_MID_W,
   CITY_MID_W, TOWN_MID_W, CITY_MID_W, TOWN_MID_W,
+  CITY_MID_W, TOWN_MID_W,
 ] as const;
 const GND_W_BY_SLOT = [
   CITY_GND_W, TOWN_GND_W, CITY_GND_W, TOWN_GND_W,
   CITY_GND_W, TOWN_GND_W, CITY_GND_W, TOWN_GND_W,
   CITY_GND_W, TOWN_GND_W, CITY_GND_W, TOWN_GND_W,
+  CITY_GND_W, TOWN_GND_W,
 ] as const;
 
 export function midWidthForSlot(slot: number): number {

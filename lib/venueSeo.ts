@@ -49,6 +49,12 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'Wander The Forest on WhichStage — glowing woods, firefly tent camps, lasers ' +
       'through the pines, and live festival sets with friends in your browser.',
   },
+  'silent-disco': {
+    title: 'Silent Disco',
+    description:
+      'Join the Silent Disco on WhichStage — a headphone rave under a dark sky with ' +
+      'glowsticks, lasers, a giant disco ball, and live DJ sets with friends in your browser.',
+  },
 };
 
 export function venueSeoForRoute(route: VenueRoute): VenueSeo {

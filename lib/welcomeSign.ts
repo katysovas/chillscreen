@@ -1,6 +1,7 @@
 import { COACHELLA_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
 import { WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
 import { FOREST_STAGE_MID_X } from '@/components/game/city/forest/constants';
+import { SILENT_DISCO_STAGE_MID_X } from '@/components/game/city/silent-disco/constants';
 import { EDC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
 import { MID_F } from '@/lib/parallax';
 import {
@@ -32,6 +33,7 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
   const socal = cityTileIndex('san_diego');
   const tentaroo = cityTileIndex('tentaroo');
   const forest = cityTileIndex('forest');
+  const silentDisco = cityTileIndex('silent_disco');
   const seattle = cityTileIndex('seattle');
 
   return [
@@ -82,6 +84,14 @@ export function welcomeStageEntries(): WelcomeStageEntry[] {
       accent: '#2dd4a0',
       tileIndex: forest,
       venueMidX: FOREST_STAGE_MID_X,
+    },
+    {
+      id: 'silent-disco',
+      label: 'Silent Disco',
+      icon: '🎧',
+      accent: '#ff3df0',
+      tileIndex: silentDisco,
+      venueMidX: SILENT_DISCO_STAGE_MID_X,
     },
     {
       id: 'seattle',

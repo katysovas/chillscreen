@@ -99,7 +99,7 @@ export const VENDOR_SHOP_ITEMS: VendorShopItemId[] = [
 /** Legacy id — prefer `isBuzNpc()`. */
 export const BUZ_NPC_ID = 'buz';
 
-export const BUZ_NPC_IDS = ['buz-concert', 'buz-coachella', 'buz-edc', 'buz-which-stage', 'buz-forest'] as const;
+export const BUZ_NPC_IDS = ['buz-concert', 'buz-coachella', 'buz-edc', 'buz-which-stage', 'buz-forest', 'buz-silent-disco'] as const;
 
 export function isBuzNpc(id: string): boolean {
   return id === BUZ_NPC_ID || id.startsWith('buz-');

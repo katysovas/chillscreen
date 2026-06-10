@@ -9,6 +9,7 @@ export function playChatInviteBeep() {
     if (!beep) {
       beep = new Audio('/audio/beep.mp3');
       beep.preload = 'auto';
+      beep.volume = 0.35;
     }
     beep.currentTime = 0;
     void beep.play().catch(() => {});
