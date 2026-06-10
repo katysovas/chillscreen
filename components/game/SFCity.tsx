@@ -1,21 +1,17 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useSyncExternalStore } from 'react';
+import { useRouter } from 'next/navigation';
 import Character from './Character';
-import NPC, { screenPctToWorldX, worldXToScreenPct } from './NPC';
+import NPC, { worldXToScreenPct } from './NPC';
 import { AmbientPlayerOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
-import { CHAR_BOTTOM, CHAR_BOTTOM_MOBILE_LOUNGE, MOBILE_CROWD_DEPTH_PX } from './groundLayout';
+import { CHAR_BOTTOM } from './groundLayout';
 import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/parallax';
-import {
-  getClientSpawnWorldOff,
-  serverSpawnWorldOff,
-  subscribeSpawnWorldOff,
-} from '@/lib/spawn';
+import { scheduleIdleCallback } from '@/lib/scheduleIdleCallback';
 import { setAudioMuted } from '@/lib/audioMute';
 import { playChatInviteBeep } from '@/lib/playChatInviteBeep';
 import CHARACTERS from './characters';
 import RemotePlayer from './RemotePlayer';
-import { scheduleIdleCallback } from '@/lib/scheduleIdleCallback';
 import { PLAYER_AMBIENT_VISIBLE_MS, useMultiplayer } from '@/lib/multiplayer/useMultiplayer';
 import { filterChatMessage } from '@/lib/messageFilter';
 import {
@@ -46,32 +42,32 @@ import {
   moveBroadcastFrameInterval,
   moveBroadcastWorldEpsilon,
 } from '@/lib/presenceBroadcast';
-import { updateRoadSignVisibility } from '@/lib/roadSignVisibility';
 import { isNearStage } from '@/lib/concertDance';
+import {
+  cityTileForRoute,
+  cityWorldOffBounds,
+  partyRoomIdForRoute,
+  stageChannelForRoute,
+  stageWorldOffForRoute,
+} from '@/lib/isolatedCity';
+import { setPinnedStageChannel } from '@/lib/pinnedStageChannel';
 import { LovingCarLayer } from './LovingCar';
 import { WelcomePopup } from './WelcomePopup';
+import { CityNavSigns } from './CityNavSigns';
+import { StagePicker } from './StagePicker';
 import { SkyCreaturesLayer } from './SkyCreatures';
 import { SkyLayer } from './city/SkyLayer';
 import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 import { MidLayer } from './city/MidLayer';
 import { GroundLayer } from './city/GroundLayer';
 import { CabanaForegroundLayer } from './city/CabanaForegroundLayer';
-import { VenueSignsLayer } from './city/VenueSignsLayer';
-import { WelcomeSignLayer } from './city/WelcomeSignLayer';
 import { PlayerVariantGallery } from './PlayerVariantGallery';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
 import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
-import { MobileStagePicker } from './MobileStagePicker';
-import { MobileStageSwapModal } from './MobileStageSwapModal';
-import { worldOffForVenueRoute, type VenueRoute } from '@/lib/venueRoutes';
-import {
-  getStoredMobileLoungeStage,
-  isMobileLoungeDevice,
-  mobileLoungeStageOption,
-  setStoredMobileLoungeStage,
-} from '@/lib/mobileLounge';
+import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
+import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { BottomControlPanel } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
@@ -100,40 +96,45 @@ const TEST_PLAYER_LOADOUT = {} as const;
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 type SFCityProps = {
-  /** When set (venue deep link), spawn centered on that stage instead of random. */
+  /** When set (venue deep link), spawn centered on that stage. */
   spawnWorldOff?: number;
-  /** Which venue was deep-linked — keeps that stage live on first paint. */
-  venueRoute?: VenueRoute;
+  /** Venue for this city page — required in isolated city mode. */
+  venueRoute: VenueRoute;
+  /** Home `/` backdrop — locked on stage, no gameplay UI. */
+  homePreview?: boolean;
+  /** Controlled mute when `homePreview` (lifted to HomeCityPicker). */
+  muted?: boolean;
 };
 
-export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFCityProps = {}) {
+export default function SFCity({
+  spawnWorldOff: spawnOverride,
+  venueRoute,
+  homePreview = false,
+  muted: mutedProp,
+}: SFCityProps) {
+  const router = useRouter();
   const skyPeriod  = useSkyPeriod();
 
   const [mobileDevice, setMobileDevice] = useState(
     () => typeof window !== 'undefined' && isMobileLoungeDevice(),
   );
-  const [mobileLoungeStage, setMobileLoungeStage] = useState<VenueRoute | null>(() => {
-    if (typeof window === 'undefined') return venueRoute ?? null;
-    if (!isMobileLoungeDevice()) return null;
-    return venueRoute ?? getStoredMobileLoungeStage();
-  });
-  const [showMobilePicker, setShowMobilePicker] = useState(false);
-  const [showStageSwap, setShowStageSwap] = useState(false);
-  const mobileLoungeRef = useRef(false);
-  const showMobilePickerRef = useRef(false);
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const showCityPickerRef = useRef(false);
   const connectNearRef = useRef<(() => void) | null>(null);
 
-  const randomSpawn = useSyncExternalStore(
-    subscribeSpawnWorldOff,
-    getClientSpawnWorldOff,
-    serverSpawnWorldOff,
-  );
-  const loungeWorldOff = mobileLoungeStage != null
-    ? worldOffForVenueRoute(mobileLoungeStage)
-    : null;
-  const spawnWorldOff = loungeWorldOff ?? spawnOverride ?? randomSpawn;
-  const effectiveVenueRoute = mobileLoungeStage ?? venueRoute;
-  const mobileLoungeActive = mobileDevice && mobileLoungeStage !== null && !showMobilePicker;
+  const effectiveVenueRoute = venueRoute;
+  const isolatedTile = cityTileForRoute(effectiveVenueRoute);
+  const cityBounds = cityWorldOffBounds(effectiveVenueRoute);
+  const cityBoundsRef = useRef(cityBounds);
+  cityBoundsRef.current = cityBounds;
+
+  // Clamp into city bounds — wide stages (EDC, Coachella) center past the
+  // tile edge, and the walk loop clamps every frame; an out-of-bounds spawn
+  // would instantly teleport the view off the single rendered tile.
+  const rawSpawn = homePreview || spawnOverride == null
+    ? stageWorldOffForRoute(effectiveVenueRoute)
+    : spawnOverride;
+  const spawnWorldOff = Math.max(cityBounds.min, Math.min(cityBounds.max, rawSpawn));
   const worldRef        = useRef(spawnWorldOff);
   const keysRef         = useRef({ left: false, right: false });
   const facingRef       = useRef<'left' | 'right'>('right');
@@ -149,9 +150,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const midForegroundRef = useRef<SVGSVGElement>(null);
   const groundRef = useRef<SVGSVGElement>(null);
   const cabanaRef = useRef<SVGSVGElement>(null);
-  const signsRef  = useRef<SVGSVGElement>(null);
-  const welcomeRef = useRef<SVGSVGElement>(null);
   const cloudsRef = useRef<SVGSVGElement>(null);
+  const navSignsRef = useRef<SVGSVGElement>(null);
   const lastMidScrollTileRef = useRef<number | null>(null);
   const lastGndScrollTileRef = useRef<number | null>(null);
 
@@ -166,8 +166,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     midForegroundRef.current?.setAttribute('viewBox', vb(midVx));
     groundRef.current?.setAttribute('viewBox', vb(gndVx));
     cabanaRef.current?.setAttribute('viewBox', vb(gndVx));
-    signsRef.current?.setAttribute('viewBox', vb(gndVx));
-    welcomeRef.current?.setAttribute('viewBox', vb(gndVx));
+    navSignsRef.current?.setAttribute('viewBox', vb(gndVx));
     cloudsRef.current?.setAttribute('viewBox', vb(skyVx));
   };
 
@@ -180,14 +179,10 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
   const nearNpcRef        = useRef<number | null>(null);
   const disconnectUntil   = useRef(0);
 
-  // Venue deep links pin scroll on first paint; home uses SSR default then random spawn.
+  // Pin scroll to the (clamped) city spawn on first paint.
   // Mid scroll drives venue live/shell + invite UI; ground layers scroll imperatively.
-  const [midScrollWorldOff, setMidScrollWorldOff] = useState(
-    () => spawnOverride ?? serverSpawnWorldOff(),
-  );
-  const [gndScrollWorldOff, setGndScrollWorldOff] = useState(
-    () => spawnOverride ?? serverSpawnWorldOff(),
-  );
+  const [midScrollWorldOff, setMidScrollWorldOff] = useState(spawnWorldOff);
+  const [gndScrollWorldOff, setGndScrollWorldOff] = useState(spawnWorldOff);
   const [facing,    setFacing]    = useState<'left' | 'right'>('right');
   const [walking,   setWalking]   = useState(false);
   const [jumping,   setJumping]   = useState(false);
@@ -297,7 +292,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   const ambientChats = useNpcAmbientChat(
     CHARACTERS.length,
-    showWelcome || showMobilePicker || greetingNpc !== null || peerChatId !== null,
+    showWelcome || showCityPicker || greetingNpc !== null || peerChatId !== null,
   );
 
   const profileRef = useRef<PlayerProfile>({
@@ -313,8 +308,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
   const mp = useMultiplayer({
     profileRef,
-    // The live camera offset doubles as the local player's world-x.
     spawnWorldOffRef: gameWorldOffRef,
+    roomId: partyRoomIdForRoute(effectiveVenueRoute),
     onPeerOpen:   pid => beginPeerChatRef.current?.(pid, false),
     onPeerClose:  pid => { if (peerChatRef.current === pid) endPeerChatRef.current?.(false); },
     onPeerLeft:   pid => { if (peerChatRef.current === pid) endPeerChatRef.current?.(false); },
@@ -399,57 +394,49 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     npcWorldXRefs.current = CHARACTERS.map(() => Infinity);
     lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
     lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
-    updateRoadSignVisibility(signsRef.current, spawnWorldOff);
   // updateViewBoxes is stable (no deps); spawnWorldOff is the only meaningful dep
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spawnWorldOff]);
+
+  const navigateToCity = useCallback((route: VenueRoute) => {
+    if (route === effectiveVenueRoute) {
+      setShowCityPicker(false);
+      return;
+    }
+    router.push(`/${venueSlugForRoute(route)}`);
+  }, [effectiveVenueRoute, router]);
+
   useEffect(() => {
-    const mobile = isMobileLoungeDevice();
-    setMobileDevice(mobile);
+    setMobileDevice(isMobileLoungeDevice());
+
+    if (homePreview) return;
 
     const storedName = getPlayerName();
-    const storedStage = venueRoute ?? getStoredMobileLoungeStage();
-
     if (storedName) {
       setPlayerName(storedName);
       identifyPlayer(storedName);
-      const cancelIdle = scheduleIdleCallback(
+      return scheduleIdleCallback(
         () => mpRef.current?.requestConnect(),
         { timeout: 4_000 },
       );
-      if (mobile) {
-        if (storedStage) {
-          setMobileLoungeStage(storedStage);
-          if (venueRoute) setStoredMobileLoungeStage(venueRoute);
-        } else {
-          setShowMobilePicker(true);
-        }
-      }
-      return cancelIdle;
     }
 
-    if (mobile) {
-      if (storedStage) setMobileLoungeStage(storedStage);
-      setShowMobilePicker(true);
-    } else {
-      setShowWelcome(true);
-    }
-  }, [venueRoute]);
+    setShowWelcome(true);
+  }, [homePreview]);
 
   useEffect(() => {
     bootstrapStageSyncFromApi();
     installGameInputAnalytics();
   }, []);
 
-  useEffect(() => { showWelcomeRef.current = showWelcome; }, [showWelcome]);
-  useEffect(() => { showMobilePickerRef.current = showMobilePicker; }, [showMobilePicker]);
-  useEffect(() => { mobileLoungeRef.current = mobileLoungeActive; }, [mobileLoungeActive]);
-
+  // Keep this city's stage mounted + audible regardless of scroll position.
   useEffect(() => {
-    if (!mobileLoungeActive) return;
-    playerDancingRef.current = true;
-    setPlayerDancing(true);
-  }, [mobileLoungeActive]);
+    setPinnedStageChannel(stageChannelForRoute(effectiveVenueRoute));
+    return () => setPinnedStageChannel(null);
+  }, [effectiveVenueRoute]);
+
+  useEffect(() => { showWelcomeRef.current = showWelcome; }, [showWelcome]);
+  useEffect(() => { showCityPickerRef.current = showCityPicker; }, [showCityPicker]);
   useEffect(() => { chatModeRef.current = chatMode; }, [chatMode]);
   useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
   useEffect(() => { chatHistoryRef.current = chatHistory; }, [chatHistory]);
@@ -642,7 +629,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     mpRef.current?.sendAmbientMessage(filtered.text);
   };
 
-  const handleWelcomeName = (name: string) => {
+  const handleWelcomeName = (name: string, route: VenueRoute) => {
     savePlayerName(name);
     const profile = {
       name,
@@ -655,7 +642,20 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     trackCharacterCreated(name);
     mpRef.current?.sendProfile(profile);
     mpRef.current?.requestConnect();
+    if (route !== effectiveVenueRoute) {
+      navigateToCity(route);
+    }
   };
+
+  const handleCityPickerEnter = useCallback((name: string, route: VenueRoute) => {
+    if (!getPlayerName() && name) {
+      savePlayerName(name);
+      identifyPlayer(name);
+      setPlayerName(name);
+    }
+    closeVendorShop();
+    navigateToCity(route);
+  }, [closeVendorShop, navigateToCity]);
 
   const handleOpenAmbientChat = useCallback(() => {
     if (greetingNpc !== null || peerChatId !== null) return;
@@ -668,40 +668,16 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     window.setTimeout(() => chatInputRef.current?.focus(), 30);
   }, [greetingNpc, peerChatId, chatMode]);
 
-  const handleMobileStageSwap = useCallback((route: VenueRoute) => {
-    setStoredMobileLoungeStage(route);
-    setMobileLoungeStage(route);
-    setShowStageSwap(false);
-    closeVendorShop();
-  }, [closeVendorShop]);
-
-  const handleMobileLoungeEnter = (name: string, route: VenueRoute) => {
-    const isNewPlayer = !getPlayerName();
-    savePlayerName(name);
-    setStoredMobileLoungeStage(route);
-    setMobileLoungeStage(route);
-    const profile = {
-      name,
-      balloonColor: myColor,
-      loadout: serializeLoadout(playerLoadout),
-    };
-    profileRef.current = profile;
-    setPlayerName(name);
-    setShowMobilePicker(false);
-    identifyPlayer(name);
-    if (isNewPlayer) trackCharacterCreated(name);
-    mpRef.current?.sendProfile(profile);
-    mpRef.current?.requestConnect();
-  };
-
   // ── Stage audio mute (YouTube players only) ────────────────────────────────
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
-    setAudioMuted(muted);
-  }, [muted]);
+    setAudioMuted(homePreview ? (mutedProp ?? false) : muted);
+  }, [homePreview, muted, mutedProp]);
 
   useEffect(() => {
+    if (homePreview) return;
+
     const SPEED      = 3.5;
     const GREET_DIST = 5; // % of viewport — must be quite close to "touch"
 
@@ -728,7 +704,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       setFacing(towardNpc);
       setWalking(false);
       walkingRef.current = false;
-      if (mobileLoungeRef.current) {
+      if (mobileDevice) {
         trackMobileControl('connect_npc');
         setChatMode('chat');
         setTimeout(() => chatInputRef.current?.focus(), 120);
@@ -779,22 +755,16 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
-      if (mobileLoungeRef.current) {
-        if (['ArrowLeft', 'a', 'A', 'ArrowRight', 'd', 'D', 'ArrowUp', 'w', 'W', ' '].includes(e.key)) {
-          e.preventDefault();
-        }
-      } else {
-        if (['ArrowLeft',  'a', 'A'].includes(e.key)) { keysRef.current.left  = true;  e.preventDefault(); }
-        if (['ArrowRight', 'd', 'D'].includes(e.key)) { keysRef.current.right = true;  e.preventDefault(); }
-        if (
-          !showWelcomeRef.current
-          && !showMobilePickerRef.current
-          && ['ArrowLeft', 'a', 'A', 'ArrowRight', 'd', 'D'].includes(e.key)
-        ) {
-          mpRef.current?.requestConnect();
-        }
+      if (['ArrowLeft',  'a', 'A'].includes(e.key)) { keysRef.current.left  = true;  e.preventDefault(); }
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) { keysRef.current.right = true;  e.preventDefault(); }
+      if (
+        !showWelcomeRef.current
+        && !showCityPickerRef.current
+        && ['ArrowLeft', 'a', 'A', 'ArrowRight', 'd', 'D'].includes(e.key)
+      ) {
+        mpRef.current?.requestConnect();
       }
-      if (!mobileLoungeRef.current && ['ArrowUp', 'w', 'W', ' '].includes(e.key)) {
+      if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) {
         e.preventDefault();
         if (greetingRef.current !== null || peerChatRef.current !== null) {
           disconnect();
@@ -858,7 +828,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
     // Stream local position to PartyKit — ~15 Hz desktop, ~7.5 Hz mobile, only on change.
     const broadcastMove = () => {
-      if (showWelcomeRef.current || showMobilePickerRef.current) return;
+      if (showWelcomeRef.current || showCityPickerRef.current) return;
       const last = lastSentRef.current;
       const wx = worldRef.current;
       const f  = facingRef.current;
@@ -902,7 +872,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
 
     const loop = () => {
       const inChatFreeze = greetingRef.current !== null || peerChatRef.current !== null;
-      const noWalk = inChatFreeze || mobileLoungeRef.current;
+      const noWalk = inChatFreeze;
 
       if (noWalk) {
         keysRef.current.left = false;
@@ -916,7 +886,6 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         tickNpcs();
         tickStagePlayers();
         updateViewBoxes(worldRef.current);
-        updateRoadSignVisibility(signsRef.current, worldRef.current);
         if (frameCountRef.current % 4 === 0) updateDanceState(worldRef.current);
         if (shouldBroadcastMove()) broadcastMove();
         gameWorldOffRef.current = worldRef.current;
@@ -937,6 +906,8 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           if (facingRef.current !== 'right') { facingRef.current = 'right'; setFacing('right'); }
           isWalking = true;
         }
+        const { min, max } = cityBoundsRef.current;
+        worldRef.current = Math.max(min, Math.min(max, worldRef.current));
       }
 
       if (isWalking !== walkingRef.current) {
@@ -947,7 +918,6 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       // Always update viewBoxes + sign overlap imperatively — no React re-render
       const off = worldRef.current;
       updateViewBoxes(off);
-      updateRoadSignVisibility(signsRef.current, off);
       tickNpcs();
       tickStagePlayers();
 
@@ -1027,12 +997,32 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
       window.removeEventListener('keydown', onDown, true);
       window.removeEventListener('keyup',   onUp);
     };
-  }, []);
+  }, [homePreview]);
+
+  // Home backdrop — keep stage video in sync without gameplay loop.
+  useEffect(() => {
+    if (!homePreview) return;
+
+    bootstrapStageSyncFromApi();
+
+    const loop = () => {
+      runAllStagePlayerSyncs();
+      updateViewBoxes(worldRef.current);
+      gameWorldOffRef.current = worldRef.current;
+      rafRef.current = requestAnimationFrame(loop);
+    };
+
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [homePreview]);
 
   const inConversation = greetingNpc !== null || peerChatId !== null;
   const showMobileChatBar = mobileDevice
     && !showWelcome
-    && !showMobilePicker
+    && !showCityPicker
     && (
       (chatMode === 'ambient' && !inConversation)
       || (chatMode === 'chat' && inConversation)
@@ -1064,14 +1054,9 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
     ? (mp.remoteStateRef.current.get(nearPeer)?.name ?? 'Wanderer')
     : null;
 
-  const loungeVisual = mobileLoungeActive && mobileLoungeStage
-    ? mobileLoungeStageOption(mobileLoungeStage)
-    : null;
-
   return (
     <div
       className="game-surface"
-      data-mobile-lounge={mobileLoungeActive ? '' : undefined}
       style={{
         width: '100vw',
         height: '100vh',
@@ -1081,51 +1066,47 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         touchAction: 'none',
         WebkitUserSelect: 'none',
         userSelect: 'none',
-        ...(mobileLoungeActive ? {
-          ['--char-bottom-mobile' as string]: CHAR_BOTTOM_MOBILE_LOUNGE,
-          ['--crowd-depth-px' as string]: `${MOBILE_CROWD_DEPTH_PX}px`,
-        } : {}),
       }}
     >
-      <div
-        className={mobileLoungeActive ? 'mobile-lounge-scene' : undefined}
-        style={loungeVisual ? {
-          ['--lounge-scale' as string]: String(loungeVisual.scale),
-          ['--lounge-origin-y' as string]: `${loungeVisual.originYPercent}%`,
-        } : undefined}
-      >
+      <div>
         <SkyLayer ref={skyRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
         <SkyCloudsLayer ref={cloudsRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
-        {!mobileLoungeActive && <SkyCreaturesLayer period={skyPeriod} />}
+        <SkyCreaturesLayer period={skyPeriod} />
         <MidLayer
           ref={midRef}
           foregroundRef={midForegroundRef}
           worldOff={midScrollWorldOff}
           deepLinkRoute={effectiveVenueRoute}
           hideTrees={mobileDevice}
+          isolatedTileIndex={isolatedTile}
         />
-        <GroundLayer ref={groundRef} worldOff={gndScrollWorldOff} hideTrees={mobileDevice} />
+        <GroundLayer
+          ref={groundRef}
+          worldOff={gndScrollWorldOff}
+          hideTrees={mobileDevice}
+          isolatedTileIndex={isolatedTile}
+        />
         <CabanaForegroundLayer ref={cabanaRef} worldOff={gndScrollWorldOff} />
-        <VenueSignsLayer  ref={signsRef}  worldOff={gndScrollWorldOff} />
-        {!effectiveVenueRoute && (
-          <WelcomeSignLayer
-            ref={welcomeRef}
-            spawnWorldOff={spawnWorldOff}
-          />
-        )}
+        <LovingCarLayer />
 
-        {!mobileLoungeActive && <LovingCarLayer />}
-
-        {/* Ground Score coins — real players only (NPCs never collect). */}
-        {!mobileLoungeActive && (
+        {!homePreview && (
           <GroundScoreLayer
-            active={!showWelcome && !showMobilePicker}
+            active={!showWelcome && !showCityPicker}
             onPickup={handleGroundScore}
           />
         )}
 
+        {!homePreview && (
+          <CityNavSigns
+            ref={navSignsRef}
+            route={effectiveVenueRoute}
+            worldOff={gndScrollWorldOff}
+            active={!showWelcome && !showCityPicker}
+          />
+        )}
+
         {/* Autonomous NPCs */}
-        {CHARACTERS.map((cfg, i) => {
+        {!homePreview && CHARACTERS.map((cfg, i) => {
           if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
           const testing = TEST_SPAWN_NPC_ID === cfg.id;
           return (
@@ -1155,7 +1136,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         })}
 
         {/* Remote human players (PartyKit presence) */}
-        {mp.remoteIds.map(pid => (
+        {!homePreview && mp.remoteIds.map(pid => (
           <RemotePlayer
             key={pid}
             id={pid}
@@ -1170,7 +1151,7 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           />
         ))}
 
-        {TEST_PLAYER_VARIANT_GALLERY ? (
+        {!homePreview && (TEST_PLAYER_VARIANT_GALLERY ? (
           <PlayerVariantGallery
             walking={walking}
             dancing={TEST_FORCE_DANCE || playerDancing}
@@ -1223,9 +1204,11 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
               />
             </div>
           </div>
-        )}
+        ))}
       </div>
 
+      {!homePreview && (
+      <>
       <BottomControlPanel
         worldOff={midScrollWorldOff}
         playerName={playerName}
@@ -1237,8 +1220,9 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
               ? nearPeerName
               : null
         }
-        hidden={showWelcome || showMobilePicker}
-        onConnectTap={mobileLoungeActive ? () => connectNearRef.current?.() : undefined}
+        hidden={showWelcome || showCityPicker}
+        onConnectTap={mobileDevice ? () => connectNearRef.current?.() : undefined}
+        onOpenCityPicker={() => setShowCityPicker(true)}
         vendorShopOpen={vendorShopManualOpen}
         onToggleVendorShop={toggleVendorShop}
         onVendorShopWarm={warmVendorShop}
@@ -1274,41 +1258,26 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         </div>
       )}
 
-      {/* Vignette */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30,
-        background: 'radial-gradient(ellipse 92% 90% at 50% 46%, transparent 38%, rgba(0,0,0,.5) 100%)',
-      }} />
-
       <StickerTripOverlay active={hasStickerTripActive(playerLoadout)} />
 
-      {/* Welcome popup — desktop first visit (no stored name). */}
-      {showWelcome && !mobileDevice && (
+      {showWelcome && (
         <WelcomePopup
           balloonColor={myColor}
+          initialRoute={effectiveVenueRoute}
           onEnter={handleWelcomeName}
         />
       )}
 
-      {showMobilePicker && mobileDevice && (
-        <MobileStagePicker
-          balloonColor={myColor}
-          initialRoute={venueRoute ?? mobileLoungeStage}
-          onEnter={handleMobileLoungeEnter}
+      {showCityPicker && (
+        <StagePicker
+          variant="swap"
+          requireName={false}
+          initialRoute={effectiveVenueRoute}
+          onEnter={handleCityPickerEnter}
+          onClose={() => setShowCityPicker(false)}
         />
       )}
 
-      {showStageSwap && mobileDevice && mobileLoungeActive && (
-        <MobileStageSwapModal
-          currentRoute={mobileLoungeStage}
-          onSwap={handleMobileStageSwap}
-          onClose={() => setShowStageSwap(false)}
-        />
-      )}
-
-     
-
-      {/* Keyboard hint + mute — hidden on mobile, bottom-right */}
       <div data-paraloid-ui className="hidden md:flex" style={{
         position: 'absolute', bottom: 22, right: 22,
         gap: 10, alignItems: 'center', zIndex: 40,
@@ -1361,14 +1330,13 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
         />
       )}
 
-      {!showWelcome && !showMobilePicker && (
+      {!showWelcome && !showCityPicker && (
         <MobileGameControls
           muted={muted}
-          loungeMode={mobileLoungeActive}
           vendorShopOpen={vendorShopManualOpen}
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
-          onOpenStageSwap={mobileLoungeActive ? () => setShowStageSwap(true) : undefined}
+          onOpenStageSwap={() => setShowCityPicker(true)}
           onOpenAmbientChat={mobileDevice ? handleOpenAmbientChat : undefined}
           ambientChatOpen={chatMode === 'ambient'}
           onToggleMute={() => setMuted(m => !m)}
@@ -1385,6 +1353,15 @@ export default function SFCity({ spawnWorldOff: spawnOverride, venueRoute }: SFC
           }}
         />
       )}
+
+      </>
+      )}
+
+      {/* Vignette */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30,
+        background: 'radial-gradient(ellipse 92% 90% at 50% 46%, transparent 38%, rgba(0,0,0,.5) 100%)',
+      }} />
 
     </div>
   );

@@ -45,6 +45,8 @@ type Options = PeerEvents & {
   profileRef: React.RefObject<PlayerProfile>;
   /** Spawn position to announce on join (shared world coordinate). */
   spawnWorldOffRef: React.RefObject<number>;
+  /** PartyKit room — one per city/stage for presence isolation. */
+  roomId: string;
 };
 
 // Host of the deployed PartyKit room (whichstage.katysovas.partykit.dev).
@@ -132,7 +134,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   useEffect(() => {
     if (!shouldConnect) return;
 
-    const socket = new PartySocket({ host: partyKitHost(), room: ROOM_ID });
+    const socket = new PartySocket({ host: partyKitHost(), room: opts.roomId });
     socketRef.current = socket;
 
     const announceJoin = () => {
@@ -259,7 +261,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
     };
   // PARTYKIT_HOST is constant; refs are stable.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldConnect]);
+  }, [shouldConnect, opts.roomId]);
 
   const sendMove = useCallback((worldX: number, facing: Facing, walking: boolean) => {
     requestConnect();

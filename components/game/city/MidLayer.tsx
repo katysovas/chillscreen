@@ -24,6 +24,7 @@ import {
 import { StageToiletRow, StageToiletsBeside, StageToiletsFlanking } from './street/StageToiletRow';
 import { STAGE_TOILET, stageToiletStartX } from '@/lib/stageToilets';
 import { CITY_MID_W, MID_F, midOriginForTile, midWidthForTile, nearMidTiles } from '@/lib/parallax';
+import { nearIsolatedMidTiles } from '@/lib/isolatedCity';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
 import { GradientMidTerrain } from './shared/GradientMidTerrain';
 import { CityBuildingsTile } from './buildings/CityBuildingsTile';
@@ -50,6 +51,8 @@ type MidLayerProps = {
   foregroundRef?: React.RefObject<SVGSVGElement | null>;
   /** Hide ridge trees on mobile — less clutter + perf. */
   hideTrees?: boolean;
+  /** When set, only this city tile is rendered (isolated city mode). */
+  isolatedTileIndex?: number;
 };
 
 function tileContentScale(tileIndex: number) {
@@ -142,8 +145,11 @@ function forestLiveOnTile(
 
 /** Mid parallax: SF → town → Vegas → town → SoCal → town → Tentaroo → town → Forest → town → Seattle → town. */
 export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
-  function MidLayer({ worldOff, deepLinkRoute, foregroundRef, hideTrees = false }, ref) {
+  function MidLayer({ worldOff, deepLinkRoute, foregroundRef, hideTrees = false, isolatedTileIndex }, ref) {
     const vx = worldOff * MID_F;
+    const nearTiles = isolatedTileIndex != null
+      ? nearIsolatedMidTiles(isolatedTileIndex)
+      : nearMidTiles;
 
     const cinemaLive   = cinemaLiveTile(vx);
     const concertLive  = concertLiveTile(vx);
@@ -297,7 +303,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
           viewBoxX={vx}
           tileWidth={CITY_MID_W}
           tileOrigin={midOriginForTile}
-          nearTileIndices={nearMidTiles}
+          nearTileIndices={nearTiles}
           defs={atmoDefs}
           shapeRendering="optimizeSpeed"
         >
@@ -309,7 +315,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             viewBoxX={vx}
             tileWidth={CITY_MID_W}
             tileOrigin={midOriginForTile}
-            nearTileIndices={nearMidTiles}
+            nearTileIndices={nearTiles}
             shapeRendering="optimizeSpeed"
             style={{ pointerEvents: 'none', zIndex: 4 }}
           >

@@ -6,6 +6,7 @@ import {
   gndWidthForTile,
   nearGndTiles,
 } from '@/lib/parallax';
+import { nearIsolatedGndTiles } from '@/lib/isolatedCity';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
 import { skipGroundStreetProp, skipGroundStreetTree } from '@/lib/stageTreeExclusion';
 import { SleepingCatsGround } from '../SleepingCat';
@@ -24,6 +25,8 @@ const BUS_STOPS = [880, 2200];
 type GroundLayerProps = {
   worldOff: number;
   hideTrees?: boolean;
+  /** When set, only this city tile is rendered (isolated city mode). */
+  isolatedTileIndex?: number;
 };
 
 function groundTileContent(tile: number, hideTrees = false) {
@@ -142,8 +145,11 @@ function groundTileContent(tile: number, hideTrees = false) {
 }
 
 export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
-  function GroundLayer({ worldOff, hideTrees = false }, ref) {
+  function GroundLayer({ worldOff, hideTrees = false, isolatedTileIndex }, ref) {
     const vx = worldOff * GND_F;
+    const nearTiles = isolatedTileIndex != null
+      ? nearIsolatedGndTiles(isolatedTileIndex)
+      : nearGndTiles;
 
     return (
       <ParallaxSvgLayer
@@ -151,7 +157,7 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
         viewBoxX={vx}
         tileWidth={CITY_GND_W}
         tileOrigin={gndOriginForTile}
-        nearTileIndices={nearGndTiles}
+        nearTileIndices={nearTiles}
         shapeRendering="optimizeSpeed"
         style={{ zIndex: 5 }}
         children={tile => groundTileContent(tile, hideTrees)}

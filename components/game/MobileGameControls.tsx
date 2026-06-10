@@ -1,7 +1,7 @@
 'use client';
 
 import { trackMobileControl } from '@/lib/gameInputAnalytics';
-import { ShoppingCartIcon } from './BottomControlPanel';
+import { ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
 import { DPadBtn } from './DPadBtn';
 
 type Props = {
@@ -21,34 +21,6 @@ type Props = {
   onOpenAmbientChat?: () => void;
   ambientChatOpen?: boolean;
 };
-
-function StageSwapIcon({ size = 24 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-      style={{ display: 'block' }}
-    >
-      <path
-        d="M20 7H4m4-4L4 7l4 4"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M4 17h16m-4-4 4 4-4 4"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function ChatIcon({ size = 24 }: { size?: number }) {
   return (
@@ -200,7 +172,7 @@ export function MobileGameControls({
               color: 'rgba(255,255,255,.78)',
             }}
           >
-            <StageSwapIcon />
+            <StageSwapIcon size={24} />
           </button>
         )}
 

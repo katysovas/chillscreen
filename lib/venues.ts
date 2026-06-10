@@ -286,8 +286,8 @@ export function isConcertTileInView(vx: number) {
 }
 
 /** Approximate venue footprint halves for the "any stage visible" check. */
-const CINEMA_VIEW_HALF = 240;
-const CONCERT_VIEW_HALF = 320;
+const CINEMA_VIEW_HALF = 300;
+const CONCERT_VIEW_HALF = 360;
 
 /**
  * True when ANY stage/venue footprint is currently on screen (not just the

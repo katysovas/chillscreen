@@ -67,8 +67,8 @@ const STAGE_SCALE = 1.55;
 
 export const CONCERT_WIDTH = Math.round(BASE_W * STAGE_SCALE);
 export const CONCERT_HEIGHT = Math.round(BASE_H * STAGE_SCALE);
-/** Display scale — between original (0.74) and the prior 2× boost (1.48). */
-export const CONCERT_SCALE = 1.0;
+/** Display scale — slight boost over the 1.0 baseline. */
+export const CONCERT_SCALE = 1.1;
 /** Stage deck y inside the scaled SVG viewBox (BASE 370 × internal STAGE_SCALE). */
 export const CONCERT_DECK_VIEWBOX_Y = Math.round(370 * STAGE_SCALE);
 
@@ -150,23 +150,6 @@ function ConcertChrome({
             <stop offset="100%" stopColor="transparent" />
           </linearGradient>
         </defs>
-
-        {label && !isSeattle && (
-          <g>
-            <line x1={150} y1={-6} x2={166} y2={14} stroke="#16241a" strokeWidth="3" />
-            <line x1={370} y1={-6} x2={354} y2={14} stroke="#16241a" strokeWidth="3" />
-            <rect x={84} y={-46} width={352} height={38} rx={5}
-              fill="#0a1610" stroke="rgba(56,216,128,.55)" strokeWidth="1.5" />
-            <rect x={84} y={-46} width={352} height={38} rx={5}
-              fill={`url(#${gid('scrGlow')})`} opacity={0.6} />
-            <text x={260} y={-20} textAnchor="middle"
-              fontFamily="system-ui, sans-serif" fontWeight="900"
-              fontSize="20" letterSpacing="5" fill="#62f2a6"
-              style={{ animation: 'glow-b 3.2s ease-in-out infinite' }}>
-              {label.toUpperCase()}
-            </text>
-          </g>
-        )}
 
         <path d="M0,62 L0,58 L260,4 L520,58 L520,62 Z" fill="#0c1810" />
         <path d="M0,58 L260,4 L520,58 Z" fill="#0e1c12" />

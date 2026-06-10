@@ -41,6 +41,7 @@ export type ArrowSignBoardProps = {
   halfLen?: number;
   halfH?: number;
   tipLen?: number;
+  fontSize?: number;
 };
 
 /** Arrow-shaped direction sign — same chevron as the welcome junction wings. */
@@ -53,9 +54,10 @@ export function ArrowSignBoard({
   halfLen = 66,
   halfH = 21,
   tipLen = 20,
+  fontSize: fontSizeProp,
 }: ArrowSignBoardProps) {
   const d = arrowSignPath(dir, cy, halfLen, halfH, tipLen);
-  const fontSize = label.length > 14 ? 8.5 : label.length > 10 ? 9.5 : 11;
+  const fontSize = fontSizeProp ?? (label.length > 14 ? 8.5 : label.length > 10 ? 9.5 : 11);
   const labelX = dir === 'left' ? halfLen * 0.22 : -halfLen * 0.22;
 
   return (

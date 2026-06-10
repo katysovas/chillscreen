@@ -5,6 +5,7 @@ import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
 import { currentSchedule, useStageChannel } from '@/lib/stageClock';
 import type { StageChannel, StageVideo } from '@/lib/stageVideos';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
+import { getPinnedStageChannel } from '@/lib/pinnedStageChannel';
 import { isStageChannelInView } from '@/lib/venues';
 import { registerStagePlayerNudge, registerStagePlayerPlayingListener, registerStagePlayerSync } from '@/lib/stagePlayerRegistry';
 import {
@@ -103,8 +104,11 @@ export function useStagePlayer({
   const onNowPlayingRef = useRef(onNowPlaying);
   onNowPlayingRef.current = onNowPlaying;
 
+  // The page's pinned channel (isolated-city mode) is always "in view" —
+  // audio keeps playing while the player walks around the city.
   const isStageInView = useCallback(
-    () => isStageChannelInView(channel, gameWorldOffRef.current),
+    () => channel === getPinnedStageChannel()
+      || isStageChannelInView(channel, gameWorldOffRef.current),
     [channel],
   );
 

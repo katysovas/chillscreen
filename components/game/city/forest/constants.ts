@@ -4,7 +4,7 @@ export const FOREST_GND = 660;
 /** The Forest Stage — glowing woods main stage, center of the tile. */
 export const FOREST_STAGE_MID_X = 1500;
 
-export const FOREST_STAGE_SCALE = 1.75;
+export const FOREST_STAGE_SCALE = 1.95;
 
 export const FOREST_STAGE_PUSH_Y = 88;
 

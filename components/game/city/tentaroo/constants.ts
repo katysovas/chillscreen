@@ -1,5 +1,5 @@
 /** Welcome arch center x on Tentaroo tiles (tentaroo-arch.svg). */
-export const TENTAROO_ARCH_MID_X = 1160;
+export const TENTAROO_ARCH_MID_X = 860;
 
 /** Display scale for tentaroo-arch.svg (feet stay on {@link TENTAROO_GND}). */
 export const TENTAROO_ARCH_SCALE = 0.85;
@@ -16,7 +16,7 @@ export const TENTAROO_GND = 660;
 /** Which Stage — bioluminescent main stage, east of the arch. */
 export const WHICH_STAGE_MID_X = 1620;
 
-export const WHICH_STAGE_SCALE = 1.75;
+export const WHICH_STAGE_SCALE = 1.95;
 
 export const WHICH_STAGE_PUSH_Y = 88;
 

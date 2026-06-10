@@ -12,10 +12,17 @@ import { getSkyPeriod, skyTheme } from '@/lib/skyTimeOfDay';
 
 type SFCityProps = {
   spawnWorldOff?: number;
-  venueRoute?: VenueRoute;
+  venueRoute: VenueRoute;
+  homePreview?: boolean;
+  muted?: boolean;
 };
 
-type SFCityLoaderProps = SFCityProps;
+type SFCityLoaderProps = SFCityProps & {
+  /** Home `/` backdrop — stage view only, no gameplay UI. */
+  homePreview?: boolean;
+  /** Controlled mute for home preview audio. */
+  muted?: boolean;
+};
 
 /** Wait this long before showing any loader UI — avoids flash on fast loads. */
 const SHELL_DELAY_MS = 700;
@@ -66,7 +73,12 @@ function GameLoadingShell({ visible }: { visible: boolean }) {
 }
 
 /** Code-split entry — keeps the main route JS small until the game is needed. */
-export default function SFCityLoader({ spawnWorldOff, venueRoute }: SFCityLoaderProps) {
+export default function SFCityLoader({
+  spawnWorldOff,
+  venueRoute,
+  homePreview,
+  muted,
+}: SFCityLoaderProps) {
   const [Game, setGame] = useState<SFCityComponent | null>(null);
   const [showShell, setShowShell] = useState(false);
   const [shellVisible, setShellVisible] = useState(false);
@@ -129,7 +141,12 @@ export default function SFCityLoader({ spawnWorldOff, venueRoute }: SFCityLoader
             transition: gameVisible ? `opacity ${FADE_MS}ms ease` : undefined,
           }}
         >
-          <Game spawnWorldOff={spawnWorldOff} venueRoute={venueRoute} />
+          <Game
+            spawnWorldOff={spawnWorldOff}
+            venueRoute={venueRoute}
+            homePreview={homePreview}
+            muted={muted}
+          />
         </div>
       )}
     </>

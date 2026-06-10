@@ -432,5 +432,5 @@ export default function Cinema({ live = true }: { live?: boolean }) {
 
 export { CINEMA_MID_X } from '@/lib/venues';
 export const CINEMA_WIDTH = CIN_W;
-export const CINEMA_SCALE = 0.74;
+export const CINEMA_SCALE = 1.2;
 export const CINEMA_HEIGHT = 593;

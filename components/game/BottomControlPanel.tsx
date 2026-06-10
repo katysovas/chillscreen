@@ -20,6 +20,8 @@ type BottomControlPanelProps = {
   vendorShopOpen?: boolean;
   onToggleVendorShop?: () => void;
   onVendorShopWarm?: () => void;
+  /** Opens the city / stage picker (desktop + in-game). */
+  onOpenCityPicker?: () => void;
   /** Hides invite + cart — those move to MobileGameControls on phone. */
   isMobile?: boolean;
 };
@@ -96,6 +98,34 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   { q: 'Where\u2019s the music?', a: 'Walk to any stage. It plays when you\u2019re close.' },
 ];
 
+export function StageSwapIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      style={{ display: 'block' }}
+    >
+      <path
+        d="M20 7H4m4-4L4 7l4 4"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4 17h16m-4-4 4 4-4 4"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function ShoppingCartIcon({ size = 18 }: { size?: number }) {
   return (
     <svg
@@ -131,6 +161,7 @@ export function BottomControlPanel({
   vendorShopOpen = false,
   onToggleVendorShop,
   onVendorShopWarm,
+  onOpenCityPicker,
   isMobile = false,
 }: BottomControlPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -161,6 +192,7 @@ export function BottomControlPanel({
   const hasMessages = showConnect || showInviteBtn;
   const showCart = Boolean(onToggleVendorShop) && !isMobile;
   const showHelp = !isMobile;
+  const showCityPicker = Boolean(onOpenCityPicker) && !isMobile;
 
   const copyLink = useCallback(async () => {
     if (!inviteUrl) return;
@@ -479,7 +511,31 @@ export function BottomControlPanel({
           </button>
         )}
 
-        {showCart && showHelp && <div style={panelDivider} aria-hidden />}
+        {showCart && (showHelp || showCityPicker) && <div style={panelDivider} aria-hidden />}
+
+        {showCityPicker && (
+          <button
+            type="button"
+            onClick={onOpenCityPicker}
+            aria-label="Change city"
+            title="Change city"
+            style={{
+              ...ghostBtn,
+              padding: '8px 14px',
+              background: 'rgba(255,255,255,.06)',
+              color: 'rgba(255,255,255,.78)',
+              cursor: 'pointer',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <StageSwapIcon />
+          </button>
+        )}
+
+        {showCityPicker && showHelp && <div style={panelDivider} aria-hidden />}
 
         {showHelp && (
           <button
