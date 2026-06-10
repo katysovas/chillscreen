@@ -159,7 +159,7 @@ export function CityVenuesTile({
 
   return (
     <>
-      {concertBlock}
+      {concertBlock && deepLinkRoute !== 'cinema' ? concertBlock : null}
       {cinemaBlock}
     </>
   );

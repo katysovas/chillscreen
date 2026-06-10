@@ -141,6 +141,9 @@ export function isVenueLive(
   focus: VenueKind,
   deepLinkRoute?: VenueRoute,
 ): boolean {
+  if (deepLinkRoute === 'cinema') {
+    return isDeepLinkVenueLive('cinema', kind, tileIndex);
+  }
   if (deepLinkRoute && isDeepLinkVenueLive(deepLinkRoute, kind, tileIndex)) {
     return true;
   }

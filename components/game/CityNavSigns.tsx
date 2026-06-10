@@ -25,7 +25,8 @@ const VIEW_W = 1400;
  * bounds.min the screen shows [min, min+VIEW_W] — the left sign must sit
  * inside that range, and the right sign near max+VIEW_W.
  */
-const SIGN_EDGE_INSET_PX = 150;
+/** Inset from viewport edge at walk bounds — wing + pulse need ~130px clearance. */
+const SIGN_EDGE_INSET_PX = 260;
 
 /** City icon + accent for the sign boards (matches the old junction signs). */
 const SIGN_STYLE: Record<VenueRoute, { icon: string; accent: string }> = {

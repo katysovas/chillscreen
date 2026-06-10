@@ -6,7 +6,7 @@ import { cityTileIndex } from '@/lib/spawn';
 import type { VenueRoute } from '@/lib/venueSlugs';
 import { venueSlugForRoute } from '@/lib/venueSlugs';
 import { worldOffForVenueRoute } from '@/lib/venueRoutes';
-import { MID_PARALLAX, VIEW_WIDTH } from '@/lib/venues';
+import { cinemaMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
 import { midOriginForTile, midWidthForTile, nearGndTiles, TOWN_MID_W } from '@/lib/worldTileGeometry';
 
 /** West-to-east picker order — used for edge navigation and city select. */
@@ -36,6 +36,35 @@ export function partyRoomIdForRoute(route: VenueRoute): string {
   return `whichstage-${venueSlugForRoute(route)}`;
 }
 
+function fullCityWorldOffBounds(route: VenueRoute): { min: number; max: number } {
+  const tile = cityTileForRoute(route);
+  const origin = midOriginForTile(tile);
+  const width = midWidthForTile(tile);
+  return {
+    min: (origin - TOWN_MID_W) / MID_PARALLAX,
+    max: (origin + width + TOWN_MID_W - VIEW_WIDTH) / MID_PARALLAX,
+  };
+}
+
+/** Chill Cinema shares the SF tile — keep walk range tight around the cinema. */
+function cinemaWorldOffBounds(): { min: number; max: number } {
+  const route = 'cinema' as const;
+  const tile = cityTileForRoute(route);
+  const midX = cinemaMidX(tile);
+  if (midX == null) throw new Error('cinema midX missing');
+
+  const full = fullCityWorldOffBounds(route);
+  const centerWorldOff = (midOriginForTile(tile) + midX - VIEW_CENTER_X) / MID_PARALLAX;
+
+  const westMidPx = 420;
+  const eastMidPx = 320;
+
+  return {
+    min: Math.max(full.min, centerWorldOff - westMidPx / MID_PARALLAX),
+    max: Math.min(full.max, centerWorldOff + eastMidPx / MID_PARALLAX),
+  };
+}
+
 /**
  * Walk bounds in worldOff units — derived from the MID tile, which defines the
  * city's visual extent (mid vx = worldOff * MID_PARALLAX). The rendered art
@@ -44,13 +73,8 @@ export function partyRoomIdForRoute(route: VenueRoute): string {
  * past the city edge into the connector town.
  */
 export function cityWorldOffBounds(route: VenueRoute): { min: number; max: number } {
-  const tile = cityTileForRoute(route);
-  const origin = midOriginForTile(tile);
-  const width = midWidthForTile(tile);
-  return {
-    min: (origin - TOWN_MID_W) / MID_PARALLAX,
-    max: (origin + width + TOWN_MID_W - VIEW_WIDTH) / MID_PARALLAX,
-  };
+  if (route === 'cinema') return cinemaWorldOffBounds();
+  return fullCityWorldOffBounds(route);
 }
 
 /**
@@ -97,11 +121,13 @@ function edgeIndexForRoute(route: VenueRoute): number {
 }
 
 export function prevCityRoute(route: VenueRoute): VenueRoute {
+  if (route === 'cinema') return 'outside-hands';
   const i = edgeIndexForRoute(route);
   return EDGE_ORDER[(i - 1 + EDGE_ORDER.length) % EDGE_ORDER.length]!;
 }
 
 export function nextCityRoute(route: VenueRoute): VenueRoute {
+  if (route === 'cinema') return 'edc';
   const i = edgeIndexForRoute(route);
   return EDGE_ORDER[(i + 1) % EDGE_ORDER.length]!;
 }
