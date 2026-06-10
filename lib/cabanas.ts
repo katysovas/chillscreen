@@ -1,4 +1,3 @@
-import { FOREST_STAGE_MID_X } from '@/components/game/city/forest/constants';
 import { WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
 import { WORLD_TILE_CYCLE } from './worldTiles';
 import { gndOriginForTile, midOriginForTile } from './worldTileGeometry';
@@ -10,9 +9,6 @@ const EDC_CABANA_LOCAL_X = 1200;
 
 /** Tentaroo tile — Which Stage home (mid layer). */
 const TENTAROO_SLOT = 6;
-
-/** Forest tile — Electric Forest main stage (mid layer). */
-const FOREST_SLOT = 8;
 
 /** On-screen x when a cabana sits beside its stage at scroll center (matches EDC preview). */
 const CABANA_BESIDE_STAGE_SCREEN_X = 1222.8571428571413;
@@ -53,11 +49,6 @@ function cabanaBesideStageWorldX(
 /** Absolute ground x beside Which Stage. */
 export function whichStageCabanaWorldX(cycleIndex: number): number {
   return cabanaBesideStageWorldX(cycleIndex, TENTAROO_SLOT, WHICH_STAGE_MID_X);
-}
-
-/** Absolute ground x beside The Forest stage. */
-export function forestStageCabanaWorldX(cycleIndex: number): number {
-  return cabanaBesideStageWorldX(cycleIndex, FOREST_SLOT, FOREST_STAGE_MID_X);
 }
 
 export type CabanaTheme = Partial<{
@@ -134,19 +125,9 @@ const WHICH_STAGE_CABANA: CabanaPlacement = {
   logoAsset: CABANA_DISCORD_LOGO,
 };
 
-const FOREST_CABANA: CabanaPlacement = {
-  id: 'forest-cabana',
-  x: forestStageCabanaWorldX(0),
-  scale: 0.44,
-  groundY: CABANA_GROUND_Y,
-  bannerLine1: 'VIP',
-  bannerLine2: 'Electric Forest',
-  logoAsset: CABANA_DISCORD_LOGO,
-};
-
 /** Static cabanas — always mounted; the scrolling viewBox handles visibility. */
 export function staticCabanaPlacements(): CabanaPlacement[] {
-  return [EDC_PREVIEW_CABANA, WHICH_STAGE_CABANA, FOREST_CABANA];
+  return [EDC_PREVIEW_CABANA, WHICH_STAGE_CABANA];
 }
 
 /** SVG transform — feet on `groundY` even when scaled (scale pivots at the base). */
