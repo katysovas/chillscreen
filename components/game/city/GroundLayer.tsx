@@ -25,11 +25,13 @@ const BUS_STOPS = [880, 2200];
 type GroundLayerProps = {
   worldOff: number;
   hideTrees?: boolean;
+  /** Skip animated sidewalk dogs (e.g. Silent Disco). */
+  hideStreetDogs?: boolean;
   /** When set, only this city tile is rendered (isolated city mode). */
   isolatedTileIndex?: number;
 };
 
-function groundTileContent(tile: number, hideTrees = false) {
+function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = false) {
   // Draw the road/sidewalk at the tile's natural width and show only the props
   // that fit. Short town tiles previously squeezed everything with a non-uniform
   // scale(scale,1), distorting trees, hydrants, benches and cats — never scale
@@ -100,7 +102,9 @@ function groundTileContent(tile: number, hideTrees = false) {
         ) : null
       ))}
       <SleepingCatsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
-      <StreetDogsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
+      {!hideStreetDogs && (
+        <StreetDogsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
+      )}
       {LAMP_XS.map((x, i) => (
         fits(x, 30) && !skipGroundStreetProp(tile, x, w) ? <LampPost key={i} x={x} y={GND_Y} /> : null
       ))}
@@ -145,7 +149,7 @@ function groundTileContent(tile: number, hideTrees = false) {
 }
 
 export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
-  function GroundLayer({ worldOff, hideTrees = false, isolatedTileIndex }, ref) {
+  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, isolatedTileIndex }, ref) {
     const vx = worldOff * GND_F;
     const nearTiles = isolatedTileIndex != null
       ? nearIsolatedGndTiles(isolatedTileIndex)
@@ -160,7 +164,7 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
         nearTileIndices={nearTiles}
         shapeRendering="optimizeSpeed"
         style={{ zIndex: 5 }}
-        children={tile => groundTileContent(tile, hideTrees)}
+        children={tile => groundTileContent(tile, hideTrees, hideStreetDogs)}
       />
     );
   },

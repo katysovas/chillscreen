@@ -20,6 +20,8 @@ export type CharacterDef = {
   personality: Personality;
   /** When set, NPC stays by this stage type (merch cart). */
   stageAnchor?: StageAnchorKind;
+  /** Spawn in the crowd in front of this stage (generated ambient NPCs). */
+  stageCrowd?: StageAnchorKind;
   /** Voice and temperament — fed into the NPC chat prompt. */
   personalityNotes: string;
   /** Scripted ambient mutterings (generated NPCs) — preferred over stage mumbles. */

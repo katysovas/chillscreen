@@ -38,7 +38,7 @@ const SKY_THEMES: Record<SkyPeriod, SkyTheme> = {
     birdStroke: '#1a2848',
     showClouds: false,
     showStars: true,
-    moon: { cx: 1160, cy: 98 },
+    moon: { cx: 720, cy: 88 },
   },
   morning: {
     gradient: [

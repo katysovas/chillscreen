@@ -1103,6 +1103,7 @@ export default function SFCity({
           ref={groundRef}
           worldOff={gndScrollWorldOff}
           hideTrees={mobileDevice}
+          hideStreetDogs={effectiveVenueRoute === 'silent-disco'}
           isolatedTileIndex={isolatedTile}
         />
         <CabanaForegroundLayer ref={cabanaRef} worldOff={gndScrollWorldOff} />

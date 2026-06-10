@@ -91,6 +91,7 @@ export const SkyLayer = memo(forwardRef<SVGSVGElement, SkyLayerProps>(
         style={{
           pointerEvents: 'none',
           transition: 'opacity .8s ease',
+          zIndex: 1,
         }}
       >
         {renderTile}

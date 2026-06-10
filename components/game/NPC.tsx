@@ -8,6 +8,7 @@ import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import {
+  crowdSpawnWorldX,
   STAGE_VENDOR_WANDER_PX,
   vendorAnchorGroundWorldX,
   type StageAnchorKind,
@@ -45,6 +46,7 @@ type NPCProps = NPCConfig & {
   /** Index in CHARACTERS — used by the shared movement RAF in SFCity. */
   index: number;
   stageAnchor?: StageAnchorKind;
+  stageCrowd?: StageAnchorKind;
   paused: boolean;
   greeting: boolean;
   greetFacing: 'left' | 'right';
@@ -85,12 +87,15 @@ const SCREEN_MAX = 130;
 const NPC_OFFSCREEN_LEFT = -22;
 const NPC_OFFSCREEN_RIGHT = 122;
 
+const ON_SCREEN_SPAWN_MIN = 15;
+const ON_SCREEN_SPAWN_MAX = 85;
+
 export default function NPC({
   characterId,
   index,
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
-  personality, stageAnchor,
+  personality, stageAnchor, stageCrowd,
   paused, greeting, greetFacing, dancing = false, greetingChat, ambientChat,
 }: NPCProps) {
   // ── React state: only for infrequent visual changes ─────────────────────────
@@ -210,6 +215,22 @@ export default function NPC({
     applyWalking(true);
   };
 
+  const spawnInPlace = (worldX: number) => {
+    worldXRef.current = worldX;
+    targetWorldRef.current = worldX;
+    const pct = worldXToScreenPct(worldX, gameWorldOffRef.current, vw());
+    screenXRef.current = pct;
+    onScreenRef.current = true;
+    if (divRef.current) {
+      divRef.current.style.left = `${pct}%`;
+      divRef.current.style.visibility = 'visible';
+    }
+    facingRef.current = Math.random() < 0.5 ? 'left' : 'right';
+    walkingRef.current = false;
+    stateRef.current = 'idle';
+    setActive(true);
+  };
+
   // ── Entry ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (stageAnchor) {
@@ -218,19 +239,28 @@ export default function NPC({
     }
 
     const t = setTimeout(() => {
+      if (stageCrowd) {
+        const worldX = crowdSpawnWorldX(stageCrowd, gameWorldOffRef.current, characterId, vw());
+        spawnInPlace(worldX ?? pctToWorld(startX));
+        return;
+      }
+
+      if (startX >= ON_SCREEN_SPAWN_MIN && startX <= ON_SCREEN_SPAWN_MAX) {
+        spawnInPlace(pctToWorld(startX));
+        return;
+      }
+
       worldXRef.current = pctToWorld(startX);
-      // Always pick an on-screen entry target so the NPC walks into view.
       const entryTargetPct = rndBetween(25, 75);
       targetWorldRef.current = pctToWorld(entryTargetPct);
       facingRef.current = entryTargetPct > startX ? 'right' : 'left';
       walkingRef.current = true;
       stateRef.current = 'wandering';
-      // setActive triggers a render → useLayoutEffect will sync facing/walking.
       setActive(true);
     }, entryDelay);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entryDelay, startX, stageAnchor]);
+  }, [entryDelay, startX, stageAnchor, stageCrowd, characterId]);
 
   // ── Decision loop ─────────────────────────────────────────────────────────
   useEffect(() => {

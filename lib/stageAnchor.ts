@@ -1,11 +1,13 @@
 import {
   groundWorldXAtVenue,
+  groundWorldXAtVenueScreenPct,
   liveCoachellaMidWorldX,
   liveConcertMidWorldX,
   liveEdcMidWorldX,
   liveForestStageMidWorldX,
   liveSilentDiscoMidWorldX,
   liveWhichStageMidWorldX,
+  venueScreenPct,
 } from './concertDance';
 
 /** Festival stages that host a Buz merch cart. */
@@ -23,6 +25,37 @@ const CROWD_OFFSET_PCT: Record<StageAnchorKind, number> = {
   forest: 9,
   'silent-disco': 9,
 };
+
+/** Half-width of the downstage spawn arc in screen-% (each side of crowd row). */
+const STAGE_CROWD_HALF_SPREAD_PCT = 44;
+
+function crowdSpreadT(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return (Math.abs(h) % 1000) / 1000;
+}
+
+/**
+ * Ground-world spawn for a stage-crowd NPC — spread across the full downstage
+ * floor in front of the live stage, not clustered on one anchor point.
+ */
+export function crowdSpawnWorldX(
+  kind: StageAnchorKind,
+  worldOff: number,
+  seed: string,
+  width?: number,
+): number | null {
+  const mid = liveAnchoredStageMidWorldX(kind, worldOff);
+  if (mid == null) return null;
+
+  const crowdRow = venueScreenPct(worldOff, mid) + CROWD_OFFSET_PCT[kind];
+  const t = crowdSpreadT(seed);
+  const screenPct = Math.max(
+    6,
+    Math.min(94, crowdRow + (t - 0.5) * STAGE_CROWD_HALF_SPREAD_PCT * 2),
+  );
+  return groundWorldXAtVenueScreenPct(worldOff, screenPct, width);
+}
 
 export function liveAnchoredStageMidWorldX(
   kind: StageAnchorKind,

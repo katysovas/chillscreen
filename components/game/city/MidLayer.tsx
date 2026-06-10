@@ -35,7 +35,7 @@ import { CityVenuesTile } from './CityVenuesLayer';
 import { MidBushes } from './MidBushes';
 import { SfMidFeatures } from './SfMidFeatures';
 import { SeattleBuildingsTile, SeattleMidFeatures } from './seattle';
-import { TentarooTile, WhichStage } from './tentaroo';
+import { TentarooArchLabel, TentarooTile, WhichStage } from './tentaroo';
 import { ForestTile, ForestStage, FOREST_STAGE_MID_X } from './forest';
 import { SilentDiscoTile, SilentDiscoStage, SILENT_DISCO_STAGE_MID_X } from './silent-disco';
 import { SouthernCaliforniaTile } from './sandiego';
@@ -313,6 +313,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
       if (isTentarooTile(t)) {
         return (
           <g transform={tf}>
+            <TentarooArchLabel tile={t} />
             <WhichStage live={whichStageLiveOnTile(t, vx, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, forestLive, silentDiscoLive, focus, deepLinkRoute)} />
           </g>
         );
@@ -354,6 +355,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
           nearTileIndices={nearTiles}
           defs={atmoDefs}
           shapeRendering="optimizeSpeed"
+          style={{ zIndex: 2 }}
         >
           {renderTile}
         </ParallaxSvgLayer>

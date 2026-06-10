@@ -8,8 +8,23 @@ import generatedNpcsFile from '@/data/generated-npcs.json';
 import type { CharacterDef } from '@/components/game/characters';
 import type { CharacterLoadout } from '@/components/game/characters/loadout';
 import type { Personality } from '@/components/game/NPC';
+import type { StageAnchorKind } from '@/lib/stageAnchor';
 import type { StageChannel } from '@/lib/stageVideos';
 import { dedupeGeneratedNpcs, type GeneratedNpc } from '@/lib/npcGenerator';
+
+/** Map playlist channel → live stage anchor for crowd placement. */
+const CHANNEL_STAGE_ANCHOR: Partial<Record<StageChannel, StageAnchorKind>> = {
+  'outside-lands': 'concert',
+  bumbershoot: 'concert',
+  coachella: 'coachella',
+  edc: 'edc',
+  'which-stage': 'which-stage',
+  forest: 'forest',
+  'silent-disco': 'silent-disco',
+};
+
+/** Share of generated NPCs already in front of the stage when the city loads. */
+const STAGE_CROWD_AT_LOAD_RATIO = 0.7;
 
 const FILE = generatedNpcsFile as {
   version: number;
@@ -43,21 +58,35 @@ function slugName(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 }
 
-/** Keep generated crowd near the stage — not wandering off-screen. */
-const GENERATED_WANDER: [number, number] = [20, 80];
+/** Generated crowd wanders across the full downstage floor. */
+const GENERATED_WANDER: [number, number] = [8, 92];
 
-function toCharacterDef(npc: GeneratedNpc, channel: StageChannel, index: number): CharacterDef {
+function toCharacterDef(
+  npc: GeneratedNpc,
+  channel: StageChannel,
+  index: number,
+  stageCrowdCount: number,
+): CharacterDef {
   const fromLeft = index % 2 === 0;
   const base = ARCHETYPE_PERSONALITY[npc.archetype];
+  const anchor = CHANNEL_STAGE_ANCHOR[channel];
+  const onStageAtLoad = index < stageCrowdCount;
+  const trickleIndex = Math.max(0, index - stageCrowdCount);
+
   return {
     id: `gen-${channel}-${index}-${slugName(npc.name)}`,
     name: npc.name,
     balloonColor: BALLOON_PALETTE[index % BALLOON_PALETTE.length]!,
     loadout: loadoutForProp(npc.prop),
     outfit: npc.outfit && npc.outfit !== 'none' ? npc.outfit : undefined,
-    startX: fromLeft ? -20 - (index % 3) * 4 : 112 + (index % 3) * 4,
+    startX: onStageAtLoad
+      ? 10 + (index % 17) * 5
+      : fromLeft ? -20 - (index % 3) * 4 : 112 + (index % 3) * 4,
     entryDirection: fromLeft ? 'right' : 'left',
-    entryDelay: 1_500 + index * 2_000,
+    entryDelay: onStageAtLoad
+      ? index * 250
+      : 6_000 + trickleIndex * 4_000,
+    stageCrowd: onStageAtLoad && anchor ? anchor : undefined,
     personality: { ...base, wanderRange: GENERATED_WANDER },
     personalityNotes: npc.personalityNotes || npc.vibe,
     ambientLines: npc.lines,
@@ -66,9 +95,9 @@ function toCharacterDef(npc: GeneratedNpc, channel: StageChannel, index: number)
 
 /** Generated NPCs for one stage channel, converted to CharacterDefs. */
 export function generatedCharactersForChannel(channel: StageChannel): CharacterDef[] {
-  return dedupeGeneratedNpcs(FILE.channels[channel] ?? []).map((npc, i) =>
-    toCharacterDef(npc, channel, i),
-  );
+  const npcs = dedupeGeneratedNpcs(FILE.channels[channel] ?? []);
+  const stageCrowdCount = Math.ceil(npcs.length * STAGE_CROWD_AT_LOAD_RATIO);
+  return npcs.map((npc, i) => toCharacterDef(npc, channel, i, stageCrowdCount));
 }
 
 /** All generated NPCs across every stage (chat API lookup). */

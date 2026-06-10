@@ -27,7 +27,7 @@ export function TentarooTile() {
         preserveAspectRatio="xMidYMax meet"
       />
       <image
-        href="/images/cities/tentaroo-arch.svg?v=2"
+        href="/images/cities/tentaroo-arch.svg?v=3"
         x={archX}
         y={archY}
         width={archW}
