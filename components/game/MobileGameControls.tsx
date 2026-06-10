@@ -2,18 +2,10 @@
 
 import { trackMobileControl } from '@/lib/gameInputAnalytics';
 import { ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
-import { DPadBtn } from './DPadBtn';
 
 type Props = {
   muted: boolean;
   onToggleMute: () => void;
-  onLeftStart: () => void;
-  onLeftEnd: () => void;
-  onRightStart: () => void;
-  onRightEnd: () => void;
-  onJump: () => void;
-  /** Hide D-pad — mobile lounge mode (mute only). */
-  loungeMode?: boolean;
   vendorShopOpen?: boolean;
   onToggleVendorShop?: () => void;
   onVendorShopWarm?: () => void;
@@ -58,16 +50,10 @@ const mobileActionBtn: React.CSSProperties = {
   padding: 0,
 };
 
-/** Thumb-zone D-pad (left) + shop + mute (right), safe-area aware — mobile only. */
+/** Action tray (chat, stage swap, cart, mute) — mobile only. */
 export function MobileGameControls({
   muted,
   onToggleMute,
-  onLeftStart,
-  onLeftEnd,
-  onRightStart,
-  onRightEnd,
-  onJump,
-  loungeMode = false,
   vendorShopOpen = false,
   onToggleVendorShop,
   onVendorShopWarm,
@@ -82,21 +68,11 @@ export function MobileGameControls({
   return (
     <>
       <style>{`
-        .mobile-controls-dpad,
         .mobile-controls-tray {
           display: none;
           pointer-events: none;
         }
         @media (max-width: 767px) {
-          .mobile-controls-dpad {
-            display: flex;
-            position: absolute;
-            left: max(12px, calc(env(safe-area-inset-left, 0px) + 8px));
-            z-index: 45;
-            gap: 8px;
-            align-items: center;
-            pointer-events: auto;
-          }
           .mobile-controls-tray {
             display: flex;
             position: absolute;
@@ -110,28 +86,6 @@ export function MobileGameControls({
           }
         }
       `}</style>
-
-      <div
-        data-paraloid-ui
-        className="mobile-controls-dpad"
-        style={loungeMode ? { display: 'none' } : undefined}
-      >
-        <DPadBtn
-          label="←"
-          onStart={() => { trackMobileControl('ArrowLeft'); onLeftStart(); }}
-          onEnd={onLeftEnd}
-        />
-        <DPadBtn
-          label="↑"
-          onStart={() => { trackMobileControl('ArrowUp'); onJump(); }}
-          onEnd={() => {}}
-        />
-        <DPadBtn
-          label="→"
-          onStart={() => { trackMobileControl('ArrowRight'); onRightStart(); }}
-          onEnd={onRightEnd}
-        />
-      </div>
 
       <div data-paraloid-ui className="mobile-controls-tray">
         {showChat && (

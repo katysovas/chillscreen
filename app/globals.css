@@ -24,7 +24,6 @@
     max-height: 100dvh;
   }
 
-  .mobile-controls-dpad,
   .mobile-controls-tray {
     bottom: calc(max(env(safe-area-inset-bottom, 0px), 36px) + 12px) !important;
   }

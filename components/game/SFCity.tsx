@@ -1362,17 +1362,6 @@ export default function SFCity({
           onOpenAmbientChat={mobileDevice ? handleOpenAmbientChat : undefined}
           ambientChatOpen={chatMode === 'ambient'}
           onToggleMute={() => setMuted(m => !m)}
-          onLeftStart={() => { keysRef.current.left = true; }}
-          onLeftEnd={() => { keysRef.current.left = false; }}
-          onRightStart={() => { keysRef.current.right = true; }}
-          onRightEnd={() => { keysRef.current.right = false; }}
-          onJump={() => {
-            if (!jumpingRef.current) {
-              jumpingRef.current = true;
-              setJumping(true);
-              setTimeout(() => { jumpingRef.current = false; setJumping(false); }, 560);
-            }
-          }}
         />
       )}
 
