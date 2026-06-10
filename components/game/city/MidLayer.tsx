@@ -35,7 +35,7 @@ import { CityVenuesTile } from './CityVenuesLayer';
 import { MidBushes } from './MidBushes';
 import { SfMidFeatures } from './SfMidFeatures';
 import { SeattleBuildingsTile, SeattleMidFeatures } from './seattle';
-import { TentarooArchLabel, TentarooTile, WhichStage } from './tentaroo';
+import { TentarooArchLabel, TentarooTile, WhichStage, WhichStageTrussLabel } from './tentaroo';
 import { ForestTile, ForestStage, FOREST_STAGE_MID_X } from './forest';
 import { SilentDiscoTile, SilentDiscoStage, SILENT_DISCO_STAGE_MID_X } from './silent-disco';
 import { SouthernCaliforniaTile } from './sandiego';
@@ -53,6 +53,8 @@ type MidLayerProps = {
   deepLinkRoute?: VenueRoute;
   /** Synced with the main mid layer — festival stages render here, above town cottages. */
   foregroundRef?: React.RefObject<SVGSVGElement | null>;
+  /** Farm arch + truss titles — above sky sun/moon, synced with mid scroll. */
+  skyLabelsRef?: React.RefObject<SVGSVGElement | null>;
   /** Hide ridge trees on mobile — less clutter + perf. */
   hideTrees?: boolean;
   /** When set, only this city tile is rendered (isolated city mode). */
@@ -176,7 +178,7 @@ function silentDiscoLiveOnTile(
 
 /** Mid parallax: SF → town → Vegas → town → SoCal → town → Tentaroo → town → Forest → town → Seattle → town. */
 export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
-  function MidLayer({ worldOff, deepLinkRoute, foregroundRef, hideTrees = false, isolatedTileIndex }, ref) {
+  function MidLayer({ worldOff, deepLinkRoute, foregroundRef, skyLabelsRef, hideTrees = false, isolatedTileIndex }, ref) {
     const vx = worldOff * MID_F;
     const nearTiles = isolatedTileIndex != null
       ? nearIsolatedMidTiles(isolatedTileIndex)
@@ -313,7 +315,6 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
       if (isTentarooTile(t)) {
         return (
           <g transform={tf}>
-            <TentarooArchLabel tile={t} />
             <WhichStage live={whichStageLiveOnTile(t, vx, cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, forestLive, silentDiscoLive, focus, deepLinkRoute)} />
           </g>
         );
@@ -335,6 +336,18 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
       return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, forestLive, silentDiscoLive, focus, deepLinkRoute]);
+
+    const renderMidSkyLabels = useCallback((t: number) => {
+      if (!isTentarooTile(t)) return null;
+      const scale = tileContentScale(t);
+      const tf = scale === 1 ? undefined : `scale(${scale},1)`;
+      return (
+        <g transform={tf}>
+          <TentarooArchLabel tile={t} />
+          <WhichStageTrussLabel tile={t} />
+        </g>
+      );
+    }, []);
 
     const atmoDefs = (
       <defs>
@@ -370,6 +383,19 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             style={{ pointerEvents: 'none', zIndex: 4 }}
           >
             {renderMidForeground}
+          </ParallaxSvgLayer>
+        )}
+        {skyLabelsRef && (
+          <ParallaxSvgLayer
+            ref={skyLabelsRef}
+            viewBoxX={vx}
+            tileWidth={CITY_MID_W}
+            tileOrigin={midOriginForTile}
+            nearTileIndices={nearTiles}
+            shapeRendering="optimizeSpeed"
+            style={{ pointerEvents: 'none', zIndex: 6 }}
+          >
+            {renderMidSkyLabels}
           </ParallaxSvgLayer>
         )}
       </>

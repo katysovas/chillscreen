@@ -157,6 +157,7 @@ export default function SFCity({
   const skyRef    = useRef<SVGSVGElement>(null);
   const midRef    = useRef<SVGSVGElement>(null);
   const midForegroundRef = useRef<SVGSVGElement>(null);
+  const midSkyLabelsRef = useRef<SVGSVGElement>(null);
   const groundRef = useRef<SVGSVGElement>(null);
   const cabanaRef = useRef<SVGSVGElement>(null);
   const cloudsRef = useRef<SVGSVGElement>(null);
@@ -173,6 +174,7 @@ export default function SFCity({
     skyRef.current?.setAttribute('viewBox', vb(skyVx));
     midRef.current?.setAttribute('viewBox', vb(midVx));
     midForegroundRef.current?.setAttribute('viewBox', vb(midVx));
+    midSkyLabelsRef.current?.setAttribute('viewBox', vb(midVx));
     groundRef.current?.setAttribute('viewBox', vb(gndVx));
     cabanaRef.current?.setAttribute('viewBox', vb(gndVx));
     navSignsRef.current?.setAttribute('viewBox', vb(gndVx));
@@ -486,18 +488,14 @@ export default function SFCity({
     greetingSessionRef.current = null;
   }, [greetingNpc]);
 
-  // AI greeting when connecting to an NPC
+  // 1:1 chat session — NPCs wait for the player to speak first (no auto-greeting).
   useEffect(() => {
     if (greetingNpc === null) return;
     if (greetingSessionRef.current === greetingNpc) return;
     greetingSessionRef.current = greetingNpc;
 
     chatAbortRef.current?.abort();
-    const controller = new AbortController();
-    chatAbortRef.current = controller;
-
-    const character = npcCast[greetingNpc];
-    setNpcTyping(true);
+    setNpcTyping(false);
     setNpcMessage(null);
     setChatHistory([]);
     setPlayerMessage(null);
@@ -505,35 +503,9 @@ export default function SFCity({
     sentMessageRef.current = '';
     setChatMode(playerName ? 'chat' : null);
 
-    fetchNpcReplyWithTyping(
-      {
-        characterId: character.id,
-        playerName: playerName ?? 'friend',
-        isGreeting: true,
-        cinemaNowPlaying: cinemaNowRef.current,
-        concertNowPlaying: concertNowRef.current,
-      },
-      controller.signal,
-      () => {
-        setNpcTyping(true);
-        setNpcMessage(null);
-      },
-      reply => {
-        setNpcTyping(false);
-        setNpcMessage(reply);
-        setChatHistory([{ role: 'assistant', content: reply }]);
-      },
-    ).catch(err => {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      setNpcTyping(false);
-      setNpcMessage(`Hey! I'm ${character.name}.`);
-    });
-
     if (playerName) {
       setTimeout(() => chatInputRef.current?.focus(), 120);
     }
-
-    return () => controller.abort();
   }, [greetingNpc, playerName]);
 
   // AI reply when the player sends a message
@@ -1094,6 +1066,7 @@ export default function SFCity({
         <MidLayer
           ref={midRef}
           foregroundRef={midForegroundRef}
+          skyLabelsRef={midSkyLabelsRef}
           worldOff={midScrollWorldOff}
           deepLinkRoute={effectiveVenueRoute}
           hideTrees={mobileDevice}

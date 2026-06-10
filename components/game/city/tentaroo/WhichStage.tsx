@@ -161,20 +161,6 @@ function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true }: WhichSt
             </g>
           ))}
 
-          <text
-            x={cx}
-            y={trussY - 18}
-            textAnchor="middle"
-            fontFamily="Anton, Impact, sans-serif"
-            fontSize={28}
-            letterSpacing={3}
-            fill="#eafff6"
-            filter="url(#ws-glow)"
-          >
-            WHICH STAGE
-            <animate attributeName="opacity" values="1;0.88;0.55;0.95;1" dur="5.5s" repeatCount="indefinite" />
-          </text>
-
           <rect
             x={scrX - 10}
             y={scrY - 10}

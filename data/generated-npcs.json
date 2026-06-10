@@ -657,6 +657,116 @@
           "one more minute. promise"
         ]
       }
+    ],
+    "forest": [
+      {
+        "name": "jenna",
+        "archetype": "chiller",
+        "outfit": "hippie",
+        "prop": "drink-lemonade",
+        "vibe": "convinced the glowing mushrooms form a pattern",
+        "personalityNotes": "Has been studying the glowing mushroom placement all night and is sure it means something. Counts them, tracks their blink order, suspects intentional design. Calm about it, but committed.",
+        "lines": [
+          "the mushrooms form a pattern",
+          "counted them twice. eleven",
+          "they glow in sequence",
+          "that one blinks first",
+          "someone arranged this on purpose",
+          "map says nothing about it",
+          "following the glow trail later",
+          "eleventh mushroom is the key"
+        ]
+      },
+      {
+        "name": "zach",
+        "archetype": "dancer",
+        "outfit": "none",
+        "prop": "party-glowsticks",
+        "vibe": "chasing a rumored secret set in the woods",
+        "personalityNotes": "Heard about a secret set somewhere past the totems and keeps catching faint bass to prove it. Half believes it's a prank, fully committed to following it anyway. The glowsticks are his breadcrumbs.",
+        "lines": [
+          "secret set in the woods",
+          "faint bass past the totems",
+          "heard it from camp",
+          "that trail wasn't lit before",
+          "glowsticks mark the way allegedly",
+          "could be a prank",
+          "following the bass anyway",
+          "trees are hiding something"
+        ]
+      },
+      {
+        "name": "holly",
+        "archetype": "wanderer",
+        "outfit": "pirate",
+        "prop": null,
+        "vibe": "pretty sure the trails rearrange at night",
+        "personalityNotes": "Has passed the same crystal twice and is processing what that means. Suspects the forest paths quietly rearrange after dark. Navigating by fireflies now, with dignity.",
+        "lines": [
+          "this trail moved. swear",
+          "passed that crystal twice",
+          "map means nothing in here",
+          "string lights all look identical",
+          "camp was left of the lasers",
+          "forest rearranges at night",
+          "trusting the fireflies now",
+          "third loop. staying calm"
+        ]
+      },
+      {
+        "name": "nick",
+        "archetype": "vendor",
+        "outfit": "none",
+        "prop": "food-tacos",
+        "vibe": "taco vendor under siege by squirrels",
+        "personalityNotes": "Sells tacos at the edge of the woods and is losing a slow war with organized squirrels. Tracks raids like incident reports. Has developed grudging respect for the enemy.",
+        "lines": [
+          "squirrel took a tortilla",
+          "they work in teams",
+          "third raid since sunset",
+          "bold little guys honestly",
+          "guarding the salsa now",
+          "one's watching from the branch",
+          "forest tax i guess",
+          "respect the hustle. kind of"
+        ]
+      },
+      {
+        "name": "lauren",
+        "archetype": "hustler",
+        "outfit": "undercover-cop",
+        "prop": "shades-glasses-optic",
+        "vibe": "undercover in a forest, certain it's working",
+        "personalityNotes": "Undercover cop convinced glow paint and sunglasses at night are flawless cover. Mutters stakeout notes about coded handshakes and quiet corners. Comedy only, never threatening, never addresses players.",
+        "lines": [
+          "blending in perfectly",
+          "nothing suspicious. noting it anyway",
+          "that handshake looked coded",
+          "glow paint is good cover",
+          "just a normal forest person",
+          "sunglasses at night. casual",
+          "perimeter is vibes only",
+          "off duty. deeply off duty"
+        ]
+      },
+      {
+        "name": "mateo",
+        "archetype": "dancer",
+        "outfit": "hippie",
+        "prop": "hand-boombox",
+        "vibe": "the fireflies keep dodging him on beat",
+        "personalityNotes": "Enchanted by the fireflies and mildly offended they won't hold still. Convinced they sync with the lasers better than the crowd does. Lowkey poetic, mostly frustrated.",
+        "lines": [
+          "fireflies sync with the lasers",
+          "almost caught one. respect",
+          "they dodge on beat",
+          "bugs have better rhythm",
+          "that one's been following me",
+          "glow without batteries. showoffs",
+          "boombox scares them off",
+          "fireflies are the real lineup"
+        ]
+      }
     ]
   }
 }
