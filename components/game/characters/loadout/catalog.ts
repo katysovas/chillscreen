@@ -211,6 +211,16 @@ export const LOADOUT_CATALOG: Record<string, LoadoutItemDef> = {
     holdSide: 'right',
     defaultProps: {},
   },
+  'drink-coffee': {
+    id: 'drink-coffee',
+    slot: 'hand',
+    name: 'Coffee',
+    description: 'Hot cup for the early sets and late nights.',
+    vendorPrice: 100,
+    handMounted: true,
+    holdSide: 'right',
+    defaultProps: {},
+  },
   'party-glowsticks': {
     id: 'party-glowsticks',
     slot: 'hand',

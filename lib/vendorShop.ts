@@ -25,7 +25,7 @@ const HAND_ITEMS = ['hand-sword', 'hand-lightsaber', 'hand-boombox', 'hand-ballo
 
 const FOOD_ITEMS = ['food-hotdog', 'food-donut', 'food-fries', 'food-pizza', 'food-tacos', 'food-popcorn', 'food-lollipop'] as const;
 
-const DRINK_ITEMS = ['drink-martini', 'drink-lemonade', 'drink-beer', 'drink-bottle', 'drink-water', 'drink-juice'] as const;
+const DRINK_ITEMS = ['drink-martini', 'drink-lemonade', 'drink-beer', 'drink-bottle', 'drink-water', 'drink-juice', 'drink-coffee'] as const;
 
 const PARTY_FAVOR_ITEMS = ['party-glowsticks', 'party-confetti', 'party-fireworks', 'party-sticker'] as const;
 
@@ -139,6 +139,7 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'drink-bottle': '/images/props/drinks_bottle.svg',
   'drink-water': '/images/props/drinks_water.svg',
   'drink-juice': '/images/props/drinks_juice.svg',
+  'drink-coffee': '/images/props/drinks_coffee.svg',
   'party-glowsticks': '/images/props/festival_glowsticks.png',
   'party-confetti': '/images/props/festival_confetti.svg',
   'party-fireworks': '/images/props/festival_fireworks.svg',
@@ -181,6 +182,7 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'drink-bottle': { width: 28, height: 32 },
   'drink-water': { width: 28, height: 32 },
   'drink-juice': { width: 28, height: 32 },
+  'drink-coffee': { width: 28, height: 32 },
   'party-glowsticks': { width: 32, height: 32 },
   'party-confetti': { width: 52, height: 52 },
   'party-fireworks': { width: 48, height: 48 },

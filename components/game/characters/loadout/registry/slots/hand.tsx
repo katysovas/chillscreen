@@ -23,6 +23,7 @@ export const RENDERERS: Record<string, ItemRenderer> = {
   'drink-bottle': ctx => <HandProp variant="bottle" ctx={ctx} />,
   'drink-water': ctx => <HandProp variant="water" ctx={ctx} />,
   'drink-juice': ctx => <HandProp variant="juice" ctx={ctx} />,
+  'drink-coffee': ctx => <HandProp variant="coffee" ctx={ctx} />,
   'party-glowsticks': ctx => <HandProp variant="glowsticks" ctx={ctx} />,
   'party-confetti': ctx => <HandProp variant="confetti" ctx={ctx} />,
   'party-fireworks': ctx => <HandProp variant="fireworks" ctx={ctx} />,
