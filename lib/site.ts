@@ -8,19 +8,29 @@ export const SITE_TAGLINE = 'Explore cities. Watch live shows. Make friends.';
 
 export const SITE_DESCRIPTION =
   'WhichStage is a browser-based festival world where you walk through cities, ' +
-  'watch live stages, meet NPCs, and chat with other players. No download required.';
+  'campgrounds, and glowing forests, watch live stages and silent discos, meet NPCs, ' +
+  'and chat with other players. No download required.';
 
 export const SITE_KEYWORDS = [
   'WhichStage',
   'festival game',
   'live music game',
   'browser game',
-  'Coachella',
-  'EDC',
   'virtual festival',
   'multiplayer walking game',
-  'San Francisco game',
   'live stages',
+  'Coachella',
+  'EDC',
+  'Bonnaroo',
+  'Outside Lands',
+  'Bumbershoot',
+  'San Francisco',
+  'Seattle',
+  'Las Vegas',
+  'The Farm',
+  'The Forest',
+  'Silent Disco',
+  'Chill Cinema',
 ];
 
 export const FAVICON_PATH = '/images/logos/fav_white.png';

@@ -6,6 +6,8 @@ import {
   SITE_TAGLINE,
   SITE_URL,
 } from '@/lib/site';
+import { venueSeoForRoute } from '@/lib/venueSeo';
+import { parseVenueSlug, VENUE_SLUGS } from '@/lib/venueRoutes';
 
 function absoluteUrl(path: string): string {
   return path.startsWith('http') ? path : `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
@@ -61,8 +63,10 @@ export function webApplicationJsonLd() {
       priceCurrency: 'USD',
     },
     featureList: [
-      'Walk through festival cities',
+      'Walk through festival cities, campgrounds, and forests',
       'Watch synchronized live stages',
+      'Silent disco headphone raves',
+      'Outdoor cinema screenings',
       'Chat with NPCs',
       'Multiplayer presence',
     ],
@@ -120,6 +124,26 @@ export function webPageJsonLd({
     description,
     isPartOf: { '@id': `${SITE_URL}/#website` },
     inLanguage: 'en-US',
+  };
+}
+
+/** Discoverable venue deep links for the home page. */
+export function venueItemListJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `${SITE_NAME} stages`,
+    itemListElement: VENUE_SLUGS.map((slug, index) => {
+      const route = parseVenueSlug(slug)!;
+      const seo = venueSeoForRoute(route);
+      return {
+        '@type': 'ListItem',
+        position: index + 1,
+        name: seo.title,
+        url: absoluteUrl(`/${slug}`),
+        description: seo.description,
+      };
+    }),
   };
 }
 

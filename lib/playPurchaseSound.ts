@@ -1,5 +1,6 @@
+import { SFX_VOLUME } from './sfxVolume';
+
 const PURCHASE_SRC = '/audio/purchase.mp3';
-const PURCHASE_GAIN = 0.35;
 
 let audioCtx: AudioContext | null = null;
 let buffer: AudioBuffer | null = null;
@@ -44,7 +45,7 @@ function loadPurchaseBuffer(ctx: AudioContext): Promise<AudioBuffer | null> {
 function playBoosted(ctx: AudioContext, buf: AudioBuffer) {
   const source = ctx.createBufferSource();
   const gain = ctx.createGain();
-  gain.gain.value = PURCHASE_GAIN;
+  gain.gain.value = SFX_VOLUME;
   source.buffer = buf;
   source.connect(gain);
   gain.connect(ctx.destination);
@@ -56,7 +57,7 @@ function playFallback(): void {
   if (typeof window === 'undefined') return;
   try {
     const audio = getFallbackAudio();
-    audio.volume = PURCHASE_GAIN;
+    audio.volume = SFX_VOLUME;
     audio.pause();
     audio.currentTime = 0;
     void audio.play().catch(() => {});

@@ -10,6 +10,7 @@ import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/paralla
 import { scheduleIdleCallback } from '@/lib/scheduleIdleCallback';
 import { setAudioMuted } from '@/lib/audioMute';
 import { playChatInviteBeep } from '@/lib/playChatInviteBeep';
+import { SFX_VOLUME } from '@/lib/sfxVolume';
 import CHARACTERS from './characters';
 import RemotePlayer from './RemotePlayer';
 import { PLAYER_AMBIENT_VISIBLE_MS, useMultiplayer } from '@/lib/multiplayer/useMultiplayer';
@@ -595,7 +596,7 @@ export default function SFCity({
     mpRef.current?.sendAmbientMessage(message);
     try {
       const found = new Audio('/audio/found.wav');
-      found.volume = 0.35;
+      found.volume = SFX_VOLUME;
       void found.play().catch(() => {});
     } catch { /* ignore */ }
     // Celebrate — same jump as the keyboard/mobile triggers.

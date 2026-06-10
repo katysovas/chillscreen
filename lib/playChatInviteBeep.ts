@@ -1,4 +1,5 @@
 import { getAudioMuted } from './audioMute';
+import { SFX_VOLUME } from './sfxVolume';
 
 let beep: HTMLAudioElement | null = null;
 
@@ -9,7 +10,7 @@ export function playChatInviteBeep() {
     if (!beep) {
       beep = new Audio('/audio/beep.mp3');
       beep.preload = 'auto';
-      beep.volume = 0.35;
+      beep.volume = SFX_VOLUME;
     }
     beep.currentTime = 0;
     void beep.play().catch(() => {});

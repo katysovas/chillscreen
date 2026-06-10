@@ -1,3 +1,5 @@
+import { SFX_VOLUME } from './sfxVolume';
+
 /** Drop your shutter clip at public/audio/paraloid-shutter.mp3 */
 export const PARALOID_SHUTTER_SRC = '/audio/paraloid-shutter.mp3';
 
@@ -10,7 +12,7 @@ export function playParaloidShutter() {
     if (!shutter) {
       shutter = new Audio(PARALOID_SHUTTER_SRC);
       shutter.preload = 'auto';
-      shutter.volume = 0.4;
+      shutter.volume = SFX_VOLUME;
     }
     shutter.currentTime = 0;
     void shutter.play().catch(() => {});

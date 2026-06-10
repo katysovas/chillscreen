@@ -12,12 +12,17 @@ const LEGACY_VENUE_REDIRECTS: Record<string, string> = {
   edc: 'lasvegas',
   'electric-daze': 'lasvegas',
   tentaroo: 'thefarm',
+  bonnaroo: 'thefarm',
+  'the-farm': 'thefarm',
   'outside-hands': 'sanfrancisco',
+  'outside-lands': 'sanfrancisco',
   'seattle-concerts': 'seattle',
+  bumbershoot: 'seattle',
   cinema: 'chill-cinema',
   'the-forest': 'forest',
   theforest: 'forest',
   silentdisco: 'silent-disco',
+  silent_disco: 'silent-disco',
 };
 
 export function middleware(request: NextRequest) {
