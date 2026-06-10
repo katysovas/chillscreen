@@ -26,7 +26,7 @@ const LEGACY_VENUE_REDIRECTS: Record<string, string> = {
   silent_disco: 'silent-disco',
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/api/admin/')) {

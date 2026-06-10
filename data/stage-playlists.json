@@ -1,15 +1,95 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-10T03:49:16.769Z",
+  "updatedAt": "2026-06-10T16:34:59.089Z",
   "channels": {
     "cinema": {
       "label": "Chill Cinema",
       "source": "curated",
       "videos": [
         {
-          "id": "mieW9xgHoqg",
-          "title": "GERMANY vs JAPAN",
-          "durationSec": 3674
+          "id": "Rbig5-6_m3o",
+          "title": "SADE - deep cuts (Vinyl) | Chill & Relax Late Night Smooth Set with Ameritaner",
+          "durationSec": 1744
+        },
+        {
+          "id": "3RrouLrJb-4",
+          "title": "DJ LEX R&B + Chill Playlist | Brent Faiyaz, Cleo Sol, Lauryn Hill, Jhene Aiko",
+          "durationSec": 2376
+        },
+        {
+          "id": "k7HmLM7ZBBU",
+          "title": "Soft Chill House Mix - Amii Watson B2B Jimmi Harvey",
+          "durationSec": 4219
+        },
+        {
+          "id": "sunRCbqQ1CM",
+          "title": "Wav Session 17 : Chill Vibe Mix (Brunch & Coffee) At a.p.p Bangkok  [ 20 Tracks ]",
+          "durationSec": 3139
+        },
+        {
+          "id": "dHU8B76kR_s",
+          "title": "'A Late Night R&B Experience' in Brooklyn 🤍 | Bryson Tiller, Daniel Caesar, Snoh, SZA + | Playlist",
+          "durationSec": 5039
+        },
+        {
+          "id": "5mj2mXIL-D0",
+          "title": "Mac Miller Afternoon Grooves // Coffee & Spliff // Vinyl Selection // Pt. 1/3",
+          "durationSec": 4453
+        },
+        {
+          "id": "I4QIqm8hCvo",
+          "title": "Chill Rooftop House Music Mix In Sitges - Sunset Afterwork Lounge DJ Set | Relax Dinner Bar Playlist",
+          "durationSec": 5314
+        },
+        {
+          "id": "k2CjGx_mLOg",
+          "title": "CHILLOUT Sunset Mix (Elderbrook, Lane 8, Ben Böhmer, TWO LANES) - Bois de Rose by Settow - VOL.4",
+          "durationSec": 3557
+        },
+        {
+          "id": "MLSfQjwIo7k",
+          "title": "Groovy House | Jazz House | Chill House set in a Cafe by Main.Kid",
+          "durationSec": 3463
+        },
+        {
+          "id": "IZ5zuz-n7z4",
+          "title": "Chill and Relax Deep House Set - Sunrise Vibes - by Paxtone",
+          "durationSec": 3385
+        },
+        {
+          "id": "Fbmr0_2m6zA",
+          "title": "Easy Morning Brunch House Music Mix - Chill Jazzy & Latin DJ Set In Barcelona | Cooking Playlist",
+          "durationSec": 6911
+        },
+        {
+          "id": "hLEmDqmcCzM",
+          "title": "Soft Rooftop House Music Mix - Chillout Afterwork Lounge Set  | Relaxing Sunset Dinner Playlist",
+          "durationSec": 6609
+        },
+        {
+          "id": "YQa2021kCOo",
+          "title": "Chill Garden - Deep Chillout Hypnotic Techno Set",
+          "durationSec": 4687
+        },
+        {
+          "id": "St-wdSyB6YA",
+          "title": "Chill Corner - Electro, Very Chilled, Pseric, Hypnotic, Groove Set",
+          "durationSec": 4347
+        },
+        {
+          "id": "uCSD3GfUZPQ",
+          "title": "Jody Wisternoff | Live from the Anjunakitchen (Chill Set)",
+          "durationSec": 5324
+        },
+        {
+          "id": "nkotP8XMr2M",
+          "title": "Morning Coffee Vol. 4 | R&B, Hip-Hop, Old School, Morning Playlist, Chill Vibes, 90s-2000s",
+          "durationSec": 2588
+        },
+        {
+          "id": "5OrWWUy5tu4",
+          "title": "Jazzy & Chill R&B Mix in a Brooklyn Studio | Set 37 | Ceema (Deep Cuts + Grooves)",
+          "durationSec": 3493
         }
       ]
     },
