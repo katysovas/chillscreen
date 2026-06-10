@@ -98,7 +98,7 @@ export function StagePicker({
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'rgb(13,1,34)',
+          background: isSwap ? '#131415' : 'rgb(13,1,34)',
           border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 22,
           padding: '28px 20px 24px',

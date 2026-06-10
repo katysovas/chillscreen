@@ -47,7 +47,7 @@ export function WelcomePopup({ balloonColor, initialRoute, onEnter }: Props) {
     }}>
 
       <div style={{
-        background: '#000',
+        background: '#131415',
         border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 24,
         padding: '44px 40px 36px',

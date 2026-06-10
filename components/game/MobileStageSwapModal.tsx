@@ -44,7 +44,7 @@ export function MobileStageSwapModal({ currentRoute, onSwap, onClose }: Props) {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'rgb(13,1,34)',
+          background: '#131415',
           border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 22,
           padding: '24px 20px 20px',
