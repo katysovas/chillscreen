@@ -95,7 +95,6 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   { q: 'How do I get more coins?', a: 'Keep an eye on the sidewalk — Ground Score!' },
   { q: 'How do I chat?', a: 'Press Enter to shout. Walk up to someone and press Enter to connect.' },
   { q: 'What are coins for?', a: 'Spend them at the festival store (cart icon) — hats, balloons, stickers.' },
-  { q: 'Where\u2019s the music?', a: 'Walk to any stage. It plays when you\u2019re close.' },
 ];
 
 export function StageSwapIcon({ size = 18 }: { size?: number }) {
@@ -352,7 +351,7 @@ export function BottomControlPanel({
                     textAlign: 'center',
                   }}
                 >
-                  Help building this world
+                  Help building this stage
                 </button>
               </div>
             </>
