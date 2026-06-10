@@ -1,4 +1,5 @@
 import CHARACTERS, { type CharacterDef } from '@/components/game/characters';
+import { allGeneratedCharacters } from '@/lib/generatedNpcs';
 import { bitcoinWorldNote, formatBitcoinUsd, type BitcoinSnapshot } from '@/lib/bitcoinPrice';
 
 export type ChatTurn = { role: 'user' | 'assistant'; content: string };
@@ -23,7 +24,10 @@ Rules:
 - Never break character or mention being an AI, a model, or a game script`;
 
 export function getCharacterById(id: string): CharacterDef | undefined {
-  return CHARACTERS.find(c => c.id === id);
+  return (
+    CHARACTERS.find(c => c.id === id)
+    ?? allGeneratedCharacters().find(c => c.id === id)
+  );
 }
 
 function movementVibe(c: CharacterDef): string {

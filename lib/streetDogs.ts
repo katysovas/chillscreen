@@ -29,6 +29,7 @@ function makeDog(tile: number, index: number): StreetDogPlacement {
 /** Animated dogs on the sidewalk — denser on city/stage tiles, occasional on towns. */
 export function dogsForTile(tile: number): StreetDogPlacement[] {
   const kind = worldTileKind(tile);
+  if (kind === 'silent_disco') return [];
   const isCity = kind !== 'town';
 
   const count = isCity

@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { STAGE_CHANNEL_META } from '@/lib/stageChannelLabels';
 import type { StageChannel } from '@/lib/stageVideos';
-import type { GeneratedNpc } from '@/lib/npcGenerator';
+import { dedupeGeneratedNpcs, parseGeneratedNpcs, type GeneratedNpc } from '@/lib/npcGenerator';
 
 const PAGE_STYLE: React.CSSProperties = {
   maxWidth: 1080,
@@ -45,13 +45,69 @@ export function NpcGeneratorAdmin() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [showPaste, setShowPaste] = useState(false);
+  const [pasteText, setPasteText] = useState('');
 
   const accumulatedNames = useMemo(() => npcs.map(n => n.name), [npcs]);
+
+  // Load this stage's saved NPCs so batches append instead of overwriting.
+  useEffect(() => {
+    let cancelled = false;
+    setNpcs([]);
+    setSavedAt(null);
+    void fetch('/api/admin/generated-npcs')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (cancelled || !data) return;
+        const saved = (data.channels?.[channel] ?? []) as GeneratedNpc[];
+        if (saved.length > 0) setNpcs(saved);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [channel]);
+
+  const saveToGame = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/generated-npcs', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel, npcs }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? res.statusText);
+      setSavedAt(data.updatedAt as string);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const importPasted = () => {
+    setError(null);
+    try {
+      const parsed = parseGeneratedNpcs(pasteText);
+      const known = new Set(npcs.map(n => n.name));
+      setNpcs(prev => dedupeGeneratedNpcs([...prev, ...parsed.filter(n => !known.has(n.name))]));
+      setSavedAt(null);
+      setPasteText('');
+      setShowPaste(false);
+    } catch (err) {
+      setError(err instanceof Error ? `Paste failed: ${err.message}` : 'Paste failed');
+    }
+  };
 
   const generate = async () => {
     setGenerating(true);
     setError(null);
     setCopied(false);
+    setSavedAt(null);
     try {
       const res = await fetch('/api/admin/generate-npcs', {
         method: 'POST',
@@ -65,7 +121,7 @@ export function NpcGeneratorAdmin() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? res.statusText);
-      setNpcs(prev => [...prev, ...(data.npcs as GeneratedNpc[])]);
+      setNpcs(prev => dedupeGeneratedNpcs([...prev, ...(data.npcs as GeneratedNpc[])]));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generation failed');
     } finally {
@@ -88,7 +144,9 @@ export function NpcGeneratorAdmin() {
       <h1 style={{ fontSize: 26, margin: '0 0 4px' }}>NPC Generator</h1>
       <p style={{ color: '#9aa3b5', margin: '0 0 24px', fontSize: 14 }}>
         Localhost only. Generates ambient crowd NPCs per stage — batches accumulate, and
-        names from earlier batches are excluded automatically. Copy the JSON when happy.
+        names from earlier batches are excluded automatically. Hit <strong>Save to game</strong>{' '}
+        to write <code style={{ color: '#8ab4f8' }}>data/generated-npcs.json</code> — those NPCs
+        spawn on that stage&apos;s city page. You can also paste previously copied JSON.
       </p>
 
       <div style={{ ...CARD_STYLE, display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -146,20 +204,60 @@ export function NpcGeneratorAdmin() {
         {npcs.length > 0 && (
           <>
             <button
-              onClick={() => void copyJson()}
-              style={{ ...BUTTON_STYLE, background: '#1f8a5b' }}
+              onClick={() => void saveToGame()}
+              disabled={saving}
+              style={{ ...BUTTON_STYLE, background: '#1f8a5b', opacity: saving ? 0.6 : 1 }}
             >
-              {copied ? 'Copied ✓' : `Copy JSON (${npcs.length} NPCs)`}
+              {saving ? 'Saving…' : savedAt ? 'Saved ✓' : `Save to game (${npcs.length} NPCs)`}
             </button>
             <button
-              onClick={() => setNpcs([])}
+              onClick={() => void copyJson()}
+              style={{ ...BUTTON_STYLE, background: '#3a4154' }}
+            >
+              {copied ? 'Copied ✓' : 'Copy JSON'}
+            </button>
+            <button
+              onClick={() => { setNpcs([]); setSavedAt(null); }}
               style={{ ...BUTTON_STYLE, background: '#3a4154' }}
             >
               Clear
             </button>
           </>
         )}
+
+        <button
+          onClick={() => setShowPaste(s => !s)}
+          style={{ ...BUTTON_STYLE, background: '#3a4154' }}
+        >
+          Paste JSON
+        </button>
       </div>
+
+      {showPaste && (
+        <div style={{ ...CARD_STYLE, marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <textarea
+            value={pasteText}
+            onChange={e => setPasteText(e.target.value)}
+            placeholder='{"npcs": [ ... ]}'
+            rows={10}
+            style={{
+              background: '#10131c',
+              color: '#e8eaed',
+              border: '1px solid #2a3040',
+              borderRadius: 6,
+              padding: 12,
+              fontSize: 13,
+              fontFamily: 'ui-monospace, monospace',
+              resize: 'vertical',
+            }}
+          />
+          <div>
+            <button onClick={importPasted} style={BUTTON_STYLE}>
+              Import into batch
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div

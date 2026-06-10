@@ -41,6 +41,17 @@ export function existingCastNames(): string[] {
   return CHARACTERS.map(c => c.name.toLowerCase());
 }
 
+/** Keep first occurrence per name — prevents duplicate React keys / NPC ids. */
+export function dedupeGeneratedNpcs(npcs: GeneratedNpc[]): GeneratedNpc[] {
+  const seen = new Set<string>();
+  return npcs.filter(n => {
+    const key = n.name.toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function buildNpcGeneratorPrompt(
   channel: StageChannel,
   count: number,

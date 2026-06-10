@@ -4,7 +4,7 @@ import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
-import { CHAR_BOTTOM, mobileCrowdDepthIndex } from './groundLayout';
+import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import {
@@ -40,6 +40,8 @@ export type NPCConfig = {
 type State = 'idle' | 'wandering';
 
 type NPCProps = NPCConfig & {
+  /** Stable id — used for crowd depth offset. */
+  characterId: string;
   /** Index in CHARACTERS — used by the shared movement RAF in SFCity. */
   index: number;
   stageAnchor?: StageAnchorKind;
@@ -84,6 +86,7 @@ const NPC_OFFSCREEN_LEFT = -22;
 const NPC_OFFSCREEN_RIGHT = 122;
 
 export default function NPC({
+  characterId,
   index,
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
@@ -373,10 +376,10 @@ export default function NPC({
     <div
       ref={divRef}
       className="game-character game-character-crowd"
-      data-depth={mobileCrowdDepthIndex(index)}
       style={{
         position: 'absolute',
         bottom: CHAR_BOTTOM,
+        transform: `translateY(${crowdDepthOffsetPx(characterId)}px)`,
         zIndex: greeting ? 200 : 18,
       }}
     >

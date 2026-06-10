@@ -1,6 +1,7 @@
 /** One city / stage per URL — bounds, navigation, and PartyKit room scope. */
 
 import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
+import type { StageAnchorKind } from '@/lib/stageAnchor';
 import { cityTileIndex } from '@/lib/spawn';
 import type { VenueRoute } from '@/lib/venueSlugs';
 import { venueSlugForRoute } from '@/lib/venueSlugs';
@@ -103,6 +104,27 @@ export function prevCityRoute(route: VenueRoute): VenueRoute {
 export function nextCityRoute(route: VenueRoute): VenueRoute {
   const i = edgeIndexForRoute(route);
   return EDGE_ORDER[(i + 1) % EDGE_ORDER.length]!;
+}
+
+/** Buz cart anchor for this venue page (null = no vendor NPC). */
+export function stageAnchorForRoute(route: VenueRoute): StageAnchorKind | null {
+  switch (route) {
+    case 'outside-hands':
+    case 'seattle-concerts':
+      return 'concert';
+    case 'coachella':
+      return 'coachella';
+    case 'edc':
+      return 'edc';
+    case 'tentaroo':
+      return 'which-stage';
+    case 'forest':
+      return 'forest';
+    case 'silent-disco':
+      return 'silent-disco';
+    case 'cinema':
+      return null;
+  }
 }
 
 /** Synced playback channel for this page's venue (audio stays on city-wide). */

@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
-import { CHAR_BOTTOM, mobileCrowdDepthIndex } from './groundLayout';
+import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef, worldXToScreenPct } from '@/lib/gameWorldRef';
 import type {
@@ -128,11 +128,11 @@ export default function RemotePlayer({
     <div
       ref={divRef}
       className="game-character game-character-crowd"
-      data-depth={mobileCrowdDepthIndex(id)}
       style={{
         position: 'absolute',
         left: '50%',
         bottom: CHAR_BOTTOM,
+        transform: `translateY(${crowdDepthOffsetPx(id)}px)`,
         zIndex: greeting ? 199 : 17,
       }}
     >

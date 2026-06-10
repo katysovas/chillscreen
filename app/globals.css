@@ -70,14 +70,6 @@
     max-width: calc(100vw - 16px);
   }
 
-  /* Crowd depth — stagger NPCs / remotes on the sidewalk. */
-  .game-surface[data-mobile-lounge] .game-character-crowd[data-depth="0"] {
-    bottom: calc(var(--char-bottom-mobile, 20%) - var(--crowd-depth-px, 10px)) !important;
-  }
-
-  .game-surface[data-mobile-lounge] .game-character-crowd[data-depth="2"] {
-    bottom: calc(var(--char-bottom-mobile, 20%) + var(--crowd-depth-px, 10px)) !important;
-  }
 }
 
 /* ── SFCity scene (clouds, signs, chat, sky creatures) ─────────────────────── */

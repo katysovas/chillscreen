@@ -22,6 +22,8 @@ export type CharacterDef = {
   stageAnchor?: StageAnchorKind;
   /** Voice and temperament — fed into the NPC chat prompt. */
   personalityNotes: string;
+  /** Scripted ambient mutterings (generated NPCs) — preferred over stage mumbles. */
+  ambientLines?: string[];
 };
 
 const CHARACTERS: CharacterDef[] = [

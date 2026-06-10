@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import CHARACTERS from '@/components/game/characters';
+import type { CharacterDef } from '@/components/game/characters';
 import {
   getAmbientInitialDelayMs,
   getAmbientIntervalMs,
@@ -18,8 +18,8 @@ function randomIntervalMs(characterId: string) {
   return minMs + Math.random() * (maxMs - minMs);
 }
 
-function initialDelayMs(npcIndex: number) {
-  const character = CHARACTERS[npcIndex];
+function initialDelayMs(npcCast: CharacterDef[], npcIndex: number) {
+  const character = npcCast[npcIndex];
   if (!character) return 12_000;
   return getAmbientInitialDelayMs(character.id, npcIndex, character.entryDelay);
 }
@@ -28,7 +28,8 @@ function initialDelayMs(npcIndex: number) {
  * Schedules ambient self-talk for each NPC (Buz shouts more often).
  * Local template lines only — stage acts from synced YouTube playlists.
  */
-export function useNpcAmbientChat(npcCount: number, paused: boolean) {
+export function useNpcAmbientChat(npcCast: CharacterDef[], paused: boolean) {
+  const npcCount = npcCast.length;
   const [ambientChats, setAmbientChats] = useState<NpcAmbientChatState[]>(() =>
     Array.from({ length: npcCount }, () => ({ message: null })),
   );
@@ -75,14 +76,14 @@ export function useNpcAmbientChat(npcCount: number, paused: boolean) {
     const mumble = (index: number) => {
       if (pausedRef.current) return;
 
-      const character = CHARACTERS[index];
+      const character = npcCast[index];
       if (!character) return;
 
       showBubble(index, pickAmbientMumble(character), character.id);
     };
 
     const scheduleNpc = (index: number, delayMs: number) => {
-      const characterId = CHARACTERS[index]?.id ?? '';
+      const characterId = npcCast[index]?.id ?? '';
       const timer = setTimeout(() => {
         mumble(index);
         const loop = () => {
@@ -98,7 +99,7 @@ export function useNpcAmbientChat(npcCount: number, paused: boolean) {
     };
 
     for (let i = 0; i < npcCount; i++) {
-      scheduleNpc(i, initialDelayMs(i));
+      scheduleNpc(i, initialDelayMs(npcCast, i));
     }
 
     return () => {
@@ -106,7 +107,7 @@ export function useNpcAmbientChat(npcCount: number, paused: boolean) {
       hideTimersRef.current.forEach(clearTimeout);
       hideTimersRef.current.clear();
     };
-  }, [npcCount]);
+  }, [npcCast]);
 
   useEffect(() => {
     if (!paused) return;

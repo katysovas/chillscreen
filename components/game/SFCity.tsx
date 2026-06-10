@@ -1,17 +1,17 @@
 'use client';
-import { useState, useEffect, useRef, useCallback, useLayoutEffect, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import Character from './Character';
 import NPC, { worldXToScreenPct } from './NPC';
 import { AmbientPlayerOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
-import { CHAR_BOTTOM } from './groundLayout';
+import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
 import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/parallax';
 import { scheduleIdleCallback } from '@/lib/scheduleIdleCallback';
 import { setAudioMuted } from '@/lib/audioMute';
 import { playChatInviteBeep } from '@/lib/playChatInviteBeep';
 import { SFX_VOLUME } from '@/lib/sfxVolume';
-import CHARACTERS from './characters';
+import { npcCastForVenue } from '@/lib/npcCast';
 import RemotePlayer from './RemotePlayer';
 import { PLAYER_AMBIENT_VISIBLE_MS, useMultiplayer } from '@/lib/multiplayer/useMultiplayer';
 import { filterChatMessage } from '@/lib/messageFilter';
@@ -29,6 +29,7 @@ import { preloadPurchaseSound, unlockPurchaseSound } from '@/lib/playPurchaseSou
 import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
 import { isBuzNpc } from '@/lib/vendorShop';
 import {
+  getOrCreatePlayerId,
   getPlayerName,
   setPlayerName as savePlayerName,
 } from '@/lib/playerStorage';
@@ -125,6 +126,12 @@ export default function SFCity({
   const connectNearRef = useRef<(() => void) | null>(null);
 
   const effectiveVenueRoute = venueRoute;
+  // Generated crowd for this stage (+ local Buz). Falls back to legacy cast when
+  // no generated NPCs are saved for the channel yet.
+  const npcCast = useMemo(
+    () => npcCastForVenue(effectiveVenueRoute),
+    [effectiveVenueRoute],
+  );
   const isolatedTile = cityTileForRoute(effectiveVenueRoute);
   const cityBounds = cityWorldOffBounds(effectiveVenueRoute);
   const cityBoundsRef = useRef(cityBounds);
@@ -176,7 +183,7 @@ export default function SFCity({
   // Each NPC reports its world-x each frame (same coordinate space as worldRef).
   // Infinity until each NPC's RAF loop reports a live position — avoids
   // connecting to off-screen entry coords while the sprite is still hidden.
-  const npcWorldXRefs     = useRef<number[]>(CHARACTERS.map(() => Infinity));
+  const npcWorldXRefs     = useRef<number[]>(npcCast.map(() => Infinity));
   const greetingRef       = useRef<number | null>(null);
   const nearNpcRef        = useRef<number | null>(null);
   const disconnectUntil   = useRef(0);
@@ -189,9 +196,9 @@ export default function SFCity({
   const [walking,   setWalking]   = useState(false);
   const [jumping,   setJumping]   = useState(false);
   const [playerDancing, setPlayerDancing] = useState(false);
-  const [npcDancing,  setNpcDancing]  = useState<boolean[]>(() => CHARACTERS.map(() => false));
+  const [npcDancing,  setNpcDancing]  = useState<boolean[]>(() => npcCast.map(() => false));
   const playerDancingRef = useRef(false);
-  const npcDancingRef    = useRef<boolean[]>(CHARACTERS.map(() => false));
+  const npcDancingRef    = useRef<boolean[]>(npcCast.map(() => false));
   const [greetingNpc, setGreetingNpc] = useState<number | null>(null);
   const [nearNpc,     setNearNpc]     = useState<number | null>(null);
   const [greetNpcX,   setGreetNpcX]   = useState(50);
@@ -199,6 +206,7 @@ export default function SFCity({
   type ChatMode = null | 'chat' | 'ambient';
   const [showWelcome,   setShowWelcome]   = useState(false);
   const [playerName,    setPlayerName]    = useState<string | null>(null);
+  const [playerDepthY,  setPlayerDepthY]  = useState(0);
   const [chatMode,      setChatMode]      = useState<ChatMode>(null);
   const chatModeRef = useRef<ChatMode>(null);
   const [chatDraft,     setChatDraft]     = useState('');
@@ -293,7 +301,7 @@ export default function SFCity({
   const endPeerChatRef   = useRef<((announce: boolean) => void) | null>(null);
 
   const ambientChats = useNpcAmbientChat(
-    CHARACTERS.length,
+    npcCast,
     showWelcome || showCityPicker || greetingNpc !== null || peerChatId !== null,
   );
 
@@ -393,7 +401,7 @@ export default function SFCity({
     setGndScrollWorldOff(spawnWorldOff);
     gameWorldOffRef.current = spawnWorldOff;
     updateViewBoxes(spawnWorldOff);
-    npcWorldXRefs.current = CHARACTERS.map(() => Infinity);
+    npcWorldXRefs.current = npcCast.map(() => Infinity);
     lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
     lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
   // updateViewBoxes is stable (no deps); spawnWorldOff is the only meaningful dep
@@ -429,6 +437,7 @@ export default function SFCity({
   useEffect(() => {
     bootstrapStageSyncFromApi();
     installGameInputAnalytics();
+    setPlayerDepthY(crowdDepthOffsetPx(getOrCreatePlayerId()));
   }, []);
 
   // Keep this city's stage mounted + audible regardless of scroll position.
@@ -487,7 +496,7 @@ export default function SFCity({
     const controller = new AbortController();
     chatAbortRef.current = controller;
 
-    const character = CHARACTERS[greetingNpc];
+    const character = npcCast[greetingNpc];
     setNpcTyping(true);
     setNpcMessage(null);
     setChatHistory([]);
@@ -535,7 +544,7 @@ export default function SFCity({
     const controller = new AbortController();
     chatAbortRef.current = controller;
 
-    const character = CHARACTERS[greetingNpc];
+    const character = npcCast[greetingNpc];
     const message = sentMessageRef.current;
 
     fetchNpcReplyWithTyping(
@@ -1038,7 +1047,7 @@ export default function SFCity({
       || (chatMode === 'chat' && inConversation)
     );
   const showVendorShop =
-    greetingNpc !== null && isBuzNpc(CHARACTERS[greetingNpc]?.id ?? '');
+    greetingNpc !== null && isBuzNpc(npcCast[greetingNpc]?.id ?? '');
   const showVendorPanel =
     vendorShopManualOpen || (showVendorShop && !vendorShopDismissed);
 
@@ -1048,7 +1057,7 @@ export default function SFCity({
 
   useEffect(() => {
     if (nearNpc === null) return;
-    if (!isBuzNpc(CHARACTERS[nearNpc]?.id ?? '')) return;
+    if (!isBuzNpc(npcCast[nearNpc]?.id ?? '')) return;
     warmVendorShop();
   }, [nearNpc, warmVendorShop]);
 
@@ -1059,7 +1068,7 @@ export default function SFCity({
 
   const conversationPartnerName = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
-    : greetingNpc !== null ? CHARACTERS[greetingNpc]?.name : null;
+    : greetingNpc !== null ? npcCast[greetingNpc]?.name : null;
   const nearPeerName = nearPeer !== null
     ? (mp.remoteStateRef.current.get(nearPeer)?.name ?? 'Wanderer')
     : null;
@@ -1097,7 +1106,7 @@ export default function SFCity({
           isolatedTileIndex={isolatedTile}
         />
         <CabanaForegroundLayer ref={cabanaRef} worldOff={gndScrollWorldOff} />
-        <LovingCarLayer />
+        {effectiveVenueRoute !== 'silent-disco' && <LovingCarLayer />}
 
         {!homePreview && (
           <GroundScoreLayer
@@ -1116,12 +1125,13 @@ export default function SFCity({
         )}
 
         {/* Autonomous NPCs */}
-        {!homePreview && CHARACTERS.map((cfg, i) => {
+        {!homePreview && npcCast.map((cfg, i) => {
           if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
           const testing = TEST_SPAWN_NPC_ID === cfg.id;
           return (
           <NPC
             key={cfg.id}
+            characterId={cfg.id}
             index={i}
             {...cfg}
             stageAnchor={cfg.stageAnchor}
@@ -1174,6 +1184,7 @@ export default function SFCity({
             position: 'absolute',
             left: '50%',
             bottom: CHAR_BOTTOM,
+            transform: `translateY(${playerDepthY}px)`,
             zIndex: inConversation ? 200 : 20,
           }}>
             <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
@@ -1225,7 +1236,7 @@ export default function SFCity({
         venueRoute={effectiveVenueRoute}
         connectName={
           !inConversation && nearNpc !== null
-            ? CHARACTERS[nearNpc]?.name
+            ? npcCast[nearNpc]?.name
             : !inConversation && nearPeer !== null
               ? nearPeerName
               : null
