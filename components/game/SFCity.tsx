@@ -92,6 +92,9 @@ const TEST_PLAYER_VARIANT_GALLERY = false;
 /** Equip loadout items on the player at startup (testing). */
 const TEST_PLAYER_LOADOUT = {} as const;
 
+/** Auto-connect player + first NPC on load to preview chat connect glow (testing). */
+const TEST_CHAT_CONNECT_ON_LOAD = false;
+
 // ─── NPC cast ─────────────────────────────────────────────────────────────────
 
 // Characters are defined in characters.ts (names, personalities, AI chat).
@@ -358,7 +361,7 @@ export default function SFCity({
     nearPeerRef.current = null; setNearPeer(null);
     nearNpcRef.current = null;  setNearNpc(null);
     if (announce) mpRef.current?.openPeerChat(peerId);
-    else playChatInviteBeep();
+    playChatInviteBeep();
     if (isMobileLoungeDevice()) trackMobileControl('connect_peer');
     setChatMode('chat');
     setTimeout(() => chatInputRef.current?.focus(), 120);
@@ -507,6 +510,23 @@ export default function SFCity({
       setTimeout(() => chatInputRef.current?.focus(), 120);
     }
   }, [greetingNpc, playerName]);
+
+  // Dev: auto-connect to first NPC on load for connect-glow preview.
+  const testChatConnectRef = useRef(false);
+  useEffect(() => {
+    if (!TEST_CHAT_CONNECT_ON_LOAD || homePreview || testChatConnectRef.current) return;
+    if (showWelcome || showCityPicker) return;
+    if (npcCast.length === 0) return;
+    testChatConnectRef.current = true;
+    const npcIndex = 0;
+    greetingRef.current = npcIndex;
+    setGreetingNpc(npcIndex);
+    setGreetNpcX(50);
+    setChatMode('chat');
+    mpRef.current?.requestConnect();
+    const npcId = npcCast[npcIndex]?.id;
+    if (npcId) mpRef.current?.sendNpcChat(npcId, true);
+  }, [homePreview, showWelcome, showCityPicker, npcCast]);
 
   // AI reply when the player sends a message
   useEffect(() => {
@@ -695,6 +715,9 @@ export default function SFCity({
       setFacing(towardNpc);
       setWalking(false);
       walkingRef.current = false;
+      const npcId = npcCast[i]?.id;
+      if (npcId) mpRef.current?.sendNpcChat(npcId, true);
+      playChatInviteBeep();
       if (mobileDevice) {
         trackMobileControl('connect_npc');
         setChatMode('chat');
@@ -707,8 +730,11 @@ export default function SFCity({
         endPeerChatRef.current?.(true);
         return;
       }
+      const npcIndex = greetingRef.current;
+      const npcId = npcIndex !== null ? npcCast[npcIndex]?.id : null;
       greetingRef.current = null;
       setGreetingNpc(null);
+      if (npcId) mpRef.current?.sendNpcChat(npcId, false);
       disconnectUntil.current = Date.now() + 2000;
       setChatMode(null);
       setChatDraft('');
@@ -1011,6 +1037,18 @@ export default function SFCity({
   }, [homePreview]);
 
   const inConversation = greetingNpc !== null || peerChatId !== null;
+
+  const isPlayerChatConnected = useCallback((playerId: string) => {
+    if (mp.selfId === playerId && inConversation) return true;
+    if (peerChatId === playerId) return true;
+    if (mp.chatPairs.some(p => p.a === playerId || p.b === playerId)) return true;
+    return mp.remoteNpcChats.some(c => c.playerId === playerId);
+  }, [mp.selfId, mp.chatPairs, mp.remoteNpcChats, inConversation, peerChatId]);
+
+  const isNpcChatConnected = useCallback((npcIndex: number, npcId: string) => {
+    if (greetingNpc === npcIndex) return true;
+    return mp.remoteNpcChats.some(c => c.npcId === npcId);
+  }, [greetingNpc, mp.remoteNpcChats]);
   const showMobileChatBar = mobileDevice
     && !showWelcome
     && !showCityPicker
@@ -1113,6 +1151,7 @@ export default function SFCity({
             entryDelay={testing ? 0 : cfg.entryDelay}
             paused={greetingNpc === i}
             greeting={greetingNpc === i}
+            chatConnected={isNpcChatConnected(i, cfg.id)}
             greetFacing={greetNpcX < 50 ? 'right' : 'left'}
             dancing={TEST_FORCE_DANCE || npcDancing[i]}
             greetingChat={greetingNpc === i ? {
@@ -1137,6 +1176,7 @@ export default function SFCity({
             stateRef={mp.remoteStateRef}
             ambientRef={mp.ambientRef}
             greeting={peerChatId === pid}
+            chatConnected={isPlayerChatConnected(pid)}
             greetingChat={peerChatId === pid ? {
               name: mp.remoteStateRef.current.get(pid)?.name ?? 'Wanderer',
               npcTyping: peerTyping,
@@ -1169,6 +1209,7 @@ export default function SFCity({
                 balloonColor={myColor}
                 loadout={playerLoadout}
                 bubbleSide={playerBubbleSide(greetNpcX)}
+                chatConnected={inConversation}
                 chatOverlay={
                   inConversation ? (
                     <PlayerChatOverlay

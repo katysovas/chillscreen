@@ -1,5 +1,6 @@
 import type * as Party from 'partykit/server';
 import {
+  chatPairKey,
   decodeClient,
   encode,
   type PlayerState,
@@ -19,6 +20,10 @@ import { DEFAULT_DURATION_MS, STAGE_EPOCH } from '../lib/stageVideos';
 export default class WhichStageServer implements Party.Server {
   /** connId → live player state (lives only in memory). */
   private players = new Map<string, PlayerState>();
+  /** Active player↔player chat pairs — keyed for dedup. */
+  private chatPairs = new Map<string, { a: string; b: string }>();
+  /** Player id → NPC id while in a local NPC conversation. */
+  private npcChats = new Map<string, string>();
 
   constructor(readonly room: Party.Room) {}
 
@@ -103,12 +108,25 @@ export default class WhichStageServer implements Party.Server {
         break;
       }
 
-      case 'chat-open':
+      case 'chat-open': {
         this.sendTo(msg.to, { t: 'chat-open', from: sender.id });
+        const pair = { a: sender.id, b: msg.to };
+        this.chatPairs.set(chatPairKey(pair.a, pair.b), pair);
+        this.room.broadcast(
+          encode({ t: 'chat-pair', a: pair.a, b: pair.b, open: true }),
+        );
         break;
-      case 'chat-close':
+      }
+      case 'chat-close': {
         this.sendTo(msg.to, { t: 'chat-close', from: sender.id });
+        const key = chatPairKey(sender.id, msg.to);
+        if (this.chatPairs.delete(key)) {
+          this.room.broadcast(
+            encode({ t: 'chat-pair', a: sender.id, b: msg.to, open: false }),
+          );
+        }
         break;
+      }
       case 'chat-typing':
         this.sendTo(msg.to, { t: 'chat-typing', from: sender.id, typing: msg.typing });
         break;
@@ -126,10 +144,36 @@ export default class WhichStageServer implements Party.Server {
         );
         break;
       }
+      case 'npc-chat': {
+        if (msg.open) {
+          this.npcChats.set(sender.id, msg.npcId);
+        } else {
+          this.npcChats.delete(sender.id);
+        }
+        this.room.broadcast(
+          encode({ t: 'npc-chat', from: sender.id, npcId: msg.npcId, open: msg.open }),
+        );
+        break;
+      }
     }
   }
 
   onClose(conn: Party.Connection) {
+    for (const [key, pair] of this.chatPairs) {
+      if (pair.a === conn.id || pair.b === conn.id) {
+        this.chatPairs.delete(key);
+        this.room.broadcast(
+          encode({ t: 'chat-pair', a: pair.a, b: pair.b, open: false }),
+        );
+      }
+    }
+    const npcId = this.npcChats.get(conn.id);
+    if (npcId) {
+      this.npcChats.delete(conn.id);
+      this.room.broadcast(
+        encode({ t: 'npc-chat', from: conn.id, npcId, open: false }),
+      );
+    }
     if (this.players.delete(conn.id)) {
       this.room.broadcast(encode({ t: 'left', id: conn.id }));
     }

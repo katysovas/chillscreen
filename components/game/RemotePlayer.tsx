@@ -24,6 +24,8 @@ type RemotePlayerProps = {
   /** True while the local player is in a 1:1 chat with this player. */
   greeting?: boolean;
   greetingChat?: { name: string; npcTyping: boolean; npcMessage: string | null };
+  /** Soft connect glow — local or remote 1:1 conversation. */
+  chatConnected?: boolean;
   ambientRef?: React.RefObject<Map<string, RemoteAmbientMessage>>;
 };
 
@@ -37,7 +39,7 @@ const LERP = 0.22;
  * interpolation so 15 Hz packets read as smooth 60 fps movement.
  */
 export default function RemotePlayer({
-  id, stateRef, scale = 0.34, greeting = false, greetingChat, ambientRef,
+  id, stateRef, scale = 0.34, greeting = false, greetingChat, chatConnected = false, ambientRef,
 }: RemotePlayerProps) {
   const divRef       = useRef<HTMLDivElement>(null);
   const characterRef = useRef<CharacterHandle>(null);
@@ -144,6 +146,7 @@ export default function RemotePlayer({
         loadout={loadout}
         scale={scale}
         bubbleSide={bubbleSide}
+        chatConnected={chatConnected || greeting}
         chatOverlay={
           greeting && greetingChat ? (
             <NpcChatOverlay

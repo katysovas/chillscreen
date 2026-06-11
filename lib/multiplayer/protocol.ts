@@ -51,7 +51,9 @@ export type ClientMessage =
   | { t: 'chat-typing'; to: string; typing: boolean }
   | { t: 'chat-msg'; to: string; text: string }
   // Public shout — visible to everyone in the room.
-  | { t: 'ambient-msg'; text: string };
+  | { t: 'ambient-msg'; text: string }
+  // NPC 1:1 chat — broadcast so everyone sees the connect glow.
+  | { t: 'npc-chat'; npcId: string; open: boolean };
 
 /* ── Server → Client ─────────────────────────────────────────────────────── */
 export type ServerMessage =
@@ -68,7 +70,15 @@ export type ServerMessage =
   | { t: 'chat-close'; from: string }
   | { t: 'chat-typing'; from: string; typing: boolean }
   | { t: 'chat-msg'; from: string; text: string }
-  | { t: 'ambient'; from: string; text: string };
+  | { t: 'ambient'; from: string; text: string }
+  // Visible to the whole room — who is in a 1:1 conversation.
+  | { t: 'chat-pair'; a: string; b: string; open: boolean }
+  | { t: 'npc-chat'; from: string; npcId: string; open: boolean };
+
+/** Stable key for a player↔player chat pair. */
+export function chatPairKey(a: string, b: string): string {
+  return a < b ? `${a}:${b}` : `${b}:${a}`;
+}
 
 export function encode(msg: ClientMessage | ServerMessage): string {
   return JSON.stringify(msg);

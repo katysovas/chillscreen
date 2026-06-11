@@ -3,7 +3,7 @@ import { SFX_VOLUME } from './sfxVolume';
 
 let beep: HTMLAudioElement | null = null;
 
-/** Play once when another real player opens 1:1 chat with you. */
+/** Play once when 1:1 connect/chat mode is engaged (NPC or peer). */
 export function playChatInviteBeep() {
   if (typeof window === 'undefined' || getAudioMuted()) return;
   try {

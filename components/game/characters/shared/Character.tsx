@@ -33,6 +33,7 @@ import {
   renderAccessorySlot,
 } from '../render';
 import type { CharacterAccessory } from '../types';
+import { ChatConnectGlow } from '../../ChatConnectGlow';
 
 export type CharacterProps = {
   walking: boolean;
@@ -49,6 +50,8 @@ export type CharacterProps = {
   bubbleSide?: BubbleSide;
   /** Chat UI — pinned above the head on `bubbleSide`. */
   chatOverlay?: ReactNode;
+  /** Soft glow while in a 1:1 connected conversation. */
+  chatConnected?: boolean;
 };
 
 /** Imperative handle for the direct-DOM updates used by the NPC RAF loop. */
@@ -111,6 +114,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   dancing = false,
   bubbleSide = 'left',
   chatOverlay,
+  chatConnected = false,
 }, ref) {
   const outerRef       = useRef<HTMLDivElement>(null);
   const wrapperRef     = useRef<HTMLDivElement>(null);
@@ -230,6 +234,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
           </div>
         </div>
 
+        <ChatConnectGlow active={chatConnected} color={balloonColor} />
         <GlowstickAmbient active={glowstickAmbient} />
         <ConfettiAmbient active={confettiAmbient} />
         <FireworksOverlay active={fireworksActive} />

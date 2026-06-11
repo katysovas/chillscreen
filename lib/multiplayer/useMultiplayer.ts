@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import PartySocket from 'partysocket';
 import {
-  ROOM_ID,
+  chatPairKey,
   decodeServer,
   encode,
   type Facing,
@@ -27,6 +27,12 @@ export type RemoteAmbientMessage = {
   text: string;
   until: number;
 };
+
+/** Player↔player chat visible to the whole room. */
+export type RemoteChatPair = { a: string; b: string };
+
+/** Player↔NPC chat replicated for the connect glow. */
+export type RemoteNpcChat = { playerId: string; npcId: string };
 
 /** How long ambient shouts stay visible above a character. */
 export const PLAYER_AMBIENT_VISIBLE_MS = 5_000;
@@ -79,6 +85,10 @@ export type Multiplayer = {
   ambientRef: React.RefObject<Map<string, RemoteAmbientMessage>>;
   /** Re-renders only when players join/leave. */
   remoteIds: string[];
+  /** Active player↔player conversations (for connect glow). */
+  chatPairs: RemoteChatPair[];
+  /** Active player↔NPC conversations (for connect glow). */
+  remoteNpcChats: RemoteNpcChat[];
   sendMove: (worldX: number, facing: Facing, walking: boolean) => void;
   sendProfile: (profile: PlayerProfile) => void;
   openPeerChat: (to: string) => void;
@@ -86,6 +96,7 @@ export type Multiplayer = {
   sendPeerTyping: (to: string, typing: boolean) => void;
   sendPeerMessage: (to: string, text: string) => void;
   sendAmbientMessage: (text: string) => void;
+  sendNpcChat: (npcId: string, open: boolean) => void;
 };
 
 /**
@@ -110,6 +121,8 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const [connected, setConnected] = useState(false);
   const [shouldConnect, setShouldConnect] = useState(false);
   const [remoteIds, setRemoteIds] = useState<string[]>([]);
+  const [chatPairs, setChatPairs] = useState<RemoteChatPair[]>([]);
+  const [remoteNpcChats, setRemoteNpcChats] = useState<RemoteNpcChat[]>([]);
 
   const connectRequestedRef = useRef(false);
 
@@ -216,6 +229,8 @@ export function useMultiplayer(opts: Options): Multiplayer {
         case 'left': {
           ambientRef.current.delete(msg.id);
           if (roster.delete(msg.id)) setRemoteIds([...roster.keys()]);
+          setChatPairs(prev => prev.filter(p => p.a !== msg.id && p.b !== msg.id));
+          setRemoteNpcChats(prev => prev.filter(c => c.playerId !== msg.id));
           ev.onPeerLeft?.(msg.id);
           break;
         }
@@ -239,6 +254,27 @@ export function useMultiplayer(opts: Options): Multiplayer {
         case 'chat-close':  ev.onPeerClose?.(msg.from); break;
         case 'chat-typing': ev.onPeerTyping?.(msg.from, msg.typing); break;
         case 'chat-msg':    ev.onPeerMessage?.(msg.from, msg.text); break;
+        case 'chat-pair': {
+          const key = chatPairKey(msg.a, msg.b);
+          setChatPairs(prev => {
+            if (msg.open) {
+              if (prev.some(p => chatPairKey(p.a, p.b) === key)) return prev;
+              return [...prev, { a: msg.a, b: msg.b }];
+            }
+            return prev.filter(p => chatPairKey(p.a, p.b) !== key);
+          });
+          break;
+        }
+        case 'npc-chat': {
+          setRemoteNpcChats(prev => {
+            if (msg.open) {
+              const rest = prev.filter(c => c.playerId !== msg.from);
+              return [...rest, { playerId: msg.from, npcId: msg.npcId }];
+            }
+            return prev.filter(c => c.playerId !== msg.from);
+          });
+          break;
+        }
         case 'ambient':
           ambientRef.current.set(msg.from, {
             text: msg.text,
@@ -284,10 +320,15 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const sendPeerTyping = useCallback((to: string, typing: boolean) => connectAndSend({ t: 'chat-typing', to, typing }), [connectAndSend]);
   const sendPeerMessage = useCallback((to: string, text: string) => connectAndSend({ t: 'chat-msg', to, text }), [connectAndSend]);
   const sendAmbientMessage = useCallback((text: string) => connectAndSend({ t: 'ambient-msg', text }), [connectAndSend]);
+  const sendNpcChat = useCallback(
+    (npcId: string, open: boolean) => connectAndSend({ t: 'npc-chat', npcId, open }),
+    [connectAndSend],
+  );
 
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
+    chatPairs, remoteNpcChats,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
-    sendAmbientMessage,
+    sendAmbientMessage, sendNpcChat,
   };
 }

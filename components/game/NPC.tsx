@@ -49,6 +49,8 @@ type NPCProps = NPCConfig & {
   stageCrowd?: StageAnchorKind;
   paused: boolean;
   greeting: boolean;
+  /** Soft connect glow — local or remote 1:1 conversation. */
+  chatConnected?: boolean;
   greetFacing: 'left' | 'right';
   dancing?: boolean;
   greetingChat?: {
@@ -96,7 +98,7 @@ export default function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality, stageAnchor, stageCrowd,
-  paused, greeting, greetFacing, dancing = false, greetingChat, ambientChat,
+  paused, greeting, chatConnected = false, greetFacing, dancing = false, greetingChat, ambientChat,
 }: NPCProps) {
   // ── React state: only for infrequent visual changes ─────────────────────────
   const [jumping,   setJumping]  = useState(false);
@@ -426,6 +428,7 @@ export default function NPC({
           outfit={outfit}
           scale={scale}
           bubbleSide={screenXToBubbleSide(screenX)}
+          chatConnected={chatConnected || greeting}
           chatOverlay={
             greeting && greetingChat ? (
               <NpcChatOverlay
