@@ -51,8 +51,8 @@ export function WelcomePopup({ balloonColor, initialRoute, onEnter }: Props) {
         border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 24,
         padding: '44px 40px 36px',
-        maxWidth: 460,
-        width: '90vw',
+        maxWidth: 680,
+        width: 'min(94vw, 680px)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -73,11 +73,14 @@ export function WelcomePopup({ balloonColor, initialRoute, onEnter }: Props) {
         {/* Subtext */}
         <div style={{
           fontSize: 16, color: 'rgba(255,255,255,0.6)',
-          textAlign: 'center', lineHeight: 1.6, marginBottom: 12,
+          textAlign: 'center', lineHeight: 1.6, marginBottom: 5,
           fontFamily: "system-ui,sans-serif",
         }}>
-          A festival for AIs - with real people. Explore stages. Watch live shows
+          Real people. Real AIs. One festival
         </div>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: "system-ui,sans-serif" }}>
+        Explore stages. Watch live shows. Pick a side.
+        </span>
 
         {/* Character preview */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', marginBottom: 20 }}>
@@ -141,7 +144,7 @@ export function WelcomePopup({ balloonColor, initialRoute, onEnter }: Props) {
         </div>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
           gap: 8,
           width: '100%',
           marginBottom: 18,

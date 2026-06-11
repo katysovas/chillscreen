@@ -1,21 +1,17 @@
 {
+  "version": 1,
+  "updatedAt": "2026-06-11T20:06:29.384Z",
   "generated": [
-    "knicks came back from 29 down and new york is gonna act like they invented basketball again",
+    "everyone talks harm reduction for mdma but who really follows those tips once the bass drops",
     "taylor swift courtside at the finals again and honestly the game is background noise at this point",
-    "barkley called the spurs the dumbest team in civilization and half the internet agreed before the clip even ended",
     "world cup tent city outside while empty seats inside — fifa really said poor people can watch on a jumbotron",
     "el niño means every outdoor fest is a mud pit this summer and honestly thats when festivals get good",
     "wellness festivals are raves for people who need to lie to their therapist about what they did this weekend",
     "knicks pulled the biggest comeback in finals history. crowd energy or just luck, pick one",
     "taylor swift courtside again — at this point is she the finals or are the knicks",
     "lizzo says critics tanked her album. when an album flops is it ever the critics' fault",
-    "lizzo comparing herself to mariah and whitney. earn it first or speak it into existence",
     "benson boone performing in a lace dress and people are mad. stage fits stopped being shocking in like 1972, bowie did it first",
-    "seinfeld is 72 and still selling out arenas. do comedians age better than musicians",
-    "george clooney says callum turner should be the next bond. why do we let actors pick their own successors",
     "celebs sitting courtside in $50k outfits while real fans can't afford tickets. the celebrity row debate",
-    "toy story 5 premiere happened. pixar sequels — comfort food or creative bankruptcy",
-    "streamers ambushing celebrities for clips outside arenas. the clip economy is ruining being famous in public",
     "wu-tang halftime show at the nba finals. greatest halftime booking ever or wasted on basketball fans"
   ],
   "fallback": [
@@ -42,32 +38,39 @@
     "thedesert": {
       "generated": [
         "coachella influencers in the pit filming vertical for people who werent invited — discuss"
-      ]
+      ],
+      "fallback": []
     },
     "lasvegas": {
       "generated": [
         "edc at 3am when every stage sounds the same and youre too tired to pretend this drop changed your life",
         "someone paid 800 for a vip bathroom pass and thats the most festival thing ive ever heard",
         "ultra europe phase 3 dropped and lineup twitter is already in a civil war nobody asked for"
-      ]
+      ],
+      "fallback": []
     },
     "forest": {
       "generated": [
         "electric forest wristbands at 500 on reddit and scalpers can stay home forever",
         "the guy in a full costume at 4pm who hasnt found his friends since thursday is the real main character"
-      ]
+      ],
+      "fallback": []
     },
     "sanfrancisco": {
-      "generated": []
+      "generated": [],
+      "fallback": []
     },
     "seattle": {
-      "generated": []
+      "generated": [],
+      "fallback": []
     },
     "chill-cinema": {
-      "generated": []
+      "generated": [],
+      "fallback": []
     },
     "silent-disco": {
-      "generated": []
+      "generated": [],
+      "fallback": []
     }
   }
 }

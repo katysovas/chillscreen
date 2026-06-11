@@ -19,6 +19,8 @@ type RedditListing = {
   };
 };
 
+const FETCH_INIT = { cache: 'no-store' as const };
+
 function normalizeSubreddit(sub: string): string {
   return sub.trim().replace(/^r\//i, '').replace(/[^\w]/g, '');
 }
@@ -83,6 +85,12 @@ function parseRedditRss(xml: string, sub: string): RedditFeedPost[] {
   return posts;
 }
 
+function rateLimitWaitMs(res: Response): number {
+  const reset = Number(res.headers.get('x-ratelimit-reset') ?? 0);
+  if (Number.isFinite(reset) && reset > 0) return Math.min(reset * 1000 + 500, 60_000);
+  return 5_000;
+}
+
 async function fetchOAuthJson(
   sub: string,
   sort: 'hot' | 'top' | 'new',
@@ -93,63 +101,60 @@ async function fetchOAuthJson(
 
   const url = `https://oauth.reddit.com/r/${sub}/${sort}?limit=${limit}&raw_json=1`;
   const res = await fetch(url, {
+    ...FETCH_INIT,
     headers: {
       Authorization: `Bearer ${token}`,
       'User-Agent': redditUserAgent(),
     },
-    next: { revalidate: 0 },
   });
 
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`Reddit OAuth ${res.status} for r/${sub}: ${detail.slice(0, 120)}`);
+    throw new Error(`OAuth API ${res.status} for r/${sub}: ${detail.slice(0, 120)}`);
   }
 
   return postsFromListing(await res.json() as RedditListing, sub);
 }
 
-async function fetchPublicJson(
+async function fetchRss(
   sub: string,
-  sort: 'hot' | 'top' | 'new',
   limit: number,
   host: 'www' | 'old',
 ): Promise<RedditFeedPost[]> {
-  const url = `https://${host}.reddit.com/r/${sub}/${sort}.json?limit=${limit}&raw_json=1`;
-  const res = await fetch(url, {
-    headers: browserHeaders('application/json'),
-    next: { revalidate: 0 },
+  const url = `https://${host}.reddit.com/r/${sub}/hot.rss?limit=${limit}`;
+  let res = await fetch(url, {
+    ...FETCH_INIT,
+    headers: browserHeaders('application/atom+xml, application/xml, text/xml, */*'),
   });
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Reddit ${res.status} for r/${sub}: ${detail.slice(0, 120)}`);
+  if (res.status === 429) {
+    await delay(rateLimitWaitMs(res));
+    res = await fetch(url, {
+      ...FETCH_INIT,
+      headers: browserHeaders('application/atom+xml, application/xml, text/xml, */*'),
+    });
   }
 
-  return postsFromListing(await res.json() as RedditListing, sub);
-}
-
-async function fetchRss(sub: string, limit: number): Promise<RedditFeedPost[]> {
-  const url = `https://www.reddit.com/r/${sub}/hot.rss?limit=${limit}`;
-  const res = await fetch(url, {
-    headers: browserHeaders('application/atom+xml, application/xml, text/xml, */*'),
-    next: { revalidate: 0 },
-  });
-
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`Reddit RSS ${res.status} for r/${sub}: ${detail.slice(0, 120)}`);
+    throw new Error(`RSS ${res.status} (${host}) for r/${sub}: ${detail.slice(0, 80) || 'empty body'}`);
   }
 
   const xml = await res.text();
   if (!xml.includes('<entry>') && !xml.includes('<feed')) {
-    throw new Error(`Reddit RSS for r/${sub} returned non-feed content`);
+    throw new Error(`RSS (${host}) for r/${sub} returned non-feed content`);
   }
   return parseRedditRss(xml, sub);
 }
 
 function redditSetupHint(): string {
-  if (redditOAuthConfigured()) return '';
-  return ' Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in .env.local (reddit.com/prefs/apps → web app).';
+  if (redditOAuthConfigured()) {
+    return ' OAuth is configured but failed — check REDDIT_CLIENT_ID/SECRET and restart `npm run dev`.';
+  }
+  return (
+    ' Add REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET to .env.local '
+    + '(reddit.com/prefs/apps → script or web app), then restart `npm run dev`.'
+  );
 }
 
 export async function fetchSubredditFeed(
@@ -166,33 +171,28 @@ export async function fetchSubredditFeed(
     try {
       const posts = await fetchOAuthJson(sub, sort, capped);
       if (posts.length > 0) return posts;
+      errors.push('OAuth returned no posts');
     } catch (err) {
       errors.push(err instanceof Error ? err.message : 'OAuth failed');
     }
   }
 
+  // Anonymous JSON is blocked (403); try RSS first to avoid burning rate limits.
   for (const host of ['www', 'old'] as const) {
     try {
-      const posts = await fetchPublicJson(sub, sort, capped, host);
+      const posts = await fetchRss(sub, capped, host);
       if (posts.length > 0) return posts;
+      errors.push(`RSS (${host}) returned no posts`);
     } catch (err) {
-      errors.push(err instanceof Error ? err.message : `${host} JSON failed`);
+      errors.push(err instanceof Error ? err.message : `RSS (${host}) failed`);
     }
   }
 
-  try {
-    const posts = await fetchRss(sub, capped);
-    if (posts.length > 0) return posts;
-  } catch (err) {
-    errors.push(err instanceof Error ? err.message : 'RSS failed');
-  }
-
-  throw new Error(
-    `Could not load r/${sub}.${redditSetupHint()} ${errors[0] ?? ''}`.trim(),
-  );
+  const detail = errors.length > 0 ? errors.join(' · ') : 'no methods tried';
+  throw new Error(`Could not load r/${sub}.${redditSetupHint()} ${detail}`.trim());
 }
 
-const SUB_FETCH_DELAY_MS = 400;
+const SUB_FETCH_DELAY_MS = 1200;
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));

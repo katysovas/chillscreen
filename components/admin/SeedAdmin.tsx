@@ -106,6 +106,7 @@ export function SeedAdmin() {
   const [redditLoading, setRedditLoading] = useState(false);
   const [redditError, setRedditError] = useState<string | null>(null);
   const [redditOAuth, setRedditOAuth] = useState<boolean | null>(null);
+  const [redditOAuthError, setRedditOAuthError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generatedPreview, setGeneratedPreview] = useState<string[]>([]);
 
@@ -126,6 +127,21 @@ export function SeedAdmin() {
   useEffect(() => {
     void loadSeeds();
   }, [loadSeeds]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch('/api/admin/reddit-feed?status=1');
+        const data = await res.json();
+        if (!res.ok) return;
+        const oauth = data.oauth as { configured?: boolean; ok?: boolean; error?: string };
+        setRedditOAuth(Boolean(oauth?.configured && oauth?.ok));
+        setRedditOAuthError(oauth?.configured && !oauth?.ok ? (oauth.error ?? 'OAuth failed') : null);
+      } catch {
+        /* ignore status probe */
+      }
+    })();
+  }, []);
 
   const poolLines = useMemo(() => {
     if (!file) return [];
@@ -381,9 +397,10 @@ export function SeedAdmin() {
           <h2 style={{ margin: '0 0 8px', fontSize: 16 }}>Reddit topics → seeds</h2>
           <p style={{ margin: '0 0 14px', fontSize: 12, color: '#9aa0a6', lineHeight: 1.5 }}>
             Target pool: <strong>{poolLabel(target)}</strong>.
-            Reddit blocks anonymous JSON — add <code style={{ color: '#8ab4f8' }}>REDDIT_CLIENT_ID</code> and{' '}
+            Reddit blocks anonymous JSON. Add <code style={{ color: '#8ab4f8' }}>REDDIT_CLIENT_ID</code> and{' '}
             <code style={{ color: '#8ab4f8' }}>REDDIT_CLIENT_SECRET</code> to <code style={{ color: '#8ab4f8' }}>.env.local</code>{' '}
-            (<a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noreferrer" style={{ color: '#8ab4f8' }}>reddit.com/prefs/apps</a>, web app).
+            (<a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noreferrer" style={{ color: '#8ab4f8' }}>reddit.com/prefs/apps</a>, script or web app)
+            and restart <code style={{ color: '#8ab4f8' }}>npm run dev</code>. Without OAuth, RSS is used (rate-limited).
           </p>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -433,9 +450,14 @@ export function SeedAdmin() {
           {redditOAuth === true && (
             <p style={{ color: '#7dcea0', fontSize: 12, margin: '0 0 12px' }}>Reddit OAuth connected.</p>
           )}
-          {redditOAuth === false && (
+          {redditOAuth === false && redditOAuthError && (
+            <p style={{ color: '#ff9d9d', fontSize: 12, margin: '0 0 12px', lineHeight: 1.45 }}>
+              Reddit OAuth misconfigured: {redditOAuthError}
+            </p>
+          )}
+          {redditOAuth === false && !redditOAuthError && (
             <p style={{ color: '#f0c674', fontSize: 12, margin: '0 0 12px' }}>
-              No Reddit OAuth — using RSS/public fallbacks (may 403).
+              No Reddit OAuth — using RSS fallback (slower, rate-limited).
             </p>
           )}
           {redditError && (

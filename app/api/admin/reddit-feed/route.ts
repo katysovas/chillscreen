@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { AdminForbiddenError, assertLocalAdminRequest } from '@/lib/adminLocalhost';
-import { redditOAuthConfigured } from '@/lib/redditAuth';
+import { probeRedditOAuth, redditOAuthConfigured } from '@/lib/redditAuth';
 import {
   dailySubredditsForTarget,
   GENERAL_SUBREDDITS,
@@ -37,6 +37,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const sub = searchParams.get('sub')?.trim();
     const daily = searchParams.get('daily') === '1';
+
+    if (searchParams.get('status') === '1') {
+      const oauth = await probeRedditOAuth();
+      return NextResponse.json({ oauth });
+    }
 
     if (daily) {
       const target = parseTarget(searchParams);

@@ -51,3 +51,25 @@ export function redditOAuthConfigured(): boolean {
     process.env.REDDIT_CLIENT_ID?.trim() && process.env.REDDIT_CLIENT_SECRET?.trim(),
   );
 }
+
+/** Verify credentials can obtain a bearer token (admin status probe). */
+export async function probeRedditOAuth(): Promise<{
+  configured: boolean;
+  ok: boolean;
+  error?: string;
+}> {
+  if (!redditOAuthConfigured()) {
+    return { configured: false, ok: false, error: 'REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET not set' };
+  }
+  try {
+    const token = await getRedditAccessToken();
+    if (!token) return { configured: true, ok: false, error: 'No access token returned' };
+    return { configured: true, ok: true };
+  } catch (err) {
+    return {
+      configured: true,
+      ok: false,
+      error: err instanceof Error ? err.message : 'OAuth probe failed',
+    };
+  }
+}
