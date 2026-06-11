@@ -1,6 +1,7 @@
 /** Reddit topic feeds for seed admin — OAuth preferred, RSS fallback. */
 
 import { getRedditAccessToken, redditOAuthConfigured, redditUserAgent } from '@/lib/redditAuth';
+import { throttledRedditFetch } from '@/lib/redditThrottle';
 
 export type RedditFeedPost = {
   id: string;
@@ -19,7 +20,8 @@ type RedditListing = {
   };
 };
 
-const FETCH_INIT = { cache: 'no-store' as const };
+const FEED_CACHE_TTL_MS = 5 * 60_000;
+const feedCache = new Map<string, { posts: RedditFeedPost[]; expiresAt: number }>();
 
 function normalizeSubreddit(sub: string): string {
   return sub.trim().replace(/^r\//i, '').replace(/[^\w]/g, '');
@@ -85,10 +87,14 @@ function parseRedditRss(xml: string, sub: string): RedditFeedPost[] {
   return posts;
 }
 
-function rateLimitWaitMs(res: Response): number {
-  const reset = Number(res.headers.get('x-ratelimit-reset') ?? 0);
-  if (Number.isFinite(reset) && reset > 0) return Math.min(reset * 1000 + 500, 60_000);
-  return 5_000;
+function cachedFeed(key: string): RedditFeedPost[] | null {
+  const hit = feedCache.get(key);
+  if (!hit || Date.now() >= hit.expiresAt) return null;
+  return hit.posts;
+}
+
+function storeFeedCache(key: string, posts: RedditFeedPost[]): void {
+  feedCache.set(key, { posts, expiresAt: Date.now() + FEED_CACHE_TTL_MS });
 }
 
 async function fetchOAuthJson(
@@ -100,8 +106,7 @@ async function fetchOAuthJson(
   if (!token) return [];
 
   const url = `https://oauth.reddit.com/r/${sub}/${sort}?limit=${limit}&raw_json=1`;
-  const res = await fetch(url, {
-    ...FETCH_INIT,
+  const res = await throttledRedditFetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
       'User-Agent': redditUserAgent(),
@@ -116,33 +121,23 @@ async function fetchOAuthJson(
   return postsFromListing(await res.json() as RedditListing, sub);
 }
 
-async function fetchRss(
-  sub: string,
-  limit: number,
-  host: 'www' | 'old',
-): Promise<RedditFeedPost[]> {
-  const url = `https://${host}.reddit.com/r/${sub}/hot.rss?limit=${limit}`;
-  let res = await fetch(url, {
-    ...FETCH_INIT,
+async function fetchRss(sub: string, limit: number): Promise<RedditFeedPost[]> {
+  const url = `https://www.reddit.com/r/${sub}/hot.rss?limit=${limit}`;
+  const res = await throttledRedditFetch(url, {
     headers: browserHeaders('application/atom+xml, application/xml, text/xml, */*'),
   });
 
-  if (res.status === 429) {
-    await delay(rateLimitWaitMs(res));
-    res = await fetch(url, {
-      ...FETCH_INIT,
-      headers: browserHeaders('application/atom+xml, application/xml, text/xml, */*'),
-    });
-  }
-
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`RSS ${res.status} (${host}) for r/${sub}: ${detail.slice(0, 80) || 'empty body'}`);
+    const hint = res.status === 429
+      ? ' (rate limited — wait a minute or add Reddit OAuth to .env.local)'
+      : '';
+    throw new Error(`RSS ${res.status} for r/${sub}${hint}: ${detail.slice(0, 80) || 'empty body'}`);
   }
 
   const xml = await res.text();
   if (!xml.includes('<entry>') && !xml.includes('<feed')) {
-    throw new Error(`RSS (${host}) for r/${sub} returned non-feed content`);
+    throw new Error(`RSS for r/${sub} returned non-feed content`);
   }
   return parseRedditRss(xml, sub);
 }
@@ -165,34 +160,41 @@ export async function fetchSubredditFeed(
   const sub = normalizeSubreddit(subreddit);
   if (!sub) throw new Error('Invalid subreddit');
   const capped = Math.min(limit, 50);
+  const cacheKey = `${sub}:${sort}:${capped}`;
+  const cached = cachedFeed(cacheKey);
+  if (cached) return cached;
+
   const errors: string[] = [];
 
   if (redditOAuthConfigured()) {
     try {
       const posts = await fetchOAuthJson(sub, sort, capped);
-      if (posts.length > 0) return posts;
+      if (posts.length > 0) {
+        storeFeedCache(cacheKey, posts);
+        return posts;
+      }
       errors.push('OAuth returned no posts');
     } catch (err) {
       errors.push(err instanceof Error ? err.message : 'OAuth failed');
     }
   }
 
-  // Anonymous JSON is blocked (403); try RSS first to avoid burning rate limits.
-  for (const host of ['www', 'old'] as const) {
-    try {
-      const posts = await fetchRss(sub, capped, host);
-      if (posts.length > 0) return posts;
-      errors.push(`RSS (${host}) returned no posts`);
-    } catch (err) {
-      errors.push(err instanceof Error ? err.message : `RSS (${host}) failed`);
+  try {
+    const posts = await fetchRss(sub, capped);
+    if (posts.length > 0) {
+      storeFeedCache(cacheKey, posts);
+      return posts;
     }
+    errors.push('RSS returned no posts');
+  } catch (err) {
+    errors.push(err instanceof Error ? err.message : 'RSS failed');
   }
 
   const detail = errors.length > 0 ? errors.join(' · ') : 'no methods tried';
   throw new Error(`Could not load r/${sub}.${redditSetupHint()} ${detail}`.trim());
 }
 
-const SUB_FETCH_DELAY_MS = 1200;
+const SUB_FETCH_DELAY_MS = 500;
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
