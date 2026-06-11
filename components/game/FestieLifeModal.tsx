@@ -42,7 +42,7 @@ export function FestieLifeModal({
         aria-labelledby="festie-life-title"
         onClick={e => e.stopPropagation()}
         style={{
-          width: 'min(100%, 380px)',
+          width: 'min(100%, 440px)',
           maxHeight: 'min(92vh, 640px)',
           overflow: 'auto',
           borderRadius: 20,

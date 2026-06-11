@@ -26,9 +26,8 @@ import { addPlayerCoins, getPlayerCoins, STARTING_COINS } from '@/lib/playerCoin
 import { GroundScoreLayer } from './GroundScoreLayer';
 import { purchaseVendorItemAsync } from '@/lib/vendorPurchase';
 import { festieLifeFill } from '@/lib/festie/config';
-import { fetchFestie } from '@/lib/festie/client';
+import { fetchFestie, logoutFestie } from '@/lib/festie/client';
 import {
-  hasSeenFestieLifeIntro,
   markFestieLifeIntroSeen,
   markFestieLifeTabExitShown,
   shouldShowFestieLifeOnTabExit,
@@ -87,9 +86,10 @@ import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
 import { isMobileLoungeDevice } from '@/lib/mobileLounge';
-import { BottomControlPanel } from './BottomControlPanel';
+import { BottomControlPanel, SignOutIcon } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
 import { HelpFaqModal } from './HelpFaqModal';
+import { SignOutConfirmModal } from './SignOutConfirmModal';
 import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
@@ -281,9 +281,10 @@ export default function SFCity({
   const [helpOpen, setHelpOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<FestieSettingsTab>('customize');
   const [lifeModalOpen, setLifeModalOpen] = useState(false);
+  const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
+  const [signOutLoading, setSignOutLoading] = useState(false);
   const [festieSignedIn, setFestieSignedIn] = useState(false);
   const [ownerFestie, setOwnerFestie] = useState<FestieOwner | null>(null);
-  const [pendingLifeIntro, setPendingLifeIntro] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
   const lifeRefillFromRef = useRef<number | null>(null);
 
@@ -347,6 +348,24 @@ export default function SFCity({
     });
   }, []);
 
+  const openSignOutConfirm = useCallback(() => {
+    setSettingsOpen(false);
+    setLifeModalOpen(false);
+    setHelpOpen(false);
+    setVendorShopManualOpen(false);
+    setSignOutConfirmOpen(true);
+  }, []);
+
+  const confirmSignOut = useCallback(async () => {
+    setSignOutLoading(true);
+    try {
+      await logoutFestie();
+    } catch {
+      // Reload anyway — cookie may already be cleared.
+    }
+    window.location.assign('/');
+  }, []);
+
   useEffect(() => {
     void hydratePlayerSession().then(profile => {
       setFestieSignedIn(profile.authenticated);
@@ -355,7 +374,6 @@ export default function SFCity({
         const priorFill = festieLifeFill(profile.festie.last_seen_at, false);
         if (priorFill < 0.95) lifeRefillFromRef.current = priorFill;
         setOwnerFestie(profile.festie);
-        if (!hasSeenFestieLifeIntro()) setPendingLifeIntro(true);
       }
       setPlayerLoadout({ ...getPlayerLoadout(myColor), ...TEST_PLAYER_LOADOUT });
       setPlayerCoins(getPlayerCoins());
@@ -369,13 +387,6 @@ export default function SFCity({
       if (festie) setOwnerFestie(festie);
     });
   }, []);
-
-  useEffect(() => {
-    if (showWelcome || showCityPicker || !pendingLifeIntro || !ownerFestie) return;
-    setLifeModalOpen(true);
-    markFestieLifeIntroSeen();
-    setPendingLifeIntro(false);
-  }, [showWelcome, showCityPicker, pendingLifeIntro, ownerFestie]);
 
   useEffect(() => {
     const onVisibility = () => {
@@ -393,7 +404,6 @@ export default function SFCity({
   }, [festieSignedIn, ownerFestie, settingsOpen, lifeModalOpen]);
 
   const handleFestieCreated = useCallback(async () => {
-    setPendingLifeIntro(true);
     const festie = await fetchFestie();
     if (festie) setOwnerFestie(festie);
   }, []);
@@ -1583,6 +1593,17 @@ export default function SFCity({
 
       {helpOpen && <HelpFaqModal onClose={() => setHelpOpen(false)} />}
 
+      {signOutConfirmOpen && (
+        <SignOutConfirmModal
+          festieName={ownerFestie?.name ?? playerName}
+          loading={signOutLoading}
+          onConfirm={() => void confirmSignOut()}
+          onCancel={() => {
+            if (!signOutLoading) setSignOutConfirmOpen(false);
+          }}
+        />
+      )}
+
       {lifeModalOpen && ownerFestie && (
         <FestieLifeModal
           festie={ownerFestie}
@@ -1687,16 +1708,24 @@ export default function SFCity({
         <div style={{ color: 'rgba(255,255,255,.2)', fontSize: 9, letterSpacing: 3, fontFamily: 'Georgia,serif', pointerEvents: 'none' }}>
           A · D · W · walk & jump
         </div>
-        <button onClick={() => setMuted(m => !m)} title={muted ? 'Unmute' : 'Mute'} style={{
-          width: 30, height: 30, borderRadius: 7,
-          border: '1px solid rgba(255,255,255,.2)',
-          background: 'rgba(0,0,0,.3)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: muted ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.6)',
-          fontSize: 14, cursor: 'pointer',
-        }}>
-          {muted ? '🔇' : '🔊'}
-        </button>
+        {festieSignedIn && (
+          <button
+            type="button"
+            onClick={openSignOutConfirm}
+            title="Sign out"
+            aria-label="Sign out"
+            style={{
+              width: 30, height: 30, borderRadius: 7,
+              border: '1px solid rgba(255,255,255,.2)',
+              background: 'rgba(0,0,0,.3)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(255,255,255,.55)',
+              cursor: 'pointer',
+            }}
+          >
+            <SignOutIcon size={16} />
+          </button>
+        )}
       </div>
 
       {showMobileChatBar && (

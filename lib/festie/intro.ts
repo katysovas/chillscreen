@@ -1,15 +1,6 @@
 const INTRO_KEY = 'festie_intro_seen';
 const TAB_EXIT_KEY = 'festie_life_tab_exit_shown';
 
-export function hasSeenFestieLifeIntro(): boolean {
-  if (typeof window === 'undefined') return true;
-  try {
-    return localStorage.getItem(INTRO_KEY) === 'true';
-  } catch {
-    return true;
-  }
-}
-
 export function markFestieLifeIntroSeen(): void {
   if (typeof window === 'undefined') return;
   try {
