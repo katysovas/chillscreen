@@ -188,6 +188,11 @@ export function StagePlaylistAdmin() {
           After saving, refresh the game tab. Restart <code>party:dev</code> if PartyKit playlists look stale.
           YouTube search is limited to ~100/day — use <strong style={{ color: '#9aa0a6' }}>Add by URL</strong> when quota runs out.
         </p>
+        <nav style={{ marginTop: 10, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <a href="/admin/stage-playlists" style={{ color: '#8ab4f8', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Stage playlists</a>
+          <a href="/admin/npc-generator" style={{ color: '#8ab4f8', fontSize: 13, textDecoration: 'none' }}>NPC generator</a>
+          <a href="/admin/seeds" style={{ color: '#8ab4f8', fontSize: 13, textDecoration: 'none' }}>Seeds</a>
+        </nav>
       </header>
 
       {loadError && (

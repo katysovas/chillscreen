@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body
-        className={`${inter.className} bg-black overflow-hidden`}
+        className={`${inter.className} bg-black`}
         suppressHydrationWarning
       >
         <JsonLd data={defaultSiteGraphJsonLd()} />

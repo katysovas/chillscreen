@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Lock document scroll only while the full-screen game is mounted. */
+html:has(.game-surface),
+html:has(.game-surface) body {
+  overflow: hidden;
+  height: 100%;
+}
+
 /* Prevent page scroll / pull-to-refresh stealing game touches on mobile. */
 .game-surface {
   touch-action: none;

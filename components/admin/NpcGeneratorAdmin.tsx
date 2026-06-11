@@ -142,12 +142,17 @@ export function NpcGeneratorAdmin() {
   return (
     <div style={PAGE_STYLE}>
       <h1 style={{ fontSize: 26, margin: '0 0 4px' }}>NPC Generator</h1>
-      <p style={{ color: '#9aa3b5', margin: '0 0 24px', fontSize: 14 }}>
+      <p style={{ color: '#9aa3b5', margin: '0 0 8px', fontSize: 14 }}>
         Localhost only. Generates ambient crowd NPCs per stage — batches accumulate, and
         names from earlier batches are excluded automatically. Hit <strong>Save to game</strong>{' '}
         to write <code style={{ color: '#8ab4f8' }}>data/generated-npcs.json</code> — those NPCs
         spawn on that stage&apos;s city page. You can also paste previously copied JSON.
       </p>
+      <nav style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <a href="/admin/stage-playlists" style={{ color: '#8ab4f8', fontSize: 13, textDecoration: 'none' }}>Stage playlists</a>
+        <a href="/admin/npc-generator" style={{ color: '#8ab4f8', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>NPC generator</a>
+        <a href="/admin/seeds" style={{ color: '#8ab4f8', fontSize: 13, textDecoration: 'none' }}>Seeds</a>
+      </nav>
 
       <div style={{ ...CARD_STYLE, display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#9aa3b5' }}>

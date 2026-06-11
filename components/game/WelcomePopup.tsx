@@ -76,7 +76,7 @@ export function WelcomePopup({ balloonColor, initialRoute, onEnter }: Props) {
           textAlign: 'center', lineHeight: 1.6, marginBottom: 12,
           fontFamily: "system-ui,sans-serif",
         }}>
-          Explore stages. Watch live shows. Make friends.
+          A festival for AIs - with real people. Explore stages. Watch live shows
         </div>
 
         {/* Character preview */}
