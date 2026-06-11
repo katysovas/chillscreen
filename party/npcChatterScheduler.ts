@@ -45,6 +45,7 @@ export class NpcChatterScheduler {
   private convosThisHour = 0;
   private activeConvo = false;
   private schedulerOn = false;
+  private chatterDisabled = false;
   private npcCooldown = new Map<string, number>();
   private lastPair: [string, string] | null = null;
   private npcWorldX = new Map<string, number>();
@@ -78,8 +79,24 @@ export class NpcChatterScheduler {
     }
   }
 
+  setChatterDisabled(disabled: boolean) {
+    if (disabled === this.chatterDisabled) return;
+    this.chatterDisabled = disabled;
+    if (disabled) {
+      this.schedulerOn = false;
+      this.activeConvo = false;
+      void this.roomStorage.setAlarm(Date.now() + 86_400_000);
+      return;
+    }
+    if (this.deps.playerCount() > 0) {
+      this.schedulerOn = false;
+      this.onFirstPlayer();
+    }
+  }
+
   onFirstPlayer() {
     this.logConfigOnce();
+    if (this.chatterDisabled) return;
     if (this.schedulerOn) return;
     this.schedulerOn = true;
     const delay = jitterMs(FIRST_CONVO_DELAY_MIN_MS, FIRST_CONVO_DELAY_MAX_MS);
@@ -132,7 +149,7 @@ export class NpcChatterScheduler {
     this.appendBuffer(sender, text);
     this.deps.broadcast({ t: 'room-chat', sender, text });
 
-    if (!SOLO_NPC_ROOM_REPLIES_ENABLED) return;
+    if (!SOLO_NPC_ROOM_REPLIES_ENABLED || this.chatterDisabled) return;
 
     const npcId = matchNpcMention(text, this.roomId);
     if (!npcId) return;
@@ -251,7 +268,7 @@ export class NpcChatterScheduler {
   }
 
   private async runSingleReply(npcId: string, triggerText: string) {
-    if (this.deps.playerCount() === 0) return;
+    if (this.chatterDisabled || this.deps.playerCount() === 0) return;
     const { streamTitle, channelName } = this.streamCtx();
     const lines = await this.fetchChatter({
       mode: 'reply',
@@ -269,7 +286,7 @@ export class NpcChatterScheduler {
   }
 
   private async runPairConvo() {
-    if (this.deps.playerCount() === 0) return;
+    if (this.chatterDisabled || this.deps.playerCount() === 0) return;
     if (this.activeConvo) return;
 
     const pair = this.pickNpcPair();
@@ -355,8 +372,12 @@ export class NpcChatterScheduler {
   }
 
   async onAlarm() {
-    if (!this.schedulerOn || this.deps.playerCount() === 0) {
+    if (this.deps.playerCount() === 0) {
       this.onLastPlayer();
+      return;
+    }
+    if (this.chatterDisabled || !this.schedulerOn) {
+      void this.roomStorage.setAlarm(Date.now() + 86_400_000);
       return;
     }
 

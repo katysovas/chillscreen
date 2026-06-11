@@ -1,3 +1,4 @@
+import { isChatterMuted } from '@/lib/chatterMuted';
 import { NPC_TYPING_MS } from '@/lib/npcChat';
 
 export type NpcChatRequest = {
@@ -14,6 +15,7 @@ export async function fetchNpcReply(
   body: NpcChatRequest,
   signal: AbortSignal,
 ): Promise<string | undefined> {
+  if (isChatterMuted()) return undefined;
   const res = await fetch('/api/chat/npc', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

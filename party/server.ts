@@ -26,6 +26,8 @@ export default class WhichStageServer implements Party.Server {
   private chatPairs = new Map<string, { a: string; b: string }>();
   /** Player id → NPC id while in a local NPC conversation. */
   private npcChats = new Map<string, string>();
+  /** Players who joined with `?mute=true` — disables room NPC chatter while any remain. */
+  private chatterMutedPlayers = new Set<string>();
   private stageSync: StageSync | null = null;
   private chatter: NpcChatterScheduler;
 
@@ -88,7 +90,12 @@ export default class WhichStageServer implements Party.Server {
           walking: msg.walking,
         };
         this.players.set(sender.id, player);
-        if (wasEmpty) this.chatter.onFirstPlayer();
+        if (msg.chatterMuted) {
+          this.chatterMutedPlayers.add(sender.id);
+          this.chatter.setChatterDisabled(true);
+        } else if (wasEmpty) {
+          this.chatter.onFirstPlayer();
+        }
         this.broadcastExcept(sender.id, { t: 'joined', player });
         break;
       }
@@ -210,9 +217,13 @@ export default class WhichStageServer implements Party.Server {
         encode({ t: 'npc-chat', from: conn.id, npcId, open: false }),
       );
     }
+    const wasMuted = this.chatterMutedPlayers.delete(conn.id);
     if (this.players.delete(conn.id)) {
       this.chatter.clearPlayerViewport(conn.id);
       this.room.broadcast(encode({ t: 'left', id: conn.id }));
+    }
+    if (wasMuted) {
+      this.chatter.setChatterDisabled(this.chatterMutedPlayers.size > 0);
     }
     if (this.players.size === 0) {
       this.chatter.onLastPlayer();

@@ -42,7 +42,15 @@ export type PlayerState = PlayerProfile & {
 
 /* ── Client → Server ─────────────────────────────────────────────────────── */
 export type ClientMessage =
-  | { t: 'join'; profile: PlayerProfile; worldX: number; facing: Facing; walking: boolean }
+  | {
+      t: 'join';
+      profile: PlayerProfile;
+      worldX: number;
+      facing: Facing;
+      walking: boolean;
+      /** From `?mute=true` — disables room NPC chatter while this player is present. */
+      chatterMuted?: boolean;
+    }
   | { t: 'move'; worldX: number; facing: Facing; walking: boolean }
   | { t: 'profile'; profile: PlayerProfile }
   // 1:1 proximity chat — addressed to a specific connection id.

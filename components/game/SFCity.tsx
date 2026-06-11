@@ -35,6 +35,7 @@ import {
 } from '@/lib/playerStorage';
 import { identifyPlayer, trackCharacterCreated } from '@/lib/analytics';
 import { installGameInputAnalytics, trackMobileControl } from '@/lib/gameInputAnalytics';
+import { isChatterMuted } from '@/lib/chatterMuted';
 import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
@@ -617,6 +618,13 @@ export default function SFCity({
 
     const character = npcCast[greetingNpc];
     const message = sentMessageRef.current;
+
+    if (isChatterMuted()) {
+      setNpcTyping(false);
+      setNpcMessages(prev => appendChatLine(prev, pickFallbackReply(character)));
+      setTimeout(() => chatInputRef.current?.focus(), 0);
+      return;
+    }
 
     fetchNpcReplyWithTyping(
       {

@@ -12,6 +12,7 @@ import {
   type PlayerProfile,
 } from './protocol';
 import { applyServerStageSync } from '@/lib/stageClock';
+import { isChatterMuted } from '@/lib/chatterMuted';
 
 /** What a remote avatar needs to render — kept in a ref, mutated without rerenders. */
 export type RemotePlayerState = {
@@ -173,13 +174,22 @@ export function useMultiplayer(opts: Options): Multiplayer {
       const profile = pendingProfileRef.current
         ?? profileRef.current
         ?? { name: null, balloonColor: '#ef4023' };
-      sendNow({
+      const join: {
+        t: 'join';
+        profile: PlayerProfile;
+        worldX: number;
+        facing: Facing;
+        walking: boolean;
+        chatterMuted?: boolean;
+      } = {
         t: 'join',
         profile,
         worldX: last?.worldX ?? spawnRef.current ?? 0,
         facing: last?.facing ?? 'right',
         walking: last?.walking ?? false,
-      });
+      };
+      if (isChatterMuted()) join.chatterMuted = true;
+      sendNow(join);
     };
 
     const flushProfile = () => {
