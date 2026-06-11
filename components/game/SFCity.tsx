@@ -24,14 +24,29 @@ import type { NpcConvoMeta, PlayerProfile } from '@/lib/multiplayer/protocol';
 import { getPlayerLoadout, unequipLoadoutItem } from '@/lib/playerLoadout';
 import { addPlayerCoins, getPlayerCoins, STARTING_COINS } from '@/lib/playerCoins';
 import { GroundScoreLayer } from './GroundScoreLayer';
-import { purchaseVendorItem } from '@/lib/vendorPurchase';
+import { purchaseVendorItemAsync } from '@/lib/vendorPurchase';
+import { festieLifeFill } from '@/lib/festie/config';
+import { fetchFestie } from '@/lib/festie/client';
+import {
+  hasSeenFestieLifeIntro,
+  markFestieLifeIntroSeen,
+  markFestieLifeTabExitShown,
+  shouldShowFestieLifeOnTabExit,
+} from '@/lib/festie/intro';
+import type { FestieOwner } from '@/lib/festie/types';
+import { festieNpcId, festiesToCharacterDefs, isFestieNpcId } from '@/lib/festie/toCharacterDef';
+import {
+  getPlayerSession,
+  hydratePlayerSession,
+  subscribePlayerSession,
+} from '@/lib/player/session';
 import { preloadPurchaseSound, unlockPurchaseSound } from '@/lib/playPurchaseSound';
 import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
 import { isBuzNpc } from '@/lib/vendorShop';
 import {
   getOrCreatePlayerId,
   getPlayerName,
-  setPlayerName as savePlayerName,
+  setPlayerName as saveSessionPlayerName,
 } from '@/lib/playerStorage';
 import { identifyPlayer, trackCharacterCreated } from '@/lib/analytics';
 import { installGameInputAnalytics, trackMobileControl } from '@/lib/gameInputAnalytics';
@@ -74,6 +89,10 @@ import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
 import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { BottomControlPanel } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
+import { HelpFaqModal } from './HelpFaqModal';
+import { FestieLifeCorner } from './FestieLifeCorner';
+import { FestieLifeModal } from './FestieLifeModal';
+import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import { hasStickerTripActive, preloadAllLoadoutSlots, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
@@ -238,6 +257,7 @@ export default function SFCity({
   const cinemaNowRef  = useRef<string | null>(null);
   const concertNowRef = useRef<string | null>(null);
   const greetingSessionRef = useRef<number | null>(null);
+  const festieConvoIdRef = useRef<string | null>(null);
   const showWelcomeRef = useRef(false);
 
   // ── Multiplayer (PartyKit) ──────────────────────────────────────────────────
@@ -249,40 +269,144 @@ export default function SFCity({
     getSessionBalloonColor,
     getServerBalloonColor,
   );
-  // SSR/hydration: start from defaults; localStorage loadout applies after mount.
+  // SSR/hydration: defaults until player session hydrates from API.
   const [playerLoadout, setPlayerLoadout] = useState<CharacterLoadout>(() => ({
     ...defaultLoadout(myColor),
     ...TEST_PLAYER_LOADOUT,
   }));
   const [playerCoins, setPlayerCoins] = useState(STARTING_COINS);
+  const [vendorShopManualOpen, setVendorShopManualOpen] = useState(false);
+  const [vendorShopDismissed, setVendorShopDismissed] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<FestieSettingsTab>('customize');
+  const [lifeModalOpen, setLifeModalOpen] = useState(false);
+  const [festieSignedIn, setFestieSignedIn] = useState(false);
+  const [ownerFestie, setOwnerFestie] = useState<FestieOwner | null>(null);
+  const [pendingLifeIntro, setPendingLifeIntro] = useState(false);
+  const [profileReady, setProfileReady] = useState(false);
+  const lifeRefillFromRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    setPlayerLoadout({ ...getPlayerLoadout(myColor), ...TEST_PLAYER_LOADOUT });
-    setPlayerCoins(getPlayerCoins());
-  }, [myColor]);
-
-  const handleVendorPurchase = useCallback((itemId: string): boolean => {
+  const handleVendorPurchase = useCallback(async (itemId: string): Promise<boolean> => {
     const coinsBefore = getPlayerCoins();
-    const result = purchaseVendorItem(itemId, myColor);
-    if (!result.ok) return false;
+    const result = await purchaseVendorItemAsync(itemId, myColor);
+    if (!result.ok) {
+      if (result.reason === 'not_signed_in') setShowWelcome(true);
+      return false;
+    }
     setPlayerLoadout({ ...result.loadout, ...TEST_PLAYER_LOADOUT });
     setPlayerCoins(result.coins);
     return result.charged || result.coins < coinsBefore;
   }, [myColor]);
 
-  const handleVendorUnequip = useCallback((itemId: string) => {
-    const next = unequipLoadoutItem(itemId, myColor);
+  const handleVendorUnequip = useCallback(async (itemId: string) => {
+    const next = await unequipLoadoutItem(itemId, myColor);
     if (next) setPlayerLoadout({ ...next, ...TEST_PLAYER_LOADOUT });
   }, [myColor]);
 
-  const [vendorShopManualOpen, setVendorShopManualOpen] = useState(false);
-  const [vendorShopDismissed, setVendorShopDismissed] = useState(false);
+  const openSettings = useCallback((tab: FestieSettingsTab = 'customize') => {
+    setSettingsInitialTab(tab);
+    setSettingsOpen(true);
+    setLifeModalOpen(false);
+    setHelpOpen(false);
+    setVendorShopManualOpen(false);
+  }, []);
+
+  const toggleSettings = useCallback(() => {
+    setSettingsOpen(open => {
+      if (open) return false;
+      setSettingsInitialTab('customize');
+      setLifeModalOpen(false);
+      setHelpOpen(false);
+      setVendorShopManualOpen(false);
+      return true;
+    });
+  }, []);
+
+  const toggleLife = useCallback(() => {
+    setLifeModalOpen(open => {
+      const next = !open;
+      if (next) {
+        setSettingsOpen(false);
+        setHelpOpen(false);
+        setVendorShopManualOpen(false);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleHelp = useCallback(() => {
+    setHelpOpen(open => {
+      const next = !open;
+      if (next) {
+        setSettingsOpen(false);
+        setLifeModalOpen(false);
+        setVendorShopManualOpen(false);
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    void hydratePlayerSession().then(profile => {
+      setFestieSignedIn(profile.authenticated);
+      if (profile.name) setPlayerName(profile.name);
+      if (profile.festie) {
+        const priorFill = festieLifeFill(profile.festie.last_seen_at, false);
+        if (priorFill < 0.95) lifeRefillFromRef.current = priorFill;
+        setOwnerFestie(profile.festie);
+        if (!hasSeenFestieLifeIntro()) setPendingLifeIntro(true);
+      }
+      setPlayerLoadout({ ...getPlayerLoadout(myColor), ...TEST_PLAYER_LOADOUT });
+      setPlayerCoins(getPlayerCoins());
+      setProfileReady(true);
+    });
+  }, [myColor]);
+
+  useEffect(() => {
+    return subscribePlayerSession(() => {
+      const festie = getPlayerSession().festie;
+      if (festie) setOwnerFestie(festie);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (showWelcome || showCityPicker || !pendingLifeIntro || !ownerFestie) return;
+    setLifeModalOpen(true);
+    markFestieLifeIntroSeen();
+    setPendingLifeIntro(false);
+  }, [showWelcome, showCityPicker, pendingLifeIntro, ownerFestie]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState !== 'hidden') return;
+      if (!festieSignedIn || !ownerFestie) return;
+      if (showWelcomeRef.current || showCityPickerRef.current) return;
+      if (settingsOpen || lifeModalOpen) return;
+      if (!shouldShowFestieLifeOnTabExit()) return;
+      setLifeModalOpen(true);
+      markFestieLifeTabExitShown();
+      markFestieLifeIntroSeen();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [festieSignedIn, ownerFestie, settingsOpen, lifeModalOpen]);
+
+  const handleFestieCreated = useCallback(async () => {
+    setPendingLifeIntro(true);
+    const festie = await fetchFestie();
+    if (festie) setOwnerFestie(festie);
+  }, []);
 
   const toggleVendorShop = useCallback(() => {
     unlockPurchaseSound();
     setVendorShopManualOpen(open => {
       const next = !open;
-      if (next) setVendorShopDismissed(false);
+      if (next) {
+        setVendorShopDismissed(false);
+        setSettingsOpen(false);
+        setLifeModalOpen(false);
+      }
       return next;
     });
   }, []);
@@ -348,8 +472,16 @@ export default function SFCity({
     loadout: serializeLoadout(playerLoadout),
   };
 
+  const userIdRef = useRef<string | null>(getPlayerSession().userId);
+  useEffect(() => {
+    const sync = () => { userIdRef.current = getPlayerSession().userId; };
+    sync();
+    return subscribePlayerSession(sync);
+  }, []);
+
   const mp = useMultiplayer({
     profileRef,
+    userIdRef,
     spawnWorldOffRef: gameWorldOffRef,
     roomId: partyRoomIdForRoute(effectiveVenueRoute),
     onPeerOpen:   pid => beginPeerChatRef.current?.(pid, false),
@@ -373,6 +505,24 @@ export default function SFCity({
   });
   const mpRef = useRef(mp);
   mpRef.current = mp;
+
+  const effectiveNpcCast = useMemo(
+    () => [
+      ...npcCast,
+      ...festiesToCharacterDefs(mp.festies, effectiveVenueRoute),
+    ],
+    [npcCast, mp.festies, effectiveVenueRoute],
+  );
+
+  const festieDimNpcIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const f of mp.festies) {
+      if (f.tier === 'dim') ids.add(festieNpcId(f.id));
+    }
+    return ids;
+  }, [mp.festies]);
+
+  const ownerOnline = festieSignedIn && Boolean(mp.selfId);
 
   const roomChatter = useRoomChatter(resolvePlayerId);
 
@@ -401,8 +551,8 @@ export default function SFCity({
         console.log('[npc-chatter] models', meta.models);
       }
       const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
-      const idxA = npcCast.findIndex(c => c.id === participants[0]);
-      const idxB = npcCast.findIndex(c => c.id === participants[1]);
+      const idxA = effectiveNpcCast.findIndex(c => c.id === participants[0]);
+      const idxB = effectiveNpcCast.findIndex(c => c.id === participants[1]);
       const wxA = idxA >= 0 ? npcWorldXRefs.current[idxA] : undefined;
       const wxB = idxB >= 0 ? npcWorldXRefs.current[idxB] : undefined;
       if (
@@ -415,7 +565,7 @@ export default function SFCity({
         return;
       }
       snapNpcPairForConvo(participants[0], participants[1], width, {
-        npcCast,
+        npcCast: effectiveNpcCast,
         npcWorldXRefs,
       });
       roomChatter.onNpcConvoStart(participants);
@@ -491,12 +641,14 @@ export default function SFCity({
     setGndScrollWorldOff(spawnWorldOff);
     gameWorldOffRef.current = spawnWorldOff;
     updateViewBoxes(spawnWorldOff);
-    npcWorldXRefs.current = npcCast.map(() => Infinity);
+    npcWorldXRefs.current = effectiveNpcCast.map((_, i) => npcWorldXRefs.current[i] ?? Infinity);
+    npcDancingRef.current = effectiveNpcCast.map((_, i) => npcDancingRef.current[i] ?? false);
+    setNpcDancing(prev => effectiveNpcCast.map((_, i) => prev[i] ?? false));
     lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
     lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
   // updateViewBoxes is stable (no deps)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spawnWorldOff, npcCast]);
+  }, [spawnWorldOff, effectiveNpcCast]);
 
   const navigateToCity = useCallback((route: VenueRoute) => {
     if (route === effectiveVenueRoute) {
@@ -508,8 +660,7 @@ export default function SFCity({
 
   useEffect(() => {
     setMobileDevice(isMobileLoungeDevice());
-
-    if (homePreview) return;
+    if (homePreview || !profileReady) return;
 
     const storedName = getPlayerName();
     if (storedName) {
@@ -522,7 +673,7 @@ export default function SFCity({
     }
 
     setShowWelcome(true);
-  }, [homePreview]);
+  }, [homePreview, profileReady]);
 
   useEffect(() => {
     bootstrapStageSyncFromApi();
@@ -569,6 +720,7 @@ export default function SFCity({
     setChatSendTick(0);
     sentMessageRef.current = '';
     greetingSessionRef.current = null;
+    festieConvoIdRef.current = null;
   }, [greetingNpc]);
 
   // 1:1 chat session — NPCs wait for the player to speak first (no auto-greeting).
@@ -596,7 +748,7 @@ export default function SFCity({
   useEffect(() => {
     if (!TEST_CHAT_CONNECT_ON_LOAD || homePreview || testChatConnectRef.current) return;
     if (showWelcome || showCityPicker) return;
-    if (npcCast.length === 0) return;
+    if (effectiveNpcCast.length === 0) return;
     testChatConnectRef.current = true;
     const npcIndex = 0;
     greetingRef.current = npcIndex;
@@ -604,9 +756,9 @@ export default function SFCity({
     setGreetNpcX(50);
     setChatMode('chat');
     mpRef.current?.requestConnect();
-    const npcId = npcCast[npcIndex]?.id;
+    const npcId = effectiveNpcCast[npcIndex]?.id;
     if (npcId) mpRef.current?.sendNpcChat(npcId, true);
-  }, [homePreview, showWelcome, showCityPicker, npcCast]);
+  }, [homePreview, showWelcome, showCityPicker, effectiveNpcCast]);
 
   // AI reply when the player sends a message
   useEffect(() => {
@@ -616,7 +768,7 @@ export default function SFCity({
     const controller = new AbortController();
     chatAbortRef.current = controller;
 
-    const character = npcCast[greetingNpc];
+    const character = effectiveNpcCast[greetingNpc];
     const message = sentMessageRef.current;
 
     if (isChatterMuted()) {
@@ -626,6 +778,7 @@ export default function SFCity({
       return;
     }
 
+    const festieChat = isFestieNpcId(character.id);
     fetchNpcReplyWithTyping(
       {
         characterId: character.id,
@@ -634,13 +787,15 @@ export default function SFCity({
         history: chatHistoryRef.current,
         cinemaNowPlaying: cinemaNowRef.current,
         concertNowPlaying: concertNowRef.current,
+        conversationId: festieChat ? festieConvoIdRef.current : undefined,
       },
       controller.signal,
       () => {
         setNpcTyping(true);
       },
-      reply => {
+      ({ reply, conversationId }) => {
         setNpcTyping(false);
+        if (festieChat && conversationId) festieConvoIdRef.current = conversationId;
         setNpcMessages(prev => appendChatLine(prev, reply));
         setChatHistory(prev => [
           ...prev,
@@ -677,7 +832,7 @@ export default function SFCity({
 
   // ── Ground Score — sidewalk coin pickups ───────────────────────────────────
   const handleGroundScore = useCallback((value: number) => {
-    setPlayerCoins(addPlayerCoins(value));
+    void addPlayerCoins(value).then(coins => setPlayerCoins(coins));
     const message = `Ground Score! ${value} Coins!`;
     showPlayerAmbient(message);
     mpRef.current?.sendAmbientMessage(message);
@@ -728,7 +883,7 @@ export default function SFCity({
   };
 
   const handleWelcomeName = (name: string, route: VenueRoute) => {
-    savePlayerName(name);
+    saveSessionPlayerName(name);
     const profile = {
       name,
       balloonColor: myColor,
@@ -747,7 +902,7 @@ export default function SFCity({
 
   const handleCityPickerEnter = useCallback((name: string, route: VenueRoute) => {
     if (!getPlayerName() && name) {
-      savePlayerName(name);
+      saveSessionPlayerName(name);
       identifyPlayer(name);
       setPlayerName(name);
     }
@@ -802,7 +957,7 @@ export default function SFCity({
       setFacing(towardNpc);
       setWalking(false);
       walkingRef.current = false;
-      const npcId = npcCast[i]?.id;
+      const npcId = effectiveNpcCast[i]?.id;
       if (npcId) mpRef.current?.sendNpcChat(npcId, true);
       playChatInviteBeep();
       if (mobileDevice) {
@@ -818,7 +973,7 @@ export default function SFCity({
         return;
       }
       const npcIndex = greetingRef.current;
-      const npcId = npcIndex !== null ? npcCast[npcIndex]?.id : null;
+      const npcId = npcIndex !== null ? effectiveNpcCast[npcIndex]?.id : null;
       greetingRef.current = null;
       setGreetingNpc(null);
       if (npcId) mpRef.current?.sendNpcChat(npcId, false);
@@ -953,7 +1108,7 @@ export default function SFCity({
       if (now - lastNpcPosSendRef.current <= 500) return;
       lastNpcPosSendRef.current = now;
       const width = window.innerWidth;
-      const positions = npcCast
+      const positions = effectiveNpcCast
         .map((cfg, i) => ({
           id: cfg.id,
           worldX: npcWorldXRefs.current[i]!,
@@ -1142,8 +1297,8 @@ export default function SFCity({
     const wxA = getNpcConvoHold(idA);
     const wxB = getNpcConvoHold(idB);
     if (wxA === undefined || wxB === undefined) return null;
-    const cfgA = npcCast.find(c => c.id === idA);
-    const cfgB = npcCast.find(c => c.id === idB);
+    const cfgA = effectiveNpcCast.find(c => c.id === idA);
+    const cfgB = effectiveNpcCast.find(c => c.id === idB);
     if (!cfgA || !cfgB) return null;
     return (
       <NpcPairChatOverlay
@@ -1166,7 +1321,7 @@ export default function SFCity({
         ]}
       />
     );
-  }, [roomChatter.npcConvo, roomChatter.npcConvo?.lines.length, npcCast, npcChatLabel, convoHoldTick]);
+  }, [roomChatter.npcConvo, roomChatter.npcConvo?.lines.length, effectiveNpcCast, npcChatLabel, convoHoldTick]);
 
   const inConversation = greetingNpc !== null || peerChatId !== null;
 
@@ -1192,7 +1347,7 @@ export default function SFCity({
       || (chatMode === 'chat' && inConversation)
     );
   const showVendorShop =
-    greetingNpc !== null && isBuzNpc(npcCast[greetingNpc]?.id ?? '');
+    greetingNpc !== null && isBuzNpc(effectiveNpcCast[greetingNpc]?.id ?? '');
   const showVendorPanel =
     vendorShopManualOpen || (showVendorShop && !vendorShopDismissed);
 
@@ -1202,7 +1357,7 @@ export default function SFCity({
 
   useEffect(() => {
     if (nearNpc === null) return;
-    if (!isBuzNpc(npcCast[nearNpc]?.id ?? '')) return;
+    if (!isBuzNpc(effectiveNpcCast[nearNpc]?.id ?? '')) return;
     warmVendorShop();
   }, [nearNpc, warmVendorShop]);
 
@@ -1214,11 +1369,11 @@ export default function SFCity({
   const conversationPartnerName = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
     : greetingNpc !== null
-      ? npcChatLabel(npcCast[greetingNpc]!.id, npcCast[greetingNpc]!.name)
+      ? npcChatLabel(effectiveNpcCast[greetingNpc]!.id, effectiveNpcCast[greetingNpc]!.name)
       : null;
   const conversationPartnerColor = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.balloonColor ?? '#ef4023')
-    : greetingNpc !== null ? npcCast[greetingNpc]?.balloonColor ?? '#ef4023' : '#ef4023';
+    : greetingNpc !== null ? effectiveNpcCast[greetingNpc]?.balloonColor ?? '#ef4023' : '#ef4023';
   const nearPeerName = nearPeer !== null
     ? (mp.remoteStateRef.current.get(nearPeer)?.name ?? 'Wanderer')
     : null;
@@ -1277,7 +1432,7 @@ export default function SFCity({
         )}
 
         {/* Autonomous NPCs */}
-        {!homePreview && npcCast.map((cfg, i) => {
+        {!homePreview && effectiveNpcCast.map((cfg, i) => {
           if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
           const testing = TEST_SPAWN_NPC_ID === cfg.id;
           const chatConnected = isNpcChatConnected(i, cfg.id);
@@ -1294,6 +1449,7 @@ export default function SFCity({
             paused={chatConnected}
             greeting={greetingNpc === i}
             chatConnected={chatConnected}
+            dimmed={festieDimNpcIds.has(cfg.id)}
             greetFacing={greetNpcX < 50 ? 'right' : 'left'}
             dancing={TEST_FORCE_DANCE || npcDancing[i]}
             greetingChat={greetingNpc === i ? {
@@ -1391,13 +1547,23 @@ export default function SFCity({
 
       {!homePreview && (
       <>
+      {festieSignedIn && ownerFestie && (
+        <FestieLifeCorner
+          festie={ownerFestie}
+          ownerOnline={ownerOnline}
+          lifeOpen={lifeModalOpen}
+          hidden={showWelcome || showCityPicker}
+          onToggle={toggleLife}
+        />
+      )}
+
       <BottomControlPanel
         worldOff={midScrollWorldOff}
         playerName={playerName}
         venueRoute={effectiveVenueRoute}
         connectName={
           !inConversation && nearNpc !== null
-            ? npcChatLabel(npcCast[nearNpc]!.id, npcCast[nearNpc]!.name)
+            ? npcChatLabel(effectiveNpcCast[nearNpc]!.id, effectiveNpcCast[nearNpc]!.name)
             : !inConversation && nearPeer !== null
               ? nearPeerName
               : null
@@ -1408,8 +1574,38 @@ export default function SFCity({
         vendorShopOpen={vendorShopManualOpen}
         onToggleVendorShop={toggleVendorShop}
         onVendorShopWarm={warmVendorShop}
+        settingsOpen={settingsOpen}
+        onToggleSettings={festieSignedIn ? toggleSettings : undefined}
+        helpOpen={helpOpen}
+        onToggleHelp={toggleHelp}
         isMobile={mobileDevice}
       />
+
+      {helpOpen && <HelpFaqModal onClose={() => setHelpOpen(false)} />}
+
+      {lifeModalOpen && ownerFestie && (
+        <FestieLifeModal
+          festie={ownerFestie}
+          ownerOnline={ownerOnline}
+          refillFrom={lifeRefillFromRef.current}
+          onClose={() => {
+            setLifeModalOpen(false);
+            lifeRefillFromRef.current = null;
+          }}
+          onOpenSettings={() => openSettings('customize')}
+          onUpdated={festie => setOwnerFestie(festie)}
+        />
+      )}
+
+      {settingsOpen && (
+        <FestieSettingsModal
+          onClose={() => setSettingsOpen(false)}
+          ownerOnline={ownerOnline}
+          refillFrom={lifeRefillFromRef.current}
+          initialTab={settingsInitialTab}
+          onUpdated={festie => setOwnerFestie(festie)}
+        />
+      )}
 
       {showVendorPanel && (
         <VendorShopPanel
@@ -1446,7 +1642,20 @@ export default function SFCity({
         <WelcomePopup
           balloonColor={myColor}
           initialRoute={effectiveVenueRoute}
+          initialName={playerName ?? getPlayerName() ?? undefined}
+          requireAuth={!festieSignedIn}
+          pickStageOnly={festieSignedIn}
+          onAuthSuccess={name => {
+            void hydratePlayerSession().then(profile => {
+              setFestieSignedIn(profile.authenticated);
+              if (profile.name) setPlayerName(profile.name);
+              else setPlayerName(name);
+              setPlayerLoadout({ ...getPlayerLoadout(myColor), ...TEST_PLAYER_LOADOUT });
+              setPlayerCoins(getPlayerCoins());
+            });
+          }}
           onEnter={handleWelcomeName}
+          onFestieCreated={() => void handleFestieCreated()}
         />
       )}
 
@@ -1455,6 +1664,7 @@ export default function SFCity({
           variant="swap"
           requireName={false}
           initialRoute={effectiveVenueRoute}
+          initialName={playerName ?? undefined}
           onEnter={handleCityPickerEnter}
           onClose={() => setShowCityPicker(false)}
         />
@@ -1518,6 +1728,10 @@ export default function SFCity({
           vendorShopOpen={vendorShopManualOpen}
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
+          settingsOpen={settingsOpen}
+          onToggleSettings={festieSignedIn ? toggleSettings : undefined}
+          helpOpen={helpOpen}
+          onToggleHelp={toggleHelp}
           onOpenStageSwap={() => setShowCityPicker(true)}
           onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}
           ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}

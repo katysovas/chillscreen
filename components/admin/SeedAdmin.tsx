@@ -282,7 +282,7 @@ export function SeedAdmin() {
       <header style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 6px' }}>Seed admin</h1>
         <p style={{ margin: 0, color: '#9aa0a6', fontSize: 14 }}>
-          Password-protected · writes to <code style={{ color: '#8ab4f8' }}>data/seeds.json</code>
+          Password-protected · writes to <code style={{ color: '#8ab4f8' }}>chat_seeds</code> (Neon)
           {file?.updatedAt && (
             <span> · last saved {new Date(file.updatedAt).toLocaleString()}</span>
           )}

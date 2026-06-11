@@ -7,6 +7,7 @@
  * connected. No database, no accounts.
  */
 
+import type { FestiePublic } from '../festie/types';
 import type { StageSync } from '../stageVideos';
 
 export type Facing = 'left' | 'right';
@@ -50,6 +51,8 @@ export type ClientMessage =
       walking: boolean;
       /** From `?mute=true` — disables room NPC chatter while this player is present. */
       chatterMuted?: boolean;
+      /** Signed-in account id — hides that user's offline festie NPC while online. */
+      userId?: string;
     }
   | { t: 'move'; worldX: number; facing: Facing; walking: boolean }
   | { t: 'profile'; profile: PlayerProfile }
@@ -79,7 +82,15 @@ export type ServerMessage =
   // `serverNow` + `stage` bootstrap synchronized video playback: the client
   // aligns its clock to `serverNow` and schedules every venue against the
   // pinned `stage` playlists so all users see the same video at the same time.
-  | { t: 'welcome'; selfId: string; players: PlayerState[]; serverNow: number; stage: StageSync }
+  | {
+      t: 'welcome';
+      selfId: string;
+      players: PlayerState[];
+      serverNow: number;
+      stage: StageSync;
+      festies?: FestiePublic[];
+    }
+  | { t: 'festies-sync'; festies: FestiePublic[] }
   | { t: 'joined'; player: PlayerState }
   | { t: 'left'; id: string }
   | { t: 'moved'; id: string; worldX: number; facing: Facing; walking: boolean }

@@ -22,7 +22,8 @@ import {
 } from '../lib/npcChatter/constants';
 import { generatePairConvo } from '../lib/npcChatter/generate';
 import { resolveModel } from '../lib/npcChatter/models';
-import { pickConversationSeed } from '../lib/npcChatter/seeds';
+import { chatterApiBase, npcChatterApiUrl } from '../lib/npcChatter/apiBase';
+import { pickConversationSeedRemote } from '../lib/npcChatter/seeds';
 import { npcPairInAnyPlayerView, type PlayerViewSnapshot } from '../lib/npcProximity';
 import { getNpcRosterEntry } from '../lib/npcRoster.server';
 import type { RoomChatLine } from '../lib/npcChatter/prompts';
@@ -227,14 +228,12 @@ export class NpcChatterScheduler {
     return ranked[0]!.pair;
   }
 
+  private chatterApiBase(): string {
+    return chatterApiBase(this.env);
+  }
+
   private apiUrl(): string {
-    if (this.env.CHATTER_API_URL?.trim()) return this.env.CHATTER_API_URL.trim();
-    if (this.env.NEXT_PUBLIC_SITE_URL?.trim()) {
-      const base = this.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/+$/, '');
-      return `${base}/api/npc-chatter`;
-    }
-    if (this.env.VERCEL_URL?.trim()) return `https://${this.env.VERCEL_URL.trim()}/api/npc-chatter`;
-    return 'https://whichstage.com/api/npc-chatter';
+    return npcChatterApiUrl(this.env);
   }
 
   private async fetchChatter(body: object): Promise<NpcChatterLine[] | null> {
@@ -301,10 +300,12 @@ export class NpcChatterScheduler {
 
     const lineBudget = pickLineBudget();
     const { streamTitle, channelName } = this.streamCtx();
-    const seedPick = pickConversationSeed(
+    const seedPick = await pickConversationSeedRemote(
       streamTitle,
       channelName,
       stageSlugForRoom(this.roomId),
+      this.chatterApiBase(),
+      this.env.NPC_CHATTER_SECRET,
     );
     const apiKey = this.env.OPENROUTER_API_KEY?.trim();
     if (!apiKey) {

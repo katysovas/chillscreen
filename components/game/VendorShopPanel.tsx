@@ -20,8 +20,8 @@ import { playPurchaseSound } from '@/lib/playPurchaseSound';
 type Props = {
   loadout: CharacterLoadout;
   coins: number;
-  onPurchase: (itemId: string) => boolean;
-  onUnequip: (itemId: string) => void;
+  onPurchase: (itemId: string) => boolean | Promise<boolean>;
+  onUnequip: (itemId: string) => void | Promise<void>;
   onClose?: () => void;
 };
 
@@ -547,13 +547,21 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
                     </button>
                   </div>
                 ) : owned ? (
-                  <EquipButton onClick={() => onPurchase(itemId)} />
+                  <EquipButton
+                    onClick={() => {
+                      void Promise.resolve(onPurchase(itemId)).then(ok => {
+                        if (ok) playPurchaseSound();
+                      });
+                    }}
+                  />
                 ) : (
                   <BuyButton
                     price={price}
                     disabled={!canAfford}
                     onClick={() => {
-                      if (onPurchase(itemId)) playPurchaseSound();
+                      void Promise.resolve(onPurchase(itemId)).then(ok => {
+                        if (ok) playPurchaseSound();
+                      });
                     }}
                   />
                 )}

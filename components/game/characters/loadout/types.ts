@@ -29,7 +29,7 @@ export type CharacterLoadout = {
   hand?: string | null;
   /** Tint for the default heart balloon and other colorized props. */
   balloonColor?: string;
-  /** Vendor items bought this session / saved locally. */
+  /** Vendor item ids purchased on this account (persists after unequip). */
   owned?: string[];
 };
 

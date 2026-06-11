@@ -1,0 +1,130 @@
+'use client';
+
+import type { FestieCache, FestieOwner } from '@/lib/festie/types';
+
+let festieCache: FestieCache | null = null;
+
+/** In-memory festie cache (perf only — source of truth is the API). */
+export function getFestieCache(): FestieCache | null {
+  return festieCache;
+}
+
+export function setFestieCache(cache: FestieCache): void {
+  festieCache = cache;
+}
+
+export function clearFestieCache(): void {
+  festieCache = null;
+}
+
+const fetchOpts: RequestInit = {
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+};
+
+export type AuthState = {
+  authenticated: boolean;
+  festie: FestieOwner | null;
+};
+
+export async function fetchAuthMe(): Promise<AuthState> {
+  const res = await fetch('/api/auth/me', { credentials: 'include' });
+  if (!res.ok) return { authenticated: false, festie: null };
+  const data = await res.json();
+  const festie = (data.festie as FestieOwner | null) ?? null;
+  if (festie) {
+    setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+  }
+  return {
+    authenticated: Boolean(data.authenticated),
+    festie,
+  };
+}
+
+export async function loginFestie(name: string, password: string): Promise<FestieOwner> {
+  const res = await fetch('/api/auth/login', {
+    ...fetchOpts,
+    method: 'POST',
+    body: JSON.stringify({ name, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+  const festie = data.festie as FestieOwner;
+  setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+  return festie;
+}
+
+export async function logoutFestie(): Promise<void> {
+  await fetch('/api/auth/logout', { ...fetchOpts, method: 'POST' });
+  clearFestieCache();
+}
+
+export type CreateFestieBody = {
+  name: string;
+  password: string;
+  preset: string;
+  attributes: { energy: number; friendliness: number; chattiness: number };
+  topics: string[];
+  personality_notes?: string | null;
+  stage_slug: string;
+};
+
+export type UpdateFestieBody = {
+  preset?: string;
+  attributes?: { energy: number; friendliness: number; chattiness: number };
+  topics?: string[];
+  personality_notes?: string | null;
+  stage_slug?: string;
+  notify_email?: string | null;
+  email_opted_in?: boolean;
+};
+
+export async function fetchFestie(): Promise<FestieOwner | null> {
+  const res = await fetch('/api/festie', { credentials: 'include' });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const festie = (data.festie as FestieOwner | null) ?? null;
+  if (festie) {
+    setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+  }
+  return festie;
+}
+
+export async function updateFestie(body: UpdateFestieBody): Promise<FestieOwner> {
+  const res = await fetch('/api/festie', {
+    ...fetchOpts,
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+  const festie = data.festie as FestieOwner;
+  setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+  return festie;
+}
+
+export async function updatePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const res = await fetch('/api/auth/password', {
+    ...fetchOpts,
+    method: 'PATCH',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+}
+
+export async function createFestie(body: CreateFestieBody): Promise<FestieOwner> {
+  const res = await fetch('/api/festie', {
+    ...fetchOpts,
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+  const festie = data.festie as FestieOwner;
+  setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+  return festie;
+}

@@ -52,6 +52,8 @@ type NPCProps = NPCConfig & {
   greeting: boolean;
   /** Soft connect glow — local or remote 1:1 conversation. */
   chatConnected?: boolean;
+  /** Offline festie dim tier — reduced opacity and glow. */
+  dimmed?: boolean;
   greetFacing: 'left' | 'right';
   dancing?: boolean;
   greetingChat?: {
@@ -94,7 +96,7 @@ export default function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality, stageAnchor, stageCrowd,
-  paused, greeting, chatConnected = false, greetFacing, dancing = false, greetingChat,
+  paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false, greetingChat,
 }: NPCProps) {
   // ── React state: only for infrequent visual changes ─────────────────────────
   const [jumping,   setJumping]  = useState(false);
@@ -446,6 +448,9 @@ export default function NPC({
         bottom: CHAR_BOTTOM,
         transform: `translateY(${crowdDepthOffsetPx(characterId)}px)`,
         zIndex: greeting ? 200 : 18,
+        opacity: dimmed ? 0.6 : 1,
+        filter: dimmed ? 'brightness(0.85)' : undefined,
+        transition: 'opacity 0.4s ease, filter 0.4s ease',
       }}
     >
       <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>

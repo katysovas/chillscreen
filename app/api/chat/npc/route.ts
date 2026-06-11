@@ -1,4 +1,6 @@
 import { fetchBitcoinUsdSnapshot } from '@/lib/bitcoinPrice';
+import { handleFestieNpcChat } from '@/lib/festie/chatHandler';
+import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { sanitizeNpcLine } from '@/lib/messageFilter';
 import {
   buildChatMessages,
@@ -18,6 +20,7 @@ type RequestBody = {
   isGreeting?: boolean;
   cinemaNowPlaying?: string | null;
   concertNowPlaying?: string | null;
+  conversationId?: string | null;
 };
 
 export async function POST(req: Request) {
@@ -37,6 +40,10 @@ export async function POST(req: Request) {
 
   if (!isGreeting && !body.message?.trim()) {
     return Response.json({ error: 'message is required' }, { status: 400 });
+  }
+
+  if (isFestieNpcId(characterId)) {
+    return handleFestieNpcChat(req, body);
   }
 
   const character = getCharacterById(characterId);

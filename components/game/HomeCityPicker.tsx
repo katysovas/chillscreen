@@ -4,8 +4,10 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import SFCityLoader from './SFCityLoader';
 import { WelcomePopup } from './WelcomePopup';
-import { getPlayerName, setPlayerName } from '@/lib/playerStorage';
-import { identifyPlayer, trackCharacterCreated } from '@/lib/analytics';
+import { fetchAuthMe } from '@/lib/festie/client';
+import { hydratePlayerSession } from '@/lib/player/session';
+import { identifyPlayer } from '@/lib/analytics';
+import { getPlayerName } from '@/lib/playerStorage';
 import { randomPreviewCityRoute, stageWorldOffForRoute, ISOLATED_CITY_ORDER } from '@/lib/isolatedCity';
 import { setAudioMuted } from '@/lib/audioMute';
 import {
@@ -24,6 +26,9 @@ export function HomeCityPicker() {
   const [mounted, setMounted] = useState(false);
   const [previewRoute, setPreviewRoute] = useState<VenueRoute>(SSR_PREVIEW_ROUTE);
   const [muted, setMuted] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [festieName, setFestieName] = useState<string | null>(null);
   const balloonColor = useSyncExternalStore(
     subscribeBalloonColor,
     getSessionBalloonColor,
@@ -36,14 +41,26 @@ export function HomeCityPicker() {
   }, []);
 
   useEffect(() => {
+    void (async () => {
+      try {
+        const profile = await hydratePlayerSession();
+        const { authenticated } = await fetchAuthMe();
+        setIsSignedIn(authenticated);
+        setFestieName(profile.name ?? getPlayerName());
+      } catch {
+        setIsSignedIn(false);
+      } finally {
+        setAuthReady(true);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
     setAudioMuted(muted);
   }, [muted]);
 
   const handleEnter = (name: string, route: VenueRoute) => {
-    const isNew = !getPlayerName();
-    setPlayerName(name);
     identifyPlayer(name);
-    if (isNew) trackCharacterCreated(name);
     router.push(`/${venueSlugForRoute(route)}`);
   };
 
@@ -82,10 +99,21 @@ export function HomeCityPicker() {
       >
         {muted ? '🔇' : '🔊'}
       </button>
-      <WelcomePopup
-        balloonColor={balloonColor}
-        onEnter={handleEnter}
-      />
+      {authReady && (
+        <WelcomePopup
+          balloonColor={balloonColor}
+          requireAuth={!isSignedIn}
+          pickStageOnly={isSignedIn}
+          initialName={festieName ?? undefined}
+          onAuthSuccess={name => {
+            void hydratePlayerSession().then(profile => {
+              setIsSignedIn(profile.authenticated);
+              setFestieName(profile.name ?? name);
+            });
+          }}
+          onEnter={handleEnter}
+        />
+      )}
     </>
   );
 }

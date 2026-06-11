@@ -1,4 +1,6 @@
 import type * as Party from 'partykit/server';
+import { FESTIE_CONFIG } from '../lib/festie/config';
+import type { FestiePublic } from '../lib/festie/types';
 import {
   chatPairKey,
   decodeClient,
@@ -6,6 +8,9 @@ import {
   type PlayerState,
   type ServerMessage,
 } from '../lib/multiplayer/protocol';
+import { chatterApiBase } from '../lib/npcChatter/apiBase';
+import { chatterAuthHeader } from '../lib/npcChatter/auth';
+import { venueSlugFromRoomId } from '../lib/npcChatter/roomContext';
 import { resolveStagePlaylists } from '../lib/resolveStagePlaylists';
 import { filterChatMessage } from '../lib/messageFilter';
 import { DEFAULT_DURATION_MS, STAGE_EPOCH, type StageSync } from '../lib/stageVideos';
@@ -28,6 +33,10 @@ export default class WhichStageServer implements Party.Server {
   private npcChats = new Map<string, string>();
   /** Players who joined with `?mute=true` — disables room NPC chatter while any remain. */
   private chatterMutedPlayers = new Set<string>();
+  /** connId → signed-in user id (for hiding that owner's offline festie). */
+  private connUserIds = new Map<string, string>();
+  /** Debounced last_seen_at when owner disconnects (userId → timer). */
+  private festieSeenTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private stageSync: StageSync | null = null;
   private chatter: NpcChatterScheduler;
 
@@ -52,12 +61,14 @@ export default class WhichStageServer implements Party.Server {
   async onConnect(conn: Party.Connection) {
     const playlists = await resolveStagePlaylists(this.room.env.YOUTUBE_API_KEY as string | undefined);
     this.stageSync = { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists };
+    const festies = await this.fetchFesties();
     const welcome: ServerMessage = {
       t: 'welcome',
       selfId: conn.id,
       players: [...this.players.values()],
       serverNow: Date.now(),
       stage: this.stageSync,
+      festies,
     };
     conn.send(encode(welcome));
   }
@@ -90,6 +101,11 @@ export default class WhichStageServer implements Party.Server {
           walking: msg.walking,
         };
         this.players.set(sender.id, player);
+        if (msg.userId?.trim()) {
+          const uid = msg.userId.trim();
+          this.connUserIds.set(sender.id, uid);
+          this.cancelFestieSeen(uid);
+        }
         if (msg.chatterMuted) {
           this.chatterMutedPlayers.add(sender.id);
           this.chatter.setChatterDisabled(true);
@@ -97,6 +113,7 @@ export default class WhichStageServer implements Party.Server {
           this.chatter.onFirstPlayer();
         }
         this.broadcastExcept(sender.id, { t: 'joined', player });
+        void this.broadcastFestiesSync();
         break;
       }
 
@@ -218,9 +235,15 @@ export default class WhichStageServer implements Party.Server {
       );
     }
     const wasMuted = this.chatterMutedPlayers.delete(conn.id);
+    const userId = this.connUserIds.get(conn.id);
+    this.connUserIds.delete(conn.id);
     if (this.players.delete(conn.id)) {
       this.chatter.clearPlayerViewport(conn.id);
       this.room.broadcast(encode({ t: 'left', id: conn.id }));
+    }
+    if (userId) {
+      this.scheduleFestieSeen(userId);
+      void this.broadcastFestiesSync();
     }
     if (wasMuted) {
       this.chatter.setChatterDisabled(this.chatterMutedPlayers.size > 0);
@@ -244,5 +267,79 @@ export default class WhichStageServer implements Party.Server {
 
   private sendTo(connId: string, msg: ServerMessage) {
     this.room.getConnection(connId)?.send(encode(msg));
+  }
+
+  private festiesApiBase(): string {
+    return chatterApiBase(this.room.env as Record<string, string | undefined>);
+  }
+
+  private onlineUserIds(): string[] {
+    return [...new Set(this.connUserIds.values())];
+  }
+
+  private async fetchFesties(): Promise<FestiePublic[]> {
+    const stageSlug = venueSlugFromRoomId(this.room.id);
+    if (!stageSlug) return [];
+
+    const params = new URLSearchParams({ stage_slug: stageSlug });
+    const exclude = this.onlineUserIds();
+    if (exclude.length > 0) params.set('exclude', exclude.join(','));
+
+    const env = this.room.env as Record<string, string | undefined>;
+    try {
+      const res = await fetch(`${this.festiesApiBase()}/api/festies/stage?${params}`, {
+        headers: chatterAuthHeader(env.NPC_CHATTER_SECRET),
+      });
+      if (!res.ok) {
+        console.error('[festies-sync] api', res.status, await res.text());
+        return [];
+      }
+      const data = await res.json() as { festies?: FestiePublic[] };
+      return data.festies ?? [];
+    } catch (err) {
+      console.error('[festies-sync] fetch failed', err);
+      return [];
+    }
+  }
+
+  private async broadcastFestiesSync(): Promise<void> {
+    const festies = await this.fetchFesties();
+    this.room.broadcast(encode({ t: 'festies-sync', festies }));
+  }
+
+  private cancelFestieSeen(userId: string) {
+    const timer = this.festieSeenTimers.get(userId);
+    if (timer) {
+      clearTimeout(timer);
+      this.festieSeenTimers.delete(userId);
+    }
+  }
+
+  private scheduleFestieSeen(userId: string) {
+    this.cancelFestieSeen(userId);
+    const timer = setTimeout(() => {
+      this.festieSeenTimers.delete(userId);
+      void this.postFestieSeen(userId);
+    }, FESTIE_CONFIG.DISCONNECT_DEBOUNCE_MS);
+    this.festieSeenTimers.set(userId, timer);
+  }
+
+  private async postFestieSeen(userId: string): Promise<void> {
+    const env = this.room.env as Record<string, string | undefined>;
+    try {
+      const res = await fetch(`${this.festiesApiBase()}/api/festie/seen`, {
+        method: 'POST',
+        headers: {
+          ...chatterAuthHeader(env.NPC_CHATTER_SECRET),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+      if (!res.ok) {
+        console.error('[festie-seen] api', res.status, await res.text());
+      }
+    } catch (err) {
+      console.error('[festie-seen] fetch failed', err);
+    }
   }
 }

@@ -1,4 +1,6 @@
+import { equippedLoadoutItemIds } from './registry';
 import type { CharacterLoadout } from './types';
+import { isFreeLoadoutItem } from '@/lib/player/loadoutValidation';
 
 export const PARTY_GLOWSTICKS_ID = 'party-glowsticks';
 export const PARTY_STICKER_ID = 'party-sticker';
@@ -11,9 +13,10 @@ export function hasPurchasedLoadoutItem(
   itemId: string,
 ): boolean {
   if (!loadout) return false;
+  if (isFreeLoadoutItem(itemId)) return true;
   if (loadout.owned?.includes(itemId)) return true;
-  // Legacy saves: treat currently equipped as purchased.
-  return loadout.hand === itemId;
+  // Legacy saves: treat any equipped vendor item as purchased.
+  return equippedLoadoutItemIds(loadout).includes(itemId);
 }
 
 /** Glowstick ambient throws — only while party glowsticks are in the hand slot. */

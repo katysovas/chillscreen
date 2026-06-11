@@ -5,6 +5,9 @@ import { WORLD_TILE_CYCLE } from '@/lib/worldTiles';
 
 export type GroundCoinValue = 50 | 100;
 
+/** Largest single Ground Score pickup — must match API validation. */
+export const GROUND_SCORE_MAX_PICKUP = 100;
+
 export type GroundCoin = {
   id: number;
   worldX: number;

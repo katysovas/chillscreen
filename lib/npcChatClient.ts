@@ -9,12 +9,14 @@ export type NpcChatRequest = {
   isGreeting?: boolean;
   cinemaNowPlaying?: string | null;
   concertNowPlaying?: string | null;
+  /** Festie 1:1 chats — persisted in festie_conversations. */
+  conversationId?: string | null;
 };
 
 export async function fetchNpcReply(
   body: NpcChatRequest,
   signal: AbortSignal,
-): Promise<string | undefined> {
+): Promise<{ reply?: string; conversationId?: string } | undefined> {
   if (isChatterMuted()) return undefined;
   const res = await fetch('/api/chat/npc', {
     method: 'POST',
@@ -23,21 +25,29 @@ export async function fetchNpcReply(
     signal,
   });
   const data = await res.json();
-  return data.reply as string | undefined;
+  return {
+    reply: data.reply as string | undefined,
+    conversationId: data.conversationId as string | undefined,
+  };
 }
 
 /** Show typing state, wait at least NPC_TYPING_MS, then reveal the reply. */
+export type NpcChatReply = {
+  reply: string;
+  conversationId?: string;
+};
+
 export async function fetchNpcReplyWithTyping(
   body: NpcChatRequest,
   signal: AbortSignal,
   onTyping: () => void,
-  onReply: (reply: string) => void,
+  onReply: (result: NpcChatReply) => void,
 ): Promise<void> {
   onTyping();
   const start = Date.now();
 
   try {
-    const reply = await fetchNpcReply(body, signal);
+    const result = await fetchNpcReply(body, signal);
     if (signal.aborted) return;
 
     const remaining = NPC_TYPING_MS - (Date.now() - start);
@@ -55,8 +65,11 @@ export async function fetchNpcReplyWithTyping(
       });
     }
 
-    if (signal.aborted || !reply) return;
-    onReply(reply);
+    if (signal.aborted || !result?.reply) return;
+    onReply({
+      reply: result.reply,
+      conversationId: result.conversationId,
+    });
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return;
     throw err;

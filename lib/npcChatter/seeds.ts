@@ -1,64 +1,66 @@
-import seedsData from '@/data/seeds.json';
-import {
-  SEED_AMBIENT_PCT,
-  SEED_GENERATED_PCT,
-  SEED_STREAM_REACTIVE_PCT,
-} from './constants';
+import { fetchSeedPoolsRemote } from '@/lib/npcChatter/fetchSeedPools';
+import { getBundledSeedPools } from '@/lib/seeds/bundled';
+import type { SeedPools } from '@/lib/seeds/db';
+import { pickConversationSeedFromPools, type SeedPick } from '@/lib/seeds/pick';
 
-export type SeedPick =
-  | { kind: 'stream'; seed: string }
-  | { kind: 'topic'; seed: string }
-  | { kind: 'ambient'; seed: null };
+export type { SeedPick };
 
-type SeedPool = {
-  generated?: string[];
-  fallback?: string[];
-};
+const POOL_CACHE_MS = 5 * 60_000;
+const poolCache = new Map<string, { pools: SeedPools; at: number }>();
 
-type SeedsFile = {
-  generated?: string[];
-  fallback?: string[];
-  stages?: Record<string, SeedPool>;
-};
-
-const seeds = seedsData as SeedsFile;
-
-function pickRandom<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
-  return arr[Math.floor(Math.random() * arr.length)]!;
+function cacheKey(stageSlug: string | null | undefined): string {
+  return stageSlug?.trim() || '__global__';
 }
 
-/** Global pool + optional stage-specific additions (venue slug, e.g. `thefarm`). */
+/** Global + stage pool merge — bundled JSON (same as pre-DB in-memory path). */
 export function mergedSeedPool(
   stageSlug: string | null | undefined,
   kind: 'generated' | 'fallback',
 ): string[] {
-  const global = seeds[kind] ?? [];
-  if (!stageSlug) return global;
-  const stage = seeds.stages?.[stageSlug]?.[kind] ?? [];
-  return [...global, ...stage];
+  const pools = getBundledSeedPools(stageSlug);
+  return kind === 'generated' ? pools.generated : pools.fallback;
 }
 
+function isSeedPools(value: unknown): value is SeedPools {
+  return typeof value === 'object' && value !== null
+    && Array.isArray((value as SeedPools).generated)
+    && Array.isArray((value as SeedPools).fallback);
+}
+
+/** Pick a seed — pass stage slug (bundled) or pre-loaded pools. */
 export function pickConversationSeed(
   streamTitle: string | null,
   channelName: string,
-  stageSlug?: string | null,
+  stageSlugOrPools: string | null | undefined | SeedPools,
 ): SeedPick {
-  const roll = Math.random();
-  if (roll < SEED_STREAM_REACTIVE_PCT && streamTitle?.trim()) {
-    return {
-      kind: 'stream',
-      seed: `react to what's playing right now: ${streamTitle.trim()} — ${channelName}`,
-    };
-  }
-  if (roll < SEED_STREAM_REACTIVE_PCT + SEED_GENERATED_PCT) {
-    const generated = mergedSeedPool(stageSlug, 'generated');
-    const topic = pickRandom(generated) ?? pickRandom(mergedSeedPool(stageSlug, 'fallback'));
-    if (topic) return { kind: 'topic', seed: topic };
-  }
-  if (roll < SEED_STREAM_REACTIVE_PCT + SEED_GENERATED_PCT + SEED_AMBIENT_PCT) {
-    return { kind: 'ambient', seed: null };
-  }
-  const fallback = pickRandom(mergedSeedPool(stageSlug, 'fallback'));
-  return fallback ? { kind: 'topic', seed: fallback } : { kind: 'ambient', seed: null };
+  const pools = isSeedPools(stageSlugOrPools)
+    ? stageSlugOrPools
+    : getBundledSeedPools(stageSlugOrPools);
+  return pickConversationSeedFromPools(streamTitle, channelName, pools);
+}
+
+async function loadSeedPools(
+  stageSlug: string | null | undefined,
+  apiBase: string,
+  secret?: string,
+): Promise<SeedPools> {
+  const key = cacheKey(stageSlug);
+  const hit = poolCache.get(key);
+  if (hit && Date.now() - hit.at < POOL_CACHE_MS) return hit.pools;
+
+  const pools = await fetchSeedPoolsRemote(stageSlug, apiBase, secret);
+  poolCache.set(key, { pools, at: Date.now() });
+  return pools;
+}
+
+/** Fetch pools (cached) then pick — PartyKit pair chatter. */
+export async function pickConversationSeedRemote(
+  streamTitle: string | null,
+  channelName: string,
+  stageSlug: string | null | undefined,
+  apiBase: string,
+  secret?: string,
+): Promise<SeedPick> {
+  const pools = await loadSeedPools(stageSlug, apiBase, secret);
+  return pickConversationSeedFromPools(streamTitle, channelName, pools);
 }

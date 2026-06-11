@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
 import { MobileStageCard } from './MobileStageCard';
 import {
-  getPlayerName,
   isValidPlayerName,
   sanitizePlayerNameInput,
 } from '@/lib/playerStorage';
@@ -21,6 +20,7 @@ type Props = {
   onToggleMute?: () => void;
   onEnter: (name: string, route: VenueRoute) => void;
   onClose?: () => void;
+  initialName?: string;
 };
 
 /**
@@ -34,19 +34,19 @@ export function StagePicker({
   onToggleMute,
   onEnter,
   onClose,
+  initialName,
 }: Props) {
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState(initialName ?? '');
   const [picked, setPicked] = useState<VenueRoute | null>(initialRoute ?? null);
   const validName = !requireName || isValidPlayerName(draft);
   const isSwap = variant === 'swap';
 
   useEffect(() => {
-    const stored = getPlayerName();
-    if (stored) setDraft(stored);
-  }, []);
+    if (initialName) setDraft(initialName);
+  }, [initialName]);
 
   const submit = () => {
-    const name = requireName ? draft.trim() : (getPlayerName()?.trim() || draft.trim());
+    const name = draft.trim();
     if (requireName && !isValidPlayerName(name)) return;
     if (!picked) return;
     onEnter(name, picked);

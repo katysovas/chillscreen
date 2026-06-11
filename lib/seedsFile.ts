@@ -1,8 +1,13 @@
-/** Server-only read/write for `data/seeds.json`. */
+/** Server-only read/write for conversation seeds (Neon `chat_seeds` table). */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { dirname, join } from 'path';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { SEED_STAGE_SLUGS } from '@/lib/seedAdmin';
+import {
+  countChatSeeds,
+  readSeedsFromDb,
+  writeSeedsToDb,
+} from '@/lib/seeds/db';
 
 export type SeedPool = {
   generated?: string[];
@@ -40,7 +45,7 @@ export function normalizeSeedsFile(raw: Partial<SeedsFile>): SeedsFile {
   };
 }
 
-export function readSeedsFile(): SeedsFile {
+function readSeedsFileFromDisk(): SeedsFile {
   try {
     const raw = JSON.parse(readFileSync(SEEDS_JSON_PATH, 'utf8')) as Partial<SeedsFile>;
     return normalizeSeedsFile(raw);
@@ -49,12 +54,33 @@ export function readSeedsFile(): SeedsFile {
   }
 }
 
-export function writeSeedsFile(data: SeedsFile): SeedsFile {
+/** Load seeds from DB; auto-import from data/seeds.json when table is empty. */
+export async function readSeedsFile(): Promise<SeedsFile> {
+  try {
+    const count = await countChatSeeds();
+    if (count === 0) {
+      const disk = readSeedsFileFromDisk();
+      if (disk.generated.length + disk.fallback.length > 0
+        || Object.values(disk.stages).some(s => (s.generated?.length ?? 0) + (s.fallback?.length ?? 0) > 0)) {
+        return writeSeedsToDb(normalizeSeedsFile(disk));
+      }
+    }
+    return readSeedsFromDb();
+  } catch (err) {
+    console.error('[seedsFile] DB read failed, falling back to disk', err);
+    return readSeedsFileFromDisk();
+  }
+}
+
+export async function writeSeedsFile(data: SeedsFile): Promise<SeedsFile> {
   const normalized = normalizeSeedsFile({
     ...data,
     updatedAt: new Date().toISOString(),
   });
-  mkdirSync(dirname(SEEDS_JSON_PATH), { recursive: true });
-  writeFileSync(SEEDS_JSON_PATH, `${JSON.stringify(normalized, null, 2)}\n`, 'utf8');
-  return normalized;
+  try {
+    return await writeSeedsToDb(normalized);
+  } catch (err) {
+    console.error('[seedsFile] DB write failed', err);
+    throw err;
+  }
 }

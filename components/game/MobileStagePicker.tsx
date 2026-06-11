@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
 import { MobileStageCard } from './MobileStageCard';
 import {
-  getPlayerName,
   isValidPlayerName,
   sanitizePlayerNameInput,
 } from '@/lib/playerStorage';
@@ -13,6 +12,7 @@ import type { VenueRoute } from '@/lib/venueRoutes';
 type Props = {
   balloonColor: string;
   initialRoute?: VenueRoute | null;
+  initialName?: string;
   onEnter: (name: string, route: VenueRoute) => void;
 };
 
@@ -20,8 +20,8 @@ type Props = {
  * Mobile-only welcome — pick a stage, enter your name, land at the show.
  * Desktop never mounts this.
  */
-export function MobileStagePicker({ initialRoute, onEnter }: Props) {
-  const [draft, setDraft] = useState(() => getPlayerName() ?? '');
+export function MobileStagePicker({ initialRoute, initialName, onEnter }: Props) {
+  const [draft, setDraft] = useState(initialName ?? '');
   const [picked, setPicked] = useState<VenueRoute | null>(initialRoute ?? null);
   const validName = isValidPlayerName(draft);
 

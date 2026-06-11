@@ -7,13 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "party:dev": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; exec partykit dev -p 1999'",
+    "party:dev": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; export PARTYKIT_DEV=true CHATTER_API_URL=${CHATTER_API_URL:-http://127.0.0.1:3000/api/npc-chatter}; exec partykit dev -p 1999'",
     "dev:local": "bash scripts/dev-local.sh",
     "party:deploy": "bash scripts/deploy-partykit.sh",
     "party:deploy:cf": "bash scripts/deploy-partykit.sh",
-    "fetch-durations": "npx tsx scripts/fetch-durations.ts"
+    "fetch-durations": "npx tsx scripts/fetch-durations.ts",
+    "db:migrate": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; node scripts/db-migrate.mjs'",
+    "db:import-seeds": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; node scripts/import-chat-seeds.mjs'"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@vercel/blob": "^2.4.0",
     "html2canvas": "^1.4.1",
     "next": "^16.2.7",

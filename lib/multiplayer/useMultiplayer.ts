@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import PartySocket from 'partysocket';
+import type { FestiePublic } from '@/lib/festie/types';
 import {
   chatPairKey,
   decodeServer,
@@ -63,6 +64,8 @@ type PeerEvents = {
 type Options = PeerEvents & {
   /** Identity to announce on join. Read lazily so a late name still propagates. */
   profileRef: React.RefObject<PlayerProfile>;
+  /** Signed-in user id — sent on join so offline festie hides while owner is online. */
+  userIdRef?: React.RefObject<string | null>;
   /** Spawn position to announce on join (shared world coordinate). */
   spawnWorldOffRef: React.RefObject<number>;
   /** PartyKit room — one per city/stage for presence isolation. */
@@ -105,6 +108,8 @@ export type Multiplayer = {
   remoteNpcChats: RemoteNpcChat[];
   /** Active NPC↔NPC conversations (for connect glow). */
   npcConvoPairs: NpcConvoPair[];
+  /** Offline festies on this stage (owner excluded while online). */
+  festies: FestiePublic[];
   sendMove: (worldX: number, facing: Facing, walking: boolean) => void;
   sendProfile: (profile: PlayerProfile) => void;
   openPeerChat: (to: string) => void;
@@ -142,6 +147,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const [chatPairs, setChatPairs] = useState<RemoteChatPair[]>([]);
   const [remoteNpcChats, setRemoteNpcChats] = useState<RemoteNpcChat[]>([]);
   const [npcConvoPairs, setNpcConvoPairs] = useState<NpcConvoPair[]>([]);
+  const [festies, setFesties] = useState<FestiePublic[]>([]);
 
   const connectRequestedRef = useRef(false);
 
@@ -156,6 +162,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const eventsRef = useRef<PeerEvents>(opts);
   eventsRef.current = opts;
   const profileRef = opts.profileRef;
+  const userIdRef = opts.userIdRef;
   const spawnRef = opts.spawnWorldOffRef;
 
   const sendNow = useCallback((data: object) => {
@@ -181,6 +188,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
         facing: Facing;
         walking: boolean;
         chatterMuted?: boolean;
+        userId?: string;
       } = {
         t: 'join',
         profile,
@@ -189,6 +197,8 @@ export function useMultiplayer(opts: Options): Multiplayer {
         walking: last?.walking ?? false,
       };
       if (isChatterMuted()) join.chatterMuted = true;
+      const userId = userIdRef?.current?.trim();
+      if (userId) join.userId = userId;
       sendNow(join);
     };
 
@@ -220,6 +230,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
       switch (msg.t) {
         case 'welcome': {
           setSelfId(msg.selfId);
+          if (msg.festies) setFesties(msg.festies);
           // Align our clock + adopt the pinned playlists so every venue plays
           // the same synchronized video for everyone in the room.
           if (msg.serverNow != null && msg.stage) {
@@ -326,6 +337,9 @@ export function useMultiplayer(opts: Options): Multiplayer {
           setNpcConvoPairs(prev => prev.filter(p => p.convoId !== msg.convoId));
           ev.onNpcConvoEnd?.(msg.convoId);
           break;
+        case 'festies-sync':
+          setFesties(msg.festies);
+          break;
       }
     };
 
@@ -378,7 +392,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
 
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
-    chatPairs, remoteNpcChats, npcConvoPairs,
+    chatPairs, remoteNpcChats, npcConvoPairs, festies,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
     sendAmbientMessage, sendRoomChat, sendNpcChat, sendNpcPositions,
   };
