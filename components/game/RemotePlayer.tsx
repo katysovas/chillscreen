@@ -15,6 +15,7 @@ import {
   loadoutSyncKey,
 } from '@/lib/multiplayer/loadoutSync';
 import type { CharacterLoadout } from './characters/loadout';
+import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
 
 type RemotePlayerProps = {
   id: string;
@@ -60,6 +61,8 @@ export default function RemotePlayer({
   const [screenX, setScreenX] = useState(50);
   const [ambientMessage, setAmbientMessage] = useState<string | null>(null);
   const lastAmbientRef = useRef<string | null>(null);
+  const chatConnectedRef = useRef(chatConnected || greeting);
+  chatConnectedRef.current = chatConnected || greeting;
 
   useEffect(() => {
     if (greeting && divRef.current) {
@@ -105,7 +108,12 @@ export default function RemotePlayer({
         }
 
         const pct = worldXToScreenPct(renderXRef.current, gameWorldOffRef.current);
-        if (divRef.current) divRef.current.style.left = `${pct}%`;
+        if (divRef.current) {
+          divRef.current.style.left = `${pct}%`;
+          const depthY = crowdDepthOffsetPx(id);
+          const spread = chatConnectedRef.current ? chatConnectSpreadPx(pct) : 0;
+          divRef.current.style.transform = `translate(${spread}px, ${depthY}px)`;
+        }
 
         if (ambientRef?.current) {
           const amb = ambientRef.current.get(id);

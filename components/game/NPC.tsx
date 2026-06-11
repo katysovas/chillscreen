@@ -14,6 +14,7 @@ import {
   type StageAnchorKind,
 } from '@/lib/stageAnchor';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
+import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
 
 // ── Personality ────────────────────────────────────────────────────────────────
 export type Personality = {
@@ -124,6 +125,8 @@ export default function NPC({
   const jumpTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stageSpotRef        = useRef(0);
   const stageVisibleRef     = useRef(!stageAnchor);
+  const chatConnectedRef    = useRef(chatConnected || greeting);
+  chatConnectedRef.current = chatConnected || greeting;
 
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
@@ -386,7 +389,12 @@ export default function NPC({
       }
 
       screenXRef.current = pct;
-      if (divRef.current) divRef.current.style.left = `${pct}%`;
+      if (divRef.current) {
+        divRef.current.style.left = `${pct}%`;
+        const depthY = crowdDepthOffsetPx(characterId);
+        const spread = chatConnectedRef.current ? chatConnectSpreadPx(pct) : 0;
+        divRef.current.style.transform = `translate(${spread}px, ${depthY}px)`;
+      }
       return worldXRef.current;
     });
 

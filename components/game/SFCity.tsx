@@ -76,6 +76,7 @@ import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import { hasStickerTripActive, preloadAllLoadoutSlots, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
+import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { runAllStagePlayerSyncs } from '@/lib/stagePlayerRegistry';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
@@ -1198,7 +1199,8 @@ export default function SFCity({
             position: 'absolute',
             left: '50%',
             bottom: CHAR_BOTTOM,
-            transform: `translateY(${playerDepthY}px)`,
+            transform: `translate(${inConversation ? chatConnectSpreadPlayerPx(greetNpcX) : 0}px, ${playerDepthY}px)`,
+            transition: 'transform 0.25s ease',
             zIndex: inConversation ? 200 : 20,
           }}>
             <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
