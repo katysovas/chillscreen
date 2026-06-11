@@ -50,6 +50,7 @@ function loadoutForProp(prop: string | null): CharacterLoadout | undefined {
   if (!prop) return undefined;
   if (prop.startsWith('hat-')) return { hat: prop };
   if (prop.startsWith('shades-')) return { sunglasses: prop };
+  if (prop.startsWith('mask-')) return { mask: prop };
   // hand-*, food-*, drink-*, party-* all mount in the hand slot.
   return { hand: prop };
 }

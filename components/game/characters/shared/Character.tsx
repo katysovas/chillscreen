@@ -18,6 +18,7 @@ import {
   renderLoadoutFloat,
   renderLoadoutHand,
   renderLoadoutHat,
+  renderLoadoutMask,
   renderLoadoutNecklace,
   renderLoadoutSlot,
   renderLoadoutSunglasses,
@@ -211,6 +212,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
               <div className="ch-eyes" />
               {equipped && renderLoadoutSunglasses(equipped)}
               <div className="ch-nose"><span /><span /></div>
+              {equipped && renderLoadoutMask(equipped)}
               {equipped && renderLoadoutNecklace(equipped)}
               {equipped && renderLoadoutTop(equipped)}
               <div className="ch-hands">

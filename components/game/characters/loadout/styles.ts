@@ -22,8 +22,8 @@ export const LOADOUT_STYLES = `
   .ch-lo-baseball-hat-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-lo-hat-pamela-hat{top:-123px;width:340px;height:184px;}
   .ch-lo-pamela-hat-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
-  .ch-lo-hat-mando-hat{top:-110px;width:280px;height:280px;}
-  .ch-lo-mando-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-lo-hat-helmet-hat{top:-178px;width:220px;height:220px;}
+  .ch-lo-helmet-hat-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   /* ── Sunglasses ───────────────────────────────────────────────────────── */
   .ch-lo-shades{position:absolute;left:50%;top:18px;width:118px;height:28px;transform:translateX(-50%);z-index:11;display:flex;align-items:center;justify-content:center;gap:6px;pointer-events:none;}
   .ch-lo-shades-lens{width:42px;height:22px;background:var(--lo-lens,#222);border:3px solid var(--lo-frame,#111);box-sizing:border-box;}
@@ -39,6 +39,14 @@ export const LOADOUT_STYLES = `
   .ch-lo-shades-glasses-optic{top:-52px;width:510px;height:170px;display:block;}
   .ch-lo-shades-glasses-skiing{top:-40px;width:560px;height:186px;display:block;}
   .ch-lo-glasses-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none;}
+
+  /* ── Masks ────────────────────────────────────────────────────────────── */
+  .ch-lo-mask{position:absolute;left:50%;transform:translateX(-50%);z-index:11;pointer-events:none;}
+  .ch-lo-mask-1{top:-90px;width:320px;height:200px;display:block;}
+  .ch-lo-mask-6{top:-0px;width:260px;height:165px;display:block;}
+  .ch-lo-mask-2,.ch-lo-mask-3{top:-110px;width:320px;height:200px;display:block;}
+  .ch-lo-mask-mando{top:-110px;width:280px;height:280px;display:block;}
+  .ch-lo-mask-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none;}
 
   /* ── Necklace (pearls — pendant reuses .ch-necklace) ──────────────────── */
   .ch-lo-necklace-pearls{position:absolute;left:50%;top:38px;width:150px;height:50px;transform:translateX(-50%);z-index:9;pointer-events:none;}

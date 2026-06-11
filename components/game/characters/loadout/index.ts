@@ -26,6 +26,7 @@ export {
   renderLoadoutFloat,
   renderLoadoutHand,
   renderLoadoutHat,
+  renderLoadoutMask,
   renderLoadoutNecklace,
   renderLoadoutSunglasses,
   renderLoadoutTop,

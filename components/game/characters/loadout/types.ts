@@ -2,6 +2,7 @@
 export type LoadoutSlot =
   | 'hat'
   | 'sunglasses'
+  | 'mask'
   | 'necklace'
   | 'top'
   | 'bottom'
@@ -10,6 +11,7 @@ export type LoadoutSlot =
 export const LOADOUT_SLOTS: LoadoutSlot[] = [
   'hat',
   'sunglasses',
+  'mask',
   'necklace',
   'top',
   'bottom',
@@ -20,6 +22,7 @@ export const LOADOUT_SLOTS: LoadoutSlot[] = [
 export type CharacterLoadout = {
   hat?: string | null;
   sunglasses?: string | null;
+  mask?: string | null;
   necklace?: string | null;
   top?: string | null;
   bottom?: string | null;

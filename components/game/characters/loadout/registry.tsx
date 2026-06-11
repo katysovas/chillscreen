@@ -24,6 +24,7 @@ const SLOT_IMPORTS: Record<
   hand: () => import('./registry/slots/hand'),
   hat: () => import('./registry/slots/hat'),
   sunglasses: () => import('./registry/slots/sunglasses'),
+  mask: () => import('./registry/slots/mask'),
   necklace: () => import('./registry/slots/necklace'),
   top: () => import('./registry/slots/top'),
   bottom: () => import('./registry/slots/bottom'),

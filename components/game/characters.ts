@@ -314,7 +314,7 @@ const CHARACTERS: CharacterDef[] = [
     name: 'Atlas',
     balloonColor: '#3aa0e0',       // bright baseball-sky blue
     loadout: {
-      hat: 'hat-mando',
+      mask: 'mask-mando',
       hand: 'hand-balloon',
       balloonColor: '#ffd23f',     // sunny yellow
     },

@@ -8,7 +8,7 @@ const HAT_ITEMS = [
   'hat-baseball',
   'hat-pamela',
   'hat-headphones',
-  'hat-mando',
+  'hat-helmet',
 ] as const;
 
 const GLASSES_ITEMS = [
@@ -19,6 +19,14 @@ const GLASSES_ITEMS = [
   'shades-glasses-yellow',
   'shades-glasses-optic',
   'shades-glasses-skiing',
+] as const;
+
+const MASK_ITEMS = [
+  'mask-1',
+  'mask-2',
+  'mask-3',
+  'mask-6',
+  'mask-mando',
 ] as const;
 
 const HAND_ITEMS = ['hand-sword', 'hand-lightsaber', 'hand-boombox', 'hand-balloons', 'hand-balloons-2', 'hand-totem'] as const;
@@ -32,6 +40,7 @@ const PARTY_FAVOR_ITEMS = ['party-glowsticks', 'party-confetti', 'party-firework
 export type VendorShopItemId =
   | (typeof HAT_ITEMS)[number]
   | (typeof GLASSES_ITEMS)[number]
+  | (typeof MASK_ITEMS)[number]
   | (typeof HAND_ITEMS)[number]
   | (typeof FOOD_ITEMS)[number]
   | (typeof DRINK_ITEMS)[number]
@@ -57,6 +66,12 @@ export const VENDOR_SHOP_CATEGORIES: VendorShopCategory[] = [
     label: 'Glasses',
     slot: 'sunglasses',
     items: GLASSES_ITEMS,
+  },
+  {
+    id: 'masks',
+    label: 'Masks',
+    slot: 'mask',
+    items: MASK_ITEMS,
   },
   {
     id: 'hands',
@@ -90,6 +105,7 @@ export const DEFAULT_VENDOR_CATEGORY = VENDOR_SHOP_CATEGORIES[0]!.id;
 export const VENDOR_SHOP_ITEMS: VendorShopItemId[] = [
   ...HAT_ITEMS,
   ...GLASSES_ITEMS,
+  ...MASK_ITEMS,
   ...HAND_ITEMS,
   ...FOOD_ITEMS,
   ...DRINK_ITEMS,
@@ -114,7 +130,12 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'hat-baseball': '/images/props/hat_baseball.svg',
   'hat-pamela': '/images/props/hat_pamela.svg',
   'hat-headphones': '/images/props/headphones.svg',
-  'hat-mando': '/images/props/mando.svg',
+  'hat-helmet': '/images/props/hat_helmet.svg',
+  'mask-1': '/images/props/mask_1.svg',
+  'mask-2': '/images/props/mask_2.svg',
+  'mask-3': '/images/props/mask_3.svg',
+  'mask-6': '/images/props/mask_6.svg',
+  'mask-mando': '/images/props/mask_mando.svg',
   'shades-glasses': '/images/props/glasses.svg',
   'shades-glasses-blue': '/images/props/glasses_blue.svg',
   'shades-glasses-green': '/images/props/glasses_green.svg',
@@ -157,7 +178,12 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'hat-baseball': { width: 36, height: 24 },
   'hat-pamela': { width: 36, height: 26 },
   'hat-headphones': { width: 32, height: 28 },
-  'hat-mando': { width: 32, height: 32 },
+  'hat-helmet': { width: 32, height: 32 },
+  'mask-1': { width: 36, height: 36 },
+  'mask-2': { width: 36, height: 36 },
+  'mask-3': { width: 36, height: 36 },
+  'mask-6': { width: 36, height: 36 },
+  'mask-mando': { width: 32, height: 32 },
   'shades-glasses': { width: 36, height: 16 },
   'shades-glasses-blue': { width: 36, height: 16 },
   'shades-glasses-green': { width: 36, height: 16 },

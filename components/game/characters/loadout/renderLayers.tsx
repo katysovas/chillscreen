@@ -22,6 +22,10 @@ export function renderLoadoutSunglasses(loadout: CharacterLoadout): ReactNode {
   return renderLoadoutSlot('sunglasses', loadout.sunglasses, color(loadout));
 }
 
+export function renderLoadoutMask(loadout: CharacterLoadout): ReactNode {
+  return renderLoadoutSlot('mask', loadout.mask, color(loadout));
+}
+
 export function renderLoadoutNecklace(loadout: CharacterLoadout): ReactNode {
   return renderLoadoutSlot('necklace', loadout.necklace, color(loadout));
 }
