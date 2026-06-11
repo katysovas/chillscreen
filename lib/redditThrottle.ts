@@ -1,7 +1,7 @@
 /** Serialize outbound Reddit requests to avoid 429 rate limits. */
 
 const MIN_GAP_MS = 2_500;
-const MAX_RETRIES = 4;
+const MAX_RETRIES = 3;
 
 let lastRequestAt = 0;
 let chain: Promise<void> = Promise.resolve();
@@ -13,9 +13,9 @@ function wait(ms: number): Promise<void> {
 function rateLimitWaitMs(res: Response, attempt: number): number {
   const reset = Number(res.headers.get('x-ratelimit-reset') ?? 0);
   if (Number.isFinite(reset) && reset > 0) {
-    return Math.min(reset * 1000 + 300, 90_000);
+    return Math.min(reset * 1000 + 300, 22_000);
   }
-  return Math.min(4_000 * (attempt + 1), 30_000);
+  return Math.min(5_000 * (attempt + 1), 15_000);
 }
 
 async function throttle(): Promise<void> {
