@@ -1,5 +1,6 @@
 import CHARACTERS, { type CharacterDef } from '@/components/game/characters';
 import { allGeneratedCharacters } from '@/lib/generatedNpcs';
+import { npcDisplayNameForCharacter } from '@/lib/npcRoster';
 import { bitcoinWorldNote, formatBitcoinUsd, type BitcoinSnapshot } from '@/lib/bitcoinPrice';
 
 export type ChatTurn = { role: 'user' | 'assistant'; content: string };
@@ -64,7 +65,7 @@ export function buildNpcSystemPrompt(
 
   return `${BASE_NPC_PROMPT}
 
-Your name is ${character.name}.
+Your name is ${npcDisplayNameForCharacter({ id: character.id, name: character.name, modelId: character.modelId })}.
 Personality: ${character.personalityNotes}
 How you move through the world: ${movementVibe(character)}.
 ${cinemaWorldNote(cinemaNowPlaying)}
@@ -92,7 +93,7 @@ export function pickFallbackGreeting(
         : '';
     return `₿ ${formatBitcoinUsd(bitcoinSnapshot.usd)}${change} — what's good?`;
   }
-  return `Hey! I'm ${character.name}.`;
+  return `Hey! I'm ${npcDisplayNameForCharacter({ id: character.id, name: character.name, modelId: character.modelId })}.`;
 }
 
 export function buildGreetingMessages(

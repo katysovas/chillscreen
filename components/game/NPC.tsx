@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import Character, { type CharacterHandle } from './Character';
-import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
 import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
@@ -17,8 +16,6 @@ import { getNpcConvoHold } from '@/lib/npcConvoHold';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
 import type { ChatLine } from '@/lib/chatLines';
 import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
-import { NpcNameplate } from './NpcNameplate';
-
 // ── Personality ────────────────────────────────────────────────────────────────
 export type Personality = {
   /** Walk speed as % of viewport width per frame. */
@@ -62,16 +59,6 @@ type NPCProps = NPCConfig & {
     npcTyping: boolean;
     messages: ChatLine[];
   };
-  /** Short self-talk bubble (not a player conversation). */
-  ambientChat?: {
-    name: string;
-    messages: ChatLine[];
-    glowColor?: string;
-  };
-  nameplate?: {
-    displayName: string;
-    modelDisplayName?: string;
-  };
 };
 
 function rndBetween(min: number, max: number) {
@@ -107,7 +94,7 @@ export default function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality, stageAnchor, stageCrowd,
-  paused, greeting, chatConnected = false, greetFacing, dancing = false, greetingChat, ambientChat, nameplate,
+  paused, greeting, chatConnected = false, greetFacing, dancing = false, greetingChat,
 }: NPCProps) {
   // ── React state: only for infrequent visual changes ─────────────────────────
   const [jumping,   setJumping]  = useState(false);
@@ -356,7 +343,8 @@ export default function NPC({
 
     setNpcMovementTick(index, (off, width) => {
       const convoHold = getNpcConvoHold(characterId);
-      if (convoHold !== undefined) {
+      const heldForConvo = convoHold !== undefined;
+      if (heldForConvo) {
         worldXRef.current = convoHold;
         targetWorldRef.current = convoHold;
         stateRef.current = 'idle';
@@ -366,7 +354,7 @@ export default function NPC({
         stateRef.current = 'idle';
       }
 
-      if (stageAnchor) {
+      if (stageAnchor && !heldForConvo) {
         const anchor = vendorAnchorGroundWorldX(stageAnchor, off, width);
         const visible = anchor != null;
         stageVisibleRef.current = visible;
@@ -408,7 +396,7 @@ export default function NPC({
         return worldXRef.current;
       }
 
-      if (!pausedRef.current && stateRef.current === 'wandering') {
+      if (!heldForConvo && !pausedRef.current && stateRef.current === 'wandering') {
         const target = targetWorldRef.current;
         const cur    = worldXRef.current;
         const diff   = target - cur;
@@ -474,24 +462,8 @@ export default function NPC({
           scale={scale}
           bubbleSide={screenXToBubbleSide(screenX)}
           chatConnected={chatConnected || greeting}
-          chatOverlay={
-            greeting ? undefined : ambientChat && ambientChat.messages.length > 0 ? (
-              <NpcChatOverlay
-                name={ambientChat.name}
-                npcTyping={false}
-                messages={ambientChat.messages}
-                side={screenXToBubbleSide(screenX)}
-                glowColor={ambientChat.glowColor}
-              />
-            ) : undefined
-          }
+          chatOverlay={undefined}
         />
-        {nameplate && !greeting && (
-          <NpcNameplate
-            displayName={nameplate.displayName}
-            modelDisplayName={nameplate.modelDisplayName}
-          />
-        )}
       </div>
     </div>
   );

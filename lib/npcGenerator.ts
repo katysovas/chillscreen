@@ -12,6 +12,8 @@ export type GeneratedNpc = {
   vibe: string;
   personalityNotes: string;
   lines: string[];
+  /** OpenRouter model override (optional). */
+  modelId?: string;
 };
 
 export const NPC_GENERATOR_MODEL = 'gpt-4.1-mini';

@@ -4,8 +4,6 @@ import { useCallback, useRef, useState } from 'react';
 import { appendChatLine, createChatLine, type ChatLine, type KeyedChatLine } from '@/lib/chatLines';
 import { PLAYER_AMBIENT_VISIBLE_MS } from '@/lib/multiplayer/useMultiplayer';
 
-const NPC_BUBBLE_VISIBLE_MS = 8_000;
-
 export type NpcConvoState = {
   participants: [string, string];
   lines: KeyedChatLine[];
@@ -55,22 +53,6 @@ export function useRoomChatter(
     );
   }, []);
 
-  const appendNpcSolo = useCallback((npcId: string, text: string) => {
-    setNpcMessages(prev => {
-      const next = new Map(prev);
-      next.set(npcId, appendChatLine(prev.get(npcId) ?? [], text));
-      return next;
-    });
-    scheduleHide(`npc:${npcId}`, NPC_BUBBLE_VISIBLE_MS, () => {
-      setNpcMessages(prev => {
-        if (!prev.has(npcId)) return prev;
-        const next = new Map(prev);
-        next.delete(npcId);
-        return next;
-      });
-    });
-  }, [scheduleHide]);
-
   const appendPlayer = useCallback((playerKey: string, text: string) => {
     setPlayerMessages(prev => {
       const next = new Map(prev);
@@ -90,19 +72,14 @@ export function useRoomChatter(
   const handleRoomChat = useCallback((sender: string, text: string) => {
     const parsed = parseSender(sender);
     if (!parsed) return;
-    if (parsed.kind === 'npc') {
-      appendNpcSolo(parsed.id, text);
-      return;
-    }
+    if (parsed.kind === 'npc') return;
     const playerId = resolvePlayerId(parsed.id);
     if (playerId) appendPlayer(playerId, text);
-  }, [appendNpcSolo, appendPlayer, resolvePlayerId]);
+  }, [appendPlayer, resolvePlayerId]);
 
   const handleNpcLine = useCallback((npc: string, text: string) => {
-    let inPairConvo = false;
     setNpcConvo(prev => {
       if (prev?.participants.includes(npc)) {
-        inPairConvo = true;
         const line = createChatLine(text);
         return {
           ...prev,
@@ -111,8 +88,7 @@ export function useRoomChatter(
       }
       return prev;
     });
-    if (!inPairConvo) appendNpcSolo(npc, text);
-  }, [appendNpcSolo]);
+  }, []);
 
   const onNpcConvoStart = useCallback((participants: [string, string]) => {
     setNpcConvoSet(new Set(participants));

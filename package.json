@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "party:dev": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; exec partykit dev'",
+    "party:dev": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; exec partykit dev -p 1999'",
     "dev:local": "bash scripts/dev-local.sh",
     "party:deploy": "bash scripts/deploy-partykit.sh",
     "party:deploy:cf": "bash scripts/deploy-partykit.sh",

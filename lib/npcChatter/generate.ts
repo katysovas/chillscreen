@@ -76,7 +76,7 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
       console.log(`[npc-chatter] opener stance: ${openingStance}`);
     }
     console.log(`[npc-chatter] line ${i + 1}/${req.lineBudget} ${speaker.id} → ${model}`);
-    const text = await openRouterComplete(model, messages, req.apiKey);
+    const text = await openRouterComplete(model, messages, req.apiKey, req.houseModel);
     if (!text) break;
 
     const line = { npc: speaker.id, text };
@@ -102,7 +102,12 @@ export async function generateSingleReply(req: SingleReplyRequest): Promise<NpcC
   });
 
   const model = resolveModel(npc.modelId, req.houseModel);
-  const text = await openRouterComplete(model, [{ role: 'system', content: system }], req.apiKey);
+  const text = await openRouterComplete(
+    model,
+    [{ role: 'system', content: system }],
+    req.apiKey,
+    req.houseModel,
+  );
   if (!text) return null;
   return { npc: npc.id, text };
 }

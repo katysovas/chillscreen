@@ -1,13 +1,15 @@
 /** Random opener stance for npcA — forces divergent takes, not agreement loops. */
 const OPENING_STANCES = [
-  'your angle: this is overblown',
-  'your angle: this changes everything and nobody\'s ready',
-  'your angle: everyone\'s pretending to care but nobody will remember this',
-  'your angle: the real story is what happens after, not the headline',
-  'your angle: this is actually good news if you think about it',
-  'your angle: classic panic — same cycle every year',
-  'your angle: only the tourists are surprised',
-  'your angle: this is why you never trust the first take',
+  'your angle: everyone is being way too nice about this and it\'s embarrassing',
+  'your angle: this is actually a disaster and people are coping',
+  'your angle: only tourists and influencers are surprised — real heads saw this coming',
+  'your angle: say the quiet part out loud, even if it ruffles feathers',
+  'your angle: this is lowkey hilarious if you stop pretending to care',
+  'your angle: the mainstream take is wrong and you know why',
+  'your angle: defend the unpopular side — commit to the bit',
+  'your angle: call out the grift/scam/hype directly, no softening',
+  'your angle: this is why you never trust the first take on the internet',
+  'your angle: make an absurd comparison that somehow makes perfect sense',
 ];
 
 export function pickOpeningStance(): string {

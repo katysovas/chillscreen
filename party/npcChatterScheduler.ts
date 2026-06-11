@@ -16,6 +16,7 @@ import {
   NPC_REPLY_COOLDOWN_MS,
   NPC_REPLY_DELAY_MAX_MS,
   NPC_REPLY_DELAY_MIN_MS,
+  SOLO_NPC_ROOM_REPLIES_ENABLED,
   HOUSE_MODEL_DEFAULT,
   pickLineBudget,
 } from '../lib/npcChatter/constants';
@@ -46,25 +47,29 @@ export class NpcChatterScheduler {
   private lastPair: [string, string] | null = null;
   private npcWorldX = new Map<string, number>();
   private viewportWidth = 1200;
-  /** Cached at construction — `room.id` is forbidden inside `onAlarm`. */
+  /** Cached at construction — `Party.id` / `room` are forbidden inside `onAlarm`. */
   private readonly roomId: string;
+  private readonly roomStorage: Party.Room['storage'];
+  private readonly env: Record<string, string | undefined>;
 
   constructor(private deps: ChatterSchedulerDeps) {
     this.roomId = deps.room.id;
+    this.roomStorage = deps.room.storage;
+    this.env = deps.room.env as Record<string, string | undefined>;
   }
 
   onFirstPlayer() {
     if (this.schedulerOn) return;
     this.schedulerOn = true;
     const delay = jitterMs(FIRST_CONVO_DELAY_MIN_MS, FIRST_CONVO_DELAY_MAX_MS);
-    void this.deps.room.storage.setAlarm(Date.now() + delay);
+    void this.roomStorage.setAlarm(Date.now() + delay);
   }
 
   onLastPlayer() {
     this.schedulerOn = false;
     this.activeConvo = false;
     // Push alarm far out — empty room = zero LLM calls.
-    void this.deps.room.storage.setAlarm(Date.now() + 86_400_000);
+    void this.roomStorage.setAlarm(Date.now() + 86_400_000);
   }
 
   updateNpcPositions(
@@ -89,6 +94,8 @@ export class NpcChatterScheduler {
   handleRoomChat(sender: string, text: string) {
     this.appendBuffer(sender, text);
     this.deps.broadcast({ t: 'room-chat', sender, text });
+
+    if (!SOLO_NPC_ROOM_REPLIES_ENABLED) return;
 
     const npcId = matchNpcMention(text, this.roomId);
     if (!npcId) return;
@@ -143,7 +150,17 @@ export class NpcChatterScheduler {
         });
       }
     }
-    if (ranked.length === 0) return null;
+    if (ranked.length === 0) {
+      // Client may not have reported positions yet (venue switch, entry delays).
+      const i = Math.floor(Math.random() * ids.length);
+      let j = Math.floor(Math.random() * (ids.length - 1));
+      if (j >= i) j++;
+      const a = ids[i]!;
+      const b = ids[j]!;
+      const pair: [string, string] = a < b ? [a, b] : [b, a];
+      this.lastPair = pair;
+      return pair;
+    }
 
     ranked.sort((x, y) => x.dist - y.dist);
     for (const { pair } of ranked) {
@@ -163,24 +180,22 @@ export class NpcChatterScheduler {
   }
 
   private apiUrl(): string {
-    const env = this.deps.room.env as Record<string, string | undefined>;
-    if (env.CHATTER_API_URL?.trim()) return env.CHATTER_API_URL.trim();
-    if (env.VERCEL_URL?.trim()) return `https://${env.VERCEL_URL.trim()}/api/npc-chatter`;
-    if (env.NEXT_PUBLIC_SITE_URL?.trim()) {
-      const base = env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/+$/, '');
+    if (this.env.CHATTER_API_URL?.trim()) return this.env.CHATTER_API_URL.trim();
+    if (this.env.VERCEL_URL?.trim()) return `https://${this.env.VERCEL_URL.trim()}/api/npc-chatter`;
+    if (this.env.NEXT_PUBLIC_SITE_URL?.trim()) {
+      const base = this.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/+$/, '');
       return `${base}/api/npc-chatter`;
     }
     return 'http://127.0.0.1:3000/api/npc-chatter';
   }
 
   private async fetchChatter(body: object): Promise<NpcChatterLine[] | null> {
-    const env = this.deps.room.env as Record<string, string | undefined>;
     try {
       const res = await fetch(this.apiUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...chatterAuthHeader(env.NPC_CHATTER_SECRET),
+          ...chatterAuthHeader(this.env.NPC_CHATTER_SECRET),
         },
         body: JSON.stringify(body),
       });
@@ -234,13 +249,12 @@ export class NpcChatterScheduler {
     const lineBudget = pickLineBudget();
     const { streamTitle, channelName } = this.streamCtx();
     const seedPick = pickConversationSeed(streamTitle, channelName);
-    const env = this.deps.room.env as Record<string, string | undefined>;
-    const apiKey = env.OPENROUTER_API_KEY?.trim();
+    const apiKey = this.env.OPENROUTER_API_KEY?.trim();
     if (!apiKey) {
       console.error('[npc-chatter] OPENROUTER_API_KEY missing — set in .env.local for party:dev');
       return;
     }
-    const houseModel = env.HOUSE_MODEL?.trim() || HOUSE_MODEL_DEFAULT;
+    const houseModel = this.env.HOUSE_MODEL?.trim() || HOUSE_MODEL_DEFAULT;
     const rosterA = getNpcRosterEntry(npcA);
     const rosterB = getNpcRosterEntry(npcB);
     const models = {
@@ -310,6 +324,6 @@ export class NpcChatterScheduler {
       await this.runPairConvo();
     }
 
-    void this.deps.room.storage.setAlarm(Date.now() + jitterMs(ALARM_MIN_MS, ALARM_MAX_MS));
+    void this.roomStorage.setAlarm(Date.now() + jitterMs(ALARM_MIN_MS, ALARM_MAX_MS));
   }
 }

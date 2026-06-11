@@ -1,12 +1,19 @@
 import type { MutableRefObject } from 'react';
 import type { CharacterDef } from '@/components/game/characters';
-import { clearNpcConvoHolds, setNpcConvoHold } from '@/lib/npcConvoHold';
+import { scheduleNpcConvoRelease, setNpcConvoHold } from '@/lib/npcConvoHold';
 import { npcTouchDistPx } from '@/lib/npcProximity';
+
+const CONVO_RELEASE_MIN_MS = 2_000;
+const CONVO_RELEASE_MAX_MS = 3_000;
 
 type SnapContext = {
   npcCast: CharacterDef[];
   npcWorldXRefs: MutableRefObject<number[]>;
 };
+
+function jitterMs(min: number, max: number): number {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
 
 /** Pull a pair together and pin world-x so wander AI cannot walk them apart mid-convo. */
 export function snapNpcPairForConvo(
@@ -37,5 +44,5 @@ export function snapNpcPairForConvo(
 }
 
 export function releaseNpcConvoSnap(): void {
-  clearNpcConvoHolds();
+  scheduleNpcConvoRelease(jitterMs(CONVO_RELEASE_MIN_MS, CONVO_RELEASE_MAX_MS));
 }

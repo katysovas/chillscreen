@@ -66,7 +66,7 @@ import { PlayerVariantGallery } from './PlayerVariantGallery';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { AMBIENT_CHAT_ENABLED } from '@/lib/ambientChatEnabled';
 import { useRoomChatter } from './hooks/useRoomChatter';
-import { getNpcRosterPublic } from '@/lib/npcRoster';
+import { npcChatLabelForId } from '@/lib/npcRoster';
 import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
@@ -77,7 +77,7 @@ import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import { hasStickerTripActive, preloadAllLoadoutSlots, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
-import { getNpcConvoHold } from '@/lib/npcConvoHold';
+import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
 import { releaseNpcConvoSnap, snapNpcPairForConvo } from '@/lib/npcConvoSnap';
 import { npcTouchDistPx } from '@/lib/npcProximity';
 import { appendChatLine, type ChatLine } from '@/lib/chatLines';
@@ -224,6 +224,7 @@ export default function SFCity({
   const ambientHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [npcMessages,   setNpcMessages]   = useState<ChatLine[]>([]);
   const [npcTyping,     setNpcTyping]     = useState(false);
+  const [convoHoldTick, setConvoHoldTick] = useState(0);
   const [chatHistory,   setChatHistory]   = useState<ChatTurn[]>([]);
   const [chatSendTick,  setChatSendTick]  = useState(0);
   const [cinemaNowPlaying, setCinemaNowPlaying]   = useState<string | null>(null);
@@ -310,10 +311,8 @@ export default function SFCity({
   const endPeerChatRef   = useRef<((announce: boolean) => void) | null>(null);
   const lastNpcPosSendRef = useRef(0);
 
-  const npcRosterById = useMemo(() => {
-    const map = new Map<string, { displayName: string; modelDisplayName?: string }>();
-    for (const entry of getNpcRosterPublic()) map.set(entry.id, entry);
-    return map;
+  const npcChatLabel = useCallback((npcId: string, fallback: string) => {
+    return npcChatLabelForId(npcId, fallback);
   }, []);
 
   const resolvePlayerId = useCallback((nameOrId: string) => {
@@ -375,6 +374,11 @@ export default function SFCity({
   mpRef.current = mp;
 
   const roomChatter = useRoomChatter(resolvePlayerId);
+
+  useEffect(() => {
+    setNpcConvoReleaseListener(() => setConvoHoldTick(t => t + 1));
+    return () => setNpcConvoReleaseListener(null);
+  }, []);
 
   const skipRoomChatEcho = useCallback((sender: string) => {
     if (!sender.startsWith('user:')) return false;
@@ -476,9 +480,9 @@ export default function SFCity({
     npcWorldXRefs.current = npcCast.map(() => Infinity);
     lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
     lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
-  // updateViewBoxes is stable (no deps); spawnWorldOff is the only meaningful dep
+  // updateViewBoxes is stable (no deps)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spawnWorldOff]);
+  }, [spawnWorldOff, npcCast]);
 
   const navigateToCity = useCallback((route: VenueRoute) => {
     if (route === effectiveVenueRoute) {
@@ -1120,8 +1124,6 @@ export default function SFCity({
     const cfgA = npcCast.find(c => c.id === idA);
     const cfgB = npcCast.find(c => c.id === idB);
     if (!cfgA || !cfgB) return null;
-    const rosterA = npcRosterById.get(idA);
-    const rosterB = npcRosterById.get(idB);
     return (
       <NpcPairChatOverlay
         worldXA={wxA}
@@ -1130,20 +1132,20 @@ export default function SFCity({
         speakers={[
           {
             key: idA,
-            name: rosterA?.displayName ?? cfgA.name,
+            name: npcChatLabel(idA, cfgA.name),
             color: cfgA.balloonColor,
             worldX: wxA,
           },
           {
             key: idB,
-            name: rosterB?.displayName ?? cfgB.name,
+            name: npcChatLabel(idB, cfgB.name),
             color: cfgB.balloonColor,
             worldX: wxB,
           },
         ]}
       />
     );
-  }, [roomChatter.npcConvo, roomChatter.npcConvo?.lines.length, npcCast, npcRosterById]);
+  }, [roomChatter.npcConvo, roomChatter.npcConvo?.lines.length, npcCast, npcChatLabel, convoHoldTick]);
 
   const inConversation = greetingNpc !== null || peerChatId !== null;
 
@@ -1157,8 +1159,10 @@ export default function SFCity({
   const isNpcChatConnected = useCallback((npcIndex: number, npcId: string) => {
     if (greetingNpc === npcIndex) return true;
     if (mp.remoteNpcChats.some(c => c.npcId === npcId)) return true;
-    return roomChatter.isNpcInConvo(npcId);
-  }, [greetingNpc, mp.remoteNpcChats, roomChatter]);
+    if (roomChatter.isNpcInConvo(npcId)) return true;
+    if (hasNpcConvoHold(npcId)) return true;
+    return false;
+  }, [greetingNpc, mp.remoteNpcChats, roomChatter, convoHoldTick]);
   const showMobileChatBar = mobileDevice
     && !showWelcome
     && !showCityPicker
@@ -1188,7 +1192,9 @@ export default function SFCity({
 
   const conversationPartnerName = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
-    : greetingNpc !== null ? npcCast[greetingNpc]?.name : null;
+    : greetingNpc !== null
+      ? npcChatLabel(npcCast[greetingNpc]!.id, npcCast[greetingNpc]!.name)
+      : null;
   const conversationPartnerColor = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.balloonColor ?? '#ef4023')
     : greetingNpc !== null ? npcCast[greetingNpc]?.balloonColor ?? '#ef4023' : '#ef4023';
@@ -1253,8 +1259,8 @@ export default function SFCity({
         {!homePreview && npcCast.map((cfg, i) => {
           if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
           const testing = TEST_SPAWN_NPC_ID === cfg.id;
-          const rosterEntry = npcRosterById.get(cfg.id);
           const chatConnected = isNpcChatConnected(i, cfg.id);
+          const npcLabel = npcChatLabel(cfg.id, cfg.name);
           return (
           <NPC
             key={cfg.id}
@@ -1270,13 +1276,9 @@ export default function SFCity({
             greetFacing={greetNpcX < 50 ? 'right' : 'left'}
             dancing={TEST_FORCE_DANCE || npcDancing[i]}
             greetingChat={greetingNpc === i ? {
-              name: cfg.name,
+              name: npcLabel,
               npcTyping,
               messages: npcMessages,
-            } : undefined}
-            nameplate={rosterEntry ? {
-              displayName: rosterEntry.displayName,
-              modelDisplayName: rosterEntry.modelDisplayName,
             } : undefined}
           />
           );
@@ -1374,7 +1376,7 @@ export default function SFCity({
         venueRoute={effectiveVenueRoute}
         connectName={
           !inConversation && nearNpc !== null
-            ? npcCast[nearNpc]?.name
+            ? npcChatLabel(npcCast[nearNpc]!.id, npcCast[nearNpc]!.name)
             : !inConversation && nearPeer !== null
               ? nearPeerName
               : null

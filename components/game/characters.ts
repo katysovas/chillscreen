@@ -24,6 +24,8 @@ export type CharacterDef = {
   stageCrowd?: StageAnchorKind;
   /** Voice and temperament — fed into the NPC chat prompt. */
   personalityNotes: string;
+  /** OpenRouter model for NPC chatter (optional — generated NPCs may omit). */
+  modelId?: string;
   /** Scripted ambient mutterings (generated NPCs) — preferred over stage mumbles. */
   ambientLines?: string[];
 };
@@ -32,6 +34,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'luna',
     name: 'Luna',
+    modelId: 'anthropic/claude-haiku-4.5',
     balloonColor: '#4a8fe8',
     startX: -18,
     entryDirection: 'right',
@@ -50,6 +53,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'mochi',
     name: 'Mochi',
+    modelId: 'anthropic/claude-3-haiku',
     balloonColor: '#6abf69',
     startX: 115,
     entryDirection: 'left',
@@ -67,6 +71,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'ziggy',
     name: 'Ziggy',
+    modelId: 'meta-llama/llama-3.2-3b-instruct',
     balloonColor: '#8b4513',
     outfit: 'pirate',
     accessory: { type: 'pirate' },
@@ -90,6 +95,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'kova',
     name: 'Kova',
+    modelId: 'deepseek/deepseek-chat',
     balloonColor: '#f07828',       // high-vis sports orange
     startX: 118,
     entryDirection: 'left',
@@ -109,6 +115,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'dub',
     name: 'Dub',
+    modelId: 'google/gemini-2.5-flash',
     balloonColor: '#e04f8e',
     loadout: {
       hat: 'hat-headphones',
@@ -132,6 +139,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'satosh',
     name: 'Satoshi',           // playful nod, not the actual Satoshi
+    modelId: 'openai/gpt-4.1-mini',
     balloonColor: '#e8c830',   // golden balloon (held in hand)
     accessory: {
       type: 'necklace',
@@ -159,6 +167,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'solo',
     name: 'Solo',
+    modelId: 'anthropic/claude-3.5-haiku',
     balloonColor: '#e8c030',
     accessory: { type: 'lightsaber', bladeColor: '#FFE566', hiltColor: '#4a4a52' },
     startX: 112,
@@ -312,6 +321,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'atlas',
     name: 'Atlas',
+    modelId: 'google/gemini-2.5-flash-lite',
     balloonColor: '#3aa0e0',       // bright baseball-sky blue
     loadout: {
       mask: 'mask-mando',
@@ -336,6 +346,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'chad',
     name: 'chad',
+    modelId: 'openai/gpt-4o-mini',
     balloonColor: '#2a4a7a', // cop-navy — keep, it's a quiet little joke
     outfit: 'undercover-cop',
     accessory: { type: 'undercoverCop' },
@@ -360,6 +371,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'dale',
     name: 'Dale',
+    modelId: 'openai/gpt-4.1-nano',
     balloonColor: '#b44ae8',        // tie-dye purple
     outfit: 'hippie',
     loadout: {
@@ -389,6 +401,7 @@ const CHARACTERS: CharacterDef[] = [
   {
     id: 'giggle',
     name: 'Giggle',
+    modelId: 'mistralai/ministral-8b-2512',
     balloonColor: '#ffb74d',       // comedy spot gold
     accessory: { type: 'microphone', color: '#2c3e50' },
     startX: 118,

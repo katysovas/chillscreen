@@ -1,5 +1,13 @@
+import { formatNpcBrandedName } from '@/lib/npcBrandedName';
 import type { NpcRosterEntry } from '@/lib/npcRoster.server';
 import { NPC_LINE_MAX_WORDS, PROMPT_WINDOW_LINES } from './constants';
+
+function npcPromptName(npc: NpcRosterEntry): string {
+  return formatNpcBrandedName(npc.displayName, {
+    modelId: npc.modelId,
+    modelBrand: npc.modelDisplayName,
+  });
+}
 
 export type RoomChatLine = {
   sender: string;
@@ -18,19 +26,28 @@ export function formatRecentChat(lines: RoomChatLine[]): string {
 
 function voiceRules(extra = ''): string {
   return [
-    'Voice rules:',
-`- SHORT lines. Max ~${NPC_LINE_MAX_WORDS} words, often fewer. one thought per line.`,
-'- lowercase, casual, no emoji, no exclamation spam.',
-'- HAVE AN OPINION. take a side immediately. hedging is boring.',
-'- be SPECIFIC: name artists, songs, sets, years, places. "that one festival" is banned — say which one.',
-'- use what you actually know about music, artists, and culture. bring real references.',
-'- only for breaking news in the topic: you heard it secondhand, so speculate — do not invent details about the news event itself.',
-'- never explain or summarize the topic back. react to it like you already knew.',
-'- do not reuse phrases already in the transcript.',
-'',
-'good lines: "kendrick at 100 degrees, no thanks" / "muddy years are the legendary years. roo 2013"',
-'bad lines: "yeah extreme weather is concerning" (empty agreement)',
-'"that\'s interesting, what do you think?" (question volley — never end on a question)',
+    'Voice rules (viral quote-tweet energy — screenshot-worthy):',
+    `- ONE SHORT sentence only. max ~${NPC_LINE_MAX_WORDS} words, often fewer.`,
+    '- write like a drunk group chat at 2am after the headliner — lowercase, casual, slang is fine.',
+    '- no profanity or curse words. use spicy internet slang instead (bruh, nah, cap, cooked, unhinged, delulu, lowkey, highkey, rent free, ate, cringe, main character, down bad, its giving, touch grass).',
+    '- plain words only. no fancy vocabulary, no corporate or journalist tone.',
+    '- no special characters: no semicolons, em dashes, ellipses, asterisks, or emoji.',
+    '- be FUNNY and PROVOCATIVE — hot takes, burns, absurd hypotheticals, unhinged confidence.',
+    '- real jokes only (dry one-liners, brutal honesty, calling out tourists/scalpers/influencers). no puns, no wordplay.',
+    '- HAVE A SPICY OPINION. pick a side and commit. hedging and both-sidesing is banned.',
+    '- be SPECIFIC: name artists, songs, sets, years, places. vague takes die on the timeline.',
+    '- use what you actually know about music, sports, and culture. real references hit harder.',
+    '- only for breaking news in the topic: you heard it secondhand, so speculate — do not invent details about the news event itself.',
+    '- never explain or summarize the topic back. react like you already have a take locked in.',
+    '- never end on a question. land a statement people would repost.',
+    '- do not reuse phrases already in the transcript.',
+    '',
+    'good: "kendrick in 100 degree heat is a war crime against the crowd"',
+    'good: "bonnaroo mud years are the only years that count and vip people can cry about it"',
+    'good: "taylor courtside again like the game is her spotify wrapped"',
+    'bad: "yeah extreme weather is concerning" (too polite, zero personality)',
+    'bad: "that\'s interesting, what do you think?" (question volley — never end on a question)',
+    'bad: "scarlet fire hits different; man i miss 77" (semicolon, multiple thoughts)',
     extra,
   ].join('\n');
 }
@@ -59,14 +76,14 @@ export function buildLineSystemPrompt(opts: {
     : `The stage stream is on ${channelName} — between sets or ambient.`;
 
   const parts = [
-    `You are ${npc.displayName} at festival stage "${stage}".`,
+    `You are ${npcPromptName(npc)} at festival stage "${stage}".`,
     npc.personalityNotes,
     `Setting: public room chat at a festival. People are wandering nearby. ${streamNote}`,
     `Recent room chat:\n${formatRecentChat(recentChat)}`,
     INJECTION_GUARD,
     voiceRules(
       isResponderB
-        ? 'you see it differently — push back or bring a different angle. do not just agree.'
+        ? 'you disagree hard — push back, roast their take, or go more unhinge. never just agree.'
         : '',
     ),
   ];
@@ -77,7 +94,7 @@ export function buildLineSystemPrompt(opts: {
   if (isOpener && seed) {
     parts.push(`Open the conversation reacting to this topic (secondhand — speculate): ${seed}`);
   } else if (isOpener) {
-    parts.push('Open with a casual festival observation — no specific topic given.');
+    parts.push('Open with a spicy festival or culture hot take — no specific topic given, make it screenshot-worthy.');
   }
 
   if (transcript.length > 0) {
@@ -86,10 +103,12 @@ export function buildLineSystemPrompt(opts: {
   }
 
   if (isCloser) {
-    parts.push('wrap it up — land your final take in one short line.');
+    parts.push('wrap it up — drop your meanest/funniest final one-liner, the line people would screenshot.');
   }
 
-  parts.push('Reply with ONLY your line of dialogue. No quotes, no name prefix.');
+  parts.push(
+    'Reply with ONE sentence of dialogue only. No quotes, no name prefix, no special characters.',
+  );
 
   return parts.filter(Boolean).join('\n\n');
 }
@@ -108,13 +127,13 @@ export function buildSingleReplySystemPrompt(opts: {
     : `Stage: ${channelName}.`;
 
   return [
-    `You are ${npc.displayName} at festival stage "${stage}".`,
+    `You are ${npcPromptName(npc)} at festival stage "${stage}".`,
     npc.personalityNotes,
     `${streamNote} Public room chat.`,
     `Recent room chat:\n${formatRecentChat(recentChat)}`,
     INJECTION_GUARD,
     voiceRules(),
     `Someone in the room said something that caught your ear: "${triggerText}"`,
-    'Reply with ONE short public line — react naturally. No quotes, no name prefix.',
+    'Reply with ONE sentence only. No quotes, no name prefix, no special characters.',
   ].join('\n\n');
 }
