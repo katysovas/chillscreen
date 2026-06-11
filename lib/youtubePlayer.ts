@@ -1,5 +1,119 @@
 /** Shared YouTube embed helpers for stage/cinema players. Client-only. */
 
+const YT_ORIGINS = new Set([
+  'https://www.youtube.com',
+  'https://www.youtube-nocookie.com',
+]);
+
+/** Flush queued commands if onReady never arrives (ad blockers, slow loads). */
+const READY_FALLBACK_MS = 5_000;
+
+type QueuedCommand = { func: string; args: unknown[] };
+
+type WidgetState = {
+  ready: boolean;
+  listeningArmed: boolean;
+  queue: QueuedCommand[];
+  fallbackTimer: number | null;
+};
+
+const widgetState = new WeakMap<HTMLIFrameElement, WidgetState>();
+const sourceToIframe = new Map<MessageEventSource, HTMLIFrameElement>();
+
+let messageListenerOn = false;
+
+function stateFor(iframe: HTMLIFrameElement): WidgetState {
+  let state = widgetState.get(iframe);
+  if (!state) {
+    state = {
+      ready: false,
+      listeningArmed: false,
+      queue: [],
+      fallbackTimer: null,
+    };
+    widgetState.set(iframe, state);
+  }
+  return state;
+}
+
+function ensureMessageListener() {
+  if (messageListenerOn) return;
+  messageListenerOn = true;
+  window.addEventListener('message', onWidgetMessage);
+}
+
+function onWidgetMessage(e: MessageEvent) {
+  if (!YT_ORIGINS.has(e.origin) || !e.source) return;
+  try {
+    const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+    if (data?.event !== 'onReady') return;
+    const iframe = sourceToIframe.get(e.source);
+    if (iframe) markWidgetReady(iframe);
+  } catch {
+    // Non-JSON postMessage from another frame.
+  }
+}
+
+function markWidgetReady(iframe: HTMLIFrameElement) {
+  const state = stateFor(iframe);
+  if (state.ready) return;
+  state.ready = true;
+  if (state.fallbackTimer != null) {
+    clearTimeout(state.fallbackTimer);
+    state.fallbackTimer = null;
+  }
+  flushQueuedCommands(iframe, state);
+}
+
+function flushQueuedCommands(iframe: HTMLIFrameElement, state: WidgetState) {
+  const win = iframe.contentWindow;
+  if (!win) return;
+  for (const { func, args } of state.queue) {
+    win.postMessage(
+      JSON.stringify({ event: 'command', func, args }),
+      '*',
+    );
+  }
+  state.queue = [];
+}
+
+function sendListening(iframe: HTMLIFrameElement) {
+  const win = iframe.contentWindow;
+  if (!win) return;
+  sourceToIframe.set(win, iframe);
+  win.postMessage(
+    JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }),
+    '*',
+  );
+}
+
+function ensureListening(iframe: HTMLIFrameElement) {
+  ensureMessageListener();
+  const state = stateFor(iframe);
+  if (state.listeningArmed) return;
+  state.listeningArmed = true;
+  sendListening(iframe);
+  if (state.fallbackTimer == null) {
+    state.fallbackTimer = window.setTimeout(
+      () => markWidgetReady(iframe),
+      READY_FALLBACK_MS,
+    );
+  }
+}
+
+/** Reset widget handshake — call when a fresh iframe document loads. */
+function prepareWidget(iframe: HTMLIFrameElement) {
+  const state = stateFor(iframe);
+  state.ready = false;
+  state.listeningArmed = false;
+  state.queue = [];
+  if (state.fallbackTimer != null) {
+    clearTimeout(state.fallbackTimer);
+    state.fallbackTimer = null;
+  }
+  ensureListening(iframe);
+}
+
 export function stageEmbedSrc(id: string, startSec = 0): string {
   const params = new URLSearchParams({
     autoplay: '1',
@@ -26,7 +140,14 @@ export function postCommand(
   func: string,
   args: unknown[] = [],
 ) {
-  iframe?.contentWindow?.postMessage(
+  if (!iframe?.contentWindow) return;
+  const state = stateFor(iframe);
+  if (!state.ready) {
+    state.queue.push({ func, args });
+    ensureListening(iframe);
+    return;
+  }
+  iframe.contentWindow.postMessage(
     JSON.stringify({ event: 'command', func, args }),
     '*',
   );
@@ -38,10 +159,7 @@ export function postCommand(
  */
 export function primeYouTubePlayback(iframe: HTMLIFrameElement | null) {
   if (!iframe?.contentWindow) return;
-  iframe.contentWindow.postMessage(
-    JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }),
-    '*',
-  );
+  prepareWidget(iframe);
   postCommand(iframe, 'mute');
   postCommand(iframe, 'playVideo');
 }
@@ -49,10 +167,7 @@ export function primeYouTubePlayback(iframe: HTMLIFrameElement | null) {
 /** Resume playback without re-muting (gestures, sync, retries). */
 export function nudgeYouTubePlayback(iframe: HTMLIFrameElement | null) {
   if (!iframe?.contentWindow) return;
-  iframe.contentWindow.postMessage(
-    JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }),
-    '*',
-  );
+  ensureListening(iframe);
   postCommand(iframe, 'playVideo');
 }
 

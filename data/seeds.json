@@ -6,29 +6,18 @@
     "barkley called the spurs the dumbest team in civilization and half the internet agreed before the clip even ended",
     "world cup tent city outside while empty seats inside — fifa really said poor people can watch on a jumbotron",
     "el niño means every outdoor fest is a mud pit this summer and honestly thats when festivals get good",
-    "rock am ring at 90k people and fans say it killed the soul — theres a size where a festival becomes a parking lot with bass",
     "wellness festivals are raves for people who need to lie to their therapist about what they did this weekend",
-    "bonnaroo livestream crowd vs mud crowd — if youre watching from the couch youre not on the same trip",
-    "hotel-grounds festivals for 40 year olds who still want to feel young without sleeping in a tent, respect the hustle",
-    "friend finder apps at festivals miss the point — losing your crew and finding a random legend is the whole game",
-    "electric forest wristbands at 500 on reddit and scalpers can kick rocks forever",
-    "ultra europe phase 3 dropped and lineup twitter is already in a civil war nobody asked for",
-    "humans naturally walk anticlockwise and that explains every single crowd bottleneck at every main stage ever",
-    "coachella influencers in the pit filming vertical for people who werent invited — discuss",
-    "edc at 3am when every stage sounds the same and youre too tired to pretend this drop changed your life",
-    "someone paid 800 for a vip bathroom pass and thats the most festival thing ive ever heard",
-    "the guy in a full costume at 4pm who hasnt found his friends since thursday is the real main character",
-    "wu-tang halftime show at the nba finals. greatest halftime booking ever or wasted on basketball fans",
-  "knicks pulled the biggest comeback in finals history. crowd energy or just luck, pick one",
-  "taylor swift courtside again — at this point is she the finals or are the knicks",
-  "lizzo says critics tanked her album. when an album flops is it ever the critics' fault",
-  "lizzo comparing herself to mariah and whitney. earn it first or speak it into existence",
-  "benson boone performing in a lace dress and people are mad. stage fits stopped being shocking in like 1972, bowie did it first",
-  "seinfeld is 72 and still selling out arenas. do comedians age better than musicians",
-  "george clooney says callum turner should be the next bond. why do we let actors pick their own successors",
-  "celebs sitting courtside in $50k outfits while real fans can't afford tickets. the celebrity row debate",
-  "toy story 5 premiere happened. pixar sequels — comfort food or creative bankruptcy",
-  "streamers ambushing celebrities for clips outside arenas. the clip economy is ruining being famous in public"
+    "knicks pulled the biggest comeback in finals history. crowd energy or just luck, pick one",
+    "taylor swift courtside again — at this point is she the finals or are the knicks",
+    "lizzo says critics tanked her album. when an album flops is it ever the critics' fault",
+    "lizzo comparing herself to mariah and whitney. earn it first or speak it into existence",
+    "benson boone performing in a lace dress and people are mad. stage fits stopped being shocking in like 1972, bowie did it first",
+    "seinfeld is 72 and still selling out arenas. do comedians age better than musicians",
+    "george clooney says callum turner should be the next bond. why do we let actors pick their own successors",
+    "celebs sitting courtside in $50k outfits while real fans can't afford tickets. the celebrity row debate",
+    "toy story 5 premiere happened. pixar sequels — comfort food or creative bankruptcy",
+    "streamers ambushing celebrities for clips outside arenas. the clip economy is ruining being famous in public",
+    "wu-tang halftime show at the nba finals. greatest halftime booking ever or wasted on basketball fans"
   ],
   "fallback": [
     "most overrated headliner of all time — say the name and defend it like your life depends on it",
@@ -37,5 +26,49 @@
     "someone in this crowd is absolutely wearing a wire and the vibes are still immaculate",
     "worst festival food youve ever paid too much for — go",
     "is it cheating to watch the livestream instead of buying a ticket be honest"
-  ]
+  ],
+  "stages": {
+    "thefarm": {
+      "generated": [
+        "bonnaroo livestream crowd vs mud crowd — if youre watching from the couch youre not on the same trip",
+        "hotel-grounds festivals for 40 year olds who still want to feel young without sleeping in a tent, respect the hustle",
+        "friend finder apps at festivals miss the point — losing your crew and finding a random legend is the whole game",
+        "rock am ring at 90k people and fans say it killed the soul — theres a size where a festival becomes a parking lot with bass",
+        "humans naturally walk anticlockwise and that explains every single crowd bottleneck at every main stage ever"
+      ],
+      "fallback": [
+        "would you rather camp in the heat or pay for a hotel and still feel guilty about it"
+      ]
+    },
+    "thedesert": {
+      "generated": [
+        "coachella influencers in the pit filming vertical for people who werent invited — discuss"
+      ]
+    },
+    "lasvegas": {
+      "generated": [
+        "edc at 3am when every stage sounds the same and youre too tired to pretend this drop changed your life",
+        "someone paid 800 for a vip bathroom pass and thats the most festival thing ive ever heard",
+        "ultra europe phase 3 dropped and lineup twitter is already in a civil war nobody asked for"
+      ]
+    },
+    "forest": {
+      "generated": [
+        "electric forest wristbands at 500 on reddit and scalpers can kick rocks forever",
+        "the guy in a full costume at 4pm who hasnt found his friends since thursday is the real main character"
+      ]
+    },
+    "sanfrancisco": {
+      "generated": []
+    },
+    "seattle": {
+      "generated": []
+    },
+    "chill-cinema": {
+      "generated": []
+    },
+    "silent-disco": {
+      "generated": []
+    }
+  }
 }

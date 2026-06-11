@@ -9,6 +9,7 @@ import {
 import { resolveStagePlaylists } from '../lib/resolveStagePlaylists';
 import { filterChatMessage } from '../lib/messageFilter';
 import { DEFAULT_DURATION_MS, STAGE_EPOCH, type StageSync } from '../lib/stageVideos';
+import type { PlayerViewSnapshot } from '../lib/npcProximity';
 import { NpcChatterScheduler } from './npcChatterScheduler';
 
 /**
@@ -33,8 +34,17 @@ export default class WhichStageServer implements Party.Server {
       room: this.room,
       broadcast: msg => this.room.broadcast(encode(msg)),
       playerCount: () => this.players.size,
+      getActivePlayerViews: () => this.activePlayerViews(),
       getStageSync: () => this.stageSync,
     });
+  }
+
+  private activePlayerViews(): PlayerViewSnapshot[] {
+    return [...this.players.values()].map(player => ({
+      worldOff: player.worldX,
+      viewportWidth:
+        this.chatter.getPlayerViewportWidth(player.id) ?? this.chatter.getViewportWidth(),
+    }));
   }
 
   async onConnect(conn: Party.Connection) {
@@ -175,7 +185,7 @@ export default class WhichStageServer implements Party.Server {
         break;
       }
       case 'npc-positions':
-        this.chatter.updateNpcPositions(msg.positions, msg.viewportWidth);
+        this.chatter.updateNpcPositions(msg.positions, msg.viewportWidth, sender.id);
         break;
     }
   }
@@ -201,6 +211,7 @@ export default class WhichStageServer implements Party.Server {
       );
     }
     if (this.players.delete(conn.id)) {
+      this.chatter.clearPlayerViewport(conn.id);
       this.room.broadcast(encode({ t: 'left', id: conn.id }));
     }
     if (this.players.size === 0) {

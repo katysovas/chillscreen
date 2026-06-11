@@ -79,7 +79,7 @@ import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
 import { releaseNpcConvoSnap, snapNpcPairForConvo } from '@/lib/npcConvoSnap';
-import { npcTouchDistPx } from '@/lib/npcProximity';
+import { npcPairInAnyPlayerView, npcTouchDistPx } from '@/lib/npcProximity';
 import { appendChatLine, type ChatLine } from '@/lib/chatLines';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
@@ -400,6 +400,19 @@ export default function SFCity({
         console.log('[npc-chatter] models', meta.models);
       }
       const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const idxA = npcCast.findIndex(c => c.id === participants[0]);
+      const idxB = npcCast.findIndex(c => c.id === participants[1]);
+      const wxA = idxA >= 0 ? npcWorldXRefs.current[idxA] : undefined;
+      const wxB = idxB >= 0 ? npcWorldXRefs.current[idxB] : undefined;
+      if (
+        wxA == null
+        || wxB == null
+        || !Number.isFinite(wxA)
+        || !Number.isFinite(wxB)
+        || !npcPairInAnyPlayerView(wxA, wxB, [{ worldOff: worldRef.current, viewportWidth: width }])
+      ) {
+        return;
+      }
       snapNpcPairForConvo(participants[0], participants[1], width, {
         npcCast,
         npcWorldXRefs,

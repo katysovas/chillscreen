@@ -23,6 +23,7 @@ import {
 import { generatePairConvo } from '../lib/npcChatter/generate';
 import { resolveModel } from '../lib/npcChatter/models';
 import { pickConversationSeed } from '../lib/npcChatter/seeds';
+import { npcPairInAnyPlayerView, type PlayerViewSnapshot } from '../lib/npcProximity';
 import { getNpcRosterEntry } from '../lib/npcRoster.server';
 import type { RoomChatLine } from '../lib/npcChatter/prompts';
 import { stageSlugForRoom, streamContextForRoom } from '../lib/npcChatter/roomContext';
@@ -34,6 +35,7 @@ export type ChatterSchedulerDeps = {
   room: Party.Room;
   broadcast: (msg: ServerMessage) => void;
   playerCount: () => number;
+  getActivePlayerViews: () => PlayerViewSnapshot[];
   getStageSync: () => StageSync | null;
 };
 
@@ -47,6 +49,7 @@ export class NpcChatterScheduler {
   private lastPair: [string, string] | null = null;
   private npcWorldX = new Map<string, number>();
   private viewportWidth = 1200;
+  private playerViewportWidths = new Map<string, number>();
   /** Cached at construction — `Party.id` / `room` are forbidden inside `onAlarm`. */
   private readonly roomId: string;
   private readonly roomStorage: Party.Room['storage'];
@@ -75,13 +78,29 @@ export class NpcChatterScheduler {
   updateNpcPositions(
     positions: { id: string; worldX: number }[],
     viewportWidth: number,
+    playerId?: string,
   ) {
-    if (viewportWidth > 0) this.viewportWidth = viewportWidth;
+    if (viewportWidth > 0) {
+      this.viewportWidth = viewportWidth;
+      if (playerId) this.playerViewportWidths.set(playerId, viewportWidth);
+    }
     for (const p of positions) {
       if (p.id && Number.isFinite(p.worldX)) {
         this.npcWorldX.set(p.id, p.worldX);
       }
     }
+  }
+
+  clearPlayerViewport(playerId: string) {
+    this.playerViewportWidths.delete(playerId);
+  }
+
+  getPlayerViewportWidth(playerId: string): number | undefined {
+    return this.playerViewportWidths.get(playerId);
+  }
+
+  getViewportWidth(): number {
+    return this.viewportWidth;
   }
 
   appendBuffer(sender: string, text: string) {
@@ -136,6 +155,9 @@ export class NpcChatterScheduler {
     const ids = chatterNpcIdsForRoom(this.roomId);
     if (ids.length < 2) return null;
 
+    const views = this.deps.getActivePlayerViews();
+    if (views.length === 0) return null;
+
     const ranked: { pair: [string, string]; dist: number }[] = [];
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
@@ -144,23 +166,14 @@ export class NpcChatterScheduler {
         const wxA = this.npcWorldX.get(a);
         const wxB = this.npcWorldX.get(b);
         if (wxA == null || wxB == null) continue;
+        if (!npcPairInAnyPlayerView(wxA, wxB, views)) continue;
         ranked.push({
           pair: a < b ? [a, b] : [b, a],
           dist: Math.abs(wxA - wxB),
         });
       }
     }
-    if (ranked.length === 0) {
-      // Client may not have reported positions yet (venue switch, entry delays).
-      const i = Math.floor(Math.random() * ids.length);
-      let j = Math.floor(Math.random() * (ids.length - 1));
-      if (j >= i) j++;
-      const a = ids[i]!;
-      const b = ids[j]!;
-      const pair: [string, string] = a < b ? [a, b] : [b, a];
-      this.lastPair = pair;
-      return pair;
-    }
+    if (ranked.length === 0) return null;
 
     ranked.sort((x, y) => x.dist - y.dist);
     for (const { pair } of ranked) {
@@ -240,15 +253,24 @@ export class NpcChatterScheduler {
   private async runPairConvo() {
     if (this.deps.playerCount() === 0) return;
     if (this.activeConvo) return;
-    if (!this.bumpHourlyCap()) return;
 
     const pair = this.pickNpcPair();
     if (!pair) return;
 
     const [npcA, npcB] = pair;
+    const wxA = this.npcWorldX.get(npcA);
+    const wxB = this.npcWorldX.get(npcB);
+    if (wxA == null || wxB == null) return;
+    if (!npcPairInAnyPlayerView(wxA, wxB, this.deps.getActivePlayerViews())) return;
+    if (!this.bumpHourlyCap()) return;
+
     const lineBudget = pickLineBudget();
     const { streamTitle, channelName } = this.streamCtx();
-    const seedPick = pickConversationSeed(streamTitle, channelName);
+    const seedPick = pickConversationSeed(
+      streamTitle,
+      channelName,
+      stageSlugForRoom(this.roomId),
+    );
     const apiKey = this.env.OPENROUTER_API_KEY?.trim();
     if (!apiKey) {
       console.error('[npc-chatter] OPENROUTER_API_KEY missing — set in .env.local for party:dev');
