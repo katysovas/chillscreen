@@ -1,3 +1,4 @@
+import { sanitizeNpcLine } from '@/lib/messageFilter';
 import { getNpcRosterEntry } from '@/lib/npcRoster.server';
 import type { RoomChatLine } from './prompts';
 import { buildLineSystemPrompt, buildSingleReplySystemPrompt } from './prompts';
@@ -76,7 +77,8 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
       console.log(`[npc-chatter] opener stance: ${openingStance}`);
     }
     console.log(`[npc-chatter] line ${i + 1}/${req.lineBudget} ${speaker.id} → ${model}`);
-    const text = await openRouterComplete(model, messages, req.apiKey, req.houseModel);
+    const raw = await openRouterComplete(model, messages, req.apiKey, req.houseModel);
+    const text = raw ? sanitizeNpcLine(raw) : null;
     if (!text) break;
 
     const line = { npc: speaker.id, text };
@@ -108,6 +110,7 @@ export async function generateSingleReply(req: SingleReplyRequest): Promise<NpcC
     req.apiKey,
     req.houseModel,
   );
-  if (!text) return null;
-  return { npc: npc.id, text };
+  const cleaned = text ? sanitizeNpcLine(text) : null;
+  if (!cleaned) return null;
+  return { npc: npc.id, text: cleaned };
 }

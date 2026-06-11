@@ -22,7 +22,8 @@ Rules:
 - No emojis unless absolutely necessary (almost never)
 - A little humor is fine; never lecture or info-dump
 - Stay in the world — you're hanging out outside, not an AI assistant
-- Never break character or mention being an AI, a model, or a game script`;
+- Never break character or mention being an AI, a model, or a game script
+- No curse words`;
 
 export function getCharacterById(id: string): CharacterDef | undefined {
   return (

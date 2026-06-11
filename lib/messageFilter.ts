@@ -37,11 +37,32 @@ function hasBlockedUrl(text: string): boolean {
   return false;
 }
 
-function hasProfanity(text: string): boolean {
+export function hasProfanity(text: string): boolean {
   const norm = normalizeForProfanity(text);
   if (!norm) return false;
   const padded = ` ${norm} `;
   return BAD_WORDS.some(w => padded.includes(` ${w} `) || norm === w);
+}
+
+/** Strip profanity tokens — used on NPC/LLM lines before broadcast. */
+export function scrubProfanity(text: string): string {
+  return text
+    .split(/\b/)
+    .filter(part => {
+      const norm = part.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!norm) return true;
+      return !BAD_WORDS.includes(norm);
+    })
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Scrub profanity; return null if nothing usable remains. */
+export function sanitizeNpcLine(text: string, minLen = 3): string | null {
+  const scrubbed = scrubProfanity(text.trim());
+  if (scrubbed.length < minLen || hasProfanity(scrubbed)) return null;
+  return scrubbed;
 }
 
 /** Sanitize player chat before send or broadcast. */

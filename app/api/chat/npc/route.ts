@@ -1,4 +1,5 @@
 import { fetchBitcoinUsdSnapshot } from '@/lib/bitcoinPrice';
+import { sanitizeNpcLine } from '@/lib/messageFilter';
 import {
   buildChatMessages,
   buildGreetingMessages,
@@ -98,7 +99,8 @@ export async function POST(req: Request) {
     }
 
     const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content?.trim();
+    const raw = data.choices?.[0]?.message?.content?.trim();
+    const reply = raw ? sanitizeNpcLine(raw) : null;
 
     if (!reply) {
       return Response.json({

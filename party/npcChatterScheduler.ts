@@ -54,6 +54,7 @@ export class NpcChatterScheduler {
   private readonly roomId: string;
   private readonly roomStorage: Party.Room['storage'];
   private readonly env: Record<string, string | undefined>;
+  private configLogged = false;
 
   constructor(private deps: ChatterSchedulerDeps) {
     this.roomId = deps.room.id;
@@ -61,7 +62,24 @@ export class NpcChatterScheduler {
     this.env = deps.room.env as Record<string, string | undefined>;
   }
 
+  private logConfigOnce() {
+    if (this.configLogged) return;
+    this.configLogged = true;
+    const hasOpenRouter = Boolean(this.env.OPENROUTER_API_KEY?.trim());
+    console.log('[npc-chatter] party env', {
+      hasOpenRouterKey: hasOpenRouter,
+      hasChatterSecret: Boolean(this.env.NPC_CHATTER_SECRET?.trim()),
+      chatterApiUrl: this.apiUrl(),
+    });
+    if (!hasOpenRouter) {
+      console.error(
+        '[npc-chatter] OPENROUTER_API_KEY missing on PartyKit — run: npm run party:deploy (loads .env.local)',
+      );
+    }
+  }
+
   onFirstPlayer() {
+    this.logConfigOnce();
     if (this.schedulerOn) return;
     this.schedulerOn = true;
     const delay = jitterMs(FIRST_CONVO_DELAY_MIN_MS, FIRST_CONVO_DELAY_MAX_MS);
@@ -194,12 +212,12 @@ export class NpcChatterScheduler {
 
   private apiUrl(): string {
     if (this.env.CHATTER_API_URL?.trim()) return this.env.CHATTER_API_URL.trim();
-    if (this.env.VERCEL_URL?.trim()) return `https://${this.env.VERCEL_URL.trim()}/api/npc-chatter`;
     if (this.env.NEXT_PUBLIC_SITE_URL?.trim()) {
       const base = this.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/+$/, '');
       return `${base}/api/npc-chatter`;
     }
-    return 'http://127.0.0.1:3000/api/npc-chatter';
+    if (this.env.VERCEL_URL?.trim()) return `https://${this.env.VERCEL_URL.trim()}/api/npc-chatter`;
+    return 'https://whichstage.com/api/npc-chatter';
   }
 
   private async fetchChatter(body: object): Promise<NpcChatterLine[] | null> {

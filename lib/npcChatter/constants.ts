@@ -1,13 +1,12 @@
 /** PartyKit NPC chatter scheduler — spec v3 constants. */
-/** Scheduler only runs while ≥1 real player is in the room (see NpcChatterScheduler). */
-export const ALARM_MIN_MS = 8_000;
-export const ALARM_MAX_MS = 20_000;
-export const CONVO_PROBABILITY = 0.82;
-export const MAX_CONVOS_PER_ROOM_PER_HOUR = 60;
+export const ALARM_MIN_MS = 15_000;
+export const ALARM_MAX_MS = 45_000;
+export const CONVO_PROBABILITY = 0.55;
+export const MAX_CONVOS_PER_ROOM_PER_HOUR = 30;
 export const LINE_PACING_MIN_MS = 3_000;
 export const LINE_PACING_MAX_MS = 6_000;
-export const FIRST_CONVO_DELAY_MIN_MS = 2_000;
-export const FIRST_CONVO_DELAY_MAX_MS = 5_000;
+export const FIRST_CONVO_DELAY_MIN_MS = 3_000;
+export const FIRST_CONVO_DELAY_MAX_MS = 7_000;
 export const NPC_REPLY_DELAY_MIN_MS = 2_000;
 export const NPC_REPLY_DELAY_MAX_MS = 5_000;
 export const NPC_REPLY_COOLDOWN_MS = 15_000;
