@@ -8,14 +8,15 @@ import {
 } from '../lib/multiplayer/protocol';
 import { resolveStagePlaylists } from '../lib/resolveStagePlaylists';
 import { filterChatMessage } from '../lib/messageFilter';
-import { DEFAULT_DURATION_MS, STAGE_EPOCH } from '../lib/stageVideos';
+import { DEFAULT_DURATION_MS, STAGE_EPOCH, type StageSync } from '../lib/stageVideos';
+import { NpcChatterScheduler } from './npcChatterScheduler';
 
 /**
  * WhichStage presence room.
  *
  * Pure relay + ephemeral in-memory roster — no database, no accounts. Players
- * connect, announce a profile + spawn position, then stream movement and 1:1
- * chat. When a connection drops the player evaporates from the room.
+ * connect, announce a profile + spawn position, then stream movement and public
+ * room chat. When a connection drops the player evaporates from the room.
  */
 export default class WhichStageServer implements Party.Server {
   /** connId → live player state (lives only in memory). */
@@ -24,21 +25,27 @@ export default class WhichStageServer implements Party.Server {
   private chatPairs = new Map<string, { a: string; b: string }>();
   /** Player id → NPC id while in a local NPC conversation. */
   private npcChats = new Map<string, string>();
+  private stageSync: StageSync | null = null;
+  private chatter: NpcChatterScheduler;
 
-  constructor(readonly room: Party.Room) {}
+  constructor(readonly room: Party.Room) {
+    this.chatter = new NpcChatterScheduler({
+      room: this.room,
+      broadcast: msg => this.room.broadcast(encode(msg)),
+      playerCount: () => this.players.size,
+      getStageSync: () => this.stageSync,
+    });
+  }
 
   async onConnect(conn: Party.Connection) {
-    // Hand the newcomer the current roster + the synchronized-playback bootstrap:
-    // our wall-clock (so it can correct clock skew) and the pinned playlists +
-    // epoch every client schedules against. The schedule is fully deterministic,
-    // so no further per-tick messages are needed (survives room hibernation).
     const playlists = await resolveStagePlaylists(this.room.env.YOUTUBE_API_KEY as string | undefined);
+    this.stageSync = { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists };
     const welcome: ServerMessage = {
       t: 'welcome',
       selfId: conn.id,
       players: [...this.players.values()],
       serverNow: Date.now(),
-      stage: { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists },
+      stage: this.stageSync,
     };
     conn.send(encode(welcome));
   }
@@ -47,8 +54,6 @@ export default class WhichStageServer implements Party.Server {
     try {
       this.handleMessage(raw, sender);
     } catch (err) {
-      // Surface handler crashes in Workers Logs / `partykit tail` instead of
-      // letting an unhandled rejection take down the room.
       console.error(
         `[whichstage] onMessage failed room=${this.room.id} conn=${sender.id}`,
         err,
@@ -62,6 +67,7 @@ export default class WhichStageServer implements Party.Server {
 
     switch (msg.t) {
       case 'join': {
+        const wasEmpty = this.players.size === 0;
         const player: PlayerState = {
           id: sender.id,
           name: msg.profile.name,
@@ -72,6 +78,7 @@ export default class WhichStageServer implements Party.Server {
           walking: msg.walking,
         };
         this.players.set(sender.id, player);
+        if (wasEmpty) this.chatter.onFirstPlayer();
         this.broadcastExcept(sender.id, { t: 'joined', player });
         break;
       }
@@ -133,15 +140,27 @@ export default class WhichStageServer implements Party.Server {
       case 'chat-msg': {
         const filtered = filterChatMessage(msg.text);
         if (!filtered.ok) return;
+        const player = this.players.get(sender.id);
+        const label = player?.name?.trim() || sender.id.slice(0, 8);
+        this.chatter.handleRoomChat(`user:${label}`, filtered.text);
+        // Mirror to partner for connected-chat overlay sync.
         this.sendTo(msg.to, { t: 'chat-msg', from: sender.id, text: filtered.text });
+        break;
+      }
+      case 'room-chat': {
+        const filtered = filterChatMessage(msg.text);
+        if (!filtered.ok) return;
+        const player = this.players.get(sender.id);
+        const label = player?.name?.trim() || sender.id.slice(0, 8);
+        this.chatter.handleRoomChat(`user:${label}`, filtered.text);
         break;
       }
       case 'ambient-msg': {
         const filtered = filterChatMessage(msg.text);
         if (!filtered.ok) return;
-        this.room.broadcast(
-          encode({ t: 'ambient', from: sender.id, text: filtered.text }),
-        );
+        const player = this.players.get(sender.id);
+        const label = player?.name?.trim() || sender.id.slice(0, 8);
+        this.chatter.handleRoomChat(`user:${label}`, filtered.text);
         break;
       }
       case 'npc-chat': {
@@ -155,7 +174,14 @@ export default class WhichStageServer implements Party.Server {
         );
         break;
       }
+      case 'npc-positions':
+        this.chatter.updateNpcPositions(msg.positions, msg.viewportWidth);
+        break;
     }
+  }
+
+  async onAlarm() {
+    await this.chatter.onAlarm();
   }
 
   onClose(conn: Party.Connection) {
@@ -176,6 +202,9 @@ export default class WhichStageServer implements Party.Server {
     }
     if (this.players.delete(conn.id)) {
       this.room.broadcast(encode({ t: 'left', id: conn.id }));
+    }
+    if (this.players.size === 0) {
+      this.chatter.onLastPlayer();
     }
   }
 

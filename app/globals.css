@@ -420,3 +420,62 @@
     display: none;
   }
 }
+
+/* ── NPC nameplates (roster displayName + model) ───────────────────────────── */
+
+.game-npc-nameplate {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: default;
+  pointer-events: auto;
+  z-index: 12;
+  font-family: inherit;
+  line-height: 1.15;
+  text-align: center;
+  max-width: 120px;
+}
+
+.game-npc-nameplate-primary {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+  text-transform: lowercase;
+}
+
+.game-npc-nameplate-model {
+  font-size: 8px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  text-transform: lowercase;
+}
+
+@media (min-width: 768px) {
+  .game-npc-nameplate-model {
+    display: block;
+  }
+}
+
+@media (max-width: 767px) {
+  .game-npc-nameplate {
+    cursor: pointer;
+  }
+  .game-npc-nameplate-model {
+    display: none;
+  }
+  .game-npc-nameplate-model.is-visible {
+    display: block;
+  }
+}

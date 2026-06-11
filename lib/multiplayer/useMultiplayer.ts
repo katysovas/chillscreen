@@ -8,6 +8,7 @@ import {
   encode,
   type Facing,
   type PlayerLoadoutSync,
+  type NpcConvoMeta,
   type PlayerProfile,
 } from './protocol';
 import { applyServerStageSync } from '@/lib/stageClock';
@@ -34,6 +35,9 @@ export type RemoteChatPair = { a: string; b: string };
 /** Player↔NPC chat replicated for the connect glow. */
 export type RemoteNpcChat = { playerId: string; npcId: string };
 
+/** NPC↔NPC server-driven conversation (connect glow on both). */
+export type NpcConvoPair = { convoId: string; participants: [string, string] };
+
 /** How long ambient shouts stay visible above a character. */
 export const PLAYER_AMBIENT_VISIBLE_MS = 5_000;
 
@@ -44,6 +48,15 @@ type PeerEvents = {
   onPeerMessage?: (peerId: string, text: string) => void;
   /** A peer dropped from the room entirely (disconnect / tab close). */
   onPeerLeft?: (peerId: string) => void;
+  /** Public room line — sender is `user:{name}` or `npc:{id}`. */
+  onRoomChat?: (sender: string, text: string) => void;
+  onNpcConvoStart?: (
+    convoId: string,
+    participants: [string, string],
+    meta?: NpcConvoMeta,
+  ) => void;
+  onNpcLine?: (convoId: string, npc: string, text: string) => void;
+  onNpcConvoEnd?: (convoId: string) => void;
 };
 
 type Options = PeerEvents & {
@@ -89,6 +102,8 @@ export type Multiplayer = {
   chatPairs: RemoteChatPair[];
   /** Active player↔NPC conversations (for connect glow). */
   remoteNpcChats: RemoteNpcChat[];
+  /** Active NPC↔NPC conversations (for connect glow). */
+  npcConvoPairs: NpcConvoPair[];
   sendMove: (worldX: number, facing: Facing, walking: boolean) => void;
   sendProfile: (profile: PlayerProfile) => void;
   openPeerChat: (to: string) => void;
@@ -96,7 +111,9 @@ export type Multiplayer = {
   sendPeerTyping: (to: string, typing: boolean) => void;
   sendPeerMessage: (to: string, text: string) => void;
   sendAmbientMessage: (text: string) => void;
+  sendRoomChat: (text: string) => void;
   sendNpcChat: (npcId: string, open: boolean) => void;
+  sendNpcPositions: (positions: { id: string; worldX: number }[], viewportWidth: number) => void;
 };
 
 /**
@@ -123,6 +140,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const [remoteIds, setRemoteIds] = useState<string[]>([]);
   const [chatPairs, setChatPairs] = useState<RemoteChatPair[]>([]);
   const [remoteNpcChats, setRemoteNpcChats] = useState<RemoteNpcChat[]>([]);
+  const [npcConvoPairs, setNpcConvoPairs] = useState<NpcConvoPair[]>([]);
 
   const connectRequestedRef = useRef(false);
 
@@ -281,6 +299,23 @@ export function useMultiplayer(opts: Options): Multiplayer {
             until: Date.now() + PLAYER_AMBIENT_VISIBLE_MS,
           });
           break;
+        case 'room-chat':
+          ev.onRoomChat?.(msg.sender, msg.text);
+          break;
+        case 'npc-convo-start':
+          setNpcConvoPairs(prev => {
+            if (prev.some(p => p.convoId === msg.convoId)) return prev;
+            return [...prev, { convoId: msg.convoId, participants: msg.participants }];
+          });
+          ev.onNpcConvoStart?.(msg.convoId, msg.participants, msg.meta);
+          break;
+        case 'npc-line':
+          ev.onNpcLine?.(msg.convoId, msg.npc, msg.text);
+          break;
+        case 'npc-convo-end':
+          setNpcConvoPairs(prev => prev.filter(p => p.convoId !== msg.convoId));
+          ev.onNpcConvoEnd?.(msg.convoId);
+          break;
       }
     };
 
@@ -320,15 +355,21 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const sendPeerTyping = useCallback((to: string, typing: boolean) => connectAndSend({ t: 'chat-typing', to, typing }), [connectAndSend]);
   const sendPeerMessage = useCallback((to: string, text: string) => connectAndSend({ t: 'chat-msg', to, text }), [connectAndSend]);
   const sendAmbientMessage = useCallback((text: string) => connectAndSend({ t: 'ambient-msg', text }), [connectAndSend]);
+  const sendRoomChat = useCallback((text: string) => connectAndSend({ t: 'room-chat', text }), [connectAndSend]);
   const sendNpcChat = useCallback(
     (npcId: string, open: boolean) => connectAndSend({ t: 'npc-chat', npcId, open }),
+    [connectAndSend],
+  );
+  const sendNpcPositions = useCallback(
+    (positions: { id: string; worldX: number }[], viewportWidth: number) =>
+      connectAndSend({ t: 'npc-positions', positions, viewportWidth }),
     [connectAndSend],
   );
 
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
-    chatPairs, remoteNpcChats,
+    chatPairs, remoteNpcChats, npcConvoPairs,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
-    sendAmbientMessage, sendNpcChat,
+    sendAmbientMessage, sendRoomChat, sendNpcChat, sendNpcPositions,
   };
 }

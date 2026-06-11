@@ -1,21 +1,25 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
+import { gameWorldOffRef } from '@/lib/gameWorldRef';
+import { worldXToScreenPct } from './NPC';
 import {
   AttachedInputBubble,
   AttachedHint,
-  AttachedTypingBubble,
   ConnectedChatThread,
   ChatBubbleStack,
+  DualSpeakerChatThread,
   connectedChatMidpointOffsetPx,
   playerBubbleSide,
   type BubbleSide,
+  type SpeakerProfile,
 } from './ChatBubble';
-import { buildChatThread, type ChatLine } from '@/lib/chatLines';
+import { buildChatThread, type ChatLine, type KeyedChatLine } from '@/lib/chatLines';
 import {
   chatConnectSpreadPlayerPx,
   chatConnectSpreadPx,
 } from '@/lib/chatConnectSpread';
+import { CHAR_BOTTOM, NPC_PAIR_CHAT_LIFT_PX } from './groundLayout';
 
 type ChatMode = null | 'chat' | 'ambient';
 
@@ -24,11 +28,13 @@ export function NpcChatOverlay({
   npcTyping,
   messages,
   side,
+  glowColor,
 }: {
   name: string;
   npcTyping: boolean;
   messages: ChatLine[];
   side: BubbleSide;
+  glowColor?: string;
 }) {
   if (!npcTyping && messages.length === 0) return null;
 
@@ -39,10 +45,92 @@ export function NpcChatOverlay({
         flexDirection: 'column',
         justifyContent: 'flex-end',
         gap: 6,
+        width: '100%',
       }}
     >
-      <ChatBubbleStack messages={messages} name={name} side={side} />
-      {npcTyping && <AttachedTypingBubble name={messages.length === 0 ? name : undefined} side={side} />}
+      <ChatBubbleStack
+        messages={messages}
+        name={name}
+        side={side}
+        glowColor={glowColor}
+        nameOnEveryBubble
+        showTailOnNewest={false}
+      />
+    </div>
+  );
+}
+
+/** Unified NPC↔NPC thread — centered between speakers, tracks camera each frame. */
+export function NpcPairChatOverlay({
+  lines,
+  speakers,
+  worldXA,
+  worldXB,
+}: {
+  lines: KeyedChatLine[];
+  speakers: [Omit<SpeakerProfile, 'screenPct'>, Omit<SpeakerProfile, 'screenPct'>];
+  worldXA: number;
+  worldXB: number;
+}) {
+  const divRef = useRef<HTMLDivElement>(null);
+  const [screenPcts, setScreenPcts] = useState<[number, number]>(() => {
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const off = gameWorldOffRef.current;
+    return [
+      worldXToScreenPct(worldXA, off, vw),
+      worldXToScreenPct(worldXB, off, vw),
+    ];
+  });
+
+  useLayoutEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      const vw = window.innerWidth;
+      const off = gameWorldOffRef.current;
+      const aPct = worldXToScreenPct(worldXA, off, vw);
+      const bPct = worldXToScreenPct(worldXB, off, vw);
+      const spreadA = chatConnectSpreadPx(aPct);
+      const spreadB = chatConnectSpreadPx(bPct);
+      const aCenterPx = (aPct / 100) * vw + spreadA;
+      const bCenterPx = (bPct / 100) * vw + spreadB;
+      const midScreenPct = ((aCenterPx + bCenterPx) / 2 / vw) * 100;
+
+      if (divRef.current) {
+        divRef.current.style.left = `${midScreenPct}%`;
+      }
+      setScreenPcts(prev =>
+        prev[0] === aPct && prev[1] === bPct ? prev : [aPct, bPct],
+      );
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [worldXA, worldXB]);
+
+  const trackedSpeakers: [SpeakerProfile, SpeakerProfile] = [
+    { ...speakers[0], screenPct: screenPcts[0] },
+    { ...speakers[1], screenPct: screenPcts[1] },
+  ];
+
+  return (
+    <div
+      ref={divRef}
+      style={{
+        position: 'absolute',
+        left: '50%',
+        bottom: `calc(${CHAR_BOTTOM} + ${NPC_PAIR_CHAT_LIFT_PX}px)`,
+        transform: 'translateX(-50%)',
+        zIndex: 201,
+        width: 300,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: 6,
+        pointerEvents: 'none',
+      }}
+    >
+      <DualSpeakerChatThread lines={lines} speakers={trackedSpeakers} />
     </div>
   );
 }

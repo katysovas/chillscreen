@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo, use
 import { useRouter } from 'next/navigation';
 import Character from './Character';
 import NPC, { worldXToScreenPct } from './NPC';
-import { AmbientPlayerOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
+import { AmbientPlayerOverlay, NpcPairChatOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
 import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
 import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/parallax';
@@ -20,7 +20,7 @@ import {
   getServerBalloonColor,
   subscribeBalloonColor,
 } from '@/lib/identity';
-import type { PlayerProfile } from '@/lib/multiplayer/protocol';
+import type { NpcConvoMeta, PlayerProfile } from '@/lib/multiplayer/protocol';
 import { getPlayerLoadout, unequipLoadoutItem } from '@/lib/playerLoadout';
 import { addPlayerCoins, getPlayerCoins, STARTING_COINS } from '@/lib/playerCoins';
 import { GroundScoreLayer } from './GroundScoreLayer';
@@ -49,10 +49,8 @@ import {
   cityTileForRoute,
   cityWorldOffBounds,
   partyRoomIdForRoute,
-  stageChannelForRoute,
   stageWorldOffForRoute,
 } from '@/lib/isolatedCity';
-import { setPinnedStageChannel } from '@/lib/pinnedStageChannel';
 import { setVenueDressCode } from '@/lib/dressCode';
 import { LovingCarLayer } from './LovingCar';
 import { WelcomePopup } from './WelcomePopup';
@@ -66,7 +64,9 @@ import { GroundLayer } from './city/GroundLayer';
 import { CabanaForegroundLayer } from './city/CabanaForegroundLayer';
 import { PlayerVariantGallery } from './PlayerVariantGallery';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
-import { useNpcAmbientChat } from './hooks/useNpcAmbientChat';
+import { AMBIENT_CHAT_ENABLED } from '@/lib/ambientChatEnabled';
+import { useRoomChatter } from './hooks/useRoomChatter';
+import { getNpcRosterPublic } from '@/lib/npcRoster';
 import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
@@ -77,8 +77,10 @@ import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import { hasStickerTripActive, preloadAllLoadoutSlots, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
+import { getNpcConvoHold } from '@/lib/npcConvoHold';
+import { releaseNpcConvoSnap, snapNpcPairForConvo } from '@/lib/npcConvoSnap';
+import { npcTouchDistPx } from '@/lib/npcProximity';
 import { appendChatLine, type ChatLine } from '@/lib/chatLines';
-import { runAllStagePlayerSyncs } from '@/lib/stagePlayerRegistry';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
 
@@ -306,11 +308,34 @@ export default function SFCity({
   );
   const beginPeerChatRef = useRef<((peerId: string, announce: boolean) => void) | null>(null);
   const endPeerChatRef   = useRef<((announce: boolean) => void) | null>(null);
+  const lastNpcPosSendRef = useRef(0);
 
-  const ambientChats = useNpcAmbientChat(
-    npcCast,
-    showWelcome || showCityPicker || greetingNpc !== null || peerChatId !== null,
-  );
+  const npcRosterById = useMemo(() => {
+    const map = new Map<string, { displayName: string; modelDisplayName?: string }>();
+    for (const entry of getNpcRosterPublic()) map.set(entry.id, entry);
+    return map;
+  }, []);
+
+  const resolvePlayerId = useCallback((nameOrId: string) => {
+    const m = mpRef.current;
+    if (!m?.selfId) return null;
+    const selfName = profileRef.current.name?.trim();
+    if (selfName && nameOrId === selfName) return m.selfId;
+    if (nameOrId === m.selfId || m.selfId.startsWith(nameOrId)) return m.selfId;
+    for (const [id, st] of m.remoteStateRef.current) {
+      const n = st.name?.trim();
+      if (n && n === nameOrId) return id;
+      if (id.startsWith(nameOrId)) return id;
+    }
+    return null;
+  }, []);
+
+  const chatterHandlersRef = useRef({
+    onRoomChat: (_sender: string, _text: string) => {},
+    onNpcConvoStart: (_convoId: string, _participants: [string, string], _meta?: NpcConvoMeta) => {},
+    onNpcLine: (_convoId: string, _npc: string, _text: string) => {},
+    onNpcConvoEnd: (_convoId: string) => {},
+  });
 
   const profileRef = useRef<PlayerProfile>({
     name: null,
@@ -339,9 +364,50 @@ export default function SFCity({
       setPeerTyping(false);
       setPeerMessages(prev => appendChatLine(prev, text));
     },
+    onRoomChat: (sender, text) => chatterHandlersRef.current.onRoomChat(sender, text),
+    onNpcConvoStart: (convoId, participants, meta) =>
+      chatterHandlersRef.current.onNpcConvoStart(convoId, participants, meta),
+    onNpcLine: (convoId, npc, text) =>
+      chatterHandlersRef.current.onNpcLine(convoId, npc, text),
+    onNpcConvoEnd: convoId => chatterHandlersRef.current.onNpcConvoEnd(convoId),
   });
   const mpRef = useRef(mp);
   mpRef.current = mp;
+
+  const roomChatter = useRoomChatter(resolvePlayerId);
+
+  const skipRoomChatEcho = useCallback((sender: string) => {
+    if (!sender.startsWith('user:')) return false;
+    const label = sender.slice(5);
+    const selfName = playerName?.trim();
+    if (selfName && label === selfName) return true;
+    const sid = mpRef.current?.selfId;
+    return Boolean(sid && (label === sid || sid.startsWith(label)));
+  }, [playerName]);
+
+  chatterHandlersRef.current = {
+    onRoomChat: (sender, text) => {
+      if (skipRoomChatEcho(sender)) return;
+      roomChatter.handleRoomChat(sender, text);
+    },
+    onNpcConvoStart: (_convoId, participants, meta) => {
+      if (meta) {
+        console.log('[npc-chatter] seed', meta.seedKind, meta.seed);
+        console.log('[npc-chatter] models', meta.models);
+      }
+      const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      snapNpcPairForConvo(participants[0], participants[1], width, {
+        npcCast,
+        npcWorldXRefs,
+      });
+      roomChatter.onNpcConvoStart(participants);
+    },
+    onNpcLine: (_convoId, npc, text) => roomChatter.handleNpcLine(npc, text),
+    onNpcConvoEnd: () => {
+      releaseNpcConvoSnap();
+      roomChatter.onNpcConvoEnd();
+    },
+  };
   const { sendProfile, sendPeerTyping } = mp;
 
   const beginPeerChat = useCallback((peerId: string, announce: boolean) => {
@@ -446,14 +512,9 @@ export default function SFCity({
     setPlayerDepthY(crowdDepthOffsetPx(getOrCreatePlayerId()));
   }, []);
 
-  // Keep this city's stage mounted + audible regardless of scroll position.
   useEffect(() => {
-    setPinnedStageChannel(stageChannelForRoute(effectiveVenueRoute));
     setVenueDressCode(effectiveVenueRoute);
-    return () => {
-      setPinnedStageChannel(null);
-      setVenueDressCode(null);
-    };
+    return () => { setVenueDressCode(null); };
   }, [effectiveVenueRoute]);
 
   useEffect(() => { showWelcomeRef.current = showWelcome; }, [showWelcome]);
@@ -632,6 +693,7 @@ export default function SFCity({
   };
 
   const handleAmbientSend = (text: string) => {
+    if (!AMBIENT_CHAT_ENABLED) return;
     const filtered = filterChatMessage(text);
     setChatDraft('');
     setChatMode(null);
@@ -669,6 +731,7 @@ export default function SFCity({
   }, [closeVendorShop, navigateToCity]);
 
   const handleOpenAmbientChat = useCallback(() => {
+    if (!AMBIENT_CHAT_ENABLED) return;
     if (greetingNpc !== null || peerChatId !== null) return;
     if (chatMode === 'ambient') {
       setChatMode(null);
@@ -689,8 +752,7 @@ export default function SFCity({
   useEffect(() => {
     if (homePreview) return;
 
-    const SPEED      = 3.5;
-    const GREET_DIST = 5; // % of viewport — must be quite close to "touch"
+    const SPEED = 3.5;
 
     const triggerJump = () => {
       if (jumpingRef.current) return;
@@ -747,6 +809,7 @@ export default function SFCity({
     };
 
     const openAmbientPanel = () => {
+      if (!AMBIENT_CHAT_ENABLED) return;
       setChatMode('ambient');
       setTimeout(() => chatInputRef.current?.focus(), 30);
     };
@@ -860,16 +923,26 @@ export default function SFCity({
     const shouldBroadcastMove = () =>
       frameCountRef.current % moveBroadcastFrameInterval() === 0;
 
+    const broadcastNpcPositions = () => {
+      const now = Date.now();
+      if (now - lastNpcPosSendRef.current <= 500) return;
+      lastNpcPosSendRef.current = now;
+      const width = window.innerWidth;
+      const positions = npcCast
+        .map((cfg, i) => ({
+          id: cfg.id,
+          worldX: npcWorldXRefs.current[i]!,
+        }))
+        .filter(p => Number.isFinite(p.worldX));
+      mpRef.current?.sendNpcPositions(positions, width);
+    };
+
     const tickNpcs = () => {
       runAllNpcMovementTicks(
         worldRef.current,
         window.innerWidth,
         npcWorldXRefs.current,
       );
-    };
-
-    const tickStagePlayers = () => {
-      runAllStagePlayerSyncs();
     };
 
     connectNearRef.current = () => {
@@ -901,9 +974,11 @@ export default function SFCity({
       if (inChatFreeze) {
         frameCountRef.current++;
         tickNpcs();
-        tickStagePlayers();
         updateViewBoxes(worldRef.current);
-        if (frameCountRef.current % 4 === 0) updateDanceState(worldRef.current);
+        if (frameCountRef.current % 4 === 0) {
+          updateDanceState(worldRef.current);
+          broadcastNpcPositions();
+        }
         if (shouldBroadcastMove()) broadcastMove();
         gameWorldOffRef.current = worldRef.current;
         rafRef.current = requestAnimationFrame(loop);
@@ -936,7 +1011,6 @@ export default function SFCity({
       const off = worldRef.current;
       updateViewBoxes(off);
       tickNpcs();
-      tickStagePlayers();
 
       // Re-render layers only when the visible tile window changes — avoids per-frame React re-renders.
       if (isWalking) {
@@ -960,7 +1034,7 @@ export default function SFCity({
         // closest interactable (NPC or real player) within touch range.
         if (greetingRef.current === null && peerChatRef.current === null) {
           const width = window.innerWidth;
-          const greetDistPx = (GREET_DIST / 100) * width;
+          const greetDistPx = npcTouchDistPx(width);
           let nextNpc: number | null = null;
           let nextPeer: string | null = null;
           let bestDist = Infinity;
@@ -999,6 +1073,7 @@ export default function SFCity({
         }
 
         updateDanceState(worldRef.current);
+        broadcastNpcPositions();
       }
 
       if (shouldBroadcastMove()) broadcastMove();
@@ -1023,7 +1098,6 @@ export default function SFCity({
     bootstrapStageSyncFromApi();
 
     const loop = () => {
-      runAllStagePlayerSyncs();
       updateViewBoxes(worldRef.current);
       gameWorldOffRef.current = worldRef.current;
       rafRef.current = requestAnimationFrame(loop);
@@ -1036,6 +1110,41 @@ export default function SFCity({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [homePreview]);
 
+  const npcPairOverlay = useMemo(() => {
+    const convo = roomChatter.npcConvo;
+    if (!convo) return null;
+    const [idA, idB] = convo.participants;
+    const wxA = getNpcConvoHold(idA);
+    const wxB = getNpcConvoHold(idB);
+    if (wxA === undefined || wxB === undefined) return null;
+    const cfgA = npcCast.find(c => c.id === idA);
+    const cfgB = npcCast.find(c => c.id === idB);
+    if (!cfgA || !cfgB) return null;
+    const rosterA = npcRosterById.get(idA);
+    const rosterB = npcRosterById.get(idB);
+    return (
+      <NpcPairChatOverlay
+        worldXA={wxA}
+        worldXB={wxB}
+        lines={convo.lines}
+        speakers={[
+          {
+            key: idA,
+            name: rosterA?.displayName ?? cfgA.name,
+            color: cfgA.balloonColor,
+            worldX: wxA,
+          },
+          {
+            key: idB,
+            name: rosterB?.displayName ?? cfgB.name,
+            color: cfgB.balloonColor,
+            worldX: wxB,
+          },
+        ]}
+      />
+    );
+  }, [roomChatter.npcConvo, roomChatter.npcConvo?.lines.length, npcCast, npcRosterById]);
+
   const inConversation = greetingNpc !== null || peerChatId !== null;
 
   const isPlayerChatConnected = useCallback((playerId: string) => {
@@ -1047,8 +1156,9 @@ export default function SFCity({
 
   const isNpcChatConnected = useCallback((npcIndex: number, npcId: string) => {
     if (greetingNpc === npcIndex) return true;
-    return mp.remoteNpcChats.some(c => c.npcId === npcId);
-  }, [greetingNpc, mp.remoteNpcChats]);
+    if (mp.remoteNpcChats.some(c => c.npcId === npcId)) return true;
+    return roomChatter.isNpcInConvo(npcId);
+  }, [greetingNpc, mp.remoteNpcChats, roomChatter]);
   const showMobileChatBar = mobileDevice
     && !showWelcome
     && !showCityPicker
@@ -1143,6 +1253,8 @@ export default function SFCity({
         {!homePreview && npcCast.map((cfg, i) => {
           if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
           const testing = TEST_SPAWN_NPC_ID === cfg.id;
+          const rosterEntry = npcRosterById.get(cfg.id);
+          const chatConnected = isNpcChatConnected(i, cfg.id);
           return (
           <NPC
             key={cfg.id}
@@ -1152,9 +1264,9 @@ export default function SFCity({
             stageAnchor={cfg.stageAnchor}
             startX={testing ? 55 : cfg.startX}
             entryDelay={testing ? 0 : cfg.entryDelay}
-            paused={greetingNpc === i}
+            paused={chatConnected}
             greeting={greetingNpc === i}
-            chatConnected={isNpcChatConnected(i, cfg.id)}
+            chatConnected={chatConnected}
             greetFacing={greetNpcX < 50 ? 'right' : 'left'}
             dancing={TEST_FORCE_DANCE || npcDancing[i]}
             greetingChat={greetingNpc === i ? {
@@ -1162,14 +1274,15 @@ export default function SFCity({
               npcTyping,
               messages: npcMessages,
             } : undefined}
-            ambientChat={
-              greetingNpc !== i && ambientChats[i]?.messages.length
-                ? { name: cfg.name, messages: ambientChats[i]!.messages }
-                : undefined
-            }
+            nameplate={rosterEntry ? {
+              displayName: rosterEntry.displayName,
+              modelDisplayName: rosterEntry.modelDisplayName,
+            } : undefined}
           />
           );
         })}
+
+        {!homePreview && npcPairOverlay}
 
         {/* Remote human players (PartyKit presence) */}
         {!homePreview && mp.remoteIds.map(pid => (
@@ -1185,6 +1298,7 @@ export default function SFCity({
               npcTyping: peerTyping,
               messages: peerMessages,
             } : undefined}
+            publicMessages={roomChatter.playerMessages.get(pid)}
           />
         ))}
 
@@ -1382,8 +1496,8 @@ export default function SFCity({
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
           onOpenStageSwap={() => setShowCityPicker(true)}
-          onOpenAmbientChat={mobileDevice ? handleOpenAmbientChat : undefined}
-          ambientChatOpen={chatMode === 'ambient'}
+          onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}
+          ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}
           onToggleMute={() => setMuted(m => !m)}
         />
       )}

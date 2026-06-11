@@ -1,6 +1,9 @@
 /** CSS bottom offset — feet align with the ground-layer sidewalk (GND ≈ 76% in viewBox). */
 export const CHAR_BOTTOM = '11%';
 
+/** Pair-chat column sits above NPC heads (feet at CHAR_BOTTOM, scale ≈ 0.34). */
+export const NPC_PAIR_CHAT_LIFT_PX = 98;
+
 /** Mobile lounge override — applied via `.game-character` in globals.css. */
 export const CHAR_BOTTOM_MOBILE_LOUNGE = '20%';
 

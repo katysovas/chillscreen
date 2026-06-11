@@ -29,6 +29,8 @@ type RemotePlayerProps = {
   /** Soft connect glow — local or remote 1:1 conversation. */
   chatConnected?: boolean;
   ambientRef?: React.RefObject<Map<string, RemoteAmbientMessage>>;
+  /** Server-paced public room lines above this player. */
+  publicMessages?: ChatLine[];
 };
 
 /** How quickly the rendered position eases toward the latest networked target. */
@@ -42,6 +44,7 @@ const LERP = 0.22;
  */
 export default function RemotePlayer({
   id, stateRef, scale = 0.34, greeting = false, greetingChat, chatConnected = false, ambientRef,
+  publicMessages,
 }: RemotePlayerProps) {
   const divRef       = useRef<HTMLDivElement>(null);
   const characterRef = useRef<CharacterHandle>(null);
@@ -137,6 +140,9 @@ export default function RemotePlayer({
   }, []);
 
   const bubbleSide = screenXToBubbleSide(screenX);
+  const overlayMessages = publicMessages?.length
+    ? publicMessages
+    : ambientMessages;
 
   return (
     <div
@@ -160,11 +166,11 @@ export default function RemotePlayer({
         bubbleSide={bubbleSide}
         chatConnected={chatConnected || greeting}
         chatOverlay={
-          greeting ? undefined : ambientMessages.length > 0 ? (
+          greeting ? undefined : overlayMessages.length > 0 ? (
             <NpcChatOverlay
               name={stateRef.current?.get(id)?.name ?? 'Wanderer'}
               npcTyping={false}
-              messages={ambientMessages}
+              messages={overlayMessages}
               side={bubbleSide}
             />
           ) : undefined

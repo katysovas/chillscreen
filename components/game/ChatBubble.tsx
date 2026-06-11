@@ -1,6 +1,6 @@
 'use client';
 import type { CSSProperties, ReactNode } from 'react';
-import { chatBubbleOpacity, type ChatLine, type ChatThreadLine } from '@/lib/chatLines';
+import { chatBubbleOpacity, type ChatLine, type ChatThreadLine, type KeyedChatLine } from '@/lib/chatLines';
 
 export type BubbleSide = 'left' | 'right' | 'center';
 
@@ -244,7 +244,88 @@ export function connectedChatSides(partnerScreenPct: number): {
   };
 }
 
-/** Single connected-chat column — sides follow character positions on screen. */
+export type SpeakerProfile = {
+  key: string;
+  name: string;
+  color: string;
+  /** Screen position % — used for left/right alignment. */
+  screenPct?: number;
+  /** World-x — preferred for NPC pair chat (tracks camera scroll). */
+  worldX?: number;
+};
+
+function speakerSortKey(s: SpeakerProfile): number {
+  return s.worldX ?? s.screenPct ?? 0;
+}
+
+function sideForSpeaker(speakers: SpeakerProfile[], key: string): BubbleSide {
+  if (speakers.length < 2) return 'left';
+  const sorted = [...speakers].sort((a, b) => speakerSortKey(a) - speakerSortKey(b));
+  const leftKey = sorted[0]!.key;
+  return key === leftKey ? 'left' : 'right';
+}
+
+/** Single column — each speaker's bubbles align to their screen side with balloon glow. */
+export function DualSpeakerChatThread({
+  lines,
+  speakers,
+  typingSpeakerKey,
+}: {
+  lines: KeyedChatLine[];
+  speakers: SpeakerProfile[];
+  typingSpeakerKey?: string | null;
+}) {
+  const byKey = new Map(speakers.map(s => [s.key, s]));
+  const total = lines.length;
+  if (total === 0 && !typingSpeakerKey) return null;
+
+  return (
+    <>
+      {lines.map((line, i) => {
+        const sp = byKey.get(line.speakerKey);
+        if (!sp) return null;
+        const ageFromBottom = total - 1 - i;
+        const side = sideForSpeaker(speakers, line.speakerKey);
+        return (
+          <div
+            key={line.id}
+            style={{
+              display: 'flex',
+              justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
+              width: '100%',
+            }}
+          >
+            <AttachedChatBubble
+              name={sp.name}
+              message={line.text}
+              side={side}
+              glowColor={sp.color}
+              ageFromBottom={ageFromBottom}
+              stackSize={total}
+              showTail={false}
+              animate={ageFromBottom === 0}
+            />
+          </div>
+        );
+      })}
+      {typingSpeakerKey && byKey.has(typingSpeakerKey) && (() => {
+        const sp = byKey.get(typingSpeakerKey)!;
+        const side = sideForSpeaker(speakers, typingSpeakerKey);
+        return (
+          <div style={{
+            display: 'flex',
+            justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
+            width: '100%',
+          }}>
+            <AttachedTypingBubble name={sp.name} side={side} glowColor={sp.color} />
+          </div>
+        );
+      })()}
+    </>
+  );
+}
+
+/** Player at 50% + partner — unified connected-chat column. */
 export function ConnectedChatThread({
   thread,
   playerName,
@@ -263,51 +344,22 @@ export function ConnectedChatThread({
   partnerScreenX: number;
   partnerTyping: boolean;
 }) {
-  const total = thread.length;
-  if (total === 0 && !partnerTyping) return null;
-
-  const { playerSide, partnerSide } = connectedChatSides(partnerScreenX);
-
+  const speakers: SpeakerProfile[] = [
+    { key: 'self', name: playerName, color: playerColor, screenPct: 50 },
+    { key: 'partner', name: partnerName, color: partnerColor, screenPct: partnerScreenX },
+  ];
+  const lines: KeyedChatLine[] = thread.map(l => ({
+    id: l.id,
+    text: l.text,
+    at: l.at,
+    speakerKey: l.speaker,
+  }));
   return (
-    <>
-      {thread.map((line, i) => {
-        const ageFromBottom = total - 1 - i;
-        const isNewest = ageFromBottom === 0;
-        const isSelf = line.speaker === 'self';
-        const side = isSelf ? playerSide : partnerSide;
-        return (
-          <div
-            key={line.id}
-            style={{
-              display: 'flex',
-              justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
-              width: '100%',
-            }}
-          >
-            <AttachedChatBubble
-              name={isSelf ? playerName : partnerName}
-              message={line.text}
-              side={side}
-              variant={isSelf ? 'self' : 'partner'}
-              glowColor={isSelf ? playerColor : partnerColor}
-              ageFromBottom={ageFromBottom}
-              stackSize={total}
-              showTail={false}
-              animate={isNewest}
-            />
-          </div>
-        );
-      })}
-      {partnerTyping && (
-        <div style={{
-          display: 'flex',
-          justifyContent: partnerSide === 'right' ? 'flex-end' : 'flex-start',
-          width: '100%',
-        }}>
-          <AttachedTypingBubble name={partnerName} side={partnerSide} glowColor={partnerColor} />
-        </div>
-      )}
-    </>
+    <DualSpeakerChatThread
+      lines={lines}
+      speakers={speakers}
+      typingSpeakerKey={partnerTyping ? 'partner' : null}
+    />
   );
 }
 
@@ -328,11 +380,15 @@ export function ChatBubbleStack({
   name,
   side = 'left',
   showTailOnNewest = true,
+  glowColor,
+  nameOnEveryBubble = false,
 }: {
   messages: ChatLine[];
   name?: string;
   side?: BubbleSide;
   showTailOnNewest?: boolean;
+  glowColor?: string;
+  nameOnEveryBubble?: boolean;
 }) {
   if (messages.length === 0) return null;
   const total = messages.length;
@@ -344,9 +400,10 @@ export function ChatBubbleStack({
         return (
           <AttachedChatBubble
             key={line.id}
-            name={isNewest ? name : undefined}
+            name={nameOnEveryBubble || isNewest ? name : undefined}
             message={line.text}
             side={side}
+            glowColor={glowColor}
             ageFromBottom={ageFromBottom}
             stackSize={total}
             showTail={showTailOnNewest && isNewest && total === 1}

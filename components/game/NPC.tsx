@@ -13,9 +13,11 @@ import {
   vendorAnchorGroundWorldX,
   type StageAnchorKind,
 } from '@/lib/stageAnchor';
+import { getNpcConvoHold } from '@/lib/npcConvoHold';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
 import type { ChatLine } from '@/lib/chatLines';
 import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
+import { NpcNameplate } from './NpcNameplate';
 
 // ── Personality ────────────────────────────────────────────────────────────────
 export type Personality = {
@@ -64,6 +66,11 @@ type NPCProps = NPCConfig & {
   ambientChat?: {
     name: string;
     messages: ChatLine[];
+    glowColor?: string;
+  };
+  nameplate?: {
+    displayName: string;
+    modelDisplayName?: string;
   };
 };
 
@@ -100,7 +107,7 @@ export default function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality, stageAnchor, stageCrowd,
-  paused, greeting, chatConnected = false, greetFacing, dancing = false, greetingChat, ambientChat,
+  paused, greeting, chatConnected = false, greetFacing, dancing = false, greetingChat, ambientChat, nameplate,
 }: NPCProps) {
   // ── React state: only for infrequent visual changes ─────────────────────────
   const [jumping,   setJumping]  = useState(false);
@@ -128,8 +135,10 @@ export default function NPC({
   const stageVisibleRef     = useRef(!stageAnchor);
   const chatConnectedRef    = useRef(chatConnected || greeting);
   chatConnectedRef.current = chatConnected || greeting;
+  const wasPausedRef        = useRef(paused);
 
-  useEffect(() => { pausedRef.current = paused; }, [paused]);
+  // Keep RAF/decision loops in sync — useEffect runs after paint.
+  pausedRef.current = paused;
 
   // Sync screenX state when greeting starts (needed for bubble side only).
   useEffect(() => {
@@ -162,6 +171,22 @@ export default function NPC({
     walkingRef.current = w;
     characterRef.current?.setWalking(w);
   };
+
+  useEffect(() => {
+    if (paused && !wasPausedRef.current) {
+      stateRef.current = 'idle';
+      applyWalking(false);
+      if (jumpingRef.current) {
+        jumpingRef.current = false;
+        setJumping(false);
+        if (jumpTimerRef.current) {
+          clearTimeout(jumpTimerRef.current);
+          jumpTimerRef.current = null;
+        }
+      }
+    }
+    wasPausedRef.current = paused;
+  }, [paused]);
 
   const anchorWorldX = () =>
     stageAnchor
@@ -330,6 +355,17 @@ export default function NPC({
     }
 
     setNpcMovementTick(index, (off, width) => {
+      const convoHold = getNpcConvoHold(characterId);
+      if (convoHold !== undefined) {
+        worldXRef.current = convoHold;
+        targetWorldRef.current = convoHold;
+        stateRef.current = 'idle';
+        applyWalking(false);
+      } else if (pausedRef.current) {
+        if (walkingRef.current) applyWalking(false);
+        stateRef.current = 'idle';
+      }
+
       if (stageAnchor) {
         const anchor = vendorAnchorGroundWorldX(stageAnchor, off, width);
         const visible = anchor != null;
@@ -445,10 +481,17 @@ export default function NPC({
                 npcTyping={false}
                 messages={ambientChat.messages}
                 side={screenXToBubbleSide(screenX)}
+                glowColor={ambientChat.glowColor}
               />
             ) : undefined
           }
         />
+        {nameplate && !greeting && (
+          <NpcNameplate
+            displayName={nameplate.displayName}
+            modelDisplayName={nameplate.modelDisplayName}
+          />
+        )}
       </div>
     </div>
   );

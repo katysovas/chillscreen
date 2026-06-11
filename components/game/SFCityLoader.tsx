@@ -7,6 +7,7 @@ import {
   useState,
   type ComponentType,
 } from 'react';
+import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { getSkyPeriod, skyTheme } from '@/lib/skyTimeOfDay';
 
@@ -18,24 +19,15 @@ type SFCityProps = {
 };
 
 type SFCityLoaderProps = SFCityProps & {
-  /** Home `/` backdrop — stage view only, no gameplay UI. */
   homePreview?: boolean;
-  /** Controlled mute for home preview audio. */
   muted?: boolean;
 };
 
-/** Wait this long before showing any loader UI — avoids flash on fast loads. */
 const SHELL_DELAY_MS = 700;
-
-/** Crossfade duration when handing off to the game. */
 const FADE_MS = 320;
 
 type SFCityComponent = ComponentType<SFCityProps>;
 
-/**
- * Minimal static backdrop — matches the in-game sky, no motion.
- * Only appears on slow loads, after SHELL_DELAY_MS.
- */
 function GameLoadingShell({ visible }: { visible: boolean }) {
   const skyGradient = useMemo(() => {
     const theme = skyTheme(getSkyPeriod());
@@ -82,8 +74,11 @@ export default function SFCityLoader({
   const [Game, setGame] = useState<SFCityComponent | null>(null);
   const [showShell, setShowShell] = useState(false);
   const [shellVisible, setShellVisible] = useState(false);
-  const [gameVisible, setGameVisible] = useState(false);
   const loadedRef = useRef(false);
+
+  useEffect(() => {
+    bootstrapStageSyncFromApi();
+  }, []);
 
   useEffect(() => {
     let shellTimer: ReturnType<typeof setTimeout> | undefined;
@@ -103,24 +98,17 @@ export default function SFCityLoader({
     import('./SFCity').then(mod => {
       if (cancelled) return;
       loadedRef.current = true;
-
-      const fastLoad = Date.now() - startedAt < SHELL_DELAY_MS;
-
-      if (fastLoad) {
-        setGame(() => mod.default);
-        setGameVisible(true);
-        return;
-      }
-
       setGame(() => mod.default);
-      raf = requestAnimationFrame(() => {
-        if (cancelled) return;
-        setGameVisible(true);
-        setShellVisible(false);
-        fadeTimer = setTimeout(() => {
-          if (!cancelled) setShowShell(false);
-        }, FADE_MS);
-      });
+
+      if (Date.now() - startedAt >= SHELL_DELAY_MS) {
+        raf = requestAnimationFrame(() => {
+          if (cancelled) return;
+          setShellVisible(false);
+          fadeTimer = setTimeout(() => {
+            if (!cancelled) setShowShell(false);
+          }, FADE_MS);
+        });
+      }
     });
 
     return () => {
@@ -135,19 +123,12 @@ export default function SFCityLoader({
     <>
       {showShell && <GameLoadingShell visible={shellVisible} />}
       {Game && (
-        <div
-          style={{
-            opacity: gameVisible ? 1 : 0,
-            transition: gameVisible ? `opacity ${FADE_MS}ms ease` : undefined,
-          }}
-        >
-          <Game
-            spawnWorldOff={spawnWorldOff}
-            venueRoute={venueRoute}
-            homePreview={homePreview}
-            muted={muted}
-          />
-        </div>
+        <Game
+          spawnWorldOff={spawnWorldOff}
+          venueRoute={venueRoute}
+          homePreview={homePreview}
+          muted={muted}
+        />
       )}
     </>
   );

@@ -1,0 +1,15 @@
+{
+  "npcs": [
+    { "id": "luna", "displayName": "luna", "modelDisplayName": "haiku 4.5" },
+    { "id": "dale", "displayName": "dale", "modelDisplayName": "gpt 4.1 nano" },
+    { "id": "atlas", "displayName": "atlas", "modelDisplayName": "gemini flash" },
+    { "id": "ziggy", "displayName": "ziggy", "modelDisplayName": "llama 3.2" },
+    { "id": "chad", "displayName": "chad", "modelDisplayName": "gpt nano" },
+    { "id": "kova", "displayName": "kova", "modelDisplayName": "deepseek" },
+    { "id": "mochi", "displayName": "mochi" },
+    { "id": "dub", "displayName": "dub" },
+    { "id": "satosh", "displayName": "satosh" },
+    { "id": "solo", "displayName": "solo" },
+    { "id": "giggle", "displayName": "giggle" }
+  ]
+}

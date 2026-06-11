@@ -52,8 +52,19 @@ export type ClientMessage =
   | { t: 'chat-msg'; to: string; text: string }
   // Public shout — visible to everyone in the room.
   | { t: 'ambient-msg'; text: string }
+  // Public room chat (also used for 1:1 lines — no private delivery).
+  | { t: 'room-chat'; text: string }
   // NPC 1:1 chat — broadcast so everyone sees the connect glow.
-  | { t: 'npc-chat'; npcId: string; open: boolean };
+  | { t: 'npc-chat'; npcId: string; open: boolean }
+  /** Throttled NPC world-x snapshot for proximity-gated pair chatter. */
+  | { t: 'npc-positions'; positions: { id: string; worldX: number }[]; viewportWidth: number };
+
+/** Debug metadata for NPC↔NPC pair convos. */
+export type NpcConvoMeta = {
+  seedKind: string;
+  seed: string | null;
+  models: Record<string, string>;
+};
 
 /* ── Server → Client ─────────────────────────────────────────────────────── */
 export type ServerMessage =
@@ -71,9 +82,19 @@ export type ServerMessage =
   | { t: 'chat-typing'; from: string; typing: boolean }
   | { t: 'chat-msg'; from: string; text: string }
   | { t: 'ambient'; from: string; text: string }
+  /** Public room line — sender is `user:{name}` or `npc:{id}`. */
+  | { t: 'room-chat'; sender: string; text: string }
   // Visible to the whole room — who is in a 1:1 conversation.
   | { t: 'chat-pair'; a: string; b: string; open: boolean }
-  | { t: 'npc-chat'; from: string; npcId: string; open: boolean };
+  | { t: 'npc-chat'; from: string; npcId: string; open: boolean }
+  | {
+      t: 'npc-convo-start';
+      convoId: string;
+      participants: [string, string];
+      meta?: NpcConvoMeta;
+    }
+  | { t: 'npc-line'; convoId: string; npc: string; text: string }
+  | { t: 'npc-convo-end'; convoId: string };
 
 /** Stable key for a player↔player chat pair. */
 export function chatPairKey(a: string, b: string): string {

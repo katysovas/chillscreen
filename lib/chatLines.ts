@@ -11,6 +11,10 @@ export type ChatThreadLine = ChatLine & {
   speaker: 'self' | 'partner';
 };
 
+export type KeyedChatLine = ChatLine & {
+  speakerKey: string;
+};
+
 let chatLineSeq = 0;
 
 export function createChatLine(text: string): ChatLine {
@@ -20,12 +24,12 @@ export function createChatLine(text: string): ChatLine {
 
 /** Merge both sides into one chronological thread (newest at bottom). */
 export function buildChatThread(
-  playerMessages: ChatLine[],
-  partnerMessages: ChatLine[],
+  playerMessages: ChatLine[] = [],
+  partnerMessages: ChatLine[] = [],
 ): ChatThreadLine[] {
   return [
-    ...playerMessages.map(m => ({ ...m, speaker: 'self' as const })),
-    ...partnerMessages.map(m => ({ ...m, speaker: 'partner' as const })),
+    ...(playerMessages ?? []).map(m => ({ ...m, speaker: 'self' as const })),
+    ...(partnerMessages ?? []).map(m => ({ ...m, speaker: 'partner' as const })),
   ]
     .sort((a, b) => a.at - b.at)
     .slice(-CHAT_LINE_MAX);

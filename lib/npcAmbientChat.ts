@@ -2,10 +2,11 @@ import type { CharacterDef } from '@/components/game/characters';
 import { getStageWorldSnapshot, type StageWorldEntry } from '@/lib/stageWorldSnapshot';
 import { isBuzNpc, BUZ_NPC_ID } from '@/lib/vendorShop';
 
-export const AMBIENT_VISIBLE_MS = 2200;
-export const AMBIENT_VISIBLE_JITTER_MS = 400;
-export const AMBIENT_INTERVAL_MIN_MS = 48_000;
-export const AMBIENT_INTERVAL_MAX_MS = 72_000;
+export const AMBIENT_VISIBLE_MS = 8_000;
+export const AMBIENT_VISIBLE_JITTER_MS = 2_000;
+/** Faster cadence while ambient is the primary NPC chatter surface. */
+export const AMBIENT_INTERVAL_MIN_MS = 10_000;
+export const AMBIENT_INTERVAL_MAX_MS = 22_000;
 
 /** Per-NPC ambient timing overrides. */
 const NPC_AMBIENT_INTERVAL: Partial<Record<string, { minMs: number; maxMs: number }>> = {
@@ -37,7 +38,7 @@ export function getAmbientInitialDelayMs(
   if (override) {
     return override.minMs + Math.random() * (override.maxMs - override.minMs);
   }
-  return 12_000 + entryDelay * 0.35 + npcIndex * 4_500 + Math.random() * 8_000;
+  return 3_000 + entryDelay * 0.15 + npcIndex * 1_200 + Math.random() * 3_000;
 }
 
 export function getAmbientVisibleMs(characterId: string): { baseMs: number; jitterMs: number } {
@@ -506,8 +507,8 @@ function pickBuzAmbientMumble(): string {
   return pickStageMumble({ id: BUZ_NPC_ID } as CharacterDef, stage);
 }
 
-/** Generated NPCs mostly speak their scripted lines; stage talk fills the rest. */
-const SCRIPTED_LINE_WEIGHT = 0.75;
+/** Generated NPCs — use their scripted `lines` pool when available. */
+const SCRIPTED_LINE_WEIGHT = 1;
 
 export function pickAmbientMumble(character: CharacterDef): string {
   if (

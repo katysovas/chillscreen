@@ -77,6 +77,11 @@ function fireNudges() {
   for (const nudge of nudges) nudge();
 }
 
+/** Re-kick all live stage players (e.g. when the game becomes visible). */
+export function nudgeAllStagePlayers() {
+  fireNudges();
+}
+
 function onVisibilityChange() {
   if (document.visibilityState === 'visible') fireNudges();
 }
