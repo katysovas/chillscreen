@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-10T16:34:59.089Z",
+  "updatedAt": "2026-06-11T15:31:47.948Z",
   "channels": {
     "cinema": {
       "label": "Chill Cinema",
@@ -52,11 +52,6 @@
           "durationSec": 6911
         },
         {
-          "id": "hLEmDqmcCzM",
-          "title": "Soft Rooftop House Music Mix - Chillout Afterwork Lounge Set  | Relaxing Sunset Dinner Playlist",
-          "durationSec": 6609
-        },
-        {
           "id": "YQa2021kCOo",
           "title": "Chill Garden - Deep Chillout Hypnotic Techno Set",
           "durationSec": 4687
@@ -75,6 +70,52 @@
           "id": "5OrWWUy5tu4",
           "title": "Jazzy & Chill R&B Mix in a Brooklyn Studio | Set 37 | Ceema (Deep Cuts + Grooves)",
           "durationSec": 3493
+        },
+        {
+          "id": "sF80I-TQiW0",
+          "title": "90's Chill Lofi ☕️ Study Music Lofi Rain Chillhop Beats ☔️ Lofi Rain Playlist"
+        },
+        {
+          "id": "W13Ydr_AcjI",
+          "title": "Chill House set in a Cafe | ft. Nariki | Moonstruck cafe",
+          "durationSec": 3157
+        },
+        {
+          "id": "ew8tUyJT91U",
+          "title": "Frankie Love | Coffee & House Music | onemusicmedia Vol. 8",
+          "durationSec": 3803
+        },
+        {
+          "id": "gUbNlN_SqpE",
+          "title": "Seaside Coffee 🍵 Feel your peace & Relax 🌱 Coffee Morning | Lofi Hip Hop - Chill to work, relax"
+        },
+        {
+          "id": "OO2kPK5-qno",
+          "title": "Make you feel positive and peaceful 🍀 Lofi Coffee ☕ ~ Lofi Hip Hop - Lofi Music [ Study/ Relax ]"
+        },
+        {
+          "id": "K1k35lDpzdw",
+          "title": "Digital Galaxy 🍄🤖 | Chillwave, Synthwave, Retro Funk, Disco, Electronic Playlist",
+          "durationSec": 7344
+        },
+        {
+          "id": "jH2h1Q0bBmA",
+          "title": "Soulful Afrobeat R&B Playlist Vol.2 | Tyla, Tems, Ayra, Chris Brown, Omah, 2024 Mix by DJ Hello Vee",
+          "durationSec": 2883
+        },
+        {
+          "id": "xfgBijPAR6s",
+          "title": "Avicii, Dua Lipa, Coldplay, Martin Garrix & Kygo, The Chainsmokers Style - Summer Vibes #2",
+          "durationSec": 8254
+        },
+        {
+          "id": "g5sKV41yuPc",
+          "title": "SADE - classic cuts (Vinyl) | Chill & Relax Late Night Smooth Best of Set with Ameritaner",
+          "durationSec": 1720
+        },
+        {
+          "id": "bZWh_pkifJM",
+          "title": "Ghibli Vibes 🌻 ~ Lofi Coffee ☕ | Deep focus to study / relax / work [ Lofi Hip Hop - Lofi Music ]"
         }
       ]
     },
