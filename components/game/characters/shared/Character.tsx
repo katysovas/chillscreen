@@ -84,6 +84,16 @@ function chatAnchorStyle(side: BubbleSide, scale: number, mirrored: boolean) {
     pointerEvents: 'auto' as const,
   };
 
+  if (side === 'center') {
+    return {
+      ...shared,
+      left: '50%',
+      transform: `translate(-50%, -100%) ${counterScale}`,
+      transformOrigin: 'bottom center',
+      alignItems: 'stretch',
+    };
+  }
+
   if (side === 'right') {
     return {
       ...shared,
@@ -154,9 +164,11 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
         const sc = scaleRef.current;
         const s  = bubbleSideRef.current ?? 'left';
         const counterScale = `scale(${1 / sc}) scaleX(${m ? -1 : 1})`;
-        chatAnchorRef.current.style.transform = s === 'right'
-          ? `translate(0, -100%) ${counterScale}`
-          : `translate(-100%, -100%) ${counterScale}`;
+        chatAnchorRef.current.style.transform = s === 'center'
+          ? `translate(-50%, -100%) ${counterScale}`
+          : s === 'right'
+            ? `translate(0, -100%) ${counterScale}`
+            : `translate(-100%, -100%) ${counterScale}`;
       }
     },
     setWalking(w) {

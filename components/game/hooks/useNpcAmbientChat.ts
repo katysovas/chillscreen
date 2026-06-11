@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { CharacterDef } from '@/components/game/characters';
+import { appendChatLine, type ChatLine } from '@/lib/chatLines';
 import {
   getAmbientInitialDelayMs,
   getAmbientIntervalMs,
@@ -10,7 +11,7 @@ import {
 } from '@/lib/npcAmbientChat';
 
 export type NpcAmbientChatState = {
-  message: string | null;
+  messages: ChatLine[];
 };
 
 function randomIntervalMs(characterId: string) {
@@ -31,7 +32,7 @@ function initialDelayMs(npcCast: CharacterDef[], npcIndex: number) {
 export function useNpcAmbientChat(npcCast: CharacterDef[], paused: boolean) {
   const npcCount = npcCast.length;
   const [ambientChats, setAmbientChats] = useState<NpcAmbientChatState[]>(() =>
-    Array.from({ length: npcCount }, () => ({ message: null })),
+    Array.from({ length: npcCount }, () => ({ messages: [] })),
   );
 
   const pausedRef = useRef(paused);
@@ -48,12 +49,12 @@ export function useNpcAmbientChat(npcCast: CharacterDef[], paused: boolean) {
       hideTimersRef.current.delete(index);
     };
 
-    const hideBubble = (index: number) => {
+    const hideBubbles = (index: number) => {
       clearHide(index);
       setAmbientChats(prev => {
-        if (!prev[index]?.message) return prev;
+        if (!prev[index]?.messages.length) return prev;
         const next = [...prev];
-        next[index] = { message: null };
+        next[index] = { messages: [] };
         return next;
       });
     };
@@ -62,14 +63,16 @@ export function useNpcAmbientChat(npcCast: CharacterDef[], paused: boolean) {
       clearHide(index);
       setAmbientChats(prev => {
         const next = [...prev];
-        next[index] = { message };
+        next[index] = {
+          messages: appendChatLine(prev[index]?.messages ?? [], message),
+        };
         return next;
       });
       const visibleMs = getAmbientVisibleMs(characterId);
       const visible = visibleMs.baseMs + Math.random() * visibleMs.jitterMs;
       hideTimersRef.current.set(
         index,
-        setTimeout(() => hideBubble(index), visible),
+        setTimeout(() => hideBubbles(index), visible),
       );
     };
 
@@ -113,7 +116,7 @@ export function useNpcAmbientChat(npcCast: CharacterDef[], paused: boolean) {
     if (!paused) return;
     hideTimersRef.current.forEach(clearTimeout);
     hideTimersRef.current.clear();
-    setAmbientChats(prev => prev.map(() => ({ message: null })));
+    setAmbientChats(prev => prev.map(() => ({ messages: [] })));
   }, [paused]);
 
   return ambientChats;

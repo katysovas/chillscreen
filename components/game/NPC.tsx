@@ -14,6 +14,7 @@ import {
   type StageAnchorKind,
 } from '@/lib/stageAnchor';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
+import type { ChatLine } from '@/lib/chatLines';
 import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
 
 // ── Personality ────────────────────────────────────────────────────────────────
@@ -57,12 +58,12 @@ type NPCProps = NPCConfig & {
   greetingChat?: {
     name: string;
     npcTyping: boolean;
-    npcMessage: string | null;
+    messages: ChatLine[];
   };
   /** Short self-talk bubble (not a player conversation). */
   ambientChat?: {
     name: string;
-    message: string;
+    messages: ChatLine[];
   };
 };
 
@@ -438,18 +439,11 @@ export default function NPC({
           bubbleSide={screenXToBubbleSide(screenX)}
           chatConnected={chatConnected || greeting}
           chatOverlay={
-            greeting && greetingChat ? (
-              <NpcChatOverlay
-                name={greetingChat.name}
-                npcTyping={greetingChat.npcTyping}
-                npcMessage={greetingChat.npcMessage}
-                side={screenXToBubbleSide(screenX)}
-              />
-            ) : ambientChat ? (
+            greeting ? undefined : ambientChat && ambientChat.messages.length > 0 ? (
               <NpcChatOverlay
                 name={ambientChat.name}
                 npcTyping={false}
-                npcMessage={ambientChat.message}
+                messages={ambientChat.messages}
                 side={screenXToBubbleSide(screenX)}
               />
             ) : undefined

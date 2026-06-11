@@ -1,35 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
-  AttachedChatBubble,
-  AttachedTypingBubble,
   AttachedInputBubble,
   AttachedHint,
-  getConversationSpread,
+  AttachedTypingBubble,
+  ConnectedChatThread,
+  ChatBubbleStack,
+  connectedChatMidpointOffsetPx,
   playerBubbleSide,
   type BubbleSide,
 } from './ChatBubble';
+import { buildChatThread, type ChatLine } from '@/lib/chatLines';
+import {
+  chatConnectSpreadPlayerPx,
+  chatConnectSpreadPx,
+} from '@/lib/chatConnectSpread';
 
 type ChatMode = null | 'chat' | 'ambient';
 
 export function NpcChatOverlay({
   name,
   npcTyping,
-  npcMessage,
+  messages,
   side,
 }: {
   name: string;
   npcTyping: boolean;
-  npcMessage: string | null;
+  messages: ChatLine[];
   side: BubbleSide;
 }) {
-  if (!npcTyping && !npcMessage) return null;
+  if (!npcTyping && messages.length === 0) return null;
 
-  return npcTyping ? (
-    <AttachedTypingBubble name={name} side={side} />
-  ) : (
-    <AttachedChatBubble name={name} message={npcMessage!} side={side} />
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        gap: 6,
+      }}
+    >
+      <ChatBubbleStack messages={messages} name={name} side={side} />
+      {npcTyping && <AttachedTypingBubble name={messages.length === 0 ? name : undefined} side={side} />}
+    </div>
   );
 }
 
@@ -37,7 +51,12 @@ export function PlayerChatOverlay({
   npcScreenX,
   chatMode,
   playerName,
-  playerMessage,
+  messages,
+  partnerName,
+  playerColor,
+  partnerColor,
+  partnerMessages,
+  partnerTyping,
   chatDraft,
   setChatDraft,
   onSendMessage,
@@ -47,12 +66,16 @@ export function PlayerChatOverlay({
   npcScreenX: number;
   chatMode: ChatMode;
   playerName: string | null;
-  playerMessage: string | null;
+  messages: ChatLine[];
+  partnerName: string;
+  playerColor: string;
+  partnerColor: string;
+  partnerMessages: ChatLine[];
+  partnerTyping: boolean;
   chatDraft: string;
   setChatDraft: (v: string) => void;
   onSendMessage: (text: string) => void;
   chatInputRef: React.RefObject<HTMLInputElement | null>;
-  /** Mobile uses a fixed bottom bar — only show sent bubbles here. */
   mobileNativeInput?: boolean;
 }) {
   const [vw, setVw] = useState(
@@ -64,9 +87,15 @@ export function PlayerChatOverlay({
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const spread = getConversationSpread(npcScreenX, vw, playerBubbleSide(npcScreenX));
+  const thread = useMemo(
+    () => buildChatThread(messages, partnerMessages),
+    [messages, partnerMessages],
+  );
+
   const side = playerBubbleSide(npcScreenX);
-  const stackAlign = side === 'left' ? 'flex-end' : 'flex-start';
+  const playerSpread = chatConnectSpreadPlayerPx(npcScreenX);
+  const partnerSpread = chatConnectSpreadPx(npcScreenX);
+  const midpointPx = connectedChatMidpointOffsetPx(npcScreenX, vw, playerSpread, partnerSpread);
 
   if (chatMode === 'chat') {
     return (
@@ -74,22 +103,23 @@ export function PlayerChatOverlay({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          alignItems: stackAlign,
           justifyContent: 'flex-end',
-          gap: 8,
-          ...spread,
+          gap: 6,
+          width: 300,
+          transform: `translateX(${midpointPx}px)`,
         }}
       >
-        {playerMessage && (
-          <AttachedChatBubble
-            name={playerName ?? undefined}
-            message={playerMessage}
-            showTail={false}
-            side={side}
-          />
-        )}
+        <ConnectedChatThread
+          thread={thread}
+          playerName={playerName ?? 'You'}
+          partnerName={partnerName}
+          playerColor={playerColor}
+          partnerColor={partnerColor}
+          partnerScreenX={npcScreenX}
+          partnerTyping={partnerTyping}
+        />
         {!mobileNativeInput && (
-          <AttachedInputBubble showTail side={side}>
+          <AttachedInputBubble showTail={false} side="left">
             <input
               ref={chatInputRef}
               value={chatDraft}
@@ -115,7 +145,7 @@ export function PlayerChatOverlay({
   }
 
   return (
-    <div style={spread}>
+    <div style={{ transform: `translateX(${midpointPx}px)` }}>
       <AttachedHint side={side}>
         ↵ chat
       </AttachedHint>
@@ -127,7 +157,7 @@ export function PlayerChatOverlay({
 export function AmbientPlayerOverlay({
   chatMode,
   playerName,
-  ambientMessage,
+  messages,
   chatDraft,
   setChatDraft,
   onSendMessage,
@@ -137,7 +167,7 @@ export function AmbientPlayerOverlay({
 }: {
   chatMode: ChatMode;
   playerName: string | null;
-  ambientMessage: string | null;
+  messages: ChatLine[];
   chatDraft: string;
   setChatDraft: (v: string) => void;
   onSendMessage: (text: string) => void;
@@ -146,17 +176,13 @@ export function AmbientPlayerOverlay({
   mobileNativeInput?: boolean;
 }) {
   const stackAlign = side === 'left' ? 'flex-end' : 'flex-start';
+  const stack = (
+    <ChatBubbleStack messages={messages} name={playerName ?? undefined} side={side} showTailOnNewest={false} />
+  );
 
   if (chatMode === 'ambient') {
     if (mobileNativeInput) {
-      return ambientMessage ? (
-        <AttachedChatBubble
-          name={playerName ?? undefined}
-          message={ambientMessage}
-          showTail={false}
-          side={side}
-        />
-      ) : null;
+      return messages.length > 0 ? stack : null;
     }
 
     return (
@@ -166,17 +192,10 @@ export function AmbientPlayerOverlay({
           flexDirection: 'column',
           alignItems: stackAlign,
           justifyContent: 'flex-end',
-          gap: 8,
+          gap: 6,
         }}
       >
-        {ambientMessage && (
-          <AttachedChatBubble
-            name={playerName ?? undefined}
-            message={ambientMessage}
-            showTail={false}
-            side={side}
-          />
-        )}
+        {stack}
         <AttachedInputBubble showTail side={side}>
           <input
             ref={chatInputRef}
@@ -202,13 +221,11 @@ export function AmbientPlayerOverlay({
     );
   }
 
-  if (ambientMessage) {
+  if (messages.length > 0) {
     return (
-      <AttachedChatBubble
-        name={playerName ?? undefined}
-        message={ambientMessage}
-        side={side}
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {stack}
+      </div>
     );
   }
 

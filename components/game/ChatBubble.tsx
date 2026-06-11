@@ -1,7 +1,8 @@
 'use client';
 import type { CSSProperties, ReactNode } from 'react';
+import { chatBubbleOpacity, type ChatLine, type ChatThreadLine } from '@/lib/chatLines';
 
-export type BubbleSide = 'left' | 'right';
+export type BubbleSide = 'left' | 'right' | 'center';
 
 /** Bubble sits above the character's left or right side based on screen position. */
 export function screenXToBubbleSide(screenX: number): BubbleSide {
@@ -45,31 +46,53 @@ export function AttachedChatBubble({
   animate = true,
   showTail = true,
   side = 'left',
+  ageFromBottom = 0,
+  stackSize = 1,
+  variant = 'default',
+  glowColor,
 }: {
   name?: string;
   message: string;
   animate?: boolean;
   showTail?: boolean;
   side?: BubbleSide;
+  /** 0 = newest in stack; higher = older / more faded. */
+  ageFromBottom?: number;
+  stackSize?: number;
+  /** Connected thread — tint by speaker side. */
+  variant?: 'default' | 'self' | 'partner';
+  /** Balloon color — matches character connect glow. */
+  glowColor?: string;
 }) {
+  const opacity = chatBubbleOpacity(ageFromBottom, stackSize);
+  const bg = variant === 'self' ? '#eef6ff' : variant === 'partner' ? '#fff' : '#fff';
+  const glow = Boolean(glowColor);
   return (
     <div
-      className="game-chat-bubble"
+      className={`game-chat-bubble game-chat-bubble-stacked${glow ? ' game-chat-bubble-glow' : ''}`}
       style={{
         ...bubbleShell,
+        background: glow ? undefined : bg,
         padding: name ? '7px 13px 8px' : '8px 13px',
-        animation: animate ? 'chat-in-left 0.22s ease-out both' : undefined,
+        opacity,
+        maxWidth: variant === 'default' ? 260 : 220,
+        animation: animate && ageFromBottom === 0 ? 'chat-in-left 0.22s ease-out both' : undefined,
+        transition: 'opacity 0.35s ease, transform 0.35s ease',
+        ...(glow ? { ['--glow-color' as string]: glowColor } : {}),
       }}
     >
       {name && (
-        <div style={{
+        <div
+          className={glow ? 'game-chat-bubble-name' : undefined}
+          style={{
           fontWeight: 700,
           fontSize: 10,
           letterSpacing: 1,
           textTransform: 'uppercase',
-          color: '#888',
+          color: glow ? undefined : '#888',
           marginBottom: 3,
-        }}>
+        }}
+        >
           {name}
         </div>
       )}
@@ -82,21 +105,35 @@ export function AttachedChatBubble({
 export function AttachedTypingBubble({
   name,
   side = 'left',
+  glowColor,
 }: {
   name?: string;
   side?: BubbleSide;
+  glowColor?: string;
 }) {
+  const glow = Boolean(glowColor);
   return (
-    <div className="game-chat-bubble" style={{ ...bubbleShell, minWidth: 72, animation: 'chat-in-left 0.22s ease-out both' }}>
+    <div
+      className={`game-chat-bubble${glow ? ' game-chat-bubble-glow' : ''}`}
+      style={{
+        ...bubbleShell,
+        minWidth: 72,
+        animation: 'chat-in-left 0.22s ease-out both',
+        ...(glow ? { ['--glow-color' as string]: glowColor } : {}),
+      }}
+    >
       {name && (
-        <div style={{
+        <div
+          className={glow ? 'game-chat-bubble-name' : undefined}
+          style={{
           fontWeight: 700,
           fontSize: 10,
           letterSpacing: 1,
           textTransform: 'uppercase',
-          color: '#888',
+          color: glow ? undefined : '#888',
           marginBottom: 3,
-        }}>
+        }}
+        >
           {name}
         </div>
       )}
@@ -193,3 +230,130 @@ export function getConversationSpread(
 }
 
 export const CHAT_LAYER_Z = 1000;
+
+/** Stacked chatter — oldest on top, newest at bottom, older lines fade. */
+/** Align bubbles to each speaker's screen side (player ~50%, partner at partnerScreenX). */
+export function connectedChatSides(partnerScreenPct: number): {
+  playerSide: BubbleSide;
+  partnerSide: BubbleSide;
+} {
+  const playerOnRight = partnerScreenPct < 50;
+  return {
+    playerSide: playerOnRight ? 'right' : 'left',
+    partnerSide: playerOnRight ? 'left' : 'right',
+  };
+}
+
+/** Single connected-chat column — sides follow character positions on screen. */
+export function ConnectedChatThread({
+  thread,
+  playerName,
+  partnerName,
+  playerColor,
+  partnerColor,
+  partnerScreenX,
+  partnerTyping,
+}: {
+  thread: ChatThreadLine[];
+  playerName: string;
+  partnerName: string;
+  playerColor: string;
+  partnerColor: string;
+  /** Partner screen % — player is at 50%. */
+  partnerScreenX: number;
+  partnerTyping: boolean;
+}) {
+  const total = thread.length;
+  if (total === 0 && !partnerTyping) return null;
+
+  const { playerSide, partnerSide } = connectedChatSides(partnerScreenX);
+
+  return (
+    <>
+      {thread.map((line, i) => {
+        const ageFromBottom = total - 1 - i;
+        const isNewest = ageFromBottom === 0;
+        const isSelf = line.speaker === 'self';
+        const side = isSelf ? playerSide : partnerSide;
+        return (
+          <div
+            key={line.id}
+            style={{
+              display: 'flex',
+              justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
+              width: '100%',
+            }}
+          >
+            <AttachedChatBubble
+              name={isSelf ? playerName : partnerName}
+              message={line.text}
+              side={side}
+              variant={isSelf ? 'self' : 'partner'}
+              glowColor={isSelf ? playerColor : partnerColor}
+              ageFromBottom={ageFromBottom}
+              stackSize={total}
+              showTail={false}
+              animate={isNewest}
+            />
+          </div>
+        );
+      })}
+      {partnerTyping && (
+        <div style={{
+          display: 'flex',
+          justifyContent: partnerSide === 'right' ? 'flex-end' : 'flex-start',
+          width: '100%',
+        }}>
+          <AttachedTypingBubble name={partnerName} side={partnerSide} glowColor={partnerColor} />
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Shift a centered chat column to the midpoint between player and partner (incl. chat spread). */
+export function connectedChatMidpointOffsetPx(
+  partnerScreenPct: number,
+  viewportWidth: number,
+  playerSpreadPx = 0,
+  partnerSpreadPx = 0,
+): number {
+  const playerCenter = viewportWidth * 0.5 + playerSpreadPx;
+  const partnerCenter = (partnerScreenPct / 100) * viewportWidth + partnerSpreadPx;
+  return Math.round((playerCenter + partnerCenter) / 2 - playerCenter);
+}
+
+export function ChatBubbleStack({
+  messages,
+  name,
+  side = 'left',
+  showTailOnNewest = true,
+}: {
+  messages: ChatLine[];
+  name?: string;
+  side?: BubbleSide;
+  showTailOnNewest?: boolean;
+}) {
+  if (messages.length === 0) return null;
+  const total = messages.length;
+  return (
+    <>
+      {messages.map((line, i) => {
+        const ageFromBottom = total - 1 - i;
+        const isNewest = ageFromBottom === 0;
+        return (
+          <AttachedChatBubble
+            key={line.id}
+            name={isNewest ? name : undefined}
+            message={line.text}
+            side={side}
+            ageFromBottom={ageFromBottom}
+            stackSize={total}
+            showTail={showTailOnNewest && isNewest && total === 1}
+            animate={isNewest}
+          />
+        );
+      })}
+    </>
+  );
+}

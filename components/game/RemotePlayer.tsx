@@ -16,6 +16,7 @@ import {
 } from '@/lib/multiplayer/loadoutSync';
 import type { CharacterLoadout } from './characters/loadout';
 import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
+import { appendChatLine, type ChatLine } from '@/lib/chatLines';
 
 type RemotePlayerProps = {
   id: string;
@@ -24,7 +25,7 @@ type RemotePlayerProps = {
   scale?: number;
   /** True while the local player is in a 1:1 chat with this player. */
   greeting?: boolean;
-  greetingChat?: { name: string; npcTyping: boolean; npcMessage: string | null };
+  greetingChat?: { name: string; npcTyping: boolean; messages: ChatLine[] };
   /** Soft connect glow — local or remote 1:1 conversation. */
   chatConnected?: boolean;
   ambientRef?: React.RefObject<Map<string, RemoteAmbientMessage>>;
@@ -59,7 +60,7 @@ export default function RemotePlayer({
   const loadoutKeyRef = useRef(loadoutSyncKey(initial?.loadout));
   // screenX only feeds the chat-bubble side; refreshed when a chat opens.
   const [screenX, setScreenX] = useState(50);
-  const [ambientMessage, setAmbientMessage] = useState<string | null>(null);
+  const [ambientMessages, setAmbientMessages] = useState<ChatLine[]>([]);
   const lastAmbientRef = useRef<string | null>(null);
   const chatConnectedRef = useRef(chatConnected || greeting);
   chatConnectedRef.current = chatConnected || greeting;
@@ -118,9 +119,12 @@ export default function RemotePlayer({
         if (ambientRef?.current) {
           const amb = ambientRef.current.get(id);
           const active = amb && amb.until > Date.now() ? amb.text : null;
-          if (active !== lastAmbientRef.current) {
+          if (active && active !== lastAmbientRef.current) {
             lastAmbientRef.current = active;
-            setAmbientMessage(active);
+            setAmbientMessages(prev => appendChatLine(prev, active));
+          } else if (!active && lastAmbientRef.current) {
+            lastAmbientRef.current = null;
+            setAmbientMessages([]);
           }
         }
       }
@@ -156,18 +160,11 @@ export default function RemotePlayer({
         bubbleSide={bubbleSide}
         chatConnected={chatConnected || greeting}
         chatOverlay={
-          greeting && greetingChat ? (
-            <NpcChatOverlay
-              name={greetingChat.name}
-              npcTyping={greetingChat.npcTyping}
-              npcMessage={greetingChat.npcMessage}
-              side={bubbleSide}
-            />
-          ) : ambientMessage ? (
+          greeting ? undefined : ambientMessages.length > 0 ? (
             <NpcChatOverlay
               name={stateRef.current?.get(id)?.name ?? 'Wanderer'}
               npcTyping={false}
-              npcMessage={ambientMessage}
+              messages={ambientMessages}
               side={bubbleSide}
             />
           ) : undefined

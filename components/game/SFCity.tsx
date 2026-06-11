@@ -77,6 +77,7 @@ import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import { hasStickerTripActive, preloadAllLoadoutSlots, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
+import { appendChatLine, type ChatLine } from '@/lib/chatLines';
 import { runAllStagePlayerSyncs } from '@/lib/stagePlayerRegistry';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
@@ -216,10 +217,10 @@ export default function SFCity({
   const [chatMode,      setChatMode]      = useState<ChatMode>(null);
   const chatModeRef = useRef<ChatMode>(null);
   const [chatDraft,     setChatDraft]     = useState('');
-  const [playerMessage, setPlayerMessage] = useState<string | null>(null);
-  const [playerAmbientMessage, setPlayerAmbientMessage] = useState<string | null>(null);
+  const [playerMessages, setPlayerMessages] = useState<ChatLine[]>([]);
+  const [playerAmbientMessages, setPlayerAmbientMessages] = useState<ChatLine[]>([]);
   const ambientHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [npcMessage,    setNpcMessage]    = useState<string | null>(null);
+  const [npcMessages,   setNpcMessages]   = useState<ChatLine[]>([]);
   const [npcTyping,     setNpcTyping]     = useState(false);
   const [chatHistory,   setChatHistory]   = useState<ChatTurn[]>([]);
   const [chatSendTick,  setChatSendTick]  = useState(0);
@@ -295,7 +296,7 @@ export default function SFCity({
 
   // Peer (real human) 1:1 chat — mirrors the NPC greeting flow.
   const [peerChatId,  setPeerChatId]  = useState<string | null>(null);
-  const [peerMessage, setPeerMessage] = useState<string | null>(null);
+  const [peerMessages, setPeerMessages] = useState<ChatLine[]>([]);
   const [peerTyping,  setPeerTyping]  = useState(false);
   const [nearPeer,    setNearPeer]    = useState<string | null>(null);
   const peerChatRef = useRef<string | null>(null);
@@ -332,12 +333,11 @@ export default function SFCity({
     onPeerTyping: (pid, typing) => {
       if (peerChatRef.current !== pid) return;
       setPeerTyping(typing);
-      if (typing) setPeerMessage(null);
     },
     onPeerMessage: (pid, text) => {
       if (peerChatRef.current !== pid) return;
       setPeerTyping(false);
-      setPeerMessage(text);
+      setPeerMessages(prev => appendChatLine(prev, text));
     },
   });
   const mpRef = useRef(mp);
@@ -353,9 +353,9 @@ export default function SFCity({
     peerChatRef.current = peerId;
     setPeerChatId(peerId);
     setGreetNpcX(screenPct);
-    setPeerMessage(null);
+    setPeerMessages([]);
     setPeerTyping(false);
-    setPlayerMessage(null);
+    setPlayerMessages([]);
     const toward = screenPct < 50 ? 'left' : 'right';
     facingRef.current = toward; setFacing(toward);
     walkingRef.current = false; setWalking(false);
@@ -375,11 +375,11 @@ export default function SFCity({
     if (announce) mpRef.current?.closePeerChat(peer);
     peerChatRef.current = null;
     setPeerChatId(null);
-    setPeerMessage(null);
+    setPeerMessages([]);
     setPeerTyping(false);
     setChatMode(null);
     setChatDraft('');
-    setPlayerMessage(null);
+    setPlayerMessages([]);
     disconnectUntil.current = Date.now() + 2000;
   }, []);
   endPeerChatRef.current = endPeerChat;
@@ -484,7 +484,7 @@ export default function SFCity({
   useEffect(() => {
     if (greetingNpc !== null) return;
     chatAbortRef.current?.abort();
-    setNpcMessage(null);
+    setNpcMessages([]);
     setNpcTyping(false);
     setChatHistory([]);
     setChatSendTick(0);
@@ -500,9 +500,9 @@ export default function SFCity({
 
     chatAbortRef.current?.abort();
     setNpcTyping(false);
-    setNpcMessage(null);
+    setNpcMessages([]);
     setChatHistory([]);
-    setPlayerMessage(null);
+    setPlayerMessages([]);
     setChatSendTick(0);
     sentMessageRef.current = '';
     setChatMode(playerName ? 'chat' : null);
@@ -552,11 +552,10 @@ export default function SFCity({
       controller.signal,
       () => {
         setNpcTyping(true);
-        setNpcMessage(null);
       },
       reply => {
         setNpcTyping(false);
-        setNpcMessage(reply);
+        setNpcMessages(prev => appendChatLine(prev, reply));
         setChatHistory(prev => [
           ...prev,
           { role: 'user', content: message },
@@ -567,7 +566,7 @@ export default function SFCity({
     ).catch(err => {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       setNpcTyping(false);
-      setNpcMessage(pickFallbackReply(character));
+      setNpcMessages(prev => appendChatLine(prev, pickFallbackReply(character)));
       setTimeout(() => chatInputRef.current?.focus(), 0);
     });
 
@@ -581,9 +580,9 @@ export default function SFCity({
 
   const showPlayerAmbient = useCallback((text: string) => {
     clearAmbientHide();
-    setPlayerAmbientMessage(text);
+    setPlayerAmbientMessages(prev => appendChatLine(prev, text));
     ambientHideRef.current = setTimeout(() => {
-      setPlayerAmbientMessage(null);
+      setPlayerAmbientMessages([]);
       ambientHideRef.current = null;
     }, PLAYER_AMBIENT_VISIBLE_MS);
   }, [clearAmbientHide]);
@@ -621,7 +620,7 @@ export default function SFCity({
       return;
     }
     const safe = filtered.text;
-    setPlayerMessage(safe);
+    setPlayerMessages(prev => appendChatLine(prev, safe));
     setChatDraft('');
     if (peerChatRef.current !== null) {
       mpRef.current?.sendPeerMessage(peerChatRef.current, safe);
@@ -739,7 +738,7 @@ export default function SFCity({
       disconnectUntil.current = Date.now() + 2000;
       setChatMode(null);
       setChatDraft('');
-      setPlayerMessage(null);
+      setPlayerMessages([]);
     };
 
     const openChatPanel = () => {
@@ -1080,6 +1079,9 @@ export default function SFCity({
   const conversationPartnerName = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
     : greetingNpc !== null ? npcCast[greetingNpc]?.name : null;
+  const conversationPartnerColor = peerChatId !== null
+    ? (mp.remoteStateRef.current.get(peerChatId)?.balloonColor ?? '#ef4023')
+    : greetingNpc !== null ? npcCast[greetingNpc]?.balloonColor ?? '#ef4023' : '#ef4023';
   const nearPeerName = nearPeer !== null
     ? (mp.remoteStateRef.current.get(nearPeer)?.name ?? 'Wanderer')
     : null;
@@ -1158,11 +1160,11 @@ export default function SFCity({
             greetingChat={greetingNpc === i ? {
               name: cfg.name,
               npcTyping,
-              npcMessage,
+              messages: npcMessages,
             } : undefined}
             ambientChat={
-              greetingNpc !== i && ambientChats[i]?.message
-                ? { name: cfg.name, message: ambientChats[i]!.message! }
+              greetingNpc !== i && ambientChats[i]?.messages.length
+                ? { name: cfg.name, messages: ambientChats[i]!.messages }
                 : undefined
             }
           />
@@ -1181,7 +1183,7 @@ export default function SFCity({
             greetingChat={peerChatId === pid ? {
               name: mp.remoteStateRef.current.get(pid)?.name ?? 'Wanderer',
               npcTyping: peerTyping,
-              npcMessage: peerMessage,
+              messages: peerMessages,
             } : undefined}
           />
         ))}
@@ -1210,7 +1212,7 @@ export default function SFCity({
                 dancing={TEST_FORCE_DANCE || playerDancing}
                 balloonColor={myColor}
                 loadout={playerLoadout}
-                bubbleSide={playerBubbleSide(greetNpcX)}
+                bubbleSide={inConversation ? 'center' : playerBubbleSide(greetNpcX)}
                 chatConnected={inConversation}
                 chatOverlay={
                   inConversation ? (
@@ -1218,7 +1220,12 @@ export default function SFCity({
                       npcScreenX={greetNpcX}
                       chatMode={chatMode === 'ambient' ? null : chatMode}
                       playerName={playerName}
-                      playerMessage={playerMessage}
+                      messages={playerMessages}
+                      partnerName={conversationPartnerName ?? 'Wanderer'}
+                      playerColor={myColor}
+                      partnerColor={conversationPartnerColor}
+                      partnerMessages={peerChatId !== null ? peerMessages : npcMessages}
+                      partnerTyping={peerChatId !== null ? peerTyping : npcTyping}
                       chatDraft={chatDraft}
                       setChatDraft={setChatDraft}
                       onSendMessage={handleSendMessage}
@@ -1229,7 +1236,7 @@ export default function SFCity({
                     <AmbientPlayerOverlay
                       chatMode={chatMode}
                       playerName={playerName}
-                      ambientMessage={playerAmbientMessage}
+                      messages={playerAmbientMessages}
                       chatDraft={chatDraft}
                       setChatDraft={setChatDraft}
                       onSendMessage={handleAmbientSend}
