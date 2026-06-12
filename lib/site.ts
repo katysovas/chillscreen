@@ -40,7 +40,7 @@ export const SITE_KEYWORDS = [
 export const FAVICON_PATH = '/images/logos/fav_white.png';
 export const LOGO_PATH = '/images/logos/logo_dark.png';
 
-/** Composed from logo_dark.png in app/opengraph-image.tsx — 1200×630 for OG / X cards. */
+/** Composed from logo_social.png in app/opengraph-image.tsx — 1200×630 for OG / X cards. */
 export const OG_IMAGE_PATH = '/opengraph-image';
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
