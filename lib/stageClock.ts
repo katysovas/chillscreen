@@ -31,6 +31,7 @@ let clockOffsetMs = 0;
 let serverSync: StageSync | null = null;
 let syncSource: SyncSource | null = null;
 let bootstrapStarted = false;
+let bootstrapChannel: StageChannel | null = null;
 let apiFetchAbort: AbortController | null = null;
 const listeners = new Set<() => void>();
 
@@ -85,8 +86,12 @@ export function applyLocalChannelPlaylist(channel: StageChannel, videos: StageVi
  * playlists replace PartyKit fallbacks (e.g. missing YOUTUBE_API_KEY on PartyKit).
  */
 export function bootstrapStageSyncFromApi(channel: StageChannel) {
-  if (bootstrapStarted || typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return;
+  if (bootstrapStarted && bootstrapChannel === channel) return;
+
+  apiFetchAbort?.abort();
   bootstrapStarted = true;
+  bootstrapChannel = channel;
 
   const controller = new AbortController();
   apiFetchAbort = controller;

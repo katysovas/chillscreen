@@ -12,6 +12,7 @@
 }
 .venue-boot-overlay--hide {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 .venue-boot-center {

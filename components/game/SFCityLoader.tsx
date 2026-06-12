@@ -96,6 +96,7 @@ export default function SFCityLoader({
       )}
       {Game && (
         <Game
+          key={venueRoute}
           spawnWorldOff={spawnWorldOff}
           venueRoute={venueRoute}
           homePreview={homePreview}

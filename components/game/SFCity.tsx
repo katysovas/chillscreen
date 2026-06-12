@@ -800,10 +800,8 @@ export default function SFCity({
   }, [spawnWorldOff, effectiveNpcCast]);
 
   const navigateToCity = useCallback((route: VenueRoute) => {
-    if (route === effectiveVenueRoute) {
-      setShowCityPicker(false);
-      return;
-    }
+    setShowCityPicker(false);
+    if (route === effectiveVenueRoute) return;
     router.push(`/${venueSlugForRoute(route)}`);
   }, [effectiveVenueRoute, router]);
 
