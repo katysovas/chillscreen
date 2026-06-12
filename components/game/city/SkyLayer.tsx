@@ -76,8 +76,15 @@ export const SkyLayer = memo(forwardRef<SVGSVGElement, SkyLayerProps>(
           </>
         )}
 
-        {(orbitSky || theme.showStars) && SKY_STAR_FIELD.map((s, i) => (
-          <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fff" opacity={orbitSky ? s.opacity * 1.4 : s.opacity} />
+        {theme.showStars && !orbitSky && SKY_STAR_FIELD.map((s, i) => (
+          <circle
+            key={i}
+            cx={s.x}
+            cy={s.y}
+            r={s.r}
+            fill="#fff"
+            opacity={s.opacity}
+          />
         ))}
 
         {!orbitSky && theme.sun && (

@@ -94,6 +94,53 @@ html:has(.game-surface) body {
 
 /* ── SFCity scene (clouds, signs, chat, sky creatures) ─────────────────────── */
 
+@keyframes space-parallax-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -2000px, 0); }
+}
+
+.space-parallax-stars {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  z-index: 0;
+  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+}
+
+.space-parallax-stars__tier {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  animation: space-parallax-drift linear infinite;
+}
+
+.space-parallax-stars__dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: transparent;
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-parallax-stars__tier {
+    animation: none;
+  }
+}
+
+@keyframes space-star-twinkle {
+  0%, 42% { opacity: calc(var(--star-o, 0.45) * 0.55); transform: scale(1); }
+  100% { opacity: min(1, calc(var(--star-o, 0.45) * 1.6)); transform: scale(1.12); }
+}
+.space-star {
+  --star-o: 0.45;
+  animation: space-star-twinkle 2.6s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 @keyframes cloud1 {
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(16px); }

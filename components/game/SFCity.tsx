@@ -93,6 +93,7 @@ import { CityNavSigns } from './CityNavSigns';
 import { StagePicker } from './StagePicker';
 import { SkyCreaturesLayer } from './SkyCreatures';
 import { SkyLayer } from './city/SkyLayer';
+import { SpaceParallaxStars } from './city/orbit';
 import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 import { MidLayer } from './city/MidLayer';
 import { GroundLayer } from './city/GroundLayer';
@@ -1576,12 +1577,15 @@ export default function SFCity({
       }}
     >
       <div>
-        <SkyLayer
-          ref={skyRef}
-          period={skyPeriod}
-          initialViewBoxX={spawnWorldOff * SKY_F}
-          orbitSky={isDeepSpace}
-        />
+        {isDeepSpace ? (
+          <SpaceParallaxStars />
+        ) : (
+          <SkyLayer
+            ref={skyRef}
+            period={skyPeriod}
+            initialViewBoxX={spawnWorldOff * SKY_F}
+          />
+        )}
         {!isDeepSpace && (
           <SkyCloudsLayer ref={cloudsRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
         )}

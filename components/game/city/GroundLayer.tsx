@@ -43,11 +43,8 @@ function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = fal
   const fits = (x: number, halfW: number) => x <= w - halfW;
 
   if (bareGround) {
-    return (
-      <g {...DECORATIVE_SHAPE}>
-        <rect x={0} y={GND_Y - 5} width={w} height={215} fill="#1a1430" />
-      </g>
-    );
+    // Deep Space — transparent deck so parallax stars show through.
+    return null;
   }
 
   return (

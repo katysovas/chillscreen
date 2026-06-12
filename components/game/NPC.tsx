@@ -15,6 +15,15 @@ import {
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
+import {
+  NPC_FAR_WANDER_CHANCE,
+  NPC_IDLE_MS_SCALE,
+  NPC_JUMP_CHANCE_SCALE,
+  NPC_JUMP_CHECK_MS,
+  NPC_WANDER_DISTANCE_SCALE,
+  NPC_WANDER_LEG_MS_SCALE,
+  NPC_WANDER_START_CHANCE,
+} from '@/lib/npcMovementTuning';
 import type { ChatLine } from '@/lib/chatLines';
 import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
 // ── Personality ────────────────────────────────────────────────────────────────
@@ -198,21 +207,28 @@ export default function NPC({
     const avoiding = Date.now() < avoidPlayerUntil.current;
 
     if (avoiding) {
-      if (curPct <= 50) return pctToWorld(rndBetween(SCREEN_MIN, 12));
-      return pctToWorld(rndBetween(88, SCREEN_MAX));
-    }
-
-    if (Math.random() < 0.25) {
+      const targetPct = curPct <= 50
+        ? rndBetween(SCREEN_MIN, 12)
+        : rndBetween(88, SCREEN_MAX);
       return pctToWorld(
-        curPct < 50
-          ? rndBetween(SCREEN_MIN, prefLo)
-          : rndBetween(prefHi, SCREEN_MAX),
+        curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
       );
     }
-    return pctToWorld(rndBetween(
-      Math.max(SCREEN_MIN, prefLo),
-      Math.min(SCREEN_MAX, prefHi),
-    ));
+
+    let targetPct: number;
+    if (Math.random() < NPC_FAR_WANDER_CHANCE) {
+      targetPct = curPct < 50
+        ? rndBetween(SCREEN_MIN, prefLo)
+        : rndBetween(prefHi, SCREEN_MAX);
+    } else {
+      targetPct = rndBetween(
+        Math.max(SCREEN_MIN, prefLo),
+        Math.min(SCREEN_MAX, prefHi),
+      );
+    }
+    return pctToWorld(
+      curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
+    );
   };
 
   const fleeFromPlayer = () => {
@@ -302,24 +318,43 @@ export default function NPC({
       }
 
       if (stateRef.current === 'idle') {
+        if (Math.random() > NPC_WANDER_START_CHANCE) {
+          timer = setTimeout(
+            decide,
+            rndBetween(
+              personality.idleMs[0] * NPC_IDLE_MS_SCALE * 0.5,
+              personality.idleMs[1] * NPC_IDLE_MS_SCALE * 0.5,
+            ),
+          );
+          return;
+        }
         stateRef.current = 'wandering';
         targetWorldRef.current = pickWanderTarget(worldXRef.current);
         applyFacing(targetWorldRef.current > worldXRef.current ? 'right' : 'left');
         applyWalking(true);
-        timer = setTimeout(decide, rndBetween(4000, 10_000));
+        timer = setTimeout(
+          decide,
+          rndBetween(4000, 10_000) * NPC_WANDER_LEG_MS_SCALE,
+        );
         return;
       }
 
       stateRef.current = 'idle';
       applyWalking(false);
-      timer = setTimeout(decide, rndBetween(...personality.idleMs));
+      timer = setTimeout(
+        decide,
+        rndBetween(
+          personality.idleMs[0] * NPC_IDLE_MS_SCALE,
+          personality.idleMs[1] * NPC_IDLE_MS_SCALE,
+        ),
+      );
     };
 
     timer = setTimeout(decide, rndBetween(800, 2000));
 
     const jumpInterval = setInterval(() => {
       if (!onScreenRef.current) return;
-      if (!pausedRef.current && Math.random() < personality.jumpiness && !jumpingRef.current) {
+      if (!pausedRef.current && Math.random() < personality.jumpiness * NPC_JUMP_CHANCE_SCALE && !jumpingRef.current) {
         jumpingRef.current = true;
         setJumping(true);
         if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
@@ -329,7 +364,7 @@ export default function NPC({
           setJumping(false);
         }, 560);
       }
-    }, rndBetween(2500, 6000));
+    }, rndBetween(...NPC_JUMP_CHECK_MS));
 
     return () => {
       clearTimeout(timer);

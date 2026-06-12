@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { festieCountForRoute, useStageFestieCounts } from '@/lib/festie/useStageFestieCounts';
 import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
 import { MobileStageCard } from './MobileStageCard';
 import {
@@ -39,7 +38,6 @@ export function StagePicker({
 }: Props) {
   const [draft, setDraft] = useState(initialName ?? '');
   const [picked, setPicked] = useState<VenueRoute | null>(initialRoute ?? null);
-  const festieCounts = useStageFestieCounts();
   const validName = !requireName || isValidPlayerName(draft);
   const isSwap = variant === 'swap';
 
@@ -174,7 +172,6 @@ export function StagePicker({
               key={stage.route}
               stage={stage}
               selected={picked === stage.route}
-              festieCount={isSwap ? festieCountForRoute(festieCounts, stage.route) : undefined}
               onSelect={() => setPicked(stage.route)}
             />
           ))}

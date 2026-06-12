@@ -10,34 +10,19 @@ const IFRAME_W = 540;
 const IFRAME_H = 304;
 const STAGE_W = 620;
 
+/** Static facade styles — no continuous CSS animations (Deep Space perf). */
 const S = `
-  @keyframes ds-pulse {
-    0%, 100% { opacity: .35; transform: scale(.85); }
-    50% { opacity: 1; transform: scale(1); }
-  }
-  @keyframes ds-scan {
-    0% { transform: translateY(-100%); opacity: 0; }
-    8% { opacity: .12; }
-    100% { transform: translateY(320%); opacity: 0; }
-  }
-  @keyframes ds-ring-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
   .ds-wrap {
     display: flex; flex-direction: column; align-items: center; gap: 0;
     position: relative; z-index: 1;
     font-family: 'Dosis', system-ui, sans-serif;
-    filter:
-      drop-shadow(0 0 48px rgba(54,224,200,.24))
-      drop-shadow(0 28px 64px rgba(0,0,0,.62));
+    filter: drop-shadow(0 20px 48px rgba(0,0,0,.55));
   }
 
   .ds-halo {
     position: absolute; top: 36px; left: 50%; transform: translateX(-50%);
     width: 460px; height: 460px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(125,240,221,.16) 0%, transparent 68%);
+    background: radial-gradient(circle, rgba(125,240,221,.12) 0%, transparent 68%);
     pointer-events: none;
   }
 
@@ -55,11 +40,9 @@ const S = `
     content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
     width: 4px; height: 4px; border-radius: 50%;
     background: #7df0dd; box-shadow: 0 0 6px rgba(125,240,221,.8);
-    animation: ds-pulse 2.4s ease-in-out infinite;
   }
   .ds-pylon--l { left: 0; }
   .ds-pylon--r { right: 0; }
-  .ds-pylon--r::after { animation-delay: .6s; }
 
   .ds-sign {
     width: ${STAGE_W}px; min-height: 54px;
@@ -110,20 +93,6 @@ const S = `
       rgba(125,240,221,.06) 14px 15px
     );
   }
-  .ds-orbit-ring {
-    position: absolute; top: 50%; left: 50%;
-    width: 8px; height: 8px; margin: -4px 0 0 -4px;
-    border: 1px solid rgba(125,240,221,.35);
-    border-radius: 50%;
-    box-shadow: 0 0 0 3px rgba(125,240,221,.08), 0 0 12px rgba(54,224,200,.2);
-    animation: ds-ring-spin 12s linear infinite;
-  }
-  .ds-orbit-ring::after {
-    content: ''; position: absolute; top: -2px; left: 50%;
-    width: 3px; height: 3px; margin-left: -1.5px;
-    border-radius: 50%; background: #ffcb39;
-    box-shadow: 0 0 6px rgba(255,203,57,.7);
-  }
 
   .ds-body {
     width: ${STAGE_W}px;
@@ -169,12 +138,6 @@ const S = `
     content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
     background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 38%);
   }
-  .ds-screen::after {
-    content: ''; position: absolute; left: 0; right: 0; height: 28%;
-    top: 0; pointer-events: none; z-index: 3;
-    background: linear-gradient(180deg, rgba(125,240,221,.08), transparent);
-    animation: ds-scan 6s ease-in-out infinite;
-  }
 
   .ds-iframe {
     display: block; width: 100%;
@@ -193,12 +156,9 @@ const S = `
     width: 5px; height: 5px; border-radius: 50%;
     background: #7df0dd;
     box-shadow: 0 0 5px rgba(125,240,221,.6);
-    animation: ds-pulse 1.8s ease-in-out infinite;
   }
-  .ds-star:nth-child(2) { animation-delay: .3s; background: #ffcb39; box-shadow: 0 0 5px rgba(255,203,57,.5); }
-  .ds-star:nth-child(3) { animation-delay: .6s; }
-  .ds-star:nth-child(4) { animation-delay: .9s; background: #ffcb39; box-shadow: 0 0 5px rgba(255,203,57,.5); }
-  .ds-star:nth-child(5) { animation-delay: 1.2s; }
+  .ds-star:nth-child(2) { background: #ffcb39; box-shadow: 0 0 5px rgba(255,203,57,.5); }
+  .ds-star:nth-child(4) { background: #ffcb39; box-shadow: 0 0 5px rgba(255,203,57,.5); }
 
   .ds-base {
     width: ${STAGE_W}px; height: 30px;
@@ -247,9 +207,7 @@ function DeepSpaceView({
         <div className="ds-title">DEEP SPACE</div>
         <div key={titleKey} className="ds-sub">{videoTitle}</div>
       </div>
-      <div className="ds-orbit-strip" aria-hidden>
-        <div className="ds-orbit-ring" />
-      </div>
+      <div className="ds-orbit-strip" aria-hidden />
       <div className="ds-body">
         <div className="ds-bezel">
           <div className="ds-screen">{screen}</div>

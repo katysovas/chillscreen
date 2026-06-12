@@ -5,11 +5,101 @@ import { SITE_URL } from '@/lib/site';
 /** @see https://developers.google.com/youtube/iframe_api_reference#onStateChange */
 export type YouTubePlayerState = -1 | 0 | 1 | 2 | 3 | 5;
 
+const YT_ORIGINS = new Set([
+  'https://www.youtube.com',
+  'https://www.youtube-nocookie.com',
+]);
+
+type PendingCommand = { func: string; args: unknown[] };
+
+const readyIframes = new WeakSet<HTMLIFrameElement>();
+const pendingCommands = new WeakMap<HTMLIFrameElement, PendingCommand[]>();
+let readyListenerOn = false;
+
+function targetOrigin(iframe: HTMLIFrameElement): string {
+  try {
+    return new URL(iframe.src).origin;
+  } catch {
+    return 'https://www.youtube-nocookie.com';
+  }
+}
+
+function findIframeBySource(source: MessageEventSource | null): HTMLIFrameElement | null {
+  if (!source) return null;
+  for (const el of document.querySelectorAll<HTMLIFrameElement>('iframe[data-stage-embed]')) {
+    if (el.contentWindow === source) return el;
+  }
+  return null;
+}
+
+function flushPending(iframe: HTMLIFrameElement) {
+  const queue = pendingCommands.get(iframe);
+  if (!queue?.length) return;
+  pendingCommands.delete(iframe);
+  for (const cmd of queue) {
+    postCommandImmediate(iframe, cmd.func, cmd.args);
+  }
+}
+
+function markYouTubeReady(iframe: HTMLIFrameElement) {
+  if (readyIframes.has(iframe)) return;
+  readyIframes.add(iframe);
+  flushPending(iframe);
+}
+
+function onYouTubeReadyMessage(e: MessageEvent) {
+  if (!YT_ORIGINS.has(e.origin)) return;
+  try {
+    const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+    if (data?.event !== 'onReady') return;
+    const iframe = findIframeBySource(e.source);
+    if (iframe) markYouTubeReady(iframe);
+  } catch {
+    // Non-JSON widget traffic — ignore.
+  }
+}
+
+function ensureReadyListener() {
+  if (readyListenerOn || typeof window === 'undefined') return;
+  readyListenerOn = true;
+  window.addEventListener('message', onYouTubeReadyMessage);
+}
+
 function sendListening(iframe: HTMLIFrameElement) {
+  ensureReadyListener();
   iframe.contentWindow?.postMessage(
     JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }),
-    '*',
+    targetOrigin(iframe),
   );
+}
+
+function postCommandImmediate(
+  iframe: HTMLIFrameElement,
+  func: string,
+  args: unknown[] = [],
+) {
+  iframe.contentWindow?.postMessage(
+    JSON.stringify({ event: 'command', func, args }),
+    targetOrigin(iframe),
+  );
+}
+
+/** Post a command — queued until the iframe fires `onReady`. */
+export function postCommand(
+  iframe: HTMLIFrameElement | null,
+  func: string,
+  args: unknown[] = [],
+) {
+  if (!iframe?.contentWindow) return;
+  ensureReadyListener();
+  if (!readyIframes.has(iframe)) {
+    const queue = pendingCommands.get(iframe) ?? [];
+    queue.push({ func, args });
+    pendingCommands.set(iframe, queue);
+    sendListening(iframe);
+    return;
+  }
+  postCommandImmediate(iframe, func, args);
 }
 
 /**
@@ -51,20 +141,8 @@ export function stageEmbedSrc(id: string, startSec = 0): string {
   return `https://www.youtube-nocookie.com/embed/${id}?${params}`;
 }
 
-/** Post a command immediately — YouTube accepts these without waiting for onReady. */
-export function postCommand(
-  iframe: HTMLIFrameElement | null,
-  func: string,
-  args: unknown[] = [],
-) {
-  iframe?.contentWindow?.postMessage(
-    JSON.stringify({ event: 'command', func, args }),
-    '*',
-  );
-}
-
 /**
- * Register for IFrame API commands, then start muted autoplay.
+ * Arm the widget API after iframe load — listening now, commands after `onReady`.
  * Use only on first load — muting again after unmute breaks stage audio.
  */
 export function primeYouTubePlayback(iframe: HTMLIFrameElement | null) {
@@ -116,4 +194,11 @@ export function scheduleYouTubePlaybackKicks(
   return () => {
     for (const t of timers) window.clearTimeout(t);
   };
+}
+
+/** Drop ready/queued state when the iframe node is remounted. */
+export function resetYouTubePlayerState(iframe: HTMLIFrameElement | null) {
+  if (!iframe) return;
+  readyIframes.delete(iframe);
+  pendingCommands.delete(iframe);
 }

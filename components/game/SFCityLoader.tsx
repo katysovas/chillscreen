@@ -2,14 +2,13 @@
 
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ComponentType,
 } from 'react';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import type { VenueRoute } from '@/lib/venueRoutes';
-import { getSkyPeriod, skyTheme } from '@/lib/skyTimeOfDay';
+import { StageBootShell } from './StageBootShell';
 
 type SFCityProps = {
   spawnWorldOff?: number;
@@ -29,39 +28,7 @@ const FADE_MS = 320;
 type SFCityComponent = ComponentType<SFCityProps>;
 
 function GameLoadingShell({ visible }: { visible: boolean }) {
-  const skyGradient = useMemo(() => {
-    const theme = skyTheme(getSkyPeriod());
-    return theme.gradient.map(s => `${s.color} ${s.offset}`).join(', ');
-  }, []);
-
-  return (
-    <div
-      className="game-loading-shell"
-      aria-hidden={!visible}
-      style={{
-        opacity: visible ? 1 : 0,
-        pointerEvents: visible ? 'auto' : 'none',
-      }}
-    >
-      <div
-        className="game-loading-sky"
-        style={{ background: `linear-gradient(180deg, ${skyGradient})` }}
-      />
-      <style>{`
-        .game-loading-shell {
-          position: fixed;
-          inset: 0;
-          z-index: 9999;
-          background: #000;
-          transition: opacity ${FADE_MS}ms ease;
-        }
-        .game-loading-sky {
-          position: absolute;
-          inset: 0;
-        }
-      `}</style>
-    </div>
-  );
+  return <StageBootShell visible={visible} />;
 }
 
 /** Code-split entry — keeps the main route JS small until the game is needed. */

@@ -1,16 +1,15 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import SFCityLoader from './SFCityLoader';
+import { StageBootShell } from './StageBootShell';
 import { WelcomePopup } from './WelcomePopup';
-import { fetchAuthMe } from '@/lib/festie/client';
-import type { FestieOwner } from '@/lib/festie/types';
 import { persistFestieStage, venueRouteForStageSlug } from '@/lib/festie/stage';
 import { hydratePlayerSession } from '@/lib/player/session';
 import { identifyPlayer } from '@/lib/analytics';
 import { getPlayerName } from '@/lib/playerStorage';
-import { randomPreviewCityRoute, stageWorldOffForRoute, ISOLATED_CITY_ORDER } from '@/lib/isolatedCity';
+import { randomPreviewCityRoute, stageWorldOffForRoute } from '@/lib/isolatedCity';
 import { setAudioMuted } from '@/lib/audioMute';
 import {
   getSessionBalloonColor,
@@ -20,18 +19,16 @@ import {
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
 
-const SSR_PREVIEW_ROUTE = ISOLATED_CITY_ORDER[0]!;
+type BootPhase = 'loading' | 'guest' | 'redirecting';
 
-/** Home `/` — random stage backdrop + city picker overlay. */
+/** Home `/` — resolve auth first, then one stage backdrop + city picker overlay. */
 export function HomeCityPicker() {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [previewRoute, setPreviewRoute] = useState<VenueRoute>(SSR_PREVIEW_ROUTE);
+  const [phase, setPhase] = useState<BootPhase>('loading');
+  const [previewRoute, setPreviewRoute] = useState<VenueRoute | null>(null);
   const [muted, setMuted] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
-  const [isSignedIn, setIsSignedIn] = useState(false);
   const [festieName, setFestieName] = useState<string | null>(null);
-  const [festie, setFestie] = useState<FestieOwner | null>(null);
+  const bootedRef = useRef(false);
   const balloonColor = useSyncExternalStore(
     subscribeBalloonColor,
     getSessionBalloonColor,
@@ -39,25 +36,32 @@ export function HomeCityPicker() {
   );
 
   useEffect(() => {
-    setPreviewRoute(randomPreviewCityRoute());
-    setMounted(true);
-  }, []);
+    if (bootedRef.current) return;
+    bootedRef.current = true;
 
-  useEffect(() => {
     void (async () => {
       try {
         const profile = await hydratePlayerSession();
-        const auth = await fetchAuthMe();
-        setIsSignedIn(auth.authenticated);
-        setFestie(auth.festie);
-        setFestieName(auth.festie?.name ?? profile.name ?? getPlayerName());
+        setFestieName(profile.festie?.name ?? profile.name ?? getPlayerName());
+
+        if (profile.authenticated && profile.festie) {
+          const route = venueRouteForStageSlug(profile.festie.stage_slug);
+          if (route) {
+            identifyPlayer(profile.festie.name);
+            setPhase('redirecting');
+            router.replace(`/${venueSlugForRoute(route)}`);
+            return;
+          }
+        }
+
+        setPreviewRoute(randomPreviewCityRoute());
+        setPhase('guest');
       } catch {
-        setIsSignedIn(false);
-      } finally {
-        setAuthReady(true);
+        setPreviewRoute(randomPreviewCityRoute());
+        setPhase('guest');
       }
     })();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     setAudioMuted(muted);
@@ -69,22 +73,15 @@ export function HomeCityPicker() {
     router.push(`/${venueSlugForRoute(route)}`);
   };
 
-  useEffect(() => {
-    if (!authReady || !isSignedIn || !festie) return;
-    const route = venueRouteForStageSlug(festie.stage_slug);
-    if (!route) return;
-    identifyPlayer(festie.name);
-    router.replace(`/${venueSlugForRoute(route)}`);
-  }, [authReady, isSignedIn, festie, router]);
-
-  const route = mounted ? previewRoute : SSR_PREVIEW_ROUTE;
+  if (phase !== 'guest' || previewRoute == null) {
+    return <StageBootShell />;
+  }
 
   return (
     <>
       <SFCityLoader
-        key={route}
-        venueRoute={route}
-        spawnWorldOff={stageWorldOffForRoute(route)}
+        venueRoute={previewRoute}
+        spawnWorldOff={stageWorldOffForRoute(previewRoute)}
         homePreview
         muted={muted}
       />
@@ -112,20 +109,17 @@ export function HomeCityPicker() {
       >
         {muted ? '🔇' : '🔊'}
       </button>
-      {authReady && !isSignedIn && (
-        <WelcomePopup
-          balloonColor={balloonColor}
-          requireAuth
-          initialName={festieName ?? undefined}
-          onAuthSuccess={name => {
-            void hydratePlayerSession().then(profile => {
-              setIsSignedIn(profile.authenticated);
-              setFestieName(profile.name ?? name);
-            });
-          }}
-          onEnter={handleEnter}
-        />
-      )}
+      <WelcomePopup
+        balloonColor={balloonColor}
+        requireAuth
+        initialName={festieName ?? undefined}
+        onAuthSuccess={name => {
+          void hydratePlayerSession().then(profile => {
+            setFestieName(profile.festie?.name ?? profile.name ?? name);
+          });
+        }}
+        onEnter={handleEnter}
+      />
     </>
   );
 }

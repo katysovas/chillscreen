@@ -6,7 +6,6 @@ import { MobileStageCard } from './MobileStageCard';
 import { createFestie, loginFestie } from '@/lib/festie/client';
 import type { FestieSessionRecap } from '@/lib/festie/sessionRecap';
 import { venueRouteForStageSlug } from '@/lib/festie/stage';
-import { festieCountForRoute, useStageFestieCounts } from '@/lib/festie/useStageFestieCounts';
 import { getLocalFestieName, hasLocalFestieAccount } from '@/lib/festie/localAccount';
 import {
   isValidFestieName,
@@ -196,7 +195,6 @@ export function WelcomePopup({
   const [mobile, setMobile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const festieCounts = useStageFestieCounts();
 
   const nameValid = isValidFestieName(draft);
   const passwordValid = isValidFestiePassword(password);
@@ -492,7 +490,6 @@ export function WelcomePopup({
                     key={stage.route}
                     stage={stage}
                     selected={picked === stage.route}
-                    festieCount={festieCountForRoute(festieCounts, stage.route)}
                     onSelect={() => setPicked(stage.route)}
                   />
                 ))}
