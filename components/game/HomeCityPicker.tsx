@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import SFCityLoader from './SFCityLoader';
-import { StageBootShell } from './StageBootShell';
 import { WelcomePopup } from './WelcomePopup';
 import { persistFestieStage, venueRouteForStageSlug } from '@/lib/festie/stage';
 import { hydratePlayerSession } from '@/lib/player/session';
@@ -74,7 +73,7 @@ export function HomeCityPicker() {
   };
 
   if (phase !== 'guest' || previewRoute == null) {
-    return <StageBootShell />;
+    return null;
   }
 
   return (
@@ -84,6 +83,7 @@ export function HomeCityPicker() {
         spawnWorldOff={stageWorldOffForRoute(previewRoute)}
         homePreview
         muted={muted}
+        serverBootOverlay
       />
       <button
         type="button"

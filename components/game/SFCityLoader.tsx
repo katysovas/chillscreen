@@ -9,7 +9,7 @@ import {
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import { stageChannelForRoute } from '@/lib/isolatedCity';
 import { preloadStageRouteAssets } from '@/lib/stagePreload';
-import { hideVenueBootOverlay } from '@/lib/venueBoot';
+import { hideVenueBootOverlay, keepVenueBootOverlay } from '@/lib/venueBoot';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { StageBootShell } from './StageBootShell';
 
@@ -68,6 +68,8 @@ export default function SFCityLoader({
       loadedRef.current = true;
       setGame(() => mod.default);
 
+      if (keepVenueBootOverlay()) return;
+
       if (serverBootOverlay) {
         hideVenueBootOverlay();
       } else {
@@ -85,9 +87,13 @@ export default function SFCityLoader({
     };
   }, [venueRoute, serverBootOverlay]);
 
+  const pinBootShell = keepVenueBootOverlay() && !serverBootOverlay;
+
   return (
     <>
-      {!serverBootOverlay && showShell && <StageBootShell visible={shellVisible} />}
+      {(pinBootShell || (!serverBootOverlay && showShell)) && (
+        <StageBootShell visible={pinBootShell || shellVisible} />
+      )}
       {Game && (
         <Game
           spawnWorldOff={spawnWorldOff}
