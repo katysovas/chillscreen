@@ -385,7 +385,7 @@ export function FestieSettingsModal({
         aria-labelledby="festie-settings-title"
         onClick={e => e.stopPropagation()}
         style={{
-          width: 'min(94vw, 540px)',
+          width: 'min(94vw, 620px)',
           maxHeight: 'min(88vh, 720px)',
           display: 'flex',
           flexDirection: 'column',
