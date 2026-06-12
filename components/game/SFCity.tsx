@@ -141,7 +141,7 @@ const TEST_PLAYER_LOADOUT = {} as const;
 const TEST_CHAT_CONNECT_ON_LOAD = false;
 
 /** Preview session recap modal on load with sample events (testing). */
-const TEST_FESTIE_RECAP_ON_LOAD = true;
+const TEST_FESTIE_RECAP_ON_LOAD = false;
 
 // ─── NPC cast ─────────────────────────────────────────────────────────────────
 
