@@ -1,0 +1,218 @@
+[
+  {
+    "name": "maya",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "tracking the bathroom line like a stock ticker",
+    "personalityNotes": "Counts the bathroom queue obsessively and treats wait times as data. Resigned but cannot stop checking. Mutters small injustices of festival logistics to herself.",
+    "lines": [
+      "line moved two spots",
+      "twenty deep again",
+      "timing this for science",
+      "average wait twelve minutes",
+      "someone just gave up",
+      "left lane always faster",
+      "respect the line honestly",
+      "worth it. probably not"
+    ]
+  },
+  {
+    "name": "kevin",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": null,
+    "vibe": "phone battery doomer, still dancing",
+    "personalityNotes": "Watches his battery percentage die in real time. Treats low power mode like a survival strategy. Keeps dancing through the dread.",
+    "lines": [
+      "ten percent. cool",
+      "low power mode era",
+      "brightness at zero now",
+      "one more song maybe",
+      "charger guy never came back",
+      "phone dies i leave",
+      "should have charged earlier",
+      "maps drained half of it"
+    ]
+  },
+  {
+    "name": "priya",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": "hat-pirate-bandana",
+    "vibe": "keeps almost spotting a guy named greg",
+    "personalityNotes": "Greg is always just out of view. She scans the crowd constantly and narrates near-misses like a nature documentary. Never actually finds him.",
+    "lines": [
+      "that was almost greg",
+      "not greg. again",
+      "greg changed shirts apparently",
+      "greg by the tacos maybe",
+      "so close that time",
+      "day three of greg watch",
+      "greg is avoiding me",
+      "he knows i'm looking"
+    ]
+  },
+  {
+    "name": "sam",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-pizza",
+    "vibe": "spreading a secret set rumor he half heard",
+    "personalityNotes": "Heard about a secret set from a guy and now it is his whole identity. Vague about every detail, confident about the vibe. Enjoys that nobody believes him.",
+    "lines": [
+      "secret set at midnight allegedly",
+      "heard it from a guy",
+      "guy seemed legit",
+      "could be nothing tho",
+      "stage lights tested earlier. sus",
+      "don't quote me",
+      "nobody believes me. fine",
+      "rumor has layers"
+    ]
+  },
+  {
+    "name": "jess",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": "hat-headphones",
+    "vibe": "undercover and convinced it's working",
+    "personalityNotes": "Thinks she is blending in flawlessly. Mutters surveillance notes to herself about backpacks and flanks. Comedy only, never threatening, never addresses players.",
+    "lines": [
+      "blending in perfectly",
+      "nobody suspects the headphones",
+      "that backpack again",
+      "noting that for later",
+      "acting natural. nailed it",
+      "left flank looks normal",
+      "just a regular attendee",
+      "totally off duty right now"
+    ]
+  },
+  {
+    "name": "tina",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-confetti",
+    "vibe": "convinced there's a hidden dj control room",
+    "personalityNotes": "Believes the real DJ booth is hidden somewhere above the stage. Treats finding it like a video game quest. Collects vague clues nobody else cares about.",
+    "lines": [
+      "booth is up there somewhere",
+      "saw a door earlier",
+      "staff only. suspicious",
+      "dj has to be close",
+      "window flickered. saw it",
+      "one keycard from glory",
+      "they hide the good stuff",
+      "that vent leads somewhere"
+    ]
+  },
+  {
+    "name": "nina",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": null,
+    "vibe": "headphone volume perfectionist",
+    "personalityNotes": "Endlessly adjusting her headphone volume by tiny increments. Has strong theories about the perfect level. Finds peace for exactly one song at a time.",
+    "lines": [
+      "volume at exactly seven",
+      "six is too quiet",
+      "eight hurts. proven",
+      "left ear feels louder",
+      "perfect level lasted one song",
+      "adjusting again. fine",
+      "my ears have opinions",
+      "seven point five would fix this"
+    ]
+  },
+  {
+    "name": "ben",
+    "archetype": "wanderer",
+    "outfit": "none",
+    "prop": "shades-glasses-blue",
+    "vibe": "pretty sure he's on the livestream",
+    "personalityNotes": "Convinced the stage cameras keep panning to him. Performs being casual for an audience that may not exist. Checks his angles constantly.",
+    "lines": [
+      "pretty sure that's a camera",
+      "just waved at it",
+      "mom might be watching",
+      "good side facing stage",
+      "acting unbothered for the stream",
+      "camera panned past me twice",
+      "that's basically screen time",
+      "fixing my hair just in case"
+    ]
+  },
+  {
+    "name": "elliot",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "shades-glasses-optic",
+    "vibe": "swears he just saw the headliner walking around",
+    "personalityNotes": "Convinced he spotted the headliner in the crowd buying food. Playing it extremely cool about it. Nobody else noticed and that makes it better.",
+    "lines": [
+      "that was him. probably",
+      "headliners walk among us",
+      "same jacket from the poster",
+      "he got a hotdog",
+      "nobody else noticed",
+      "not gonna bother him",
+      "cool about it. so cool",
+      "he nodded at me i think"
+    ]
+  },
+  {
+    "name": "tim",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "hand-boombox",
+    "vibe": "silent disco skeptic who brought a boombox",
+    "personalityNotes": "Thinks silent disco is a scam against real speakers. Brought a boombox on principle and keeps it off, mostly. Misses subwoofers like an old friend.",
+    "lines": [
+      "real speakers exist you know",
+      "brought my own sound",
+      "this is just headphones",
+      "everyone dancing to nothing",
+      "looks unhinged from outside",
+      "boombox stays off. for now",
+      "i miss subwoofers",
+      "my channel is the air"
+    ]
+  },
+  {
+    "name": "leo",
+    "archetype": "wanderer",
+    "outfit": "none",
+    "prop": "drink-beer",
+    "vibe": "thinks the secret set rumor is a meme",
+    "personalityNotes": "Heard the secret set rumor and is fully unconvinced. Watches the hype spread like a scientist. Here for the beer either way.",
+    "lines": [
+      "secret set is a meme",
+      "same rumor every year",
+      "no proof. lots of talk",
+      "friends fully bought in",
+      "i'm here for the beer",
+      "midnight will come and go",
+      "mystery keeps ticket sales up",
+      "fine if it's real tho"
+    ]
+  },
+  {
+    "name": "lucas",
+    "archetype": "chiller",
+    "outfit": "pirate",
+    "prop": null,
+    "vibe": "deeply loyal to one headphone channel",
+    "personalityNotes": "Has picked a silent disco channel and made it his whole personality. Quietly judges people on other channels. Watches mismatched dancing like a documentary.",
+    "lines": [
+      "blue channel people are wrong",
+      "half this crowd hears nothing",
+      "that guy is between channels",
+      "green is the correct channel",
+      "watching people dance offbeat",
+      "switched once. never again",
+      "channel loyalty matters",
+      "red channel propaganda everywhere"
+    ]
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "name": "vanessa",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "food-popcorn",
+    "vibe": "whisper-commentary on the crowd and the film",
+    "personalityNotes": "People-watches the blanket rows with popcorn like it's a double feature. Tracks who brought wine, who forgot a jacket, and which couple is about to argue during the quiet scene. Never shushes anyone — just narrates softly to herself.",
+    "lines": [
+      "blanket row three is tense",
+      "they forgot a jacket. classic",
+      "popcorn beats the plot twist",
+      "someone's wine in a coffee cup",
+      "fog rolled in right on cue",
+      "that couple's not watching",
+      "better than my couch honestly",
+      "shhh. i'm narrating"
+    ]
+  },
+  {
+    "name": "todd",
+    "archetype": "wanderer",
+    "outfit": "none",
+    "prop": null,
+    "vibe": "one blanket short of a proper setup",
+    "personalityNotes": "Showed up for outdoor cinema underprepared and is calmly scavenging the lawn for a spare blanket, pillow, or chair before act two. Treats every folded hoodie as a potential solution. Unbothered but committed.",
+    "lines": [
+      "need one more blanket layer",
+      "hoodie counts as a pillow",
+      "grass is colder than it looks",
+      "good seats gone by sunset",
+      "fog's making it worse",
+      "borrowed this chair. maybe",
+      "act two starts soon",
+      "sf nights hit different"
+    ]
+  },
+  {
+    "name": "kayla",
+    "archetype": "vendor",
+    "outfit": "pirate",
+    "prop": "drink-lemonade",
+    "vibe": "concession stand in the wrong row",
+    "personalityNotes": "Sells lemonade from a spot she swears is just outside the good sightlines. Watches people walk past her toward the screen with snacks already in hand. The drink is cold. The lawn geometry is the enemy.",
+    "lines": [
+      "screen glare from this angle",
+      "row five has the sweet spot",
+      "lemonade's cold at least",
+      "everyone packed snacks already",
+      "fog eats the subtitles here",
+      "move left. trust me",
+      "outdoor cinema math is cruel",
+      "tomorrow i'm row four"
+    ]
+  },
+  {
+    "name": "kyle",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "food-popcorn",
+    "vibe": "not leaving before the post-credits scene",
+    "personalityNotes": "Deeply committed to every stinger, mid-credit tag, and after-credits tease. Friends have gone home. Treats early leavers like they spoiled the ending on purpose. Mellow until someone stands up too soon.",
+    "lines": [
+      "stay. there's another scene",
+      "post-credits always pay off",
+      "don't stand up yet",
+      "they're teasing the sequel",
+      "i waited through the credits",
+      "worth it. every time",
+      "who leaves during stingers",
+      "one more minute. promise"
+    ]
+  }
+]

@@ -71,6 +71,8 @@ type NPCProps = NPCConfig & {
     npcTyping: boolean;
     messages: ChatLine[];
   };
+  /** Deep Space — zero-G float visuals instead of walk cycle. */
+  spaceFloat?: boolean;
 };
 
 function rndBetween(min: number, max: number) {
@@ -107,6 +109,7 @@ export default function NPC({
   balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality, stageAnchor, stageCrowd,
   paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false, greetingChat,
+  spaceFloat = false,
 }: NPCProps) {
   // ── React state: only for infrequent visual changes ─────────────────────────
   const [jumping,   setJumping]  = useState(false);
@@ -134,6 +137,8 @@ export default function NPC({
   const stageVisibleRef     = useRef(!stageAnchor);
   const chatConnectedRef    = useRef(chatConnected || greeting);
   chatConnectedRef.current = chatConnected || greeting;
+  const spaceFloatRef       = useRef(spaceFloat);
+  spaceFloatRef.current     = spaceFloat;
   const wasPausedRef        = useRef(paused);
 
   // Keep RAF/decision loops in sync — useEffect runs after paint.
@@ -372,7 +377,7 @@ export default function NPC({
       if (jumpTimerRef.current) { clearTimeout(jumpTimerRef.current); jumpTimerRef.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, personality]);
+  }, [active, personality, spaceFloat]);
 
   // ── Movement — registered with SFCity's single game-frame RAF ───────────────
   useEffect(() => {
@@ -465,7 +470,7 @@ export default function NPC({
 
     return () => { setNpcMovementTick(index, null); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, index, personality, stageAnchor]);
+  }, [active, index, personality, stageAnchor, spaceFloat]);
 
   // ── Flee on disconnect ─────────────────────────────────────────────────────
   const wasGreetingRef = useRef(false);
@@ -498,6 +503,7 @@ export default function NPC({
           walking={walkingRef.current}
           facing={facingRef.current}
           dancing={dancing && !greeting}
+          spaceFloat={spaceFloat}
           balloonColor={balloonColor}
           loadout={loadout}
           accessory={accessory}

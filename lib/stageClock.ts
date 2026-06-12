@@ -2,15 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  DEFAULT_STAGE_SYNC,
-  mergeStagePlaylists,
-  mergeStageSyncPlaylists,
+  EMPTY_STAGE_SYNC,
+  mergePartialPlaylists,
   scheduleFor,
   type ScheduledVideo,
   type StageChannel,
   type StageSync,
   type StageVideo,
-} from './stageVideos';
+} from './stageSyncCore';
 
 /**
  * Shared synchronized-playback clock.
@@ -22,11 +21,11 @@ import {
  * seek position deterministically. No per-tick network traffic is needed.
  *
  * Works single-player too: until the handshake arrives we fall back to the
- * built-in default sync, so videos still rotate on a shared deterministic
+ * bundled channel JSON, so videos still rotate on a shared deterministic
  * schedule even if the room is unreachable.
  */
 
-type SyncSource = 'partykit' | 'api';
+type SyncSource = 'partykit' | 'api' | 'local';
 
 let clockOffsetMs = 0;
 let serverSync: StageSync | null = null;
@@ -42,8 +41,8 @@ export function applyServerStageSync(
   source?: SyncSource,
 ) {
   const playlists = serverSync
-    ? mergeStageSyncPlaylists(serverSync.playlists, sync.playlists)
-    : mergeStagePlaylists(sync.playlists);
+    ? mergePartialPlaylists(serverSync.playlists, sync.playlists)
+    : mergePartialPlaylists(undefined, sync.playlists);
 
   // PartyKit owns the clock once connected; API can still upgrade fallback playlists.
   if (source === 'api' && syncSource === 'partykit' && serverSync) {
@@ -59,24 +58,44 @@ export function applyServerStageSync(
   for (const notify of listeners) notify();
 }
 
+/** Seed one channel's fallback playlist before the API/PartyKit handshake. */
+export function applyLocalChannelPlaylist(channel: StageChannel, videos: StageVideo[]) {
+  if (!videos.length) return;
+  const sync: StageSync = {
+    epoch: EMPTY_STAGE_SYNC.epoch,
+    defaultDurationMs: EMPTY_STAGE_SYNC.defaultDurationMs,
+    playlists: { [channel]: videos },
+  };
+  if (serverSync) {
+    serverSync = {
+      ...serverSync,
+      playlists: mergePartialPlaylists(serverSync.playlists, sync.playlists),
+    };
+    if (!syncSource) syncSource = 'local';
+  } else {
+    serverSync = sync;
+    syncSource = 'local';
+  }
+  for (const notify of listeners) notify();
+}
+
 /**
- * Fetch resolved playlists from the Next.js API (YouTube API channels, etc.).
+ * Fetch resolved playlist for one stage channel from the Next.js API.
  * Runs in parallel with PartyKit; when both complete, API-resolved youtube-api
  * playlists replace PartyKit fallbacks (e.g. missing YOUTUBE_API_KEY on PartyKit).
  */
-export function bootstrapStageSyncFromApi() {
+export function bootstrapStageSyncFromApi(channel: StageChannel) {
   if (bootstrapStarted || typeof window === 'undefined') return;
   bootstrapStarted = true;
 
   const controller = new AbortController();
   apiFetchAbort = controller;
 
-  fetch('/api/stage/sync', { signal: controller.signal })
+  fetch(`/api/stage/sync?channel=${encodeURIComponent(channel)}`, { signal: controller.signal })
     .then(res => {
       if (!res.ok) return Promise.reject(new Error(String(res.status)));
       const ageSec = parseInt(res.headers.get('Age') ?? '0', 10);
       return res.json().then((body: { serverNow: number; stage: StageSync }) => ({
-        // Cached responses freeze serverNow at generation time; Age keeps the clock aligned.
         serverNow: body.serverNow + ageSec * 1000,
         stage: body.stage,
       }));
@@ -88,24 +107,17 @@ export function bootstrapStageSyncFromApi() {
     .catch(() => {
       apiFetchAbort = null;
       if (controller.signal.aborted) return;
-      // Offline or API unavailable — DEFAULT_STAGE_SYNC fallbacks still work.
     });
 }
 
 export function getStageSync(): StageSync {
-  const base = serverSync ?? DEFAULT_STAGE_SYNC;
-  return {
-    ...base,
-    playlists: mergeStagePlaylists(base.playlists),
-  };
+  return serverSync ?? EMPTY_STAGE_SYNC;
 }
 
-/** Wall-clock time aligned to the server (falls back to local time pre-sync). */
 export function syncedNow(): number {
   return Date.now() + clockOffsetMs;
 }
 
-/** Current scheduled video + seek offset for a channel, right now. */
 export function currentSchedule(channel: StageChannel): ScheduledVideo | null {
   return scheduleFor(channel, syncedNow(), getStageSync());
 }
@@ -117,24 +129,16 @@ function subscribe(cb: () => void): () => void {
   };
 }
 
-/** Fires when the server/API sync handshake updates playlists or clock skew. */
 export function subscribeStageSync(cb: () => void): () => void {
   return subscribe(cb);
 }
 
 export type StageChannelState = {
-  /** The video that should be playing now (undefined while not live). */
   video: StageVideo | undefined;
   index: number;
-  /** Bumps on every rotation so the caller can remount its <iframe>. */
   vidKey: number;
 };
 
-/**
- * Subscribes a component to the synchronized schedule for one channel. Returns
- * the current video + a `vidKey` that changes whenever the schedule rotates,
- * and arms a single timer aligned to the next rotation boundary (no polling).
- */
 export function useStageChannel(channel: StageChannel, live: boolean): StageChannelState {
   const [schedule, setSchedule] = useState<ScheduledVideo | null>(() =>
     currentSchedule(channel),
@@ -165,16 +169,13 @@ export function useStageChannel(channel: StageChannel, live: boolean): StageChan
       setSchedule(next);
 
       if (next) {
-        // Re-evaluate just after the next rotation boundary.
         timer = setTimeout(tick, Math.max(250, next.msUntilNext) + 50);
       } else {
-        // Sync not ready yet — retry until playlists arrive.
         timer = setTimeout(tick, 500);
       }
     };
 
     tick();
-    // Re-run immediately when the server handshake arrives / clock realigns.
     const unsubscribe = subscribe(tick);
 
     return () => {

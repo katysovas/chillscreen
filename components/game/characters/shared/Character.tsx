@@ -1,7 +1,8 @@
 'use client';
-import { forwardRef, useEffect, useImperativeHandle, useRef, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import type { BubbleSide } from '../../ChatBubble';
 import {
+  areLoadoutItemsReady,
   equippedLoadoutItemIds,
   getLoadoutRegistryVersion,
   GlowstickAmbient,
@@ -52,6 +53,8 @@ export type CharacterProps = {
   chatOverlay?: ReactNode;
   /** Soft glow while in a 1:1 connected conversation. */
   chatConnected?: boolean;
+  /** Deep Space — zero-G float visuals (bob + drift legs) instead of walk cycle. */
+  spaceFloat?: boolean;
 };
 
 /** Imperative handle for the direct-DOM updates used by the NPC RAF loop. */
@@ -125,10 +128,13 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   bubbleSide = 'left',
   chatOverlay,
   chatConnected = false,
+  spaceFloat = false,
 }, ref) {
   const outerRef       = useRef<HTMLDivElement>(null);
   const wrapperRef     = useRef<HTMLDivElement>(null);
   const chatAnchorRef  = useRef<HTMLDivElement>(null);
+  const spaceFloatRef  = useRef(spaceFloat);
+  spaceFloatRef.current = spaceFloat;
   const bubbleSideRef  = useRef(bubbleSide);
   bubbleSideRef.current = bubbleSide;
   const scaleRef       = useRef(scale);
@@ -147,12 +153,30 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     () => null,
   );
 
-  useEffect(() => {
+  const equippedItemIds = useMemo(() => {
     const ids = loadout ? equippedLoadoutItemIds(loadout) : [];
     if (forcedHat) ids.push(forcedHat);
-    if (ids.length === 0) return;
-    void preloadLoadoutItems(ids);
+    return ids;
   }, [loadout, forcedHat]);
+
+  const [propsReady, setPropsReady] = useState(() => areLoadoutItemsReady(equippedItemIds));
+
+  useEffect(() => {
+    if (equippedItemIds.length === 0) {
+      setPropsReady(true);
+      return;
+    }
+    if (areLoadoutItemsReady(equippedItemIds)) {
+      setPropsReady(true);
+      return;
+    }
+    let cancelled = false;
+    setPropsReady(false);
+    void preloadLoadoutItems(equippedItemIds).then(() => {
+      if (!cancelled) setPropsReady(true);
+    });
+    return () => { cancelled = true; };
+  }, [equippedItemIds]);
 
   useImperativeHandle(ref, () => ({
     setFacing(f) {
@@ -173,7 +197,13 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     },
     setWalking(w) {
       if (!wrapperRef.current) return;
-      wrapperRef.current.classList.toggle('ch-walking', w);
+      if (spaceFloatRef.current) {
+        wrapperRef.current.classList.remove('ch-walking');
+        wrapperRef.current.classList.toggle('ch-space-float-moving', w);
+      } else {
+        wrapperRef.current.classList.remove('ch-space-float-moving');
+        wrapperRef.current.classList.toggle('ch-walking', w);
+      }
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), []);
@@ -195,6 +225,8 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     || (loadout ? hasConfettiEquipped(loadout) : false);
   const fireworksActive = loadout ? hasFireworksEquipped(loadout) : false;
 
+  if (!propsReady) return null;
+
   return (
     <div
       ref={outerRef}
@@ -212,7 +244,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
       }}>
         <div
           ref={wrapperRef}
-          className={`ch-wrapper${outfit ? ` ch-outfit-${outfit}` : ''}${walking ? ' ch-walking' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
+          className={`ch-wrapper${outfit ? ` ch-outfit-${outfit}` : ''}${spaceFloat ? ' ch-space-float' : ''}${!spaceFloat && walking ? ' ch-walking' : ''}${spaceFloat && walking ? ' ch-space-float-moving' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
         >
           <div className="ch-animal">
             {equipped

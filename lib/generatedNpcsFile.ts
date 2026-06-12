@@ -12,6 +12,16 @@ export type GeneratedNpcsFile = {
 };
 
 export const GENERATED_NPCS_JSON_PATH = join(process.cwd(), 'data', 'generated-npcs.json');
+const GENERATED_NPCS_CHANNEL_DIR = join(process.cwd(), 'data', 'generated-npcs', 'channels');
+
+function writeGeneratedNpcsChannelFile(channel: StageChannel, npcs: GeneratedNpc[]): void {
+  mkdirSync(GENERATED_NPCS_CHANNEL_DIR, { recursive: true });
+  writeFileSync(
+    join(GENERATED_NPCS_CHANNEL_DIR, `${channel}.json`),
+    `${JSON.stringify(npcs, null, 2)}\n`,
+    'utf8',
+  );
+}
 
 export function readGeneratedNpcsFile(): GeneratedNpcsFile {
   try {
@@ -25,6 +35,9 @@ export function readGeneratedNpcsFile(): GeneratedNpcsFile {
 export function writeGeneratedNpcsFile(data: GeneratedNpcsFile): void {
   mkdirSync(dirname(GENERATED_NPCS_JSON_PATH), { recursive: true });
   writeFileSync(GENERATED_NPCS_JSON_PATH, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+  for (const channel of Object.keys(data.channels) as StageChannel[]) {
+    writeGeneratedNpcsChannelFile(channel, data.channels[channel] ?? []);
+  }
 }
 
 /** Replace one channel's NPC list and persist. */

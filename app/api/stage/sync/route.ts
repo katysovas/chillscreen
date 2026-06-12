@@ -4,7 +4,7 @@ import {
   resolveStagePlaylists,
   STAGE_PLAYLIST_CACHE_SECONDS,
 } from '@/lib/resolveStagePlaylists';
-import { DEFAULT_DURATION_MS, STAGE_EPOCH } from '@/lib/stageVideos';
+import { DEFAULT_DURATION_MS, STAGE_EPOCH, type StageChannel } from '@/lib/stageVideos';
 
 /** Align with the 1-hour resolver cache — playlists change slowly. */
 export const revalidate = 3600;
@@ -15,10 +15,32 @@ const getPlaylists = unstable_cache(
   { revalidate: STAGE_PLAYLIST_CACHE_SECONDS },
 );
 
+const STAGE_CHANNEL_SET = new Set<string>([
+  'cinema',
+  'deep-space',
+  'bumbershoot',
+  'outside-lands',
+  'coachella',
+  'edc',
+  'which-stage',
+  'forest',
+  'silent-disco',
+]);
+
+function parseChannelParam(raw: string | null): StageChannel | null {
+  if (!raw || !STAGE_CHANNEL_SET.has(raw)) return null;
+  return raw as StageChannel;
+}
+
 /** Bootstrap synchronized stage playlists (includes YouTube API channels). */
-export async function GET() {
+export async function GET(request: Request) {
   const playlists = await getPlaylists();
   const serverNow = Date.now();
+  const channel = parseChannelParam(new URL(request.url).searchParams.get('channel'));
+
+  const payloadPlaylists = channel
+    ? { [channel]: playlists[channel] }
+    : playlists;
 
   return NextResponse.json(
     {
@@ -26,12 +48,11 @@ export async function GET() {
       stage: {
         epoch: STAGE_EPOCH,
         defaultDurationMs: DEFAULT_DURATION_MS,
-        playlists,
+        playlists: payloadPlaylists,
       },
     },
     {
       headers: {
-        // Edge cache the full payload; clients adjust serverNow via the Age header.
         'Cache-Control': `public, s-maxage=${STAGE_PLAYLIST_CACHE_SECONDS}, stale-while-revalidate=86400`,
       },
     },

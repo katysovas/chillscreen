@@ -1,0 +1,50 @@
+[
+  {
+    "name": "ace",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "neon everything, sleep optional",
+    "personalityNotes": "Treats LED accessories like armor. Has not sat down since sundown and sees no reason to."
+  },
+  {
+    "name": "briar",
+    "archetype": "hustler",
+    "outfit": "none",
+    "prop": "mask-3",
+    "vibe": "kandi trade negotiator",
+    "personalityNotes": "Runs bead trades like a stock exchange. Tracks bracelet value with serious math."
+  },
+  {
+    "name": "cruz",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "drink-water",
+    "vibe": "water squad at 2am",
+    "personalityNotes": "Hands out water with the urgency of a medic. Has saved three friendships tonight."
+  },
+  {
+    "name": "daphne",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "shades-glasses-yellow",
+    "vibe": "resting between drops",
+    "personalityNotes": "Found a calm pocket in chaos. Recharges for ninety seconds then disappears back into the crowd."
+  },
+  {
+    "name": "ellis",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": "hand-boombox",
+    "vibe": "lost the group, found the bass",
+    "personalityNotes": "Phone died, friends gone, bass located. Considers this a net win."
+  },
+  {
+    "name": "flora",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "party-confetti",
+    "vibe": "confetti on the drop, always",
+    "personalityNotes": "Times confetti to every drop with military precision. Runs out and buys more mid-set."
+  }
+]

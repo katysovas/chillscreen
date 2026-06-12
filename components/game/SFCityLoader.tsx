@@ -7,6 +7,8 @@ import {
   type ComponentType,
 } from 'react';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
+import { stageChannelForRoute } from '@/lib/isolatedCity';
+import { preloadStageRouteAssets } from '@/lib/stagePreload';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { StageBootShell } from './StageBootShell';
 
@@ -44,8 +46,10 @@ export default function SFCityLoader({
   const loadedRef = useRef(false);
 
   useEffect(() => {
-    bootstrapStageSyncFromApi();
-  }, []);
+    const channel = stageChannelForRoute(venueRoute);
+    bootstrapStageSyncFromApi(channel);
+    void preloadStageRouteAssets(venueRoute);
+  }, [venueRoute]);
 
   useEffect(() => {
     let shellTimer: ReturnType<typeof setTimeout> | undefined;
@@ -62,7 +66,10 @@ export default function SFCityLoader({
       });
     }, SHELL_DELAY_MS);
 
-    import('./SFCity').then(mod => {
+    Promise.all([
+      import('./SFCity'),
+      preloadStageRouteAssets(venueRoute),
+    ]).then(([mod]) => {
       if (cancelled) return;
       loadedRef.current = true;
       setGame(() => mod.default);
@@ -84,7 +91,7 @@ export default function SFCityLoader({
       if (fadeTimer) clearTimeout(fadeTimer);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [venueRoute]);
 
   return (
     <>

@@ -45,6 +45,14 @@ export const SHARED_CHARACTER_STYLES = `
   .ch-walking .ch-legs span:before{animation:ch-foot-a .36s ease-in-out infinite!important;transform-origin:center top;}
   .ch-walking .ch-legs span:first-child:before{animation:ch-foot-b .36s ease-in-out infinite!important;transform-origin:center top;}
   .ch-walking .ch-right-hand{animation-duration:.36s!important;animation-delay:0s!important;}
+  .ch-space-float .ch-animal{animation:ch-space-float-bob 5.2s ease-in-out infinite!important;}
+  .ch-space-float .ch-legs span,.ch-space-float .ch-legs span:first-child{
+    animation:ch-space-float-legs 5.2s ease-in-out infinite!important;
+    transform-origin:top center!important;
+  }
+  .ch-space-float .ch-right-hand{animation:ch-space-float-hand 4.8s ease-in-out infinite alternate!important;}
+  .ch-space-float-moving .ch-animal{animation-duration:3.6s!important;}
+  .ch-space-float-moving .ch-legs span,.ch-space-float-moving .ch-legs span:first-child{animation-duration:3.6s!important;}
   .ch-dancing .ch-animal{animation:ch-dance-bounce .28s ease-in-out infinite alternate!important;}
   .ch-dancing{animation:ch-dance-sway .56s ease-in-out infinite;transform-origin:bottom center;}
   .ch-dancing:not(.ch-walking) .ch-legs span{
@@ -137,5 +145,17 @@ export const SHARED_CHARACTER_STYLES = `
     0%  { transform:translateY(0);      animation-timing-function:cubic-bezier(0.215,0.61,0.355,1); }
     42% { transform:translateY(-100px); animation-timing-function:cubic-bezier(0.55,0.055,0.675,0.19); }
     100%{ transform:translateY(0); }
+  }
+  @keyframes ch-space-float-bob{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-14px);}
+  }
+  @keyframes ch-space-float-legs{
+    0%,100%{transform:rotate(-6deg);}
+    50%{transform:rotate(6deg);}
+  }
+  @keyframes ch-space-float-hand{
+    from{transform:rotate(-52deg) translateY(0);}
+    to{transform:rotate(-68deg) translateY(-6px);}
   }
 `;

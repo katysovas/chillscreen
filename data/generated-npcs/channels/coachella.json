@@ -1,0 +1,218 @@
+[
+  {
+    "name": "claire",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "drink-lemonade",
+    "vibe": "convinced the mist tent is being rationed",
+    "personalityNotes": "Treats the mist tent like a scarce resource with a bouncer. Times her visits and plans mist runs between sets. The thirty seconds of fog is the best part of her day.",
+    "lines": [
+      "mist tent has a bouncer",
+      "thirty seconds per person",
+      "timed my mist window",
+      "they ration the fog",
+      "best thirty seconds today",
+      "line for water vapor",
+      "planning my next mist run",
+      "heat wins between visits"
+    ]
+  },
+  {
+    "name": "derek",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "hand-boombox",
+    "vibe": "obsessed with a rumored secret set by the cacti",
+    "personalityNotes": "Heard about a secret midnight set out past the fence and cannot let it go. Half aware it might be heatstroke talking. Collects circumstantial evidence like cables and fencing.",
+    "lines": [
+      "secret set by the cacti",
+      "or it's heatstroke talking",
+      "midnight will prove me right",
+      "saw cables heading out there",
+      "why else fence that area",
+      "nobody confirms anything here",
+      "if it's fake i'm done",
+      "the cacti know something"
+    ]
+  },
+  {
+    "name": "sofia",
+    "archetype": "vendor",
+    "outfit": "pirate",
+    "prop": "food-tacos",
+    "vibe": "taco vendor watching the crowd walk past",
+    "personalityNotes": "Sells tacos and narrates her foot traffic like a losing battle plan. Blames the dust, the heat, and appetite physics. Considers yelling louder as a business strategy.",
+    "lines": [
+      "tacos look sad today",
+      "dust scares off customers",
+      "heat kills appetites apparently",
+      "maybe yell louder",
+      "salsa can't fix this",
+      "two sales since noon",
+      "crowd walks right past",
+      "selling feels like arguing"
+    ]
+  },
+  {
+    "name": "wes",
+    "archetype": "wanderer",
+    "outfit": "none",
+    "prop": null,
+    "vibe": "treats shade like real estate",
+    "personalityNotes": "Tracks every patch of shade on the grounds and when it moves. Has opinions about the umbrella people. Quietly bitter that the sun controls the market.",
+    "lines": [
+      "shade is real estate",
+      "that tree is taken",
+      "tracking shadows all day",
+      "prime shade goes by ten",
+      "umbrella people figured it out",
+      "renting shade should be illegal",
+      "my spot moved again",
+      "sun owns this place"
+    ]
+  },
+  {
+    "name": "monica",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": null,
+    "vibe": "undercover and certain it's working",
+    "personalityNotes": "Undercover cop convinced the dust is excellent cover. Mutters stakeout notes about coolers and glowstick traffic. Comedy only, never threatening, never addresses players.",
+    "lines": [
+      "blending in perfectly",
+      "dust is good cover",
+      "that cooler looks suspicious",
+      "noting the glowstick traffic",
+      "just a normal festival person",
+      "nothing to report. yet",
+      "sunglasses make me invisible",
+      "off duty. obviously"
+    ]
+  },
+  {
+    "name": "aisha",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "drink-water",
+    "vibe": "electrolyte evangelist",
+    "personalityNotes": "Takes desert hydration extremely seriously and quietly judges everyone who doesn't. Believes salt is the unsung hero of the festival. Sips on a schedule.",
+    "lines": [
+      "water is not enough",
+      "electrolytes people. electrolytes",
+      "salt is the real headliner",
+      "cramping is a choice",
+      "desert math is brutal",
+      "sipped on schedule all day",
+      "hydration is a skill",
+      "watched a guy learn this"
+    ]
+  },
+  {
+    "name": "grace",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "shades-glasses-circle",
+    "vibe": "cataloging crowd totems like folk art",
+    "personalityNotes": "Counts and ranks the totems people carry through the crowd. Considers the inflatable shark a public service. Has a running winner.",
+    "lines": [
+      "counted nineteen totems today",
+      "inflatable shark is back",
+      "that pole is navigation",
+      "totems are folk art",
+      "lost people find the shark",
+      "someone brought a stop sign",
+      "totem game strong this year",
+      "the duck one wins"
+    ]
+  },
+  {
+    "name": "brian",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": "shades-glasses-yellow",
+    "vibe": "timing the perfect golden hour shot",
+    "personalityNotes": "Counts down minutes to golden hour like a launch window. Has theories about dust and light. Mildly disgusted that everyone shoots the same angle.",
+    "lines": [
+      "golden hour in twenty",
+      "dust looks unreal in light",
+      "need the shadows longer",
+      "sunset or it didn't happen",
+      "should've brought the other lens",
+      "four minutes till magic",
+      "light's almost cooking",
+      "everyone shoots the same angle"
+    ]
+  },
+  {
+    "name": "erin",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "drink-beer",
+    "vibe": "beer vendor at war with the heat",
+    "personalityNotes": "Sells cold beer in conditions actively working against cold beer. Tracks her ice budget like a casualty report. Sundown is her rush hour.",
+    "lines": [
+      "heat kills cold beer fast",
+      "ice budget is gone",
+      "cold ones are gold here",
+      "thirst outpaces supply",
+      "line forms at sundown",
+      "warm beer sells to nobody",
+      "cooler's fighting for its life",
+      "last orders coming up"
+    ]
+  },
+  {
+    "name": "sara",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "hat-lady",
+    "vibe": "narrating the great hat migration",
+    "personalityNotes": "Watches hats escape their owners in the wind all day. Finds the hat chaos quietly profound. Believes in chin straps.",
+    "lines": [
+      "another hat rolling by",
+      "wind collects hats here",
+      "that's the third sun hat",
+      "hats just leave people",
+      "saw a hat reunion earlier",
+      "chin straps are wisdom",
+      "hat chaos peaks at sunset",
+      "somewhere is a hat pile"
+    ]
+  },
+  {
+    "name": "jordan",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "party-confetti",
+    "vibe": "the wind keeps ruining his confetti moment",
+    "personalityNotes": "Has been waiting all day for one clean confetti throw. The desert wind disagrees. Times gusts like a sniper, saving his last handful.",
+    "lines": [
+      "wind stole my moment",
+      "confetti went sideways",
+      "timing the gusts now",
+      "one clean drop. that's all",
+      "desert hates confetti",
+      "saving the last handful",
+      "practiced this for nothing",
+      "next lull i go"
+    ]
+  },
+  {
+    "name": "lisa",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "shades-glasses-optic",
+    "vibe": "hunting a guy named greg, never succeeds",
+    "personalityNotes": "Constantly scanning the crowd for the elusive Greg. Has checked every corner twice and found only empty space. Treats the failed pursuit as her whole festival.",
+    "lines": [
+      "greg's ghosted again",
+      "checked every corner twice",
+      "almost saw him by the mist tent",
+      "he's good at vanishing",
+      "dust plays tricks",
+      "greg is basically a cryptid",
+      "tracking greg is my set",
+      "he was just here. allegedly"
+    ]
+  }
+]

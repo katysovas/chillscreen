@@ -1,0 +1,50 @@
+[
+  {
+    "name": "alex",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "shades-glasses-blue",
+    "vibe": "fog rolled in, outfit did not",
+    "personalityNotes": "Underdressed for SF fog and refusing to admit it. Shivers with dignity between songs."
+  },
+  {
+    "name": "bella",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "dancing through the marine layer",
+    "personalityNotes": "Treats fog like a stage effect installed for her. Spins disappear and reappear dramatically."
+  },
+  {
+    "name": "carson",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-hotdog",
+    "vibe": "hot dog cart vs the hill",
+    "personalityNotes": "Pushed a cart up a SF hill and will tell you about it for the rest of the night. Still selling."
+  },
+  {
+    "name": "diana",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": "drink-coffee",
+    "vibe": "coffee at an outdoor show, classic sf",
+    "personalityNotes": "Balancing coffee and crowd sway like a lifelong local. Unfazed by anything except line cutters."
+  },
+  {
+    "name": "ethan",
+    "archetype": "hustler",
+    "outfit": "none",
+    "prop": null,
+    "vibe": "scalping nothing but confidence",
+    "personalityNotes": "Has no tickets to sell but radiates deal-making energy. Working on something, unclear what."
+  },
+  {
+    "name": "faith",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "food-pizza",
+    "vibe": "splitting pizza on the lawn",
+    "personalityNotes": "Fair slice division is her whole personality tonight. Has a system involving diagonal cuts."
+  }
+]

@@ -115,8 +115,7 @@ import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
 import { FestieSessionRecapModal } from './FestieSessionRecapModal';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
-import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
-import { hasStickerTripActive, preloadAllLoadoutSlots, StickerTripOverlay } from './characters/loadout';
+import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
@@ -191,6 +190,8 @@ export default function SFCity({
     () => npcCastForVenue(effectiveVenueRoute, ambientSeed),
     [effectiveVenueRoute, ambientSeed],
   );
+  /** Wait for equipped prop chunks before showing player/NPCs (avoids balloon-then-props flicker). */
+  const [crowdVisualsReady, setCrowdVisualsReady] = useState(false);
   const isolatedTile = cityTileForRoute(effectiveVenueRoute);
   const cityBounds = cityWorldOffBounds(effectiveVenueRoute);
   const cityBoundsRef = useRef(cityBounds);
@@ -823,7 +824,6 @@ export default function SFCity({
   }, [homePreview, profileReady]);
 
   useEffect(() => {
-    bootstrapStageSyncFromApi();
     installGameInputAnalytics();
     setPlayerDepthY(crowdDepthOffsetPx(getOrCreatePlayerId()));
   }, []);
@@ -832,6 +832,29 @@ export default function SFCity({
     setVenueDressCode(effectiveVenueRoute);
     return () => { setVenueDressCode(null); };
   }, [effectiveVenueRoute]);
+
+  useEffect(() => {
+    setCrowdVisualsReady(false);
+  }, [effectiveVenueRoute]);
+
+  useEffect(() => {
+    if (!homePreview && !profileReady) return;
+
+    let cancelled = false;
+    const dressCodeExtras = effectiveVenueRoute === 'silent-disco' ? ['hat-headphones'] : [];
+    void preloadCrowdLoadouts(
+      [playerLoadout, ...effectiveNpcCast.map(c => c.loadout)],
+      dressCodeExtras,
+    )
+      .then(() => {
+        if (!cancelled) setCrowdVisualsReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setCrowdVisualsReady(true);
+      });
+
+    return () => { cancelled = true; };
+  }, [homePreview, profileReady, effectiveVenueRoute, playerLoadout, effectiveNpcCast]);
 
   useEffect(() => {
     if (homePreview || !festieSignedIn) return;
@@ -1433,8 +1456,6 @@ export default function SFCity({
   useEffect(() => {
     if (!homePreview) return;
 
-    bootstrapStageSyncFromApi();
-
     const loop = () => {
       updateViewBoxes(worldRef.current);
       gameWorldOffRef.current = worldRef.current;
@@ -1627,7 +1648,7 @@ export default function SFCity({
         )}
 
         {/* Autonomous NPCs */}
-        {!homePreview && effectiveNpcCast.map((cfg, i) => {
+        {!homePreview && crowdVisualsReady && effectiveNpcCast.map((cfg, i) => {
           if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
           const testing = TEST_SPAWN_NPC_ID === cfg.id;
           const chatConnected = isNpcChatConnected(i, cfg.id);
@@ -1652,6 +1673,7 @@ export default function SFCity({
               npcTyping,
               messages: npcMessages,
             } : undefined}
+            spaceFloat={isDeepSpace}
           />
           );
         })}
@@ -1659,7 +1681,7 @@ export default function SFCity({
         {!homePreview && npcPairOverlay}
 
         {/* Remote human players (PartyKit presence) */}
-        {!homePreview && mp.remoteIds.map(pid => (
+        {!homePreview && crowdVisualsReady && mp.remoteIds.map(pid => (
           <RemotePlayer
             key={pid}
             id={pid}
@@ -1673,10 +1695,11 @@ export default function SFCity({
               messages: peerMessages,
             } : undefined}
             publicMessages={roomChatter.playerMessages.get(pid)}
+            spaceFloat={isDeepSpace}
           />
         ))}
 
-        {!homePreview && (TEST_PLAYER_VARIANT_GALLERY ? (
+        {!homePreview && crowdVisualsReady && (TEST_PLAYER_VARIANT_GALLERY ? (
           <PlayerVariantGallery
             walking={walking}
             dancing={TEST_FORCE_DANCE || playerDancing}
@@ -1698,6 +1721,7 @@ export default function SFCity({
                 walking={walking}
                 facing={facing}
                 dancing={TEST_FORCE_DANCE || playerDancing}
+                spaceFloat={isDeepSpace}
                 balloonColor={myColor}
                 loadout={playerLoadout}
                 bubbleSide={inConversation ? 'center' : playerBubbleSide(greetNpcX)}

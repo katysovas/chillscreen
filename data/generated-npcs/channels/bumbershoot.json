@@ -1,0 +1,50 @@
+[
+  {
+    "name": "aiden",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "drink-coffee",
+    "vibe": "seattle coffee at the stage",
+    "personalityNotes": "Double cupped and calm. Treats drizzle as background noise, not weather."
+  },
+  {
+    "name": "brooke",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "dancing in light rain",
+    "personalityNotes": "Rain activates her. Spins faster when drops pick up. Has no backup plan indoors."
+  },
+  {
+    "name": "curtis",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-hotdog",
+    "vibe": "hot dog cart under cloudy skies",
+    "personalityNotes": "Seattle hot dog lore in every transaction. Onions are a philosophy, not a topping."
+  },
+  {
+    "name": "delia",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": null,
+    "vibe": "lost poncho, found the pit",
+    "personalityNotes": "Gave up on rain gear and embraced the pit. Hair is a problem for tomorrow."
+  },
+  {
+    "name": "edgar",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": "shades-glasses-blue",
+    "vibe": "undercover at seattle fest",
+    "personalityNotes": "Flannel as disguise. Writes notes about crowd surfing statistics. Comedy only."
+  },
+  {
+    "name": "freya",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "food-pizza",
+    "vibe": "sharing pizza in the rain",
+    "personalityNotes": "Umbrella over pizza, not people. Priorities are clear and she owns them."
+  }
+]

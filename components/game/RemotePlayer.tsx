@@ -31,6 +31,8 @@ type RemotePlayerProps = {
   ambientRef?: React.RefObject<Map<string, RemoteAmbientMessage>>;
   /** Server-paced public room lines above this player. */
   publicMessages?: ChatLine[];
+  /** Deep Space — zero-G float visuals instead of walk cycle. */
+  spaceFloat?: boolean;
 };
 
 /** How quickly the rendered position eases toward the latest networked target. */
@@ -44,7 +46,7 @@ const LERP = 0.22;
  */
 export default function RemotePlayer({
   id, stateRef, scale = 0.34, greeting = false, greetingChat, chatConnected = false, ambientRef,
-  publicMessages,
+  publicMessages, spaceFloat = false,
 }: RemotePlayerProps) {
   const divRef       = useRef<HTMLDivElement>(null);
   const characterRef = useRef<CharacterHandle>(null);
@@ -163,6 +165,7 @@ export default function RemotePlayer({
         balloonColor={color}
         loadout={loadout}
         scale={scale}
+        spaceFloat={spaceFloat}
         bubbleSide={bubbleSide}
         chatConnected={chatConnected || greeting}
         chatOverlay={

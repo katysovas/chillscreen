@@ -9,14 +9,17 @@ export { LOADOUT_SLOTS, loadoutItemId } from './types';
 
 export { LOADOUT_CATALOG, catalogForSlot, loadoutItem } from './catalog';
 export {
+  areLoadoutItemsReady,
   buildRenderCtx,
   equippedLoadoutItemIds,
   getLoadoutRegistryVersion,
   isLoadoutHandMounted,
   loadoutHoldSide,
   preloadAllLoadoutSlots,
+  preloadLoadoutImages,
   preloadLoadoutItems,
   preloadLoadoutSlot,
+  preloadCrowdLoadouts,
   renderLoadoutItem,
   renderLoadoutSlot,
   subscribeLoadoutRegistry,
