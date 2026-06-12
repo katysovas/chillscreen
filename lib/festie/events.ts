@@ -1,4 +1,5 @@
 import { requireDb } from '@/lib/db';
+import { toIsoTimestamp } from '@/lib/timestamps';
 
 export const FESTIE_EVENT_TYPES = {
   CHAT: 'chat',
@@ -44,7 +45,7 @@ function rowToEvent(row: Record<string, unknown>): FestieEventRow {
     payload: (typeof payload === 'object' && payload !== null
       ? payload
       : {}) as Record<string, unknown>,
-    created_at: String(row.created_at),
+    created_at: toIsoTimestamp(row.created_at),
   };
 }
 
@@ -78,15 +79,16 @@ export async function listFestieEventsSince(
 ): Promise<FestieEventRow[]> {
   const sql = requireDb();
   const limit = opts?.limit ?? 200;
-  const until = opts?.until?.trim();
+  const sinceIso = toIsoTimestamp(since);
+  const untilIso = opts?.until ? toIsoTimestamp(opts.until) : undefined;
 
-  const rows = until
+  const rows = untilIso
     ? await sql`
         SELECT id, festie_id, type, payload, created_at
         FROM festie_events
         WHERE festie_id = ${festieId}::uuid
-          AND created_at >= ${since}::timestamptz
-          AND created_at < ${until}::timestamptz
+          AND created_at >= ${sinceIso}::timestamptz
+          AND created_at < ${untilIso}::timestamptz
         ORDER BY created_at ASC
         LIMIT ${limit}
       `
@@ -94,7 +96,7 @@ export async function listFestieEventsSince(
         SELECT id, festie_id, type, payload, created_at
         FROM festie_events
         WHERE festie_id = ${festieId}::uuid
-          AND created_at >= ${since}::timestamptz
+          AND created_at >= ${sinceIso}::timestamptz
         ORDER BY created_at ASC
         LIMIT ${limit}
       `;
@@ -107,21 +109,23 @@ export async function sumFestieCoinsSince(
   until?: string,
 ): Promise<number> {
   const sql = requireDb();
-  const rows = until?.trim()
+  const sinceIso = toIsoTimestamp(since);
+  const untilIso = until ? toIsoTimestamp(until) : undefined;
+  const rows = untilIso
     ? await sql`
         SELECT COALESCE(SUM((payload->>'amount')::int), 0)::int AS total
         FROM festie_events
         WHERE festie_id = ${festieId}::uuid
           AND type = ${FESTIE_EVENT_TYPES.COIN_PICKUP}
-          AND created_at >= ${since}::timestamptz
-          AND created_at < ${until}::timestamptz
+          AND created_at >= ${sinceIso}::timestamptz
+          AND created_at < ${untilIso}::timestamptz
       `
     : await sql`
         SELECT COALESCE(SUM((payload->>'amount')::int), 0)::int AS total
         FROM festie_events
         WHERE festie_id = ${festieId}::uuid
           AND type = ${FESTIE_EVENT_TYPES.COIN_PICKUP}
-          AND created_at >= ${since}::timestamptz
+          AND created_at >= ${sinceIso}::timestamptz
       `;
   return Number((rows[0] as { total: number }).total ?? 0);
 }

@@ -12,6 +12,7 @@ import type {
   FestieRow,
 } from '@/lib/festie/types';
 import { requireDb } from '@/lib/db';
+import { toIsoTimestamp } from '@/lib/timestamps';
 import { isMissingColumnError } from '@/lib/dbErrors';
 
 export class FestieSchemaError extends Error {
@@ -38,11 +39,11 @@ function rowToFestie(row: Record<string, unknown>): FestieRow {
     personality_notes: row.personality_notes != null ? String(row.personality_notes) : null,
     stage_slug: String(row.stage_slug),
     llm_provider: parseFestieLlmProvider(row.llm_provider) ?? DEFAULT_FESTIE_LLM_PROVIDER,
-    last_seen_at: String(row.last_seen_at),
-    last_chat_at: row.last_chat_at != null ? String(row.last_chat_at) : null,
+    last_seen_at: toIsoTimestamp(row.last_seen_at),
+    last_chat_at: row.last_chat_at != null ? toIsoTimestamp(row.last_chat_at) : null,
     notify_email: row.notify_email != null ? String(row.notify_email) : null,
     email_opted_in: Boolean(row.email_opted_in),
-    created_at: String(row.created_at),
+    created_at: toIsoTimestamp(row.created_at),
   };
 }
 
