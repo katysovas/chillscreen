@@ -37,6 +37,10 @@ import {
   shouldShowSessionRecap,
   type FestieSessionRecap,
 } from '@/lib/festie/sessionRecap';
+import {
+  markSessionRecapAcked,
+  wasSessionRecapAcked,
+} from '@/lib/festie/sessionRecapStorage';
 import { persistFestieStage } from '@/lib/festie/stage';
 import {
   markFestieLifeIntroSeen,
@@ -309,7 +313,6 @@ export default function SFCity({
   const [sessionRecap, setSessionRecap] = useState<FestieSessionRecap | null>(null);
   const lifeRefillFromRef = useRef<number | null>(null);
   const recapNeedsAckRef = useRef(false);
-  const recapCheckedRef = useRef(false);
 
   const handleVendorPurchase = useCallback(async (itemId: string): Promise<boolean> => {
     const coinsBefore = getPlayerCoins();
@@ -438,9 +441,28 @@ export default function SFCity({
     setSessionRecapOpen(true);
   }, []);
 
+  const checkSessionRecap = useCallback(async (
+    festie: FestieOwner,
+    needsAck: boolean,
+  ) => {
+    if (sessionRecapOpen) return;
+    if (wasSessionRecapAcked(festie.id, festie.last_seen_at)) return;
+
+    if (TEST_FESTIE_RECAP_ON_LOAD) {
+      openSessionRecap(sampleSessionRecap(festie.name), false);
+      return;
+    }
+
+    const recap = await fetchSessionRecapSince(festie.last_seen_at);
+    openSessionRecap(recap, needsAck);
+  }, [sessionRecapOpen, openSessionRecap]);
+
   const dismissSessionRecap = useCallback(() => {
+    const since = sessionRecap?.since;
+    const festieId = ownerFestie?.id;
     setSessionRecapOpen(false);
     setSessionRecap(null);
+    if (since && festieId) markSessionRecapAcked(festieId, since);
     if (recapNeedsAckRef.current) {
       recapNeedsAckRef.current = false;
       void acknowledgeFestieReturn()
@@ -449,22 +471,26 @@ export default function SFCity({
           if (festie) setOwnerFestie(festie);
         });
     }
-  }, []);
+  }, [sessionRecap, ownerFestie]);
 
   useEffect(() => {
-    if (!profileReady || homePreview || recapCheckedRef.current) return;
+    if (!profileReady || homePreview) return;
     if (!festieSignedIn || !ownerFestie) return;
-    recapCheckedRef.current = true;
+    void checkSessionRecap(ownerFestie, true);
+  }, [profileReady, homePreview, festieSignedIn, ownerFestie, checkSessionRecap]);
 
-    if (TEST_FESTIE_RECAP_ON_LOAD) {
-      openSessionRecap(sampleSessionRecap(ownerFestie.name), false);
-      return;
-    }
-
-    void fetchSessionRecapSince(ownerFestie.last_seen_at).then(recap => {
-      openSessionRecap(recap, true);
-    });
-  }, [profileReady, homePreview, festieSignedIn, ownerFestie, openSessionRecap]);
+  /** Tab close / return — same session cookie, no sign-out. */
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!festieSignedIn || !ownerFestie) return;
+      if (showWelcomeRef.current || showCityPickerRef.current) return;
+      if (homePreview) return;
+      void checkSessionRecap(ownerFestie, true);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [festieSignedIn, ownerFestie, checkSessionRecap, homePreview]);
 
   const toggleVendorShop = useCallback(() => {
     unlockPurchaseSound();
@@ -1761,7 +1787,6 @@ export default function SFCity({
           requireAuth={!festieSignedIn}
           pickStageOnly={festieSignedIn}
           onAuthSuccess={(name, sessionRecap) => {
-            recapCheckedRef.current = true;
             openSessionRecap(sessionRecap ?? null, false);
             void hydratePlayerSession().then(profile => {
               setFestieSignedIn(profile.authenticated);
