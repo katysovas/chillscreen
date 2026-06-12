@@ -1,6 +1,11 @@
 'use client';
 
-import type { FestieEventRow } from '@/lib/festie/events';
+import {
+  FESTIE_EVENT_TYPES,
+  hasRecapContent,
+  type FestieEventRow,
+} from '@/lib/festie/events';
+import { filterRecapEvents, type FestieSessionRecap } from '@/lib/festie/sessionRecap';
 import { markLocalFestieAccount } from '@/lib/festie/localAccount';
 import { trackFestieSignedIn, trackFestieSignedUp } from '@/lib/analytics';
 import type { FestieCache, FestieOwner } from '@/lib/festie/types';
@@ -44,7 +49,7 @@ export async function fetchAuthMe(): Promise<AuthState> {
   };
 }
 
-export async function loginFestie(name: string, password: string): Promise<FestieOwner> {
+export async function loginFestie(name: string, password: string): Promise<LoginFestieResult> {
   const res = await fetch('/api/auth/login', {
     ...fetchOpts,
     method: 'POST',
@@ -57,7 +62,26 @@ export async function loginFestie(name: string, password: string): Promise<Festi
   setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
   markLocalFestieAccount(festie.name);
   trackFestieSignedIn(festie);
-  return festie;
+  const sessionRecap = (data.sessionRecap as FestieSessionRecap | null) ?? null;
+  return { festie, sessionRecap };
+}
+
+/** Mark owner return after viewing session recap (resets last_seen_at). */
+export async function acknowledgeFestieReturn(): Promise<void> {
+  await fetch('/api/festie/seen', { ...fetchOpts, method: 'POST' });
+}
+
+export async function fetchSessionRecapSince(since: string): Promise<FestieSessionRecap | null> {
+  const data = await fetchFestieEvents(since);
+  const events = filterRecapEvents(data.events);
+  if (!hasRecapContent(events)) return null;
+  return {
+    since: data.since,
+    until: new Date().toISOString(),
+    events,
+    coinsEarned: data.coinsEarned,
+    chatCount: events.filter(e => e.type === FESTIE_EVENT_TYPES.CHAT).length,
+  };
 }
 
 export async function logoutFestie(): Promise<void> {
@@ -91,6 +115,11 @@ export type FestieEventsResponse = {
   events: FestieEventRow[];
   coinsEarned: number;
   chatCount: number;
+};
+
+export type LoginFestieResult = {
+  festie: FestieOwner;
+  sessionRecap: FestieSessionRecap | null;
 };
 
 export async function fetchFestieEvents(since?: string): Promise<FestieEventsResponse> {

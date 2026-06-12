@@ -26,7 +26,17 @@ import { addPlayerCoins, getPlayerCoins, STARTING_COINS } from '@/lib/playerCoin
 import { GroundScoreLayer } from './GroundScoreLayer';
 import { purchaseVendorItemAsync } from '@/lib/vendorPurchase';
 import { festieLifeFill } from '@/lib/festie/config';
-import { fetchFestie, logoutFestie } from '@/lib/festie/client';
+import {
+  acknowledgeFestieReturn,
+  fetchFestie,
+  fetchSessionRecapSince,
+  logoutFestie,
+} from '@/lib/festie/client';
+import {
+  sampleSessionRecap,
+  shouldShowSessionRecap,
+  type FestieSessionRecap,
+} from '@/lib/festie/sessionRecap';
 import { persistFestieStage } from '@/lib/festie/stage';
 import {
   markFestieLifeIntroSeen,
@@ -97,6 +107,7 @@ import { HelpFaqModal } from './HelpFaqModal';
 import { SignOutConfirmModal } from './SignOutConfirmModal';
 import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
+import { FestieSessionRecapModal } from './FestieSessionRecapModal';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import { hasStickerTripActive, preloadAllLoadoutSlots, StickerTripOverlay } from './characters/loadout';
@@ -123,6 +134,9 @@ const TEST_PLAYER_LOADOUT = {} as const;
 
 /** Auto-connect player + first NPC on load to preview chat connect glow (testing). */
 const TEST_CHAT_CONNECT_ON_LOAD = false;
+
+/** Preview session recap modal on load with sample events (testing). */
+const TEST_FESTIE_RECAP_ON_LOAD = false;
 
 // ─── NPC cast ─────────────────────────────────────────────────────────────────
 
@@ -291,7 +305,11 @@ export default function SFCity({
   const [festieSignedIn, setFestieSignedIn] = useState(false);
   const [ownerFestie, setOwnerFestie] = useState<FestieOwner | null>(null);
   const [profileReady, setProfileReady] = useState(false);
+  const [sessionRecapOpen, setSessionRecapOpen] = useState(false);
+  const [sessionRecap, setSessionRecap] = useState<FestieSessionRecap | null>(null);
   const lifeRefillFromRef = useRef<number | null>(null);
+  const recapNeedsAckRef = useRef(false);
+  const recapCheckedRef = useRef(false);
 
   const handleVendorPurchase = useCallback(async (itemId: string): Promise<boolean> => {
     const coinsBefore = getPlayerCoins();
@@ -412,6 +430,41 @@ export default function SFCity({
     const festie = await fetchFestie();
     if (festie) setOwnerFestie(festie);
   }, []);
+
+  const openSessionRecap = useCallback((recap: FestieSessionRecap | null, needsAck: boolean) => {
+    if (!shouldShowSessionRecap(recap)) return;
+    recapNeedsAckRef.current = needsAck;
+    setSessionRecap(recap);
+    setSessionRecapOpen(true);
+  }, []);
+
+  const dismissSessionRecap = useCallback(() => {
+    setSessionRecapOpen(false);
+    setSessionRecap(null);
+    if (recapNeedsAckRef.current) {
+      recapNeedsAckRef.current = false;
+      void acknowledgeFestieReturn()
+        .then(() => fetchFestie())
+        .then(festie => {
+          if (festie) setOwnerFestie(festie);
+        });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!profileReady || homePreview || recapCheckedRef.current) return;
+    if (!festieSignedIn || !ownerFestie) return;
+    recapCheckedRef.current = true;
+
+    if (TEST_FESTIE_RECAP_ON_LOAD) {
+      openSessionRecap(sampleSessionRecap(ownerFestie.name), false);
+      return;
+    }
+
+    void fetchSessionRecapSince(ownerFestie.last_seen_at).then(recap => {
+      openSessionRecap(recap, true);
+    });
+  }, [profileReady, homePreview, festieSignedIn, ownerFestie, openSessionRecap]);
 
   const toggleVendorShop = useCallback(() => {
     unlockPurchaseSound();
@@ -1637,6 +1690,14 @@ export default function SFCity({
         />
       )}
 
+      {sessionRecapOpen && sessionRecap && ownerFestie && (
+        <FestieSessionRecapModal
+          festieName={ownerFestie.name}
+          recap={sessionRecap}
+          onDismiss={dismissSessionRecap}
+        />
+      )}
+
       {lifeModalOpen && ownerFestie && (
         <FestieLifeModal
           festie={ownerFestie}
@@ -1699,7 +1760,9 @@ export default function SFCity({
           initialName={playerName ?? getPlayerName() ?? undefined}
           requireAuth={!festieSignedIn}
           pickStageOnly={festieSignedIn}
-          onAuthSuccess={name => {
+          onAuthSuccess={(name, sessionRecap) => {
+            recapCheckedRef.current = true;
+            openSessionRecap(sessionRecap ?? null, false);
             void hydratePlayerSession().then(profile => {
               setFestieSignedIn(profile.authenticated);
               if (profile.name) setPlayerName(profile.name);

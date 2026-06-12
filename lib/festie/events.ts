@@ -74,30 +74,65 @@ export function logFestieEvent(
 export async function listFestieEventsSince(
   festieId: string,
   since: string,
-  limit = 200,
+  opts?: { until?: string; limit?: number },
 ): Promise<FestieEventRow[]> {
   const sql = requireDb();
-  const rows = await sql`
-    SELECT id, festie_id, type, payload, created_at
-    FROM festie_events
-    WHERE festie_id = ${festieId}::uuid
-      AND created_at >= ${since}::timestamptz
-    ORDER BY created_at ASC
-    LIMIT ${limit}
-  `;
+  const limit = opts?.limit ?? 200;
+  const until = opts?.until?.trim();
+
+  const rows = until
+    ? await sql`
+        SELECT id, festie_id, type, payload, created_at
+        FROM festie_events
+        WHERE festie_id = ${festieId}::uuid
+          AND created_at >= ${since}::timestamptz
+          AND created_at < ${until}::timestamptz
+        ORDER BY created_at ASC
+        LIMIT ${limit}
+      `
+    : await sql`
+        SELECT id, festie_id, type, payload, created_at
+        FROM festie_events
+        WHERE festie_id = ${festieId}::uuid
+          AND created_at >= ${since}::timestamptz
+        ORDER BY created_at ASC
+        LIMIT ${limit}
+      `;
   return rows.map(r => rowToEvent(r as Record<string, unknown>));
 }
 
-export async function sumFestieCoinsSince(festieId: string, since: string): Promise<number> {
+export async function sumFestieCoinsSince(
+  festieId: string,
+  since: string,
+  until?: string,
+): Promise<number> {
   const sql = requireDb();
-  const rows = await sql`
-    SELECT COALESCE(SUM((payload->>'amount')::int), 0)::int AS total
-    FROM festie_events
-    WHERE festie_id = ${festieId}::uuid
-      AND type = ${FESTIE_EVENT_TYPES.COIN_PICKUP}
-      AND created_at >= ${since}::timestamptz
-  `;
+  const rows = until?.trim()
+    ? await sql`
+        SELECT COALESCE(SUM((payload->>'amount')::int), 0)::int AS total
+        FROM festie_events
+        WHERE festie_id = ${festieId}::uuid
+          AND type = ${FESTIE_EVENT_TYPES.COIN_PICKUP}
+          AND created_at >= ${since}::timestamptz
+          AND created_at < ${until}::timestamptz
+      `
+    : await sql`
+        SELECT COALESCE(SUM((payload->>'amount')::int), 0)::int AS total
+        FROM festie_events
+        WHERE festie_id = ${festieId}::uuid
+          AND type = ${FESTIE_EVENT_TYPES.COIN_PICKUP}
+          AND created_at >= ${since}::timestamptz
+      `;
   return Number((rows[0] as { total: number }).total ?? 0);
+}
+
+export function isRecapDisplayEvent(event: FestieEventRow): boolean {
+  return event.type === FESTIE_EVENT_TYPES.CHAT
+    || event.type === FESTIE_EVENT_TYPES.COIN_PICKUP;
+}
+
+export function hasRecapContent(events: FestieEventRow[]): boolean {
+  return events.some(isRecapDisplayEvent);
 }
 
 export function countFestieChatsInEvents(events: FestieEventRow[]): number {

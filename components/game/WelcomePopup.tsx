@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Character from './Character';
 import { MobileStageCard } from './MobileStageCard';
 import { createFestie, loginFestie } from '@/lib/festie/client';
+import type { FestieSessionRecap } from '@/lib/festie/sessionRecap';
 import { venueRouteForStageSlug } from '@/lib/festie/stage';
 import { getLocalFestieName, hasLocalFestieAccount } from '@/lib/festie/localAccount';
 import {
@@ -22,7 +23,7 @@ type Props = {
   onEnter: (name: string, route: VenueRoute) => void;
   requireAuth?: boolean;
   pickStageOnly?: boolean;
-  onAuthSuccess?: (name: string) => void;
+  onAuthSuccess?: (name: string, sessionRecap?: FestieSessionRecap | null) => void;
   onFestieCreated?: () => void;
   initialName?: string;
 };
@@ -225,9 +226,9 @@ export function WelcomePopup({
     if (authIntent === 'signin') {
       setLoading(true);
       try {
-        const festie = await loginFestie(draft.trim(), password);
+        const { festie, sessionRecap } = await loginFestie(draft.trim(), password);
         setDraft(festie.name);
-        onAuthSuccess?.(festie.name);
+        onAuthSuccess?.(festie.name, sessionRecap);
         const savedRoute = venueRouteForStageSlug(festie.stage_slug);
         if (savedRoute) {
           onEnter(festie.name, savedRoute);
