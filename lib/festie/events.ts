@@ -3,6 +3,8 @@ import { toIsoTimestamp } from '@/lib/timestamps';
 
 export const FESTIE_EVENT_TYPES = {
   CHAT: 'chat',
+  NPC_CHATTER: 'npc_chatter',
+  LIFE_LOG: 'life_log',
   COIN_PICKUP: 'coin_pickup',
   OWNER_LEAVE: 'owner_leave',
 } as const;
@@ -32,8 +34,48 @@ export type FestieCoinPickupPayload = {
   balance: number;
 };
 
+/** Ambient festie ↔ NPC pair chatter (live or synthesized while owner away). */
+export type FestieNpcChatterPayload = {
+  partnerNpcId: string;
+  partnerNpcName: string;
+  festieLine: string;
+  partnerLine: string;
+  synthesized?: boolean;
+};
+
 export type FestieOwnerLeavePayload = {
   stage_slug: string;
+};
+
+export type LifeLogKind =
+  | 'overheard'
+  | 'stream_watched'
+  | 'presence'
+  | 'npc_coins'
+  | 'lost_item'
+  | 'failed_plan'
+  | 'scenery'
+  | 'food_incident'
+  | 'npc_interaction'
+  | 'greg_sighting'
+  | 'nap'
+  | 'trade'
+  | 'mystery'
+  | 'crowd_milestone'
+  | 'animal'
+  | 'lost_found'
+  | 'dance'
+  | 'queue'
+  | 'weather'
+  | 'merch'
+  | 'sound_check'
+  | 'wandering'
+  | 'collection';
+
+export type FestieLifeLogPayload = {
+  kind: LifeLogKind;
+  text: string;
+  synthesized?: boolean;
 };
 
 function rowToEvent(row: Record<string, unknown>): FestieEventRow {
@@ -53,8 +95,17 @@ export async function insertFestieEvent(
   festieId: string,
   type: FestieEventType,
   payload: Record<string, unknown>,
+  createdAt?: string,
 ): Promise<void> {
   const sql = requireDb();
+  const at = createdAt ? toIsoTimestamp(createdAt) : undefined;
+  if (at) {
+    await sql`
+      INSERT INTO festie_events (festie_id, type, payload, created_at)
+      VALUES (${festieId}::uuid, ${type}, ${JSON.stringify(payload)}::jsonb, ${at}::timestamptz)
+    `;
+    return;
+  }
   await sql`
     INSERT INTO festie_events (festie_id, type, payload)
     VALUES (${festieId}::uuid, ${type}, ${JSON.stringify(payload)}::jsonb)
@@ -132,6 +183,8 @@ export async function sumFestieCoinsSince(
 
 export function isRecapDisplayEvent(event: FestieEventRow): boolean {
   return event.type === FESTIE_EVENT_TYPES.CHAT
+    || event.type === FESTIE_EVENT_TYPES.NPC_CHATTER
+    || event.type === FESTIE_EVENT_TYPES.LIFE_LOG
     || event.type === FESTIE_EVENT_TYPES.COIN_PICKUP;
 }
 
@@ -140,5 +193,60 @@ export function hasRecapContent(events: FestieEventRow[]): boolean {
 }
 
 export function countFestieChatsInEvents(events: FestieEventRow[]): number {
-  return events.filter(e => e.type === FESTIE_EVENT_TYPES.CHAT).length;
+  return events.filter(e =>
+    e.type === FESTIE_EVENT_TYPES.CHAT
+    || e.type === FESTIE_EVENT_TYPES.NPC_CHATTER,
+  ).length;
+}
+
+export async function countFestieNpcChatterSince(
+  festieId: string,
+  since: string,
+): Promise<number> {
+  const sql = requireDb();
+  const sinceIso = toIsoTimestamp(since);
+  const rows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM festie_events
+    WHERE festie_id = ${festieId}::uuid
+      AND type = ${FESTIE_EVENT_TYPES.NPC_CHATTER}
+      AND created_at >= ${sinceIso}::timestamptz
+  `;
+  return Number((rows[0] as { count: number }).count ?? 0);
+}
+
+export async function countSynthesizedLifeLogsSince(
+  festieId: string,
+  since: string,
+): Promise<number> {
+  const sql = requireDb();
+  const sinceIso = toIsoTimestamp(since);
+  const rows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM festie_events
+    WHERE festie_id = ${festieId}::uuid
+      AND type = ${FESTIE_EVENT_TYPES.LIFE_LOG}
+      AND payload->>'synthesized' = 'true'
+      AND created_at >= ${sinceIso}::timestamptz
+  `;
+  return Number((rows[0] as { count: number }).count ?? 0);
+}
+
+export async function hasLifeLogKindSince(
+  festieId: string,
+  since: string,
+  kind: LifeLogKind,
+): Promise<boolean> {
+  const sql = requireDb();
+  const sinceIso = toIsoTimestamp(since);
+  const rows = await sql`
+    SELECT 1
+    FROM festie_events
+    WHERE festie_id = ${festieId}::uuid
+      AND type = ${FESTIE_EVENT_TYPES.LIFE_LOG}
+      AND payload->>'kind' = ${kind}
+      AND created_at >= ${sinceIso}::timestamptz
+    LIMIT 1
+  `;
+  return rows.length > 0;
 }

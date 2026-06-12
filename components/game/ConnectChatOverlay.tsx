@@ -66,11 +66,14 @@ export function NpcPairChatOverlay({
   speakers,
   worldXA,
   worldXB,
+  typingSpeakerKey,
 }: {
   lines: KeyedChatLine[];
   speakers: [Omit<SpeakerProfile, 'screenPct'>, Omit<SpeakerProfile, 'screenPct'>];
   worldXA: number;
   worldXB: number;
+  /** Shown while waiting for the first line from PartyKit. */
+  typingSpeakerKey?: string | null;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
   const [screenPcts, setScreenPcts] = useState<[number, number]>(() => {
@@ -130,7 +133,11 @@ export function NpcPairChatOverlay({
         pointerEvents: 'none',
       }}
     >
-      <DualSpeakerChatThread lines={lines} speakers={trackedSpeakers} />
+      <DualSpeakerChatThread
+        lines={lines}
+        speakers={trackedSpeakers}
+        typingSpeakerKey={typingSpeakerKey}
+      />
     </div>
   );
 }

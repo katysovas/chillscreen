@@ -31,7 +31,8 @@ html:has(.game-surface) body {
     max-height: 100dvh;
   }
 
-  .mobile-controls-tray {
+  .mobile-controls-tray,
+  .festie-life-corner-mobile {
     bottom: calc(max(env(safe-area-inset-bottom, 0px), 36px) + 12px) !important;
   }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  countFestieChatsInEvents,
   FESTIE_EVENT_TYPES,
   hasRecapContent,
   type FestieEventRow,
@@ -80,7 +81,7 @@ export async function fetchSessionRecapSince(since: string): Promise<FestieSessi
     until: new Date().toISOString(),
     events,
     coinsEarned: data.coinsEarned,
-    chatCount: events.filter(e => e.type === FESTIE_EVENT_TYPES.CHAT).length,
+    chatCount: countFestieChatsInEvents(events),
   };
 }
 

@@ -5,6 +5,7 @@ import { appendChatLine, createChatLine, type ChatLine, type KeyedChatLine } fro
 import { PLAYER_AMBIENT_VISIBLE_MS } from '@/lib/multiplayer/useMultiplayer';
 
 export type NpcConvoState = {
+  convoId: string;
   participants: [string, string];
   lines: KeyedChatLine[];
 };
@@ -18,9 +19,9 @@ export type RoomChatterState = {
   npcConvo: NpcConvoState | null;
   isNpcInConvo: (npcId: string) => boolean;
   handleRoomChat: (sender: string, text: string) => void;
-  handleNpcLine: (npc: string, text: string) => void;
-  onNpcConvoStart: (participants: [string, string]) => void;
-  onNpcConvoEnd: () => void;
+  handleNpcLine: (convoId: string, npc: string, text: string) => void;
+  onNpcConvoStart: (convoId: string, participants: [string, string]) => void;
+  onNpcConvoEnd: (convoId: string) => void;
 };
 
 function parseSender(sender: string): { kind: 'user' | 'npc'; id: string } | null {
@@ -38,7 +39,6 @@ export function useRoomChatter(
   const [npcMessages, setNpcMessages] = useState<Map<string, ChatLine[]>>(new Map());
   const [playerMessages, setPlayerMessages] = useState<Map<string, ChatLine[]>>(new Map());
   const [npcConvo, setNpcConvo] = useState<NpcConvoState | null>(null);
-  const [npcConvoSet, setNpcConvoSet] = useState<Set<string>>(new Set());
   const hideTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const scheduleHide = useCallback((key: string, ms: number, clear: () => void) => {
@@ -77,22 +77,21 @@ export function useRoomChatter(
     if (playerId) appendPlayer(playerId, text);
   }, [appendPlayer, resolvePlayerId]);
 
-  const handleNpcLine = useCallback((npc: string, text: string) => {
+  const handleNpcLine = useCallback((convoId: string, npc: string, text: string) => {
     setNpcConvo(prev => {
-      if (prev?.participants.includes(npc)) {
-        const line = createChatLine(text);
-        return {
-          ...prev,
-          lines: [...prev.lines, { ...line, speakerKey: npc }].slice(-6),
-        };
+      if (!prev || prev.convoId !== convoId || !prev.participants.includes(npc)) {
+        return prev;
       }
-      return prev;
+      const line = createChatLine(text);
+      return {
+        ...prev,
+        lines: [...prev.lines, { ...line, speakerKey: npc }].slice(-6),
+      };
     });
   }, []);
 
-  const onNpcConvoStart = useCallback((participants: [string, string]) => {
-    setNpcConvoSet(new Set(participants));
-    setNpcConvo({ participants, lines: [] });
+  const onNpcConvoStart = useCallback((convoId: string, participants: [string, string]) => {
+    setNpcConvo(prev => (prev?.convoId === convoId ? prev : { convoId, participants, lines: [] }));
     setNpcMessages(prev => {
       const next = new Map(prev);
       for (const id of participants) next.delete(id);
@@ -100,14 +99,13 @@ export function useRoomChatter(
     });
   }, []);
 
-  const onNpcConvoEnd = useCallback(() => {
-    setNpcConvoSet(new Set());
-    setNpcConvo(null);
+  const onNpcConvoEnd = useCallback((convoId: string) => {
+    setNpcConvo(prev => (prev?.convoId === convoId ? null : prev));
   }, []);
 
   const isNpcInConvo = useCallback(
-    (npcId: string) => npcConvoSet.has(npcId),
-    [npcConvoSet],
+    (npcId: string) => npcConvo?.participants.includes(npcId) ?? false,
+    [npcConvo],
   );
 
   return {

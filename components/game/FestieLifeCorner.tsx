@@ -11,6 +11,8 @@ type Props = {
   ownerOnline: boolean;
   lifeOpen?: boolean;
   hidden?: boolean;
+  /** Icon-only button on phone — matches MobileGameControls tray buttons. */
+  isMobile?: boolean;
   onToggle: () => void;
 };
 
@@ -20,6 +22,7 @@ export function FestieLifeCorner({
   ownerOnline,
   lifeOpen = false,
   hidden = false,
+  isMobile = false,
   onToggle,
 }: Props) {
   if (hidden) return null;
@@ -29,10 +32,55 @@ export function FestieLifeCorner({
   const caption = festieLifeCaption(ownerOnline, festie.last_seen_at);
   const glow = preset.balloonColor;
 
+  if (isMobile) {
+    return (
+      <div
+        data-paraloid-ui
+        className="festie-life-corner-mobile"
+        style={{
+          position: 'absolute',
+          left: 'max(12px, calc(env(safe-area-inset-left, 0px) + 8px))',
+          zIndex: 45,
+          pointerEvents: 'auto',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onToggle}
+          onPointerDown={e => e.preventDefault()}
+          aria-label={`Festie life — ${caption}. Open details.`}
+          aria-pressed={lifeOpen}
+          title={caption}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 56,
+            height: 56,
+            borderRadius: 12,
+            border: lifeOpen
+              ? `1px solid ${glow}55`
+              : '1px solid rgba(255,255,255,.22)',
+            background: lifeOpen ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.42)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            cursor: 'pointer',
+            padding: 0,
+            userSelect: 'none',
+            touchAction: 'none',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <FestieHeart fill={fill} glowColor={glow} size={22} />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       data-paraloid-ui
-      className="bottom-[max(124px,calc(env(safe-area-inset-bottom)+112px))] md:bottom-5"
+      className="bottom-5"
       style={{
         position: 'absolute',
         left: 'max(12px, calc(env(safe-area-inset-left, 0px) + 8px))',

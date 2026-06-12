@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { userIdFromRequest } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { getFestieByUserId } from '@/lib/festie/db';
+import { ensureOfflineFestieActivity } from '@/lib/festie/offlineActivity';
 import {
   countFestieChatsInEvents,
   listFestieEventsSince,
@@ -33,6 +34,8 @@ export async function GET(request: Request) {
     : festie.last_seen_at;
 
   try {
+    await ensureOfflineFestieActivity(festie);
+
     const events = await listFestieEventsSince(festie.id, since);
     const coinsEarned = await sumFestieCoinsSince(festie.id, since);
     return NextResponse.json({

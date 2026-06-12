@@ -119,7 +119,7 @@ import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
 import { releaseNpcConvoSnap, snapNpcPairForConvo } from '@/lib/npcConvoSnap';
-import { npcPairInAnyPlayerView, npcTouchDistPx } from '@/lib/npcProximity';
+import { npcTouchDistPx } from '@/lib/npcProximity';
 import { appendChatLine, type ChatLine } from '@/lib/chatLines';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
@@ -634,57 +634,76 @@ export default function SFCity({
     return Boolean(sid && (label === sid || sid.startsWith(label)));
   }, [playerName]);
 
+  const ownerFestieNpcId = ownerFestie?.id ? festieNpcId(ownerFestie.id) : null;
+
   chatterHandlersRef.current = {
     onRoomChat: (sender, text) => {
       if (sender.startsWith('npc:')) {
         const npcId = sender.slice(4);
-        const cfg = effectiveNpcCast.find(c => c.id === npcId);
-        trackAmbientNpcChatter(npcId, text, 'solo', {
-          stage: effectiveVenueRoute,
-          npcName: cfg ? npcChatLabel(npcId, cfg.name) : undefined,
-        });
+        if (npcId === ownerFestieNpcId) {
+          const cfg = effectiveNpcCast.find(c => c.id === npcId);
+          trackAmbientNpcChatter(npcId, text, 'solo', {
+            stage: effectiveVenueRoute,
+            npcName: cfg ? npcChatLabel(npcId, cfg.name) : undefined,
+          });
+        }
         return;
       }
       if (skipRoomChatEcho(sender)) return;
       roomChatter.handleRoomChat(sender, text);
     },
-    onNpcConvoStart: (_convoId, participants, meta) => {
-      if (meta) {
-        console.log('[npc-chatter] seed', meta.seedKind, meta.seed);
-        console.log('[npc-chatter] models', meta.models);
-      }
-      const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    onNpcConvoStart: (convoId, participants, _meta) => {
       const idxA = effectiveNpcCast.findIndex(c => c.id === participants[0]);
       const idxB = effectiveNpcCast.findIndex(c => c.id === participants[1]);
-      const wxA = idxA >= 0 ? npcWorldXRefs.current[idxA] : undefined;
-      const wxB = idxB >= 0 ? npcWorldXRefs.current[idxB] : undefined;
-      if (
-        wxA == null
-        || wxB == null
-        || !Number.isFinite(wxA)
-        || !Number.isFinite(wxB)
-        || !npcPairInAnyPlayerView(wxA, wxB, [{ worldOff: worldRef.current, viewportWidth: width }])
-      ) {
-        return;
+      if (idxA < 0 || idxB < 0) return;
+
+      const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const wxA = npcWorldXRefs.current[idxA];
+      const wxB = npcWorldXRefs.current[idxB];
+      if (Number.isFinite(wxA) && Number.isFinite(wxB)) {
+        snapNpcPairForConvo(participants[0], participants[1], width, {
+          npcCast: effectiveNpcCast,
+          npcWorldXRefs,
+        });
       }
-      snapNpcPairForConvo(participants[0], participants[1], width, {
-        npcCast: effectiveNpcCast,
-        npcWorldXRefs,
-      });
-      roomChatter.onNpcConvoStart(participants);
+      roomChatter.onNpcConvoStart(convoId, participants);
     },
     onNpcLine: (convoId, npc, text) => {
+      const pair = mpRef.current?.npcConvoPairs.find(p => p.convoId === convoId);
+      if (pair) {
+        const idxA = effectiveNpcCast.findIndex(c => c.id === pair.participants[0]);
+        const idxB = effectiveNpcCast.findIndex(c => c.id === pair.participants[1]);
+        if (idxA >= 0 && idxB >= 0) {
+          const wxA = npcWorldXRefs.current[idxA];
+          const wxB = npcWorldXRefs.current[idxB];
+          if (
+            Number.isFinite(wxA)
+            && Number.isFinite(wxB)
+            && !hasNpcConvoHold(pair.participants[0])
+          ) {
+            const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+            snapNpcPairForConvo(pair.participants[0], pair.participants[1], width, {
+              npcCast: effectiveNpcCast,
+              npcWorldXRefs,
+            });
+          }
+        }
+        roomChatter.onNpcConvoStart(convoId, pair.participants);
+      }
       const cfg = effectiveNpcCast.find(c => c.id === npc);
-      trackAmbientNpcChatter(npc, text, 'pair', {
-        convoId,
-        stage: effectiveVenueRoute,
-        npcName: cfg ? npcChatLabel(npc, cfg.name) : undefined,
-      });
-      roomChatter.handleNpcLine(npc, text);
+      if (npc === ownerFestieNpcId) {
+        trackAmbientNpcChatter(npc, text, 'pair', {
+          convoId,
+          stage: effectiveVenueRoute,
+          npcName: cfg ? npcChatLabel(npc, cfg.name) : undefined,
+        });
+      }
+      roomChatter.handleNpcLine(convoId, npc, text);
     },
-    onNpcConvoEnd: () => {
-      releaseNpcConvoSnap();
-      roomChatter.onNpcConvoEnd();
+    onNpcConvoEnd: (convoId) => {
+      roomChatter.onNpcConvoEnd(convoId);
+      const stillActive = mpRef.current?.npcConvoPairs.some(p => p.convoId !== convoId);
+      if (!stillActive) releaseNpcConvoSnap();
     },
   };
   const { sendProfile, sendPeerTyping } = mp;
@@ -1413,11 +1432,23 @@ export default function SFCity({
   }, [homePreview]);
 
   const npcPairOverlay = useMemo(() => {
-    const convo = roomChatter.npcConvo;
+    const convo = roomChatter.npcConvo ?? (() => {
+      const pair = mp.npcConvoPairs[mp.npcConvoPairs.length - 1];
+      if (!pair) return null;
+      return { convoId: pair.convoId, participants: pair.participants, lines: [] };
+    })();
     if (!convo) return null;
     const [idA, idB] = convo.participants;
-    const wxA = getNpcConvoHold(idA);
-    const wxB = getNpcConvoHold(idB);
+    const resolveWorldX = (npcId: string) => {
+      const held = getNpcConvoHold(npcId);
+      if (held !== undefined) return held;
+      const idx = effectiveNpcCast.findIndex(c => c.id === npcId);
+      if (idx < 0) return undefined;
+      const wx = npcWorldXRefs.current[idx];
+      return Number.isFinite(wx) ? wx : undefined;
+    };
+    const wxA = resolveWorldX(idA);
+    const wxB = resolveWorldX(idB);
     if (wxA === undefined || wxB === undefined) return null;
     const cfgA = effectiveNpcCast.find(c => c.id === idA);
     const cfgB = effectiveNpcCast.find(c => c.id === idB);
@@ -1427,6 +1458,7 @@ export default function SFCity({
         worldXA={wxA}
         worldXB={wxB}
         lines={convo.lines}
+        typingSpeakerKey={convo.lines.length === 0 ? idA : null}
         speakers={[
           {
             key: idA,
@@ -1443,7 +1475,14 @@ export default function SFCity({
         ]}
       />
     );
-  }, [roomChatter.npcConvo, roomChatter.npcConvo?.lines.length, effectiveNpcCast, npcChatLabel, convoHoldTick]);
+  }, [
+    roomChatter.npcConvo,
+    roomChatter.npcConvo?.lines.length,
+    mp.npcConvoPairs,
+    effectiveNpcCast,
+    npcChatLabel,
+    convoHoldTick,
+  ]);
 
   const inConversation = greetingNpc !== null || peerChatId !== null;
 
@@ -1457,10 +1496,11 @@ export default function SFCity({
   const isNpcChatConnected = useCallback((npcIndex: number, npcId: string) => {
     if (greetingNpc === npcIndex) return true;
     if (mp.remoteNpcChats.some(c => c.npcId === npcId)) return true;
+    if (mp.npcConvoPairs.some(p => p.participants.includes(npcId))) return true;
     if (roomChatter.isNpcInConvo(npcId)) return true;
     if (hasNpcConvoHold(npcId)) return true;
     return false;
-  }, [greetingNpc, mp.remoteNpcChats, roomChatter, convoHoldTick]);
+  }, [greetingNpc, mp.remoteNpcChats, mp.npcConvoPairs, roomChatter, convoHoldTick]);
   const showMobileChatBar = mobileDevice
     && !showWelcome
     && !showCityPicker
@@ -1675,6 +1715,7 @@ export default function SFCity({
           ownerOnline={ownerOnline}
           lifeOpen={lifeModalOpen}
           hidden={showWelcome || showCityPicker}
+          isMobile={mobileDevice}
           onToggle={toggleLife}
         />
       )}

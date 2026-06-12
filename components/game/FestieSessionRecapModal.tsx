@@ -102,7 +102,7 @@ export function FestieSessionRecapModal({ festieName, recap, onDismiss }: Props)
                 marginBottom: line.detail ? 6 : 0,
               }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
-                  {line.kind === 'coin' ? '🪙 ' : '💬 '}{line.title}
+                  {line.emoji} {line.title}
                 </span>
                 <span style={{
                   fontSize: 11,

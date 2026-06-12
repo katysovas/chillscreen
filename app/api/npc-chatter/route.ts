@@ -1,7 +1,9 @@
 import { generatePairConvo, generateSingleReply } from '@/lib/npcChatter/generate';
 import { verifyChatterRequest } from '@/lib/npcChatter/auth';
 import { clampLineBudget, clampTriggerText, sanitizeRecentChat } from '@/lib/npcChatter/validate';
-import { isChatterNpcAllowed } from '@/lib/npcRoster.server';
+import { isChatterNpcAllowed, resolveNpcRosterEntry } from '@/lib/npcRoster.server';
+import { logFestieNpcChatter } from '@/lib/festie/logNpcChatter';
+import { festieIdFromNpcId, isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { HOUSE_MODEL_DEFAULT } from '@/lib/npcChatter/constants';
 
 /** Pair convo = up to 7 sequential LLM calls (~8s each). */
@@ -108,5 +110,33 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Generation failed' }, { status: 502 });
   }
 
+  void logFestiePairChatter(npcA, npcB, lines);
+
   return Response.json({ lines });
+}
+
+async function logFestiePairChatter(
+  npcA: string,
+  npcB: string,
+  lines: { npc: string; text: string }[],
+): Promise<void> {
+  for (const npcId of [npcA, npcB]) {
+    if (!isFestieNpcId(npcId)) continue;
+    const festieId = festieIdFromNpcId(npcId);
+    if (!festieId) continue;
+
+    const partnerId = npcId === npcA ? npcB : npcA;
+    const partnerEntry = await resolveNpcRosterEntry(partnerId);
+    const festieLines = lines.filter(l => l.npc === npcId);
+    const partnerLines = lines.filter(l => l.npc === partnerId);
+    if (festieLines.length === 0) continue;
+
+    logFestieNpcChatter(festieId, {
+      partnerNpcId: partnerId,
+      partnerNpcName: partnerEntry?.displayName ?? partnerId,
+      festieLine: festieLines.map(l => l.text).join(' '),
+      partnerLine: partnerLines.map(l => l.text).join(' '),
+      synthesized: false,
+    });
+  }
 }
