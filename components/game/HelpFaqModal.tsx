@@ -1,6 +1,7 @@
 'use client';
 
 import { FAQ_ITEMS } from '@/lib/helpFaq';
+import { Z_MODAL } from '@/lib/zLayers';
 
 type Props = {
   onClose: () => void;
@@ -13,7 +14,7 @@ export function HelpFaqModal({ onClose }: Props) {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 120,
+        zIndex: Z_MODAL,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

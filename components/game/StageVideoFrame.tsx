@@ -40,7 +40,7 @@ export function StageVideoFrame({
   width = '100%',
   height = '100%',
   borderRadius = 0,
-  loading = 'eager',
+  loading = 'lazy',
 }: StageVideoFrameProps) {
   const hostStyle: CSSProperties = {
     width,

@@ -1,6 +1,7 @@
 'use client';
 
 import { FESTIE_LIVE_DURATION_LABEL } from '@/lib/festie/config';
+import { Z_MODAL_NESTED } from '@/lib/zLayers';
 
 type Props = {
   festieName?: string | null;
@@ -24,7 +25,7 @@ export function SignOutConfirmModal({
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 130,
+        zIndex: Z_MODAL_NESTED,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

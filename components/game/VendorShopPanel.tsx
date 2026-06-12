@@ -14,6 +14,7 @@ import {
   VENDOR_SHOP_CATEGORIES,
   type VendorShopItemId,
 } from '@/lib/vendorShop';
+import { Z_MODAL } from '@/lib/zLayers';
 import { vendorItemPrice } from '@/lib/vendorPrices';
 import { playPurchaseSound } from '@/lib/playPurchaseSound';
 
@@ -309,7 +310,7 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
         right: 14,
         top: '50%',
         transform: 'translateY(-50%)',
-        zIndex: 210,
+        zIndex: Z_MODAL,
         width: 300,
         padding: '14px 14px 12px',
         borderRadius: 16,

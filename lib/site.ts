@@ -39,6 +39,10 @@ export const SITE_KEYWORDS = [
 
 export const FAVICON_PATH = '/images/logos/fav_white.png';
 export const LOGO_PATH = '/images/logos/logo_dark.png';
+/** Display size for boot shell logo (818×138 source PNG). */
+export const LOGO_DISPLAY_WIDTH = 260;
+export const LOGO_DISPLAY_HEIGHT = 44;
+export const VENUE_BOOT_OVERLAY_ID = 'venue-boot-overlay';
 
 /** Composed from logo_social.png in app/opengraph-image.tsx — 1200×630 for OG / X cards. */
 export const OG_IMAGE_PATH = '/opengraph-image';

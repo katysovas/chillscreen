@@ -229,7 +229,7 @@ export function getConversationSpread(
     : { marginRight: -nudge };
 }
 
-export const CHAT_LAYER_Z = 1000;
+export { Z_CHAT_OVERLAY as CHAT_LAYER_Z } from '@/lib/zLayers';
 
 /** Stacked chatter — oldest on top, newest at bottom, older lines fade. */
 /** Align bubbles to each speaker's screen side (player ~50%, partner at partnerScreenX). */

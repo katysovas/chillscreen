@@ -15,6 +15,7 @@ import {
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
+import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
 import {
   NPC_FAR_WANDER_CHANCE,
   NPC_IDLE_MS_SCALE,
@@ -490,7 +491,7 @@ export default function NPC({
         position: 'absolute',
         bottom: CHAR_BOTTOM,
         transform: `translateY(${crowdDepthOffsetPx(characterId)}px)`,
-        zIndex: greeting ? 200 : 18,
+        zIndex: greeting ? Z_CHAT_CHARACTER : 18,
         opacity: dimmed ? 0.6 : 1,
         filter: dimmed ? 'brightness(0.85)' : undefined,
         transition: 'opacity 0.4s ease, filter 0.4s ease',

@@ -1,5 +1,6 @@
 'use client';
 
+import { Z_MODAL } from '@/lib/zLayers';
 import { FestieLifeHeader } from './FestieLifeHeader';
 import { FestieLifePanel } from './FestieLifePanel';
 import type { FestieOwner } from '@/lib/festie/types';
@@ -27,7 +28,7 @@ export function FestieLifeModal({
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 120,
+        zIndex: Z_MODAL,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

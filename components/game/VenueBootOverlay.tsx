@@ -1,28 +1,20 @@
-'use client';
-
 import {
   LOGO_DISPLAY_HEIGHT,
   LOGO_DISPLAY_WIDTH,
   LOGO_PATH,
+  VENUE_BOOT_OVERLAY_ID,
 } from '@/lib/site';
 
-type Props = {
-  visible?: boolean;
-};
-
-/** Full-screen boot shell — dark backdrop with centered logo while auth/bundle loads. */
-export function StageBootShell({ visible = true }: Props) {
+/** SSR boot shell — paints LCP logo before client JS hydrates. */
+export function VenueBootOverlay() {
   return (
     <div
+      id={VENUE_BOOT_OVERLAY_ID}
       className="venue-boot-overlay"
       role="status"
       aria-live="polite"
       aria-busy="true"
       aria-label="Loading WhichStage"
-      style={{
-        opacity: visible ? 1 : 0,
-        pointerEvents: visible ? 'auto' : 'none',
-      }}
     >
       <div className="venue-boot-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}

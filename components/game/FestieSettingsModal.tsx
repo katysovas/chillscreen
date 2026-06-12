@@ -16,6 +16,7 @@ import {
 import { FESTIE_TOPIC_OPTIONS, FESTIE_TOPICS } from '@/lib/festie/presets';
 import { FestieLifeHeader } from './FestieLifeHeader';
 import type { FestieOwner } from '@/lib/festie/types';
+import { Z_MODAL_NESTED } from '@/lib/zLayers';
 import {
   isValidFestiePassword,
   validateFestiePassword,
@@ -369,7 +370,7 @@ export function FestieSettingsModal({
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 220,
+        zIndex: Z_MODAL_NESTED,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

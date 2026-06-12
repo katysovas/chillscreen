@@ -6,7 +6,7 @@ import { rootMetadata } from '@/lib/siteMetadata';
 import { CHARACTER_STYLES } from '@/components/game/characterStyles';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = rootMetadata;
 

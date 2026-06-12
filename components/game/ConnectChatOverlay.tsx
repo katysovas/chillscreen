@@ -20,6 +20,7 @@ import {
   chatConnectSpreadPx,
 } from '@/lib/chatConnectSpread';
 import { CHAR_BOTTOM, NPC_PAIR_CHAT_LIFT_PX } from './groundLayout';
+import { Z_CHAT_OVERLAY } from '@/lib/zLayers';
 
 type ChatMode = null | 'chat' | 'ambient';
 
@@ -123,7 +124,7 @@ export function NpcPairChatOverlay({
         left: '50%',
         bottom: `calc(${CHAR_BOTTOM} + ${NPC_PAIR_CHAT_LIFT_PX}px)`,
         transform: 'translateX(-50%)',
-        zIndex: 201,
+        zIndex: Z_CHAT_OVERLAY,
         width: 300,
         display: 'flex',
         flexDirection: 'column',

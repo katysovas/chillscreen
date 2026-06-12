@@ -9,6 +9,7 @@ import {
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import { stageChannelForRoute } from '@/lib/isolatedCity';
 import { preloadStageRouteAssets } from '@/lib/stagePreload';
+import { hideVenueBootOverlay } from '@/lib/venueBoot';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { StageBootShell } from './StageBootShell';
 
@@ -20,18 +21,13 @@ type SFCityProps = {
 };
 
 type SFCityLoaderProps = SFCityProps & {
-  homePreview?: boolean;
-  muted?: boolean;
+  /** True when `VenueBootOverlay` is server-rendered on the page. */
+  serverBootOverlay?: boolean;
 };
 
-const SHELL_DELAY_MS = 700;
 const FADE_MS = 320;
 
 type SFCityComponent = ComponentType<SFCityProps>;
-
-function GameLoadingShell({ visible }: { visible: boolean }) {
-  return <StageBootShell visible={visible} />;
-}
 
 /** Code-split entry — keeps the main route JS small until the game is needed. */
 export default function SFCityLoader({
@@ -39,6 +35,7 @@ export default function SFCityLoader({
   venueRoute,
   homePreview,
   muted,
+  serverBootOverlay = false,
 }: SFCityLoaderProps) {
   const [Game, setGame] = useState<SFCityComponent | null>(null);
   const [showShell, setShowShell] = useState(false);
@@ -52,19 +49,16 @@ export default function SFCityLoader({
   }, [venueRoute]);
 
   useEffect(() => {
-    let shellTimer: ReturnType<typeof setTimeout> | undefined;
     let fadeTimer: ReturnType<typeof setTimeout> | undefined;
     let raf = 0;
     let cancelled = false;
-    const startedAt = Date.now();
 
-    shellTimer = setTimeout(() => {
-      if (cancelled || loadedRef.current) return;
+    if (!serverBootOverlay) {
       setShowShell(true);
       raf = requestAnimationFrame(() => {
         if (!cancelled) setShellVisible(true);
       });
-    }, SHELL_DELAY_MS);
+    }
 
     Promise.all([
       import('./SFCity'),
@@ -74,28 +68,26 @@ export default function SFCityLoader({
       loadedRef.current = true;
       setGame(() => mod.default);
 
-      if (Date.now() - startedAt >= SHELL_DELAY_MS) {
-        raf = requestAnimationFrame(() => {
-          if (cancelled) return;
-          setShellVisible(false);
-          fadeTimer = setTimeout(() => {
-            if (!cancelled) setShowShell(false);
-          }, FADE_MS);
-        });
+      if (serverBootOverlay) {
+        hideVenueBootOverlay();
+      } else {
+        setShellVisible(false);
+        fadeTimer = setTimeout(() => {
+          if (!cancelled) setShowShell(false);
+        }, FADE_MS);
       }
     });
 
     return () => {
       cancelled = true;
-      if (shellTimer) clearTimeout(shellTimer);
       if (fadeTimer) clearTimeout(fadeTimer);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [venueRoute]);
+  }, [venueRoute, serverBootOverlay]);
 
   return (
     <>
-      {showShell && <GameLoadingShell visible={shellVisible} />}
+      {!serverBootOverlay && showShell && <StageBootShell visible={shellVisible} />}
       {Game && (
         <Game
           spawnWorldOff={spawnWorldOff}

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import SFCityLoader from '@/components/game/SFCityLoader';
+import { VenueBootOverlay } from '@/components/game/VenueBootOverlay';
 import { JsonLd } from '@/components/JsonLd';
 import { invitePageCopy, parseFriendParam } from '@/lib/inviteSeo';
 import { breadcrumbJsonLd, festivalStageJsonLd, webPageJsonLd } from '@/lib/jsonLd';
@@ -70,7 +71,12 @@ export default async function VenuePage({ params, searchParams }: VenuePageProps
           ],
         }}
       />
-      <SFCityLoader spawnWorldOff={worldOffForVenueRoute(route)} venueRoute={route} />
+      <VenueBootOverlay />
+      <SFCityLoader
+        spawnWorldOff={worldOffForVenueRoute(route)}
+        venueRoute={route}
+        serverBootOverlay
+      />
     </>
   );
 }

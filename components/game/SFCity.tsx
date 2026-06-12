@@ -118,6 +118,7 @@ import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsMod
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
+import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
 import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
 import { getNpcConvoAnchor, setNpcConvoAnchor } from '@/lib/npcConvoAnchor';
 import { releaseNpcConvoSnap, snapNpcPairForConvo } from '@/lib/npcConvoSnap';
@@ -1714,7 +1715,7 @@ export default function SFCity({
             bottom: CHAR_BOTTOM,
             transform: `translate(${inConversation ? chatConnectSpreadPlayerPx(greetNpcX) : 0}px, ${playerDepthY}px)`,
             transition: 'transform 0.25s ease',
-            zIndex: inConversation ? 200 : 20,
+            zIndex: inConversation ? Z_CHAT_CHARACTER : 20,
           }}>
             <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
               <Character

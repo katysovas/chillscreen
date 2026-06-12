@@ -23,6 +23,19 @@ export const STAGE_IFRAME_STYLE: React.CSSProperties = {
   display: 'block',
 };
 
+/** Defer YouTube embed until after first paint + idle — keeps PSI main-thread budget for game boot. */
+const YOUTUBE_EMBED_IDLE_TIMEOUT_MS = 4_000;
+
+function scheduleYouTubeEmbed(onReady: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  if ('requestIdleCallback' in window) {
+    const id = window.requestIdleCallback(onReady, { timeout: YOUTUBE_EMBED_IDLE_TIMEOUT_MS });
+    return () => window.cancelIdleCallback(id);
+  }
+  const id = globalThis.setTimeout(onReady, 1_500);
+  return () => globalThis.clearTimeout(id);
+}
+
 type UseStagePlayerOptions = {
   live: boolean;
   channel: StageChannel;
@@ -46,6 +59,16 @@ export function useStagePlayer({
   live, channel, iframeRef, onNowPlaying, alwaysMuted = false,
 }: UseStagePlayerOptions): UseStagePlayerResult {
   const { video, vidKey } = useStageChannel(channel, live);
+  const [embedReady, setEmbedReady] = useState(false);
+
+  useEffect(() => {
+    if (!live) {
+      setEmbedReady(false);
+      return;
+    }
+    setEmbedReady(false);
+    return scheduleYouTubeEmbed(() => setEmbedReady(true));
+  }, [live, vidKey]);
 
   const applyAudio = useCallback(
     (iframe: HTMLIFrameElement | null) => {
@@ -64,12 +87,12 @@ export function useStagePlayer({
   onNowPlayingRef.current = onNowPlaying;
 
   const src = useMemo(() => {
-    if (!live || !video) return '';
+    if (!live || !embedReady || !video) return '';
     const sched = currentSchedule(channel);
     const url = stageEmbedSrc(video.id, sched?.offsetSec ?? 0);
     console.log(`[${channel}] embed`, video.id, video.title, sched?.offsetSec ?? 0, url);
     return url;
-  }, [live, video?.id, video?.title, channel, vidKey]);
+  }, [live, embedReady, video?.id, video?.title, channel, vidKey]);
 
   useEffect(() => {
     if (!live || !video) {
