@@ -309,14 +309,9 @@ export function NpcGeneratorAdmin() {
               outfit: <code>{npc.outfit}</code> · prop: <code>{npc.prop ?? 'null'}</code>
             </div>
             <div style={{ fontSize: 14, marginBottom: 8, color: '#cdd4e0' }}>{npc.vibe}</div>
-            <div style={{ fontSize: 13, color: '#9aa3b5', marginBottom: 12, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, color: '#cdd4e0', lineHeight: 1.5 }}>
               {npc.personalityNotes}
             </div>
-            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.7, color: '#cdd4e0' }}>
-              {npc.lines.map((line, j) => (
-                <li key={j}>“{line}”</li>
-              ))}
-            </ul>
           </div>
         ))}
       </div>

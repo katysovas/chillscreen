@@ -90,7 +90,6 @@ function toCharacterDef(
     stageCrowd: onStageAtLoad && anchor ? anchor : undefined,
     personality: { ...base, wanderRange: GENERATED_WANDER },
     personalityNotes: npc.personalityNotes || npc.vibe,
-    ambientLines: npc.lines,
     modelId: npc.modelId,
   };
 }

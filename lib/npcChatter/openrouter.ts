@@ -1,4 +1,4 @@
-import { NPC_LINE_MAX_TOKENS, NPC_LINE_TEMPERATURE, NPC_LINE_TIMEOUT_MS } from './constants';
+import { NPC_LINE_MAX_TOKENS, NPC_LINE_MAX_WORDS, NPC_LINE_TEMPERATURE, NPC_LINE_TIMEOUT_MS } from './constants';
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
@@ -55,6 +55,13 @@ export async function openRouterComplete(
   }
 }
 
+/** Keep at most maxWords whole words — never slice mid-word. */
+function limitWords(text: string, maxWords: number): string {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return words.join(' ');
+  return words.slice(0, maxWords).join(' ');
+}
+
 /** Strip quotes, name prefixes, special chars; keep one sentence. */
 export function sanitizeLine(raw: string): string {
   let text = raw
@@ -73,6 +80,5 @@ export function sanitizeLine(raw: string): string {
     if (clauseBreak !== -1) text = text.slice(0, clauseBreak).trim();
   }
 
-  if (text.length > 120) text = text.slice(0, 120).trim();
-  return text;
+  return limitWords(text, NPC_LINE_MAX_WORDS);
 }

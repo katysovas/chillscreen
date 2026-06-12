@@ -47,7 +47,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/audio/') ||
     pathname === '/favicon.ico' ||
     pathname === '/robots.txt' ||
-    pathname === '/sitemap.xml'
+    pathname === '/sitemap.xml' ||
+    pathname === '/opengraph-image'
   ) {
     return NextResponse.next();
   }

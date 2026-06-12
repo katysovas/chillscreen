@@ -1,6 +1,7 @@
 import {
   CONTACT,
   LOGO_PATH,
+  OG_IMAGE_PATH,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_TAGLINE,
@@ -71,7 +72,7 @@ export function webApplicationJsonLd() {
       'Chat with NPCs and other players',
       'Multiplayer browser presence — no download',
     ],
-    screenshot: absoluteUrl(LOGO_PATH),
+    screenshot: absoluteUrl(OG_IMAGE_PATH),
   };
 }
 

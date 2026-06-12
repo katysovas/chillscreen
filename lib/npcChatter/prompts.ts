@@ -27,7 +27,8 @@ export function formatRecentChat(lines: RoomChatLine[]): string {
 function voiceRules(extra = ''): string {
   return [
     'Voice rules (viral quote-tweet energy — screenshot-worthy):',
-    `- ONE SHORT sentence only. max ~${NPC_LINE_MAX_WORDS} words, often fewer.`,
+    `- ONE complete sentence only. aim for 6–${NPC_LINE_MAX_WORDS} words; never exceed ${NPC_LINE_MAX_WORDS} words.`,
+    '- finish the thought cleanly — no trailing clauses, no cut-off endings.',
     '- write like a late-night group chat after the headliner — lowercase, casual, slang is fine.',
     '- absolutely no profanity, slurs, or curse words — ever. use clean internet slang instead (bruh, nah, cap, cooked, unhinged, delulu, lowkey, highkey, rent free, ate, cringe, main character, down bad, its giving, touch grass).',
     '- plain words only. no fancy vocabulary, no corporate or journalist tone.',
@@ -42,10 +43,10 @@ function voiceRules(extra = ''): string {
     '- never end on a question. land a statement people would repost.',
     '- do not reuse phrases already in the transcript.',
     '',
-    'good: "kendrick in 100 degree heat is brutal on the crowd and everyone knows it"',
-    'good: "bonnaroo mud years are the only years that count and vip people can stay mad about it"',
-    'good: "taylor courtside again like the game is her spotify wrapped"',
-    'bad: "yeah extreme weather is concerning" (too polite, zero personality)',
+    'good: "kendrick in 100 degree heat is brutal on everyone"',
+    'good: "bonnaroo mud years are the only years that count"',
+    'good: "taylor courtside again like the game is her wrapped"',
+    'bad: "yeah extreme weather is concerning for outdoor festivals and crowd safety" (too long, too polite)',
     'bad: "that\'s interesting, what do you think?" (question volley — never end on a question)',
     'bad: "scarlet fire hits different; man i miss 77" (semicolon, multiple thoughts)',
     extra,
@@ -103,11 +104,11 @@ export function buildLineSystemPrompt(opts: {
   }
 
   if (isCloser) {
-    parts.push('wrap it up — drop your meanest/funniest final one-liner, the line people would screenshot.');
+    parts.push('wrap it up — one short punchy final line (under 10 words), screenshot-worthy.');
   }
 
   parts.push(
-    'Reply with ONE sentence of dialogue only. No quotes, no name prefix, no special characters.',
+    `Reply with ONE complete sentence only (${NPC_LINE_MAX_WORDS} words max). No quotes, no name prefix, no special characters.`,
   );
 
   return parts.filter(Boolean).join('\n\n');
@@ -134,6 +135,6 @@ export function buildSingleReplySystemPrompt(opts: {
     INJECTION_GUARD,
     voiceRules(),
     `Someone in the room said something that caught your ear: "${triggerText}"`,
-    'Reply with ONE sentence only. No quotes, no name prefix, no special characters.',
+    `Reply with ONE complete sentence only (${NPC_LINE_MAX_WORDS} words max). No quotes, no name prefix, no special characters.`,
   ].join('\n\n');
 }

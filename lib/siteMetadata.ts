@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import {
   FAVICON_PATH,
-  LOGO_PATH,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_PATH,
+  OG_IMAGE_WIDTH,
   SITE_DESCRIPTION,
   SITE_KEYWORDS,
   SITE_NAME,
@@ -65,10 +67,10 @@ export function buildPageMetadata({
       description,
       images: [
         {
-          url: `${SITE_URL}${LOGO_PATH}`,
-          width: 1200,
-          height: 630,
-          alt: `${SITE_NAME} logo`,
+          url: OG_IMAGE_PATH,
+          width: OG_IMAGE_WIDTH,
+          height: OG_IMAGE_HEIGHT,
+          alt: `${SITE_NAME} — ${pageTitle}`,
           type: 'image/png',
         },
       ],
@@ -79,7 +81,7 @@ export function buildPageMetadata({
       creator: TWITTER_HANDLE,
       title: pageTitle,
       description,
-      images: [`${SITE_URL}${LOGO_PATH}`],
+      images: [OG_IMAGE_PATH],
     },
     robots: noIndex
       ? { index: false, follow: false }

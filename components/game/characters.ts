@@ -26,8 +26,6 @@ export type CharacterDef = {
   personalityNotes: string;
   /** OpenRouter model for NPC chatter (optional — generated NPCs may omit). */
   modelId?: string;
-  /** Scripted ambient mutterings (generated NPCs) — preferred over stage mumbles. */
-  ambientLines?: string[];
 };
 
 const CHARACTERS: CharacterDef[] = [

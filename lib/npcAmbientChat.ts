@@ -507,17 +507,7 @@ function pickBuzAmbientMumble(): string {
   return pickStageMumble({ id: BUZ_NPC_ID } as CharacterDef, stage);
 }
 
-/** Generated NPCs — use their scripted `lines` pool when available. */
-const SCRIPTED_LINE_WEIGHT = 1;
-
 export function pickAmbientMumble(character: CharacterDef): string {
-  if (
-    character.ambientLines
-    && character.ambientLines.length > 0
-    && Math.random() < SCRIPTED_LINE_WEIGHT
-  ) {
-    return clampAmbientLine(pick(character.ambientLines));
-  }
   const line = isBuzNpc(character.id)
     ? pickBuzAmbientMumble()
     : Math.random() < STAGE_MUMBLE_WEIGHT
