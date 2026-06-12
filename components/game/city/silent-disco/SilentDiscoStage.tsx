@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import type { HTMLAttributes } from 'react';
 import { useStagePlayer } from '../../useStagePlayer';
-import { StageVideoFrame } from '../../StageVideoFrame';
+import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
 import { stageChannelForVenueKind } from '@/lib/venues';
 import {
   SD_NEON,
@@ -283,16 +283,6 @@ function SilentDiscoStageShell({ marquee = 'SILENT DISCO', idleScreen = true }: 
             </>
           )}
 
-          <g transform={`translate(${scrX + 10},${scrY + 10})`}>
-            <rect width={52} height={18} rx={3} fill="rgba(220,40,60,.88)" />
-            <circle cx={10} cy={9} r={3.5} fill="#fff">
-              <animate attributeName="opacity" values="1;0.2;1" dur="1.2s" repeatCount="indefinite" />
-            </circle>
-            <text x={26} y={13} textAnchor="middle" fontFamily={fontFamily} fontSize={9} fontWeight={700} letterSpacing={2} fill="#fff">
-              LIVE
-            </text>
-          </g>
-
           {/* DJ table — rows of charging headphones glowing under the screen */}
           <g transform={`translate(${cx - 215},0)`}>
             <rect x={120} y={596} width={190} height={64} rx={6} fill="#0a0f1e" stroke="rgba(54,227,255,.3)" strokeWidth={1.5} />
@@ -450,7 +440,7 @@ const SILENT_DISCO_STAGE_CHANNEL = stageChannelForVenueKind('silent-disco', 0);
 
 function SilentDiscoStageLive() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
+  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
     channel: SILENT_DISCO_STAGE_CHANNEL,
     iframeRef,
@@ -465,14 +455,21 @@ function SilentDiscoStageLive() {
   return (
     <>
       <SilentDiscoStageShell marquee={marquee} idleScreen={false} />
-      <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>
+      <foreignObject
+        x={videoFoX}
+        y={videoFoY}
+        width={videoFoW}
+        height={videoFoH}
+        data-stage-video-fo
+        style={STAGE_VIDEO_FO_STYLE}
+      >
         <div
           {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
           style={{
             width: scrW,
             transform: `scale(${S})`,
             transformOrigin: 'top left',
-            pointerEvents: 'none',
+            ...STAGE_VIDEO_WRAPPER_STYLE,
           }}
         >
           <StageVideoFrame
@@ -481,7 +478,6 @@ function SilentDiscoStageLive() {
             vidKey={vidKey}
             title={video?.title}
             onIframeLoad={onIframeLoad}
-            playerVisible={playerVisible}
             width={scrW}
             height={scrH}
             borderRadius={6}

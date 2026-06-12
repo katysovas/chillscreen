@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import type { HTMLAttributes } from 'react';
 import { useStagePlayer } from '../../useStagePlayer';
-import { StageVideoFrame } from '../../StageVideoFrame';
+import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
 import { stageChannelForVenueKind } from '@/lib/venues';
 import {
   FOREST_GND,
@@ -260,16 +260,6 @@ function ForestStageShell({ marquee = 'THE FOREST', idleScreen = true }: ForestS
             </>
           )}
 
-          <g transform={`translate(${scrX + 10},${scrY + 10})`}>
-            <rect width={52} height={18} rx={3} fill="rgba(220,40,60,.88)" />
-            <circle cx={10} cy={9} r={3.5} fill="#fff">
-              <animate attributeName="opacity" values="1;0.2;1" dur="1.2s" repeatCount="indefinite" />
-            </circle>
-            <text x={26} y={13} textAnchor="middle" fontFamily={fontFamily} fontSize={9} fontWeight={700} letterSpacing={2} fill="#fff">
-              LIVE
-            </text>
-          </g>
-
           {/* fireflies drifting around the rig */}
           {FIREFLIES.map((f, i) => (
             <circle key={i} cx={f.x} cy={f.y} r={2.4} fill="#d9ffb0">
@@ -361,7 +351,7 @@ const FOREST_STAGE_CHANNEL = stageChannelForVenueKind('forest', 0);
 
 function ForestStageLive() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
+  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
     channel: FOREST_STAGE_CHANNEL,
     iframeRef,
@@ -376,14 +366,21 @@ function ForestStageLive() {
   return (
     <>
       <ForestStageShell marquee={marquee} idleScreen={false} />
-      <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>
+      <foreignObject
+        x={videoFoX}
+        y={videoFoY}
+        width={videoFoW}
+        height={videoFoH}
+        data-stage-video-fo
+        style={STAGE_VIDEO_FO_STYLE}
+      >
         <div
           {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
           style={{
             width: scrW,
             transform: `scale(${S})`,
             transformOrigin: 'top left',
-            pointerEvents: 'none',
+            ...STAGE_VIDEO_WRAPPER_STYLE,
           }}
         >
           <StageVideoFrame
@@ -392,7 +389,6 @@ function ForestStageLive() {
             vidKey={vidKey}
             title={video?.title}
             onIframeLoad={onIframeLoad}
-            playerVisible={playerVisible}
             width={scrW}
             height={scrH}
             borderRadius={6}

@@ -13,10 +13,12 @@ export const TENTAROO_ARCH_ART_GROUND_Y = 742;
 /** Ground line on Tentaroo tiles. */
 export const TENTAROO_GND = 660;
 
+import { minStageScale } from '@/lib/stageViewport';
+
 /** Which Stage — bioluminescent main stage, east of the arch. */
 export const WHICH_STAGE_MID_X = 1620;
 
-export const WHICH_STAGE_SCALE = 1.95;
+export const WHICH_STAGE_SCALE = minStageScale(1.95);
 
 export const WHICH_STAGE_PUSH_Y = 88;
 

@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { subscribeStageSync } from '@/lib/stageClock';
+import type { YouTubePlayerState } from '@/lib/youtubePlayer';
 
 /** Per-frame sync for live YouTube stage players (mute/pause when off-screen). */
 const syncs = new Set<() => void>();
@@ -16,6 +17,11 @@ export function runAllStagePlayerSyncs() {
 
 // ── Shared YouTube playerState listener (one window 'message' for all stages) ──
 
+const YT_ORIGINS = new Set([
+  'https://www.youtube.com',
+  'https://www.youtube-nocookie.com',
+]);
+
 type PlayingEntry = {
   iframeRef: RefObject<HTMLIFrameElement | null>;
   onPlayingRef: RefObject<() => void>;
@@ -24,10 +30,23 @@ type PlayingEntry = {
 const playingEntries = new Set<PlayingEntry>();
 let messageListenerOn = false;
 
+function parsePlayingState(data: { event?: string; info?: unknown }): YouTubePlayerState | null {
+  if (data?.event === 'onStateChange' && typeof data.info === 'number') {
+    return data.info as YouTubePlayerState;
+  }
+  if (data?.event === 'infoDelivery' && typeof data.info === 'object' && data.info != null) {
+    const ps = (data.info as { playerState?: unknown }).playerState;
+    if (typeof ps === 'number') return ps as YouTubePlayerState;
+  }
+  return null;
+}
+
 function onYouTubeMessage(e: MessageEvent) {
+  if (!YT_ORIGINS.has(e.origin) || !e.source) return;
   try {
     const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-    if (data?.event !== 'infoDelivery' || data?.info?.playerState !== 1) return;
+    const state = parsePlayingState(data);
+    if (state !== 1) return;
     for (const entry of playingEntries) {
       const iframe = entry.iframeRef.current;
       if (iframe?.contentWindow && e.source === iframe.contentWindow) {

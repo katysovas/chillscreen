@@ -10,7 +10,8 @@ import {
   SD_GND,
 } from './constants';
 import { setCoachellaNowPlaying } from '@/lib/coachellaNowPlaying';
-import { useStagePlayer, STAGE_IFRAME_STYLE } from '../../useStagePlayer';
+import { useStagePlayer } from '../../useStagePlayer';
+import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
 
 /** Stage center x — used for venue focus / in-view checks. */
 export { COACHELLA_STAGE_MID_X };
@@ -254,7 +255,7 @@ function FestivalStageLive() {
   const pushY = COACHELLA_STAGE_PUSH_Y;
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
+  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
     channel: 'coachella',
     iframeRef,
@@ -269,43 +270,32 @@ function FestivalStageLive() {
   return (
     <>
       <FestivalStageShell idleScreen={false} hideLights />
-      <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>
+      <foreignObject
+        x={videoFoX}
+        y={videoFoY}
+        width={videoFoW}
+        height={videoFoH}
+        data-stage-video-fo
+        style={STAGE_VIDEO_FO_STYLE}
+      >
         <div
           {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
           style={{
             width: iframeW,
             transform: `scale(${S})`,
             transformOrigin: 'top left',
-            pointerEvents: 'none',
+            ...STAGE_VIDEO_WRAPPER_STYLE,
           }}
         >
-          <div style={{ width: iframeW, height: iframeH, background: '#000', position: 'relative' }}>
-            {src && (
-              <iframe
-                key={vidKey}
-                ref={iframeRef}
-                src={src}
-                title={video?.title ?? 'The Desert'}
-                loading="eager"
-                onLoad={onIframeLoad}
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                style={STAGE_IFRAME_STYLE}
-              />
-            )}
-            {src && (
-              <div data-stage-video-veil style={{
-                position: 'absolute', inset: 0, zIndex: 10,
-                background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
-                opacity: playerVisible ? 0 : 1,
-                transition: playerVisible ? 'opacity 0.8s' : 'none',
-              }}>
-                <span style={{ fontFamily: 'sans-serif', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
-                {video?.title && <span style={{ fontFamily: 'sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 10px', lineHeight: 1.3 }}>{video.title}</span>}
-              </div>
-            )}
-          </div>
+          <StageVideoFrame
+            iframeRef={iframeRef}
+            src={src}
+            vidKey={vidKey}
+            title={video?.title}
+            onIframeLoad={onIframeLoad}
+            width={iframeW}
+            height={iframeH}
+          />
         </div>
       </foreignObject>
       {/* Lights re-rendered above the video so the cones glow over the screen. */}

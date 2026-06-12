@@ -1,6 +1,7 @@
 import type { HTMLAttributes } from 'react';
 import Cinema, { CINEMA_SCALE, CINEMA_WIDTH, CinemaShell } from '../Cinema';
 import Concert, { CONCERT_SCALE, CONCERT_WIDTH, ConcertShell } from '../Concert';
+import { STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../StageVideoFrame';
 import { StageToiletsFlanking } from './street/StageToiletRow';
 import { cinemaMidX, concertChannel, concertLabel, concertMidX, type VenueKind } from '@/lib/venues';
 import type { VenueRoute } from '@/lib/venueRoutes';
@@ -75,7 +76,8 @@ export function CityVenuesTile({
           y={concertFoY}
           width={concertFoW}
           height={concertFoH}
-          style={{ overflow: 'visible' }}
+          data-stage-video-fo={concertLiveNow ? true : undefined}
+          style={concertLiveNow ? STAGE_VIDEO_FO_STYLE : { overflow: 'visible' }}
         >
           <div
             {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
@@ -83,7 +85,7 @@ export function CityVenuesTile({
               width: CONCERT_WIDTH,
               transform: `scale(${CONCERT_SCALE})`,
               transformOrigin: 'top left',
-              pointerEvents: concertLiveNow ? 'auto' : 'none',
+              ...(concertLiveNow ? STAGE_VIDEO_WRAPPER_STYLE : { pointerEvents: 'none' }),
             }}
           >
             {concertLiveNow ? (
@@ -134,7 +136,8 @@ export function CityVenuesTile({
           y={cinemaFoY}
           width={cinemaFoW}
           height={cinemaFoH}
-          style={{ overflow: 'visible' }}
+          data-stage-video-fo={cinemaLiveNow ? true : undefined}
+          style={cinemaLiveNow ? STAGE_VIDEO_FO_STYLE : { overflow: 'visible' }}
         >
           <div
             {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
@@ -142,7 +145,7 @@ export function CityVenuesTile({
               width: CINEMA_WIDTH,
               transform: `scale(${CINEMA_SCALE})`,
               transformOrigin: 'top left',
-              pointerEvents: cinemaLiveNow ? 'auto' : 'none',
+              ...(cinemaLiveNow ? STAGE_VIDEO_WRAPPER_STYLE : { pointerEvents: 'none' }),
             }}
           >
             {cinemaLiveNow ? <Cinema live /> : <CinemaShell />}

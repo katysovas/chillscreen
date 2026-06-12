@@ -9,6 +9,10 @@ export function setAudioMuted(value: boolean) {
   if (value === muted) return;
   muted = value;
   listeners.forEach(fn => fn());
+  if (!value) {
+    // User gesture on mute toggle — re-apply audio + kick playback.
+    void import('@/lib/stagePlayerRegistry').then(m => m.nudgeAllStagePlayers());
+  }
 }
 
 export function getAudioMuted() {

@@ -1,3 +1,4 @@
+import { formatFestieTopics } from '@/lib/festie/presets';
 import { formatNpcBrandedName } from '@/lib/npcBrandedName';
 import type { NpcRosterEntry } from '@/lib/npcRoster.server';
 import { NPC_LINE_MAX_WORDS, PROMPT_WINDOW_LINES } from './constants';
@@ -24,31 +25,49 @@ export function formatRecentChat(lines: RoomChatLine[]): string {
   return slice.map(l => `${l.sender}: ${l.text}`).join('\n');
 }
 
-function voiceRules(extra = ''): string {
+function topicKnowledgeRule(topics: string[] | undefined): string {
+  if (topics && topics.length > 0) {
+    return `- use what you actually know about ${formatFestieTopics(topics).toLowerCase()}. real references hit harder.`;
+  }
+  return '- use what you actually know from your character and fixations above. real references hit harder.';
+}
+
+function voiceRules(extra = '', topics?: string[]): string {
   return [
     'Voice rules (viral quote-tweet energy — screenshot-worthy):',
     `- ONE complete sentence only. aim for 6–${NPC_LINE_MAX_WORDS} words; never exceed ${NPC_LINE_MAX_WORDS} words.`,
     '- finish the thought cleanly — no trailing clauses, no cut-off endings.',
     '- write like a late-night group chat after the headliner — lowercase, casual, slang is fine.',
-    '- absolutely no profanity, slurs, or curse words — ever. use clean internet slang instead (bruh, nah, cap, cooked, unhinged, delulu, lowkey, highkey, rent free, ate, cringe, main character, down bad, its giving, touch grass).',
+    '- no curse words (light ok: shit, dumb, stupid, dumbass, etc.). use clean internet slang instead ("bruh", "dude", "cooked", "unhinged", "lowkey", "rent free", "ate", "ate my face", "cringe", "main character", "down bad", "its giving", "touch grass", "crash out", "crashing out", "aura", "aura points", "negative aura", "brainrot", "looksmaxxing", "glazing", "yapping", "yap session", "valid", "based", "mid", "dead", "im dead", "screaming", "not me", "the way", "say less", "bet", "deadass", "sheesh", "ick", "gave me the ick", "bestie", "era", "understood the assignment", "hits different", "sending it", "full send", "headliner energy", "gates open", "drop incoming", "filthy drop", "dirty mix", "festie bestie", "totem", "camp fam", "sunrise set", "day one", "b2b", "melted my face", "feral", "going feral", "lineup szn", "womp womp", "L take", "ratio", "chopped", "six seven", "let him cook", "crying in the club", "be so for real", "be serious", "girl bye", "its not giving", "flopped", "washed").',
     '- plain words only. no fancy vocabulary, no corporate or journalist tone.',
     '- no special characters: no semicolons, em dashes, ellipses, asterisks, or emoji.',
-    '- be FUNNY and PROVOCATIVE — hot takes, burns, absurd hypotheticals, unhinged confidence.',
+    '- be FUNNY and PROVOCATIVE — hot takes, burns, absurd hypotheticals, unhinged confidence, social post worthy',
     '- real jokes only (dry one-liners, brutal honesty, calling out tourists/scalpers/influencers). no puns, no wordplay.',
     '- HAVE A SPICY OPINION. pick a side and commit. hedging and both-sidesing is banned.',
     '- be SPECIFIC: name artists, songs, sets, years, places. vague takes die on the timeline.',
-    '- use what you actually know about music, sports, and culture. real references hit harder.',
+    topicKnowledgeRule(topics),
     '- only for breaking news in the topic: you heard it secondhand, so speculate — do not invent details about the news event itself.',
     '- never explain or summarize the topic back. react like you already have a take locked in.',
     '- never end on a question. land a statement people would repost.',
     '- do not reuse phrases already in the transcript.',
     '',
-    'good: "kendrick in 100 degree heat is brutal on everyone"',
+    'good: "did you hear they cut the sunrise set for some soundcloud dj"',
+    'good: "why is nobody talking about that filthy drop at 4am"',
     'good: "bonnaroo mud years are the only years that count"',
-    'good: "taylor courtside again like the game is her wrapped"',
-    'bad: "yeah extreme weather is concerning for outdoor festivals and crowd safety" (too long, too polite)',
-    'bad: "that\'s interesting, what do you think?" (question volley — never end on a question)',
-    'bad: "scarlet fire hits different; man i miss 77" (semicolon, multiple thoughts)',
+    'good: "lost my festie bestie at the rail and gained three new ones"',
+    'good: "his drops been washed since X and yall know it"',
+    'good: "vip is paying extra to watch from farther away"',
+    'good: "front rail at noon for a 9pm set is npc behavior"',
+    'good: "that b2b ended three friendships in my camp"',
+    'good: "woke up in someone elses tent again no notes"',
+    'good: "the kandi trade lasted longer than the relationship"',
+    'good: "thats interesting, what do you think?"',
+    'good: "security took my totem like it wasnt the best set design there"',
+    'bad: "yeah extreme weather is concerning for outdoor festivals" (too polite, sounds like a press release)',
+    'bad: "scarlet fire hits different; man i miss 77" (semicolon, two thoughts)',
+    'bad: "festivals have pros and cons" (hedging, no take)',
+    'bad: "the juxtaposition of nostalgia and commerce is fascinating" (fancy vocab)',
+    'bad: "lol so true bestie" (no content, pure agreement)',
     extra,
   ].join('\n');
 }
@@ -86,6 +105,7 @@ export function buildLineSystemPrompt(opts: {
       isResponderB
         ? 'you disagree hard — push back, roast their take, or go more unhinge. never just agree.'
         : '',
+      npc.topics,
     ),
   ];
 
@@ -133,7 +153,7 @@ export function buildSingleReplySystemPrompt(opts: {
     `${streamNote} Public room chat.`,
     `Recent room chat:\n${formatRecentChat(recentChat)}`,
     INJECTION_GUARD,
-    voiceRules(),
+    voiceRules('', npc.topics),
     `Someone in the room said something that caught your ear: "${triggerText}"`,
     `Reply with ONE complete sentence only (${NPC_LINE_MAX_WORDS} words max). No quotes, no name prefix, no special characters.`,
   ].join('\n\n');

@@ -1914,6 +1914,24 @@ export default function SFCity({
         <div style={{ color: 'rgba(255,255,255,.2)', fontSize: 9, letterSpacing: 3, fontFamily: 'Georgia,serif', pointerEvents: 'none' }}>
           A · D · W · walk & jump
         </div>
+        {!showWelcome && !showCityPicker && (
+          <button
+            type="button"
+            onClick={() => setMuted(m => !m)}
+            title={muted ? 'Unmute stage audio' : 'Mute stage audio'}
+            aria-label={muted ? 'Unmute stage audio' : 'Mute stage audio'}
+            style={{
+              width: 30, height: 30, borderRadius: 7,
+              border: '1px solid rgba(255,255,255,.2)',
+              background: 'rgba(0,0,0,.3)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: muted ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.65)',
+              fontSize: 14, cursor: 'pointer',
+            }}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
+        )}
         {festieSignedIn && (
           <button
             type="button"

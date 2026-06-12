@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import type { HTMLAttributes } from 'react';
 import { setWhichStageNowPlaying } from '@/lib/whichStageNowPlaying';
 import { useStagePlayer } from '../../useStagePlayer';
-import { StageVideoFrame } from '../../StageVideoFrame';
+import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
 import { stageChannelForVenueKind } from '@/lib/venues';
 import {
   TENTAROO_GND,
@@ -208,16 +208,6 @@ function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true }: WhichSt
             </>
           )}
 
-          <g transform={`translate(${scrX + 10},${scrY + 10})`}>
-            <rect width={52} height={18} rx={3} fill="rgba(220,40,60,.88)" />
-            <circle cx={10} cy={9} r={3.5} fill="#fff">
-              <animate attributeName="opacity" values="1;0.2;1" dur="1.2s" repeatCount="indefinite" />
-            </circle>
-            <text x={26} y={13} textAnchor="middle" fontFamily={fontFamily} fontSize={9} fontWeight={700} letterSpacing={2} fill="#fff">
-              LIVE
-            </text>
-          </g>
-
           <rect x={cx - rigW / 2 + 20} y={deck - 8} width={rigW - 40} height={8} rx={2} fill="#0c1c15" stroke="rgba(56,245,176,.25)" strokeWidth={1} />
           <line
             x1={cx - rigW / 2 + 24}
@@ -279,7 +269,7 @@ const WHICH_STAGE_CHANNEL = stageChannelForVenueKind('which-stage', 0);
 
 function WhichStageLive() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
+  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
     channel: WHICH_STAGE_CHANNEL,
     iframeRef,
@@ -295,14 +285,21 @@ function WhichStageLive() {
   return (
     <>
       <WhichStageShell marquee={marquee} idleScreen={false} />
-      <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>
+      <foreignObject
+        x={videoFoX}
+        y={videoFoY}
+        width={videoFoW}
+        height={videoFoH}
+        data-stage-video-fo
+        style={STAGE_VIDEO_FO_STYLE}
+      >
         <div
           {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
           style={{
             width: scrW,
             transform: `scale(${S})`,
             transformOrigin: 'top left',
-            pointerEvents: 'none',
+            ...STAGE_VIDEO_WRAPPER_STYLE,
           }}
         >
           <StageVideoFrame
@@ -311,7 +308,6 @@ function WhichStageLive() {
             vidKey={vidKey}
             title={video?.title}
             onIframeLoad={onIframeLoad}
-            playerVisible={playerVisible}
             width={scrW}
             height={scrH}
             borderRadius={6}

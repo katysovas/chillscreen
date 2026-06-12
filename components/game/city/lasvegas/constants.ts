@@ -1,10 +1,12 @@
+import { minStageScale } from '@/lib/stageViewport';
+
 export const VEGAS_GND = 660;
 
 /** EDC "Electric Daze" rave megastage center x on Vegas tiles. */
 export const EDC_STAGE_MID_X = 2270;
 
 /** Display scale for the EDC rig + video (matches other venue ~2× boost). */
-export const EDC_STAGE_SCALE = 2.1;
+export const EDC_STAGE_SCALE = minStageScale(2.1);
 
 /** EDC-only vertical nudge — less than concert stages so the owl arch banner fits. */
 export const EDC_STAGE_PUSH_Y = 16;

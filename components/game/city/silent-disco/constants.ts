@@ -4,7 +4,9 @@ export const SILENT_DISCO_GND = 660;
 /** Silent Disco — headphone rave main stage, center of the tile. */
 export const SILENT_DISCO_STAGE_MID_X = 1300;
 
-export const SILENT_DISCO_STAGE_SCALE = 1.95;
+import { minStageScale } from '@/lib/stageViewport';
+
+export const SILENT_DISCO_STAGE_SCALE = minStageScale(1.95);
 
 export const SILENT_DISCO_STAGE_PUSH_Y = 88;
 

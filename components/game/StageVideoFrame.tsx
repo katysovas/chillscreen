@@ -6,30 +6,37 @@ import { STAGE_IFRAME_STYLE } from './useStagePlayer';
 /** Minimal permissions — autoplay only; no PiP or fullscreen. */
 export const STAGE_IFRAME_ALLOW = 'autoplay; encrypted-media';
 
+/** foreignObject + wrapper styles — pierce decorative SVG pointer-events: none. */
+export const STAGE_VIDEO_FO_STYLE: CSSProperties = {
+  overflow: 'visible',
+  pointerEvents: 'auto',
+  touchAction: 'manipulation',
+};
+
+export const STAGE_VIDEO_WRAPPER_STYLE: CSSProperties = {
+  pointerEvents: 'auto',
+  touchAction: 'manipulation',
+};
+
 type StageVideoFrameProps = {
   iframeRef: RefObject<HTMLIFrameElement | null>;
   src: string;
   vidKey: number;
   title?: string;
   onIframeLoad: () => void;
-  playerVisible: boolean;
   width?: number | string;
   height?: number | string;
   borderRadius?: number;
   loading?: 'eager' | 'lazy';
 };
 
-/**
- * Muted-autoplay YouTube embed with a loading veil and a permanent transparent
- * shield so users cannot click into the iframe (controls, pause, YouTube UI).
- */
+/** Muted-autoplay YouTube embed — iframe receives pointer events for title-bar / logo links. */
 export function StageVideoFrame({
   iframeRef,
   src,
   vidKey,
   title,
   onIframeLoad,
-  playerVisible,
   width = '100%',
   height = '100%',
   borderRadius = 0,
@@ -42,12 +49,14 @@ export function StageVideoFrame({
     borderRadius,
     position: 'relative',
     overflow: 'hidden',
+    pointerEvents: 'auto',
+    touchAction: 'manipulation',
   };
 
   if (!src) return <div style={hostStyle} />;
 
   return (
-    <div style={hostStyle}>
+    <div style={hostStyle} data-stage-video-host>
       <iframe
         key={vidKey}
         ref={iframeRef}
@@ -57,62 +66,7 @@ export function StageVideoFrame({
         loading={loading}
         onLoad={onIframeLoad}
         allow={STAGE_IFRAME_ALLOW}
-        tabIndex={-1}
         style={{ ...STAGE_IFRAME_STYLE, width: '100%', height: '100%' }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 10,
-          background: 'rgba(0,0,0,0.93)',
-          pointerEvents: playerVisible ? 'none' : 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 5,
-          opacity: playerVisible ? 0 : 1,
-          transition: playerVisible ? 'opacity 0.8s' : 'none',
-        }}
-        data-stage-video-veil
-      >
-        <span
-          style={{
-            fontFamily: 'sans-serif',
-            fontSize: 9,
-            letterSpacing: 2,
-            textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.45)',
-          }}
-        >
-          ▶ now playing
-        </span>
-        {title && (
-          <span
-            style={{
-              fontFamily: 'sans-serif',
-              fontSize: 11,
-              color: 'rgba(255,255,255,0.8)',
-              textAlign: 'center',
-              padding: '0 10px',
-              lineHeight: 1.3,
-            }}
-          >
-            {title}
-          </span>
-        )}
-      </div>
-      <div
-        aria-hidden
-        tabIndex={-1}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 11,
-          pointerEvents: 'auto',
-          background: 'transparent',
-        }}
       />
     </div>
   );

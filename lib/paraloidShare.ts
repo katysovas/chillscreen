@@ -30,12 +30,12 @@ export async function shareParaloidNative(blob: Blob): Promise<boolean> {
 export function shareParaloidTwitter() {
   const text = paraloidShareText();
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
+  window.open(url, '_blank', 'noopener');
 }
 
 export function shareParaloidFacebook() {
   const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SITE_URL)}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
+  window.open(url, '_blank', 'noopener');
 }
 
 export async function copyParaloidImage(blob: Blob): Promise<boolean> {

@@ -2,7 +2,8 @@
 
 import { useMemo, useRef, useId, type HTMLAttributes, type ReactNode } from 'react';
 import { setConcertNowPlaying } from '@/lib/concertNowPlaying';
-import { useStagePlayer, STAGE_IFRAME_STYLE } from './useStagePlayer';
+import { useStagePlayer } from './useStagePlayer';
+import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from './StageVideoFrame';
 import { DECORATIVE_SHAPE } from './city/shared/parallaxLayerStyle';
 import type { StageChannel } from '@/lib/stageVideos';
 
@@ -212,8 +213,24 @@ function ConcertChrome({
         <rect x="99" y="122" width="322" height="200" rx="3" fill="#080e0a" stroke="rgba(56,216,128,.5)" strokeWidth="2" />
         <rect x="103" y="126" width="314" height="192" rx="2" fill="none" stroke="rgba(56,216,128,.15)" strokeWidth="1" />
 
-        <foreignObject x="105" y="127" width="310" height="190">
-          <div style={{ width: 310, height: 190, background: '#000', position: 'relative' }}>
+        <foreignObject
+          x="105"
+          y="127"
+          width="310"
+          height="190"
+          data-stage-video-fo
+          style={STAGE_VIDEO_FO_STYLE}
+        >
+          <div
+            {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
+            style={{
+              width: 310,
+              height: 190,
+              background: '#000',
+              position: 'relative',
+              ...STAGE_VIDEO_WRAPPER_STYLE,
+            }}
+          >
             {screen}
           </div>
         </foreignObject>
@@ -305,7 +322,7 @@ function ConcertLive({
   channel?: StageChannel;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
+  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
     channel,
     iframeRef,
@@ -318,40 +335,17 @@ function ConcertLive({
     ? venueLabel
     : (video?.title ?? 'Loading…');
 
-  const screen = (
-    <>
-      {src && (
-        <iframe
-          key={vidKey}
-          ref={iframeRef}
-          data-stage-embed
-          src={src}
-          title={video?.title ?? 'Live'}
-          loading="eager"
-          onLoad={onIframeLoad}
-          allow="autoplay; encrypted-media; picture-in-picture"
-          allowFullScreen
-          style={STAGE_IFRAME_STYLE}
-        />
-      )}
-      {src && (
-        <div data-stage-video-veil style={{
-          position: 'absolute', inset: 0, zIndex: 10,
-          background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
-          opacity: playerVisible ? 0 : 1,
-          transition: playerVisible ? 'opacity 0.8s' : 'none',
-        }}>
-          <span style={{ fontFamily: 'sans-serif', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
-          {(isSeattle ? venueLabel : video?.title) && (
-            <span style={{ fontFamily: 'sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 10px', lineHeight: 1.3 }}>
-              {isSeattle ? venueLabel : video?.title}
-            </span>
-          )}
-        </div>
-      )}
-    </>
-  );
+  const screen = src ? (
+    <StageVideoFrame
+      iframeRef={iframeRef}
+      src={src}
+      vidKey={vidKey}
+      title={isSeattle ? venueLabel : video?.title}
+      onIframeLoad={onIframeLoad}
+      width="100%"
+      height="100%"
+    />
+  ) : null;
 
   return (
     <ConcertChrome

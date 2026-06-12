@@ -1,10 +1,12 @@
+import { minStageScale } from '@/lib/stageViewport';
+
 export const SD_GND = 660;
 
 /** Main-stage LED wall center x on Coachella tiles. */
 export const COACHELLA_STAGE_MID_X = 2125;
 
 /** Scale factor applied to the Coachella main stage (matches cinema/concert display boost). */
-export const COACHELLA_STAGE_SCALE = 2.4;
+export const COACHELLA_STAGE_SCALE = minStageScale(2.4);
 
 /** Coachella-only vertical nudge — less than concert/EDC (scaled rig is already tall). */
 export const COACHELLA_STAGE_PUSH_Y = 103;

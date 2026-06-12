@@ -84,13 +84,6 @@ async function prepareDomForCapture(root: HTMLElement): Promise<() => void> {
     restores.push(() => { parent.replaceChild(iframe, img); });
   }));
 
-  root.querySelectorAll('[data-stage-video-veil]').forEach(node => {
-    const el = node as HTMLElement;
-    const prev = el.style.opacity;
-    el.style.opacity = '0';
-    restores.push(() => { el.style.opacity = prev; });
-  });
-
   return () => { restores.reverse().forEach(r => r()); };
 }
 

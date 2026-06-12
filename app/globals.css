@@ -24,6 +24,19 @@ html:has(.game-surface) body {
   -webkit-user-select: text;
 }
 
+/* Decorative parallax SVG — don't steal stage embed clicks. */
+.game-surface svg[data-paraloid-svg] {
+  pointer-events: none;
+}
+
+/* YouTube embed — re-enable through SVG stacks + game touch-action: none. */
+.game-surface foreignObject[data-stage-video-fo],
+.game-surface [data-stage-video-host],
+.game-surface iframe[data-stage-embed] {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
 /* Mobile — dynamic viewport + thumb controls above system gesture bar (Pixel, etc.). */
 @media (max-width: 767px) {
   .game-surface {

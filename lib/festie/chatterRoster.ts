@@ -27,6 +27,7 @@ export function festieToRosterEntry(festie: FestiePublic): NpcRosterEntry {
     modelId,
     modelDisplayName: npcBrandFromModelId(modelId),
     personalityNotes: festieChatterPersonality(festie),
+    topics: festie.topics,
   };
 }
 

@@ -6,7 +6,7 @@ import { EDC_STAGE_MID_X, EDC_STAGE_PUSH_Y, EDC_STAGE_SCALE, NEON, VEGAS_GND } f
 import { Flame, laserFan } from './helpers';
 import { setEdcNowPlaying } from '@/lib/edcNowPlaying';
 import { useStagePlayer } from '../../useStagePlayer';
-import { StageVideoFrame } from '../../StageVideoFrame';
+import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
 
 export { EDC_STAGE_MID_X };
 
@@ -169,7 +169,7 @@ function EDCStageLive() {
   const scrX = cx - scrW / 2;
   const scrY = 404;
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
+  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
     channel: 'edc',
     iframeRef,
@@ -189,14 +189,21 @@ function EDCStageLive() {
   return (
     <>
       <EDCStageShell marquee={marquee} idleScreen={false} />
-      <foreignObject x={videoFoX} y={videoFoY} width={videoFoW} height={videoFoH} style={{ overflow: 'visible' }}>
+      <foreignObject
+        x={videoFoX}
+        y={videoFoY}
+        width={videoFoW}
+        height={videoFoH}
+        data-stage-video-fo
+        style={STAGE_VIDEO_FO_STYLE}
+      >
         <div
           {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
           style={{
             width: scrW,
             transform: `scale(${S})`,
             transformOrigin: 'top left',
-            pointerEvents: 'none',
+            ...STAGE_VIDEO_WRAPPER_STYLE,
           }}
         >
           <StageVideoFrame
@@ -205,7 +212,6 @@ function EDCStageLive() {
             vidKey={vidKey}
             title={video?.title}
             onIframeLoad={onIframeLoad}
-            playerVisible={playerVisible}
             width={scrW}
             height={scrH}
             borderRadius={6}

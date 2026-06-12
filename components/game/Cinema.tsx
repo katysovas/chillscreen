@@ -3,6 +3,7 @@
 import { useMemo, useRef, type ReactNode } from 'react';
 import { setCinemaNowPlaying } from '@/lib/cinemaNow';
 import { useStagePlayer } from './useStagePlayer';
+import { StageVideoFrame } from './StageVideoFrame';
 
 const IFRAME_W = 400;
 const IFRAME_H = 225;
@@ -373,7 +374,7 @@ export function CinemaShell() {
 
 function CinemaLive() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const { video, src, vidKey, onIframeLoad, playerVisible } = useStagePlayer({
+  const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
     channel: 'cinema',
     iframeRef,
@@ -388,32 +389,15 @@ function CinemaLive() {
       marqueeTitle={marqueeTitle}
       screen={
         video && src ? (
-          <>
-            <iframe
-              key={vidKey}
-              ref={iframeRef}
-              className="cin-iframe"
-              src={src}
-              title={video.title}
-              width={IFRAME_W}
-              height={IFRAME_H}
-              loading="eager"
-              onLoad={onIframeLoad}
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              style={{ display: 'block', border: 'none', background: '#000' }}
-            />
-            <div data-stage-video-veil style={{
-              position: 'absolute', inset: 0, zIndex: 10,
-              background: 'rgba(0,0,0,0.93)', pointerEvents: 'none',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-              opacity: playerVisible ? 0 : 1,
-              transition: playerVisible ? 'opacity 0.8s' : 'none',
-            }}>
-              <span style={{ fontFamily: 'sans-serif', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>▶ now playing</span>
-              {video?.title && <span style={{ fontFamily: 'sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '0 16px', lineHeight: 1.3 }}>{video.title}</span>}
-            </div>
-          </>
+          <StageVideoFrame
+            iframeRef={iframeRef}
+            src={src}
+            vidKey={vidKey}
+            title={video.title}
+            onIframeLoad={onIframeLoad}
+            width={IFRAME_W}
+            height={IFRAME_H}
+          />
         ) : (
           <div
             className="cin-iframe"

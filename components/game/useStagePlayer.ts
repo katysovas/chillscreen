@@ -19,7 +19,6 @@ export const STAGE_IFRAME_STYLE: React.CSSProperties = {
   width: '100%',
   height: '100%',
   border: 'none',
-  pointerEvents: 'none',
   display: 'block',
 };
 
@@ -36,7 +35,6 @@ type UseStagePlayerResult = {
   src: string;
   vidKey: number;
   onIframeLoad: () => void;
-  playerVisible: boolean;
 };
 
 /**
@@ -48,25 +46,16 @@ export function useStagePlayer({
 }: UseStagePlayerOptions): UseStagePlayerResult {
   const { video, vidKey } = useStageChannel(channel, live);
 
-  const [siteMuted, setSiteMuted] = useState(false);
-  const siteMutedRef = useRef(siteMuted);
-  siteMutedRef.current = siteMuted;
-
-  const audioMuted = useCallback(
-    () => alwaysMuted || siteMutedRef.current,
+  const applyAudio = useCallback(
+    (iframe: HTMLIFrameElement | null) => {
+      applyYouTubeAudio(iframe, alwaysMuted || getAudioMuted());
+    },
     [alwaysMuted],
   );
 
-  const applyAudio = useCallback(
-    (iframe: HTMLIFrameElement | null) => {
-      applyYouTubeAudio(iframe, audioMuted());
-    },
-    [audioMuted],
-  );
-
-  const [playerVisible, setPlayerVisible] = useState(false);
-  const playerVisibleRef = useRef(false);
-  playerVisibleRef.current = playerVisible;
+  const [playing, setPlaying] = useState(false);
+  const playingRef = useRef(false);
+  playingRef.current = playing;
 
   const kickCancelRef = useRef<(() => void) | null>(null);
   const onPlayingRef = useRef<() => void>(() => {});
@@ -90,33 +79,37 @@ export function useStagePlayer({
   }, [live, video?.id, video?.title]);
 
   onPlayingRef.current = () => {
-    setPlayerVisible(true);
+    playingRef.current = true;
+    setPlaying(true);
     applyAudio(iframeRef.current);
   };
 
   useEffect(() => {
     if (!live || !src) return;
-    setPlayerVisible(false);
+    playingRef.current = false;
+    setPlaying(false);
 
     const unregister = registerStagePlayerPlayingListener(iframeRef, onPlayingRef);
-    const fallback = setTimeout(() => onPlayingRef.current(), 5000);
+    const fallback = window.setTimeout(() => onPlayingRef.current(), 5000);
 
     return () => {
       unregister();
-      clearTimeout(fallback);
+      window.clearTimeout(fallback);
     };
   }, [vidKey, live, src, iframeRef]);
 
   const nudgePlayback = useCallback(() => {
     if (!live || !src) return;
     nudgeYouTubePlayback(iframeRef.current);
-    if (playerVisibleRef.current) applyAudio(iframeRef.current);
+    applyAudio(iframeRef.current);
   }, [live, src, iframeRef, applyAudio]);
 
   useEffect(() => {
     if (!live || !src) return;
 
     let cancelled = false;
+    const unmuteTimers: number[] = [];
+
     const armKicks = () => {
       if (cancelled) return;
       const iframe = iframeRef.current;
@@ -127,15 +120,21 @@ export function useStagePlayer({
       primeYouTubePlayback(iframe);
       kickCancelRef.current?.();
       kickCancelRef.current = scheduleYouTubePlaybackKicks(iframe);
+      for (const ms of [800, 2000, 4000, 6000]) {
+        unmuteTimers.push(window.setTimeout(() => {
+          if (!cancelled) applyAudio(iframe);
+        }, ms));
+      }
     };
     armKicks();
 
     return () => {
       cancelled = true;
+      for (const t of unmuteTimers) window.clearTimeout(t);
       kickCancelRef.current?.();
       kickCancelRef.current = null;
     };
-  }, [live, src, vidKey, iframeRef]);
+  }, [live, src, vidKey, iframeRef, applyAudio]);
 
   useEffect(() => {
     if (!live || !src) return;
@@ -149,23 +148,26 @@ export function useStagePlayer({
 
   useEffect(() => {
     if (alwaysMuted) return;
-    setSiteMuted(getAudioMuted());
-    return subscribeAudioMuted(() => setSiteMuted(getAudioMuted()));
-  }, [alwaysMuted]);
+    const syncMute = () => applyAudio(iframeRef.current);
+    syncMute();
+    return subscribeAudioMuted(syncMute);
+  }, [alwaysMuted, applyAudio, iframeRef]);
 
   const onIframeLoad = useCallback(() => {
-    primeYouTubePlayback(iframeRef.current);
-  }, [iframeRef]);
+    // Don't prime again — re-muting after unmute breaks audio. Nudge + unmute only.
+    nudgeYouTubePlayback(iframeRef.current);
+    window.setTimeout(() => applyAudio(iframeRef.current), 300);
+  }, [iframeRef, applyAudio]);
 
   useEffect(() => {
-    if (!playerVisible) return;
+    if (!playing) return;
     applyAudio(iframeRef.current);
-  }, [siteMuted, playerVisible, iframeRef, applyAudio, alwaysMuted]);
+  }, [playing, iframeRef, applyAudio]);
 
   useEffect(() => {
     if (!live) return;
     return () => { onNowPlayingRef.current?.(null); };
   }, [live]);
 
-  return { video: live ? video : undefined, src, vidKey, onIframeLoad, playerVisible };
+  return { video: live ? video : undefined, src, vidKey, onIframeLoad };
 }

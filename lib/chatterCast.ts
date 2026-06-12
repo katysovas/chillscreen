@@ -16,6 +16,8 @@ export type NpcRosterEntry = {
   modelId?: string;
   modelDisplayName?: string;
   personalityNotes: string;
+  /** Festie user settings or future NPC profile tags — drives topic-specific voice rules. */
+  topics?: string[];
 };
 
 /** Wandering cast — excludes stage vendors (Buz carts). */

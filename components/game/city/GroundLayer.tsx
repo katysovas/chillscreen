@@ -163,7 +163,7 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
         tileOrigin={gndOriginForTile}
         nearTileIndices={nearTiles}
         shapeRendering="optimizeSpeed"
-        style={{ zIndex: 5 }}
+        style={{ zIndex: 5, pointerEvents: 'none' }}
         children={tile => groundTileContent(tile, hideTrees, hideStreetDogs)}
       />
     );
