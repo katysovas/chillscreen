@@ -40,6 +40,8 @@ export type FestieNpcChatterPayload = {
   partnerNpcName: string;
   festieLine: string;
   partnerLine: string;
+  /** Turn order for recap chat UI — `festie` is the logged-in owner's festie. */
+  transcript?: { role: 'festie' | 'partner'; text: string }[];
   synthesized?: boolean;
 };
 

@@ -136,6 +136,10 @@ async function logFestiePairChatter(
       partnerNpcName: partnerEntry?.displayName ?? partnerId,
       festieLine: festieLines.map(l => l.text).join(' '),
       partnerLine: partnerLines.map(l => l.text).join(' '),
+      transcript: lines.map(l => ({
+        role: l.npc === npcId ? 'festie' : 'partner',
+        text: l.text,
+      })),
       synthesized: false,
     });
   }

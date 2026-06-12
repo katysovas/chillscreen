@@ -20,7 +20,6 @@ import {
   HOUSE_MODEL_DEFAULT,
   pickLineBudget,
 } from '../lib/npcChatter/constants';
-import { generatePairConvo } from '../lib/npcChatter/generate';
 import { resolveModel } from '../lib/npcChatter/models';
 import { chatterApiBase, npcChatterApiUrl } from '../lib/npcChatter/apiBase';
 import { pickConversationSeedRemote } from '../lib/npcChatter/seeds';
@@ -315,11 +314,6 @@ export class NpcChatterScheduler {
       this.chatterApiBase(),
       this.env.NPC_CHATTER_SECRET,
     );
-    const apiKey = this.env.OPENROUTER_API_KEY?.trim();
-    if (!apiKey) {
-      console.error('[npc-chatter] OPENROUTER_API_KEY missing — set in .env.local for party:dev');
-      return;
-    }
     const houseModel = this.env.HOUSE_MODEL?.trim() || HOUSE_MODEL_DEFAULT;
     const rosterA = getNpcRosterEntry(npcA);
     const rosterB = getNpcRosterEntry(npcB);
@@ -327,9 +321,6 @@ export class NpcChatterScheduler {
       [npcA]: resolveModel(rosterA?.modelId, houseModel),
       [npcB]: resolveModel(rosterB?.modelId, houseModel),
     };
-
-    console.log('[npc-chatter] seed', { kind: seedPick.kind, seed: seedPick.seed });
-    console.log('[npc-chatter] models', models);
 
     this.activeConvo = true;
     const convoId = `${Date.now()}-${npcA}-${npcB}`;
@@ -340,40 +331,45 @@ export class NpcChatterScheduler {
       meta: { seedKind: seedPick.kind, seed: seedPick.seed, models },
     });
 
-    const recentChat = this.chatBuffer.slice(-15);
-    const priorLines: NpcChatterLine[] = [];
-    const lines = await generatePairConvo({
+    const lines = await this.fetchChatter({
       stage: stageSlugForRoom(this.roomId),
       npcA,
       npcB,
       seed: seedPick.seed,
       lineBudget,
-      recentChat,
+      recentChat: this.chatBuffer.slice(-15),
       streamTitle,
       channelName,
-      apiKey,
-      houseModel,
-      onLine: async (line) => {
-        if (priorLines.length > 0) {
-          const prev = priorLines[priorLines.length - 1]!;
-          await new Promise(r => setTimeout(r, linePacingMs(prev.text)));
-        }
-        if (this.deps.playerCount() === 0) return;
-        priorLines.push(line);
-        this.deps.broadcast({
-          t: 'npc-line',
-          convoId,
-          npc: line.npc,
-          text: line.text,
-        });
-        this.appendBuffer(`npc:${line.npc}`, line.text);
-      },
     });
 
-    if (lines.length < 2) {
+    if (!lines || lines.length < 2) {
+      console.error('[npc-chatter] pair generation failed', {
+        npcA,
+        npcB,
+        lineCount: lines?.length ?? 0,
+      });
       this.deps.broadcast({ t: 'npc-convo-end', convoId });
       this.activeConvo = false;
       return;
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      if (i > 0) {
+        await new Promise(r => setTimeout(r, linePacingMs(lines[i - 1]!.text)));
+      }
+      if (this.deps.playerCount() === 0) {
+        this.deps.broadcast({ t: 'npc-convo-end', convoId });
+        this.activeConvo = false;
+        return;
+      }
+      const line = lines[i]!;
+      this.deps.broadcast({
+        t: 'npc-line',
+        convoId,
+        npc: line.npc,
+        text: line.text,
+      });
+      this.appendBuffer(`npc:${line.npc}`, line.text);
     }
 
     this.deps.broadcast({ t: 'npc-convo-end', convoId });

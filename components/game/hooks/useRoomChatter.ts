@@ -1,8 +1,12 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { clearNpcConvoAnchor } from '@/lib/npcConvoAnchor';
 import { appendChatLine, createChatLine, type ChatLine, type KeyedChatLine } from '@/lib/chatLines';
 import { PLAYER_AMBIENT_VISIBLE_MS } from '@/lib/multiplayer/useMultiplayer';
+
+/** Keep pair-chat bubbles on screen after the server ends the convo. */
+export const NPC_PAIR_CHAT_LINGER_MS = 12_000;
 
 export type NpcConvoState = {
   convoId: string;
@@ -19,7 +23,12 @@ export type RoomChatterState = {
   npcConvo: NpcConvoState | null;
   isNpcInConvo: (npcId: string) => boolean;
   handleRoomChat: (sender: string, text: string) => void;
-  handleNpcLine: (convoId: string, npc: string, text: string) => void;
+  handleNpcLine: (
+    convoId: string,
+    npc: string,
+    text: string,
+    participants?: [string, string],
+  ) => void;
   onNpcConvoStart: (convoId: string, participants: [string, string]) => void;
   onNpcConvoEnd: (convoId: string) => void;
 };
@@ -41,9 +50,16 @@ export function useRoomChatter(
   const [npcConvo, setNpcConvo] = useState<NpcConvoState | null>(null);
   const hideTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  const scheduleHide = useCallback((key: string, ms: number, clear: () => void) => {
+  const cancelHide = useCallback((key: string) => {
     const prev = hideTimers.current.get(key);
-    if (prev) clearTimeout(prev);
+    if (prev) {
+      clearTimeout(prev);
+      hideTimers.current.delete(key);
+    }
+  }, []);
+
+  const scheduleHide = useCallback((key: string, ms: number, clear: () => void) => {
+    cancelHide(key);
     hideTimers.current.set(
       key,
       setTimeout(() => {
@@ -51,7 +67,7 @@ export function useRoomChatter(
         clear();
       }, ms),
     );
-  }, []);
+  }, [cancelHide]);
 
   const appendPlayer = useCallback((playerKey: string, text: string) => {
     setPlayerMessages(prev => {
@@ -77,31 +93,44 @@ export function useRoomChatter(
     if (playerId) appendPlayer(playerId, text);
   }, [appendPlayer, resolvePlayerId]);
 
-  const handleNpcLine = useCallback((convoId: string, npc: string, text: string) => {
+  const handleNpcLine = useCallback((
+    convoId: string,
+    npc: string,
+    text: string,
+    participants?: [string, string],
+  ) => {
+    cancelHide(`npc-convo:${convoId}`);
     setNpcConvo(prev => {
-      if (!prev || prev.convoId !== convoId || !prev.participants.includes(npc)) {
-        return prev;
+      let base = prev?.convoId === convoId ? prev : null;
+      if (!base) {
+        if (!participants?.includes(npc)) return prev;
+        base = { convoId, participants, lines: [] };
       }
+      if (!base.participants.includes(npc)) return prev;
       const line = createChatLine(text);
       return {
-        ...prev,
-        lines: [...prev.lines, { ...line, speakerKey: npc }].slice(-6),
+        ...base,
+        lines: [...base.lines, { ...line, speakerKey: npc }].slice(-6),
       };
     });
-  }, []);
+  }, [cancelHide]);
 
   const onNpcConvoStart = useCallback((convoId: string, participants: [string, string]) => {
+    cancelHide(`npc-convo:${convoId}`);
     setNpcConvo(prev => (prev?.convoId === convoId ? prev : { convoId, participants, lines: [] }));
     setNpcMessages(prev => {
       const next = new Map(prev);
       for (const id of participants) next.delete(id);
       return next;
     });
-  }, []);
+  }, [cancelHide]);
 
   const onNpcConvoEnd = useCallback((convoId: string) => {
-    setNpcConvo(prev => (prev?.convoId === convoId ? null : prev));
-  }, []);
+    scheduleHide(`npc-convo:${convoId}`, NPC_PAIR_CHAT_LINGER_MS, () => {
+      setNpcConvo(prev => (prev?.convoId === convoId ? null : prev));
+      clearNpcConvoAnchor(convoId);
+    });
+  }, [scheduleHide]);
 
   const isNpcInConvo = useCallback(
     (npcId: string) => npcConvo?.participants.includes(npcId) ?? false,

@@ -118,6 +118,7 @@ import { hasStickerTripActive, preloadAllLoadoutSlots, StickerTripOverlay } from
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
+import { getNpcConvoAnchor, setNpcConvoAnchor } from '@/lib/npcConvoAnchor';
 import { releaseNpcConvoSnap, snapNpcPairForConvo } from '@/lib/npcConvoSnap';
 import { npcTouchDistPx } from '@/lib/npcProximity';
 import { appendChatLine, type ChatLine } from '@/lib/chatLines';
@@ -475,9 +476,29 @@ export default function SFCity({
 
   useEffect(() => {
     if (!profileReady || homePreview) return;
+    if (showWelcome || showCityPicker) return;
+    if (sessionRecapOpen) return;
+
+    if (TEST_FESTIE_RECAP_ON_LOAD) {
+      const name = ownerFestie?.name ?? playerName ?? 'Moonbeam';
+      openSessionRecap(sampleSessionRecap(name), false);
+      return;
+    }
+
     if (!festieSignedIn || !ownerFestie) return;
     void checkSessionRecap(ownerFestie, true);
-  }, [profileReady, homePreview, festieSignedIn, ownerFestie, checkSessionRecap]);
+  }, [
+    profileReady,
+    homePreview,
+    showWelcome,
+    showCityPicker,
+    sessionRecapOpen,
+    festieSignedIn,
+    ownerFestie,
+    playerName,
+    checkSessionRecap,
+    openSessionRecap,
+  ]);
 
   /** Tab close / return — same session cookie, no sign-out. */
   useEffect(() => {
@@ -653,40 +674,41 @@ export default function SFCity({
       roomChatter.handleRoomChat(sender, text);
     },
     onNpcConvoStart: (convoId, participants, _meta) => {
-      const idxA = effectiveNpcCast.findIndex(c => c.id === participants[0]);
-      const idxB = effectiveNpcCast.findIndex(c => c.id === participants[1]);
-      if (idxA < 0 || idxB < 0) return;
-
       const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
-      const wxA = npcWorldXRefs.current[idxA];
-      const wxB = npcWorldXRefs.current[idxB];
-      if (Number.isFinite(wxA) && Number.isFinite(wxB)) {
-        snapNpcPairForConvo(participants[0], participants[1], width, {
-          npcCast: effectiveNpcCast,
-          npcWorldXRefs,
-        });
+      const snapped = snapNpcPairForConvo(participants[0], participants[1], width, {
+        npcCast: effectiveNpcCast,
+        npcWorldXRefs,
+      }, { fallbackMidWorldX: worldRef.current });
+
+      const anchor = snapped
+        ?? (() => {
+          const heldA = getNpcConvoHold(participants[0]);
+          const heldB = getNpcConvoHold(participants[1]);
+          if (heldA != null && heldB != null) return [heldA, heldB] as [number, number];
+          return null;
+        })();
+
+      if (anchor) {
+        setNpcConvoAnchor(convoId, anchor[0], anchor[1]);
+        setConvoHoldTick(t => t + 1);
       }
+
       roomChatter.onNpcConvoStart(convoId, participants);
     },
     onNpcLine: (convoId, npc, text) => {
       const pair = mpRef.current?.npcConvoPairs.find(p => p.convoId === convoId);
       if (pair) {
-        const idxA = effectiveNpcCast.findIndex(c => c.id === pair.participants[0]);
-        const idxB = effectiveNpcCast.findIndex(c => c.id === pair.participants[1]);
-        if (idxA >= 0 && idxB >= 0) {
-          const wxA = npcWorldXRefs.current[idxA];
-          const wxB = npcWorldXRefs.current[idxB];
-          if (
-            Number.isFinite(wxA)
-            && Number.isFinite(wxB)
-            && !hasNpcConvoHold(pair.participants[0])
-          ) {
-            const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
-            snapNpcPairForConvo(pair.participants[0], pair.participants[1], width, {
-              npcCast: effectiveNpcCast,
-              npcWorldXRefs,
-            });
-          }
+        const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        if (!hasNpcConvoHold(pair.participants[0])) {
+          snapNpcPairForConvo(pair.participants[0], pair.participants[1], width, {
+            npcCast: effectiveNpcCast,
+            npcWorldXRefs,
+          }, { fallbackMidWorldX: worldRef.current });
+        }
+        const heldA = getNpcConvoHold(pair.participants[0]);
+        const heldB = getNpcConvoHold(pair.participants[1]);
+        if (heldA != null && heldB != null) {
+          setNpcConvoAnchor(convoId, heldA, heldB);
         }
         roomChatter.onNpcConvoStart(convoId, pair.participants);
       }
@@ -698,7 +720,7 @@ export default function SFCity({
           npcName: cfg ? npcChatLabel(npc, cfg.name) : undefined,
         });
       }
-      roomChatter.handleNpcLine(convoId, npc, text);
+      roomChatter.handleNpcLine(convoId, npc, text, pair?.participants);
     },
     onNpcConvoEnd: (convoId) => {
       roomChatter.onNpcConvoEnd(convoId);
@@ -1439,37 +1461,42 @@ export default function SFCity({
     })();
     if (!convo) return null;
     const [idA, idB] = convo.participants;
-    const resolveWorldX = (npcId: string) => {
+    const anchor = getNpcConvoAnchor(convo.convoId);
+    const resolveWorldX = (npcId: string, fallback?: number) => {
+      if (anchor) return npcId === idA ? anchor.wxA : anchor.wxB;
       const held = getNpcConvoHold(npcId);
       if (held !== undefined) return held;
+      if (fallback != null && Number.isFinite(fallback)) return fallback;
       const idx = effectiveNpcCast.findIndex(c => c.id === npcId);
       if (idx < 0) return undefined;
       const wx = npcWorldXRefs.current[idx];
       return Number.isFinite(wx) ? wx : undefined;
     };
-    const wxA = resolveWorldX(idA);
-    const wxB = resolveWorldX(idB);
+    const wxA = resolveWorldX(idA, anchor?.wxA);
+    const wxB = resolveWorldX(idB, anchor?.wxB);
     if (wxA === undefined || wxB === undefined) return null;
+
     const cfgA = effectiveNpcCast.find(c => c.id === idA);
     const cfgB = effectiveNpcCast.find(c => c.id === idB);
-    if (!cfgA || !cfgB) return null;
+    const stillGenerating = mp.npcConvoPairs.some(p => p.convoId === convo.convoId);
+
     return (
       <NpcPairChatOverlay
         worldXA={wxA}
         worldXB={wxB}
         lines={convo.lines}
-        typingSpeakerKey={convo.lines.length === 0 ? idA : null}
+        typingSpeakerKey={convo.lines.length === 0 && stillGenerating ? idA : null}
         speakers={[
           {
             key: idA,
-            name: npcChatLabel(idA, cfgA.name),
-            color: cfgA.balloonColor,
+            name: npcChatLabel(idA, cfgA?.name ?? idA),
+            color: cfgA?.balloonColor ?? '#8ed4ff',
             worldX: wxA,
           },
           {
             key: idB,
-            name: npcChatLabel(idB, cfgB.name),
-            color: cfgB.balloonColor,
+            name: npcChatLabel(idB, cfgB?.name ?? idB),
+            color: cfgB?.balloonColor ?? '#ef4023',
             worldX: wxB,
           },
         ]}
@@ -1757,9 +1784,11 @@ export default function SFCity({
         />
       )}
 
-      {sessionRecapOpen && sessionRecap && ownerFestie && (
+      {sessionRecapOpen && sessionRecap && (
         <FestieSessionRecapModal
-          festieName={ownerFestie.name}
+          festieName={ownerFestie?.name ?? playerName ?? 'Your festie'}
+          festiePreset={ownerFestie?.preset}
+          loadout={playerLoadout}
           recap={sessionRecap}
           onDismiss={dismissSessionRecap}
         />

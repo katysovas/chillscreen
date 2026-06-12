@@ -15,32 +15,52 @@ function jitterMs(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
 
+function pairHoldPositions(midWorldX: number, viewportWidth: number): [number, number] {
+  const gap = Math.max(npcTouchDistPx(viewportWidth) * 1.4, 48);
+  return [midWorldX - gap / 2, midWorldX + gap / 2];
+}
+
+/** Pin a pair near the player when live movement refs are not ready yet. */
+export function pinNpcPairWorldX(
+  idA: string,
+  idB: string,
+  midWorldX: number,
+  viewportWidth: number,
+): [number, number] {
+  const [holdA, holdB] = pairHoldPositions(midWorldX, viewportWidth);
+  setNpcConvoHold(idA, holdA);
+  setNpcConvoHold(idB, holdB);
+  return [holdA, holdB];
+}
+
 /** Pull a pair together and pin world-x so wander AI cannot walk them apart mid-convo. */
 export function snapNpcPairForConvo(
   idA: string,
   idB: string,
   viewportWidth: number,
   ctx: SnapContext,
-): void {
+  opts?: { fallbackMidWorldX?: number },
+): [number, number] | null {
   const idxA = ctx.npcCast.findIndex(c => c.id === idA);
   const idxB = ctx.npcCast.findIndex(c => c.id === idB);
-  if (idxA < 0 || idxB < 0) return;
 
-  let wxA = ctx.npcWorldXRefs.current[idxA]!;
-  let wxB = ctx.npcWorldXRefs.current[idxB]!;
+  let wxA = idxA >= 0 ? ctx.npcWorldXRefs.current[idxA]! : Number.NaN;
+  let wxB = idxB >= 0 ? ctx.npcWorldXRefs.current[idxB]! : Number.NaN;
   if (!Number.isFinite(wxA) && Number.isFinite(wxB)) wxA = wxB;
   if (!Number.isFinite(wxB) && Number.isFinite(wxA)) wxB = wxA;
-  if (!Number.isFinite(wxA) || !Number.isFinite(wxB)) return;
 
-  const mid = (wxA + wxB) / 2;
-  const gap = Math.max(npcTouchDistPx(viewportWidth) * 1.4, 48);
-  const holdA = mid - gap / 2;
-  const holdB = mid + gap / 2;
+  let mid: number | null = null;
+  if (Number.isFinite(wxA) && Number.isFinite(wxB)) {
+    mid = (wxA + wxB) / 2;
+  } else if (opts?.fallbackMidWorldX != null && Number.isFinite(opts.fallbackMidWorldX)) {
+    mid = opts.fallbackMidWorldX;
+  }
+  if (mid == null) return null;
 
-  setNpcConvoHold(idA, holdA);
-  setNpcConvoHold(idB, holdB);
-  ctx.npcWorldXRefs.current[idxA] = holdA;
-  ctx.npcWorldXRefs.current[idxB] = holdB;
+  const [holdA, holdB] = pinNpcPairWorldX(idA, idB, mid, viewportWidth);
+  if (idxA >= 0) ctx.npcWorldXRefs.current[idxA] = holdA;
+  if (idxB >= 0) ctx.npcWorldXRefs.current[idxB] = holdB;
+  return [holdA, holdB];
 }
 
 export function releaseNpcConvoSnap(): void {

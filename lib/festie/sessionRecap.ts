@@ -24,7 +24,65 @@ export type RecapLine = {
   time: string;
   title: string;
   detail?: string;
+  npcConversation?: RecapNpcConversation;
 };
+
+export type RecapNpcConversation = {
+  partner: string;
+  festieLine: string;
+  partnerLine: string;
+  turns: RecapChatTurn[];
+};
+
+export type RecapChatTurn = {
+  speaker: string;
+  text: string;
+  side: 'left' | 'right';
+};
+
+/** One-line overheard preview — partner + festie lines joined. */
+export function npcConversationPreview(convo: RecapNpcConversation, max = 96): string {
+  const chunk = convo.turns.map(t => t.text).filter(Boolean).join(' · ')
+    || [convo.partnerLine, convo.festieLine].filter(Boolean).join(' · ');
+  if (!chunk) return '…';
+  if (chunk.length <= max) return chunk;
+  return `${chunk.slice(0, max - 1).trim()}…`;
+}
+
+function parseNpcTranscript(
+  payload: FestieNpcChatterPayload,
+  festieName: string,
+  partner: string,
+): RecapChatTurn[] | null {
+  if (!Array.isArray(payload.transcript) || payload.transcript.length === 0) return null;
+  const turns: RecapChatTurn[] = [];
+  for (const row of payload.transcript) {
+    const text = typeof row.text === 'string' ? row.text.trim() : '';
+    if (!text) continue;
+    const isFestie = row.role === 'festie';
+    turns.push({
+      speaker: isFestie ? festieName : partner,
+      text,
+      side: isFestie ? 'right' : 'left',
+    });
+  }
+  return turns.length > 0 ? turns : null;
+}
+
+export function npcConversationTurns(
+  convo: RecapNpcConversation,
+  festieName: string,
+): RecapChatTurn[] {
+  if (convo.turns.length > 0) return convo.turns;
+  const turns: RecapChatTurn[] = [];
+  if (convo.partnerLine) {
+    turns.push({ speaker: convo.partner, text: convo.partnerLine, side: 'left' });
+  }
+  if (convo.festieLine) {
+    turns.push({ speaker: festieName, text: convo.festieLine, side: 'right' });
+  }
+  return turns;
+}
 
 export function lifeLogEmoji(kind: LifeLogKind | 'npc_chatter'): string {
   switch (kind) {
@@ -116,14 +174,29 @@ export function recapLinesFromEvents(
     if (event.type === FESTIE_EVENT_TYPES.NPC_CHATTER) {
       const p = event.payload as FestieNpcChatterPayload;
       const partner = p.partnerNpcName?.trim() || 'someone';
-      const excerpt = p.festieLine?.trim() || p.partnerLine?.trim() || '…';
+      const festieLine = p.festieLine?.trim() ?? '';
+      const partnerLine = p.partnerLine?.trim() ?? '';
+      const turns = parseNpcTranscript(p, who, partner)
+        ?? (() => {
+          const fallback: RecapChatTurn[] = [];
+          if (partnerLine) fallback.push({ speaker: partner, text: partnerLine, side: 'left' });
+          if (festieLine) fallback.push({ speaker: who, text: festieLine, side: 'right' });
+          return fallback;
+        })();
+      const npcConversation: RecapNpcConversation = {
+        partner,
+        festieLine,
+        partnerLine,
+        turns,
+      };
       return {
         id: event.id,
-        kind: 'log',
+        kind: 'npc',
         emoji: lifeLogEmoji('npc_chatter'),
         time: event.created_at,
-        title: `overheard near the crowd: "${excerpt}"`,
-        detail: `${who} and ${partner} were chatting`,
+        title: `Chatted with ${partner}`,
+        detail: npcConversationPreview(npcConversation),
+        npcConversation,
       };
     }
 
@@ -196,6 +269,24 @@ export function sampleSessionRecap(festieName: string): FestieSessionRecap {
     {
       id: 9004,
       festie_id: 'sample',
+      type: FESTIE_EVENT_TYPES.NPC_CHATTER,
+      created_at: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(),
+      payload: {
+        partnerNpcId: 'gen-cinema-1-todd',
+        partnerNpcName: 'todd',
+        festieLine: 'need one more blanket layer and maybe hot cocoa if the wind keeps up',
+        partnerLine: 'hoodie counts as a pillow honestly and the bass keeps you warm anyway',
+        transcript: [
+          { role: 'partner', text: 'hoodie counts as a pillow honestly' },
+          { role: 'festie', text: 'need one more blanket layer and maybe hot cocoa if the wind keeps up' },
+          { role: 'partner', text: 'and the bass keeps you warm anyway' },
+        ],
+        synthesized: true,
+      },
+    },
+    {
+      id: 9005,
+      festie_id: 'sample',
       type: FESTIE_EVENT_TYPES.LIFE_LOG,
       created_at: new Date(Date.now() - 2.1 * 60 * 60 * 1000).toISOString(),
       payload: {
@@ -205,7 +296,18 @@ export function sampleSessionRecap(festieName: string): FestieSessionRecap {
       },
     },
     {
-      id: 9005,
+      id: 9006,
+      festie_id: 'sample',
+      type: FESTIE_EVENT_TYPES.LIFE_LOG,
+      created_at: new Date(Date.now() - 1.8 * 60 * 60 * 1000).toISOString(),
+      payload: {
+        kind: 'dance',
+        text: 'busted out the silent disco shuffle for 45 seconds. no witnesses',
+        synthesized: true,
+      },
+    },
+    {
+      id: 9007,
       festie_id: 'sample',
       type: FESTIE_EVENT_TYPES.CHAT,
       created_at: new Date(Date.now() - 1.2 * 60 * 60 * 1000).toISOString(),
@@ -215,6 +317,17 @@ export function sampleSessionRecap(festieName: string): FestieSessionRecap {
         userMessage: 'where is the afterparty?',
         reply: 'heard something brewing by the neon tent',
         llm: true,
+      },
+    },
+    {
+      id: 9008,
+      festie_id: 'sample',
+      type: FESTIE_EVENT_TYPES.LIFE_LOG,
+      created_at: new Date(Date.now() - 0.6 * 60 * 60 * 1000).toISOString(),
+      payload: {
+        kind: 'food_incident',
+        text: 'lost a fry to a very confident pigeon. mutual respect',
+        synthesized: true,
       },
     },
   ];
@@ -239,4 +352,16 @@ export function recapSummary(recap: FestieSessionRecap, festieName: string): str
   if (coins > 0) parts.push(`${coins} coin${coins === 1 ? '' : 's'}`);
   if (parts.length === 0) return `${who} had a quiet session.`;
   return `While you were away — ${parts.join(', ')}.`;
+}
+
+export function formatRecapSessionRange(since: string, until?: string): string {
+  const fmt = (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
+  const a = fmt(since);
+  const b = until ? fmt(until) : 'now';
+  if (!a) return b;
+  return `${a} → ${b}`;
 }

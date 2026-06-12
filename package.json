@@ -9,6 +9,7 @@
     "lint": "next lint",
     "party:dev": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; export PARTYKIT_DEV=true CHATTER_API_URL=${CHATTER_API_URL:-http://127.0.0.1:3000/api/npc-chatter}; exec partykit dev -p 1999'",
     "dev:local": "bash scripts/dev-local.sh",
+    "dev:stop": "bash scripts/dev-stop.sh",
     "party:deploy": "bash scripts/deploy-partykit.sh",
     "party:deploy:cf": "bash scripts/deploy-partykit.sh",
     "fetch-durations": "npx tsx scripts/fetch-durations.ts",

@@ -1,13 +1,26 @@
 'use client';
 
+import { useCallback, useMemo, useState } from 'react';
+import Character from './Character';
+import type { CharacterLoadout } from './characters/loadout';
 import {
+  formatRecapSessionRange,
+  npcConversationPreview,
+  npcConversationTurns,
   recapLinesFromEvents,
   recapSummary,
   type FestieSessionRecap,
+  type RecapChatTurn,
+  type RecapLine,
 } from '@/lib/festie/sessionRecap';
+import { festiePresetById } from '@/lib/festie/presets';
+import type { FestiePreset } from '@/lib/festie/types';
 
 type Props = {
   festieName: string;
+  festiePreset?: FestiePreset;
+  /** Player's equipped vendor props — balloon color comes from festie preset. */
+  loadout?: CharacterLoadout;
   recap: FestieSessionRecap;
   onDismiss: () => void;
 };
@@ -15,137 +28,163 @@ type Props = {
 function formatRecapTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
-export function FestieSessionRecapModal({ festieName, recap, onDismiss }: Props) {
-  const lines = recapLinesFromEvents(recap.events, festieName);
+function RecapChatThread({ turns }: { turns: RecapChatTurn[] }) {
+  return (
+    <div className="festie-recap-chat-thread">
+      {turns.map((turn, j) => (
+        <div
+          key={j}
+          className={`festie-recap-chat-row festie-recap-chat-row--${turn.side}`}
+        >
+          <div className={`festie-recap-chat-bubble festie-recap-chat-bubble--${turn.side}`}>
+            <span className="festie-recap-chat-speaker">{turn.speaker}</span>
+            <p className="festie-recap-chat-text">{turn.text}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RecapEventBody({
+  line,
+  festieName,
+  expanded,
+  onToggleExpand,
+}: {
+  line: RecapLine;
+  festieName: string;
+  expanded: boolean;
+  onToggleExpand: () => void;
+}) {
+  if (line.kind === 'npc' && line.npcConversation) {
+    const convo = line.npcConversation;
+    const preview = line.detail ?? npcConversationPreview(convo);
+    const turns = npcConversationTurns(convo, festieName);
+
+    return (
+      <>
+        <p className="festie-recap-event-title">{line.title}</p>
+        {expanded ? (
+          <RecapChatThread turns={turns} />
+        ) : (
+          <p className="festie-recap-event-detail">{preview}</p>
+        )}
+        {turns.length > 0 && (
+          <button
+            type="button"
+            className="festie-recap-view-more"
+            onClick={onToggleExpand}
+            aria-expanded={expanded}
+          >
+            {expanded ? 'View less' : 'View more'}
+          </button>
+        )}
+      </>
+    );
+  }
 
   return (
-    <div
-      data-paraloid-ui
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 235,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px 16px',
-        background: 'rgba(0,0,0,0.65)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-      }}
-      onClick={onDismiss}
-    >
+    <>
+      <p className="festie-recap-event-title">{line.title}</p>
+      {line.detail && (
+        <p className="festie-recap-event-detail">{line.detail}</p>
+      )}
+    </>
+  );
+}
+
+export function FestieSessionRecapModal({
+  festieName,
+  festiePreset = 'ember',
+  loadout,
+  recap,
+  onDismiss,
+}: Props) {
+  const who = festieName.trim() || 'Your festie';
+  const lines = recapLinesFromEvents(recap.events, who);
+  const preset = festiePresetById(festiePreset);
+  const festieLoadout = useMemo(
+    () => (loadout ? { ...loadout, balloonColor: preset.balloonColor } : undefined),
+    [loadout, preset.balloonColor],
+  );
+  const sessionRange = formatRecapSessionRange(recap.since, recap.until);
+  const summary = recapSummary(recap, who);
+  const [expandedNpcIds, setExpandedNpcIds] = useState<Set<number>>(() => new Set());
+
+  const toggleNpcExpand = useCallback((id: number) => {
+    setExpandedNpcIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  return (
+    <div className="festie-recap-overlay" data-paraloid-ui onClick={onDismiss}>
       <div
+        className="festie-recap-card"
         role="dialog"
         aria-labelledby="festie-recap-title"
         onClick={e => e.stopPropagation()}
-        style={{
-          width: 'min(94vw, 520px)',
-          maxHeight: 'min(88vh, 640px)',
-          display: 'flex',
-          flexDirection: 'column',
-          background: '#131415',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 18,
-          boxShadow: '0 24px 64px rgba(0,0,0,0.85)',
-          fontFamily: 'system-ui,sans-serif',
-          overflow: 'hidden',
-        }}
+        style={{ ['--festie-glow' as string]: preset.balloonColor }}
       >
-        <div style={{ padding: '20px 20px 12px', flexShrink: 0 }}>
-          <h2
-            id="festie-recap-title"
-            style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#fff' }}
-          >
-            While you were away
-          </h2>
-          <p style={{
-            margin: 0,
-            fontSize: 14,
-            lineHeight: 1.5,
-            color: 'rgba(255,255,255,0.55)',
-          }}>
-            {recapSummary(recap, festieName)}
-          </p>
-        </div>
-
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '8px 20px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-        }}>
-          {lines.map(line => (
-            <div
-              key={line.id}
-              style={{
-                padding: '12px 14px',
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
-            >
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: 8,
-                marginBottom: line.detail ? 6 : 0,
-              }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
-                  {line.emoji} {line.title}
-                </span>
-                <span style={{
-                  fontSize: 11,
-                  color: 'rgba(255,255,255,0.35)',
-                  flexShrink: 0,
-                }}>
-                  {formatRecapTime(line.time)}
-                </span>
-              </div>
-              {line.detail && (
-                <p style={{
-                  margin: 0,
-                  fontSize: 13,
-                  lineHeight: 1.45,
-                  color: 'rgba(255,255,255,0.72)',
-                  whiteSpace: 'pre-wrap',
-                }}>
-                  {line.detail}
-                </p>
-              )}
+        <header className="festie-recap-header">
+          <div className="festie-recap-avatar" aria-hidden>
+            <div className="festie-recap-avatar-glow" />
+            <div className="festie-recap-avatar-character">
+              <Character
+                walking={false}
+                facing="right"
+                dancing={false}
+                balloonColor={preset.balloonColor}
+                loadout={festieLoadout}
+                outfit={preset.outfit}
+                scale={0.32}
+              />
             </div>
-          ))}
+          </div>
+          <div className="festie-recap-header-text">
+            <p className="festie-recap-eyebrow">While you were away</p>
+            <h2 id="festie-recap-title" className="festie-recap-title">{who}</h2>
+            <p className="festie-recap-summary">{summary}</p>
+            <p className="festie-recap-range">{sessionRange}</p>
+          </div>
+        </header>
+
+        <div className="festie-recap-timeline-wrap">
+          <ol className="festie-recap-timeline">
+            {lines.map((line, i) => (
+              <li key={line.id} className="festie-recap-event">
+                <div className="festie-recap-event-rail" aria-hidden>
+                  <span className="festie-recap-event-dot">{line.emoji}</span>
+                  {i < lines.length - 1 && <span className="festie-recap-event-line" />}
+                </div>
+                <div className="festie-recap-event-body">
+                  <time className="festie-recap-event-time" dateTime={line.time}>
+                    {formatRecapTime(line.time)}
+                  </time>
+                  <RecapEventBody
+                    line={line}
+                    festieName={who}
+                    expanded={expandedNpcIds.has(line.id)}
+                    onToggleExpand={() => toggleNpcExpand(line.id)}
+                  />
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
 
-        <div style={{ padding: '12px 20px 20px', flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={onDismiss}
-            style={{
-              width: '100%',
-              border: 'none',
-              borderRadius: 10,
-              padding: '12px 16px',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              background: 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
-              color: '#fff',
-            }}
-          >
+        <footer className="festie-recap-footer">
+          <button type="button" className="festie-recap-btn" onClick={onDismiss}>
             Back to the festival
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );
