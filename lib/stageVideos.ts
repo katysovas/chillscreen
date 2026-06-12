@@ -47,6 +47,7 @@ export type StageVideo = {
 /** One synchronized playback channel per distinct venue/stage. */
 export type StageChannel =
   | 'cinema'
+  | 'deep-space'
   | 'bumbershoot'
   | 'outside-lands'
   | 'coachella'
@@ -114,6 +115,7 @@ function channelConfigFromFile(entry: StagePlaylistChannelEntry): StageChannelCo
 /** Loaded from `data/stage-playlists.json` — edit via localhost admin UI. */
 export const STAGE_CHANNEL_CONFIG: Record<StageChannel, StageChannelConfig> = {
   cinema: channelConfigFromFile(stagePlaylistsFile.channels.cinema),
+  'deep-space': channelConfigFromFile(stagePlaylistsFile.channels['deep-space']),
   bumbershoot: channelConfigFromFile(stagePlaylistsFile.channels.bumbershoot),
   'outside-lands': channelConfigFromFile(stagePlaylistsFile.channels['outside-lands']),
   coachella: channelConfigFromFile(stagePlaylistsFile.channels.coachella),
@@ -134,6 +136,7 @@ function fallbackPlaylist(cfg: StageChannelConfig): StageVideo[] {
  */
 export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
   cinema: fallbackPlaylist(STAGE_CHANNEL_CONFIG.cinema),
+  'deep-space': fallbackPlaylist(STAGE_CHANNEL_CONFIG['deep-space']),
   bumbershoot: fallbackPlaylist(STAGE_CHANNEL_CONFIG.bumbershoot),
   'outside-lands': fallbackPlaylist(STAGE_CHANNEL_CONFIG['outside-lands']),
   coachella: fallbackPlaylist(STAGE_CHANNEL_CONFIG.coachella),

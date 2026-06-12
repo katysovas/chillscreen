@@ -28,6 +28,7 @@ export const NPC_PROPS: string[] = VENDOR_SHOP_ITEMS.filter(
 /** Stage flavor for the prompt — name, city, one-line vibe. */
 export const NPC_STAGE_CONTEXT: Record<StageChannel, { stageName: string; city: string; vibe: string }> = {
   cinema: { stageName: 'Chill Cinema', city: 'San Francisco', vibe: 'open-air movie night, mellow blanket crowd' },
+  'deep-space': { stageName: 'Deep Space', city: 'The Orbit', vibe: 'cosmic orbit deck, floating planets, chill stargazers' },
   'outside-lands': { stageName: 'San Francisco Stage', city: 'San Francisco', vibe: 'street-side concert stage, fog rolling in' },
   bumbershoot: { stageName: 'Seattle Stage', city: 'Seattle', vibe: 'city park festival, Pacific Northwest crowd' },
   coachella: { stageName: 'The Desert Stage', city: 'Southern California', vibe: 'desert festival main stage, golden-hour dust' },
@@ -45,9 +46,10 @@ export function existingCastNames(): string[] {
 /** Keep first occurrence per name — prevents duplicate React keys / NPC ids. */
 export function dedupeGeneratedNpcs(npcs: GeneratedNpc[]): GeneratedNpc[] {
   const seen = new Set<string>();
-  return npcs.filter(n => {
+  return npcs.filter((n): n is GeneratedNpc => {
+    if (!n?.name || !n.archetype) return false;
     const key = n.name.toLowerCase().trim();
-    if (seen.has(key)) return false;
+    if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;
   });

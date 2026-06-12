@@ -21,6 +21,8 @@ export function venueKindToRoute(kind: VenueKind, concertTile: number): VenueRou
       return 'coachella';
     case 'cinema':
       return 'cinema';
+    case 'deep-space':
+      return 'deep-space';
     case 'concert':
       return isSeattleTile(concertTile) ? 'seattle-concerts' : 'outside-hands';
     case 'which-stage':

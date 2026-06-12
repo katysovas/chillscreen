@@ -9,6 +9,7 @@ export type StageChannelMeta = {
 /** Display metadata for admin UI and docs. */
 export const STAGE_CHANNEL_META: StageChannelMeta[] = [
   { id: 'cinema', label: 'Chill Cinema', description: 'San Francisco outdoor cinema' },
+  { id: 'deep-space', label: 'Deep Space', description: 'Cosmic orbit stage' },
   { id: 'outside-lands', label: 'San Francisco', description: 'Outside Hands concert stage' },
   { id: 'edc', label: 'Las Vegas', description: 'EDC main stage' },
   { id: 'coachella', label: 'The Desert', description: 'Southern California festival stage' },

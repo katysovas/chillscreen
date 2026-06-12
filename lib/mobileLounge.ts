@@ -95,6 +95,13 @@ export const MOBILE_LOUNGE_STAGES: MobileLoungeStageOption[] = [
     scale: 1.05,
     originYPercent: 54,
   },
+  {
+    route: 'deep-space',
+    title: 'Deep Space',
+    tagline: 'Cosmic orbit stage',
+    scale: 1.05,
+    originYPercent: 54,
+  },
 ];
 
 export function mobileLoungeStageOption(route: VenueRoute): MobileLoungeStageOption {

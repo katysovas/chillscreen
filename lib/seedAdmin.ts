@@ -15,6 +15,7 @@ export const SEED_STAGE_META: SeedStageMeta[] = [
   { slug: 'sanfrancisco', label: 'San Francisco', subreddits: ['sanfrancisco', 'bayarea', 'Music'] },
   { slug: 'seattle', label: 'Seattle', subreddits: ['seattle', 'Music', 'festivals'] },
   { slug: 'chill-cinema', label: 'Chill Cinema', subreddits: ['movies', 'Letterboxd', 'netflix'] },
+  { slug: 'space', label: 'Deep Space', subreddits: ['space', 'spaceporn', 'Astronomy'] },
   { slug: 'silent-disco', label: 'Silent Disco', subreddits: ['festivals', 'aves', 'EDM'] },
 ];
 

@@ -6,7 +6,7 @@ import { cityTileIndex } from '@/lib/spawn';
 import type { VenueRoute } from '@/lib/venueSlugs';
 import { venueSlugForRoute } from '@/lib/venueSlugs';
 import { worldOffForVenueRoute } from '@/lib/venueRoutes';
-import { cinemaMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
+import { cinemaMidX, deepSpaceMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
 import { midOriginForTile, midWidthForTile, nearGndTiles, TOWN_MID_W } from '@/lib/worldTileGeometry';
 
 /** West-to-east picker order — used for edge navigation and city select. */
@@ -16,6 +16,7 @@ export function cityTileForRoute(route: VenueRoute): number {
   switch (route) {
     case 'outside-hands':
     case 'cinema':
+    case 'deep-space':
       return cityTileIndex('sf');
     case 'edc':
       return cityTileIndex('vegas');
@@ -65,6 +66,25 @@ function cinemaWorldOffBounds(): { min: number; max: number } {
   };
 }
 
+/** Deep Space shares the SF tile — keep walk range tight around the stage. */
+function deepSpaceWorldOffBounds(): { min: number; max: number } {
+  const route = 'deep-space' as const;
+  const tile = cityTileForRoute(route);
+  const midX = deepSpaceMidX(tile);
+  if (midX == null) throw new Error('deep-space midX missing');
+
+  const full = fullCityWorldOffBounds(route);
+  const centerWorldOff = (midOriginForTile(tile) + midX - VIEW_CENTER_X) / MID_PARALLAX;
+
+  const westMidPx = 420;
+  const eastMidPx = 320;
+
+  return {
+    min: Math.max(full.min, centerWorldOff - westMidPx / MID_PARALLAX),
+    max: Math.min(full.max, centerWorldOff + eastMidPx / MID_PARALLAX),
+  };
+}
+
 /**
  * Walk bounds in worldOff units — derived from the MID tile, which defines the
  * city's visual extent (mid vx = worldOff * MID_PARALLAX). The rendered art
@@ -74,6 +94,7 @@ function cinemaWorldOffBounds(): { min: number; max: number } {
  */
 export function cityWorldOffBounds(route: VenueRoute): { min: number; max: number } {
   if (route === 'cinema') return cinemaWorldOffBounds();
+  if (route === 'deep-space') return deepSpaceWorldOffBounds();
   return fullCityWorldOffBounds(route);
 }
 
@@ -91,7 +112,12 @@ export function stageWorldOffForRoute(route: VenueRoute): number {
  * City tile plus its two town connectors. Towns are cheap (no stages, no video
  * embeds) and prevent the world from visibly ending at the city's edges.
  */
-export function nearIsolatedMidTiles(tileIndex: number): (vx: number) => number[] {
+export function nearIsolatedMidTiles(
+  tileIndex: number,
+  route?: VenueRoute,
+): (vx: number) => number[] {
+  // Deep Space — orbit stage only; skip connector town cottages on the flanks.
+  if (route === 'deep-space') return () => [tileIndex];
   return () => [tileIndex - 1, tileIndex, tileIndex + 1];
 }
 
@@ -122,12 +148,14 @@ function edgeIndexForRoute(route: VenueRoute): number {
 
 export function prevCityRoute(route: VenueRoute): VenueRoute {
   if (route === 'cinema') return 'outside-hands';
+  if (route === 'deep-space') return 'cinema';
   const i = edgeIndexForRoute(route);
   return EDGE_ORDER[(i - 1 + EDGE_ORDER.length) % EDGE_ORDER.length]!;
 }
 
 export function nextCityRoute(route: VenueRoute): VenueRoute {
   if (route === 'cinema') return 'edc';
+  if (route === 'deep-space') return 'edc';
   const i = edgeIndexForRoute(route);
   return EDGE_ORDER[(i + 1) % EDGE_ORDER.length]!;
 }
@@ -149,17 +177,19 @@ export function stageAnchorForRoute(route: VenueRoute): StageAnchorKind | null {
     case 'silent-disco':
       return 'silent-disco';
     case 'cinema':
+    case 'deep-space':
       return null;
   }
 }
 
 /** Synced playback channel for this page's venue (audio stays on city-wide). */
 export function stageChannelForRoute(route: VenueRoute):
-  'cinema' | 'bumbershoot' | 'outside-lands' | 'coachella' | 'edc' | 'which-stage' | 'forest' | 'silent-disco' {
+  'cinema' | 'deep-space' | 'bumbershoot' | 'outside-lands' | 'coachella' | 'edc' | 'which-stage' | 'forest' | 'silent-disco' {
   switch (route) {
     case 'outside-hands': return 'outside-lands';
     case 'seattle-concerts': return 'bumbershoot';
     case 'cinema': return 'cinema';
+    case 'deep-space': return 'deep-space';
     case 'coachella': return 'coachella';
     case 'edc': return 'edc';
     case 'tentaroo': return 'which-stage';

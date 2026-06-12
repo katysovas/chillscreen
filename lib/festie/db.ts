@@ -177,6 +177,39 @@ export async function updateFestie(userId: string, patch: UpdateFestieInput): Pr
 
 const DIM_WINDOW_HOURS = FESTIE_CONFIG.DIM_WINDOW_MS / (60 * 60 * 1000);
 
+/** Active festie counts per stage (dim window). */
+export async function countActiveFestiesByStage(): Promise<Record<string, number>> {
+  const sql = requireDb();
+  const rows = await sql`
+    SELECT stage_slug, COUNT(*)::int AS count
+    FROM festies
+    WHERE last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
+    GROUP BY stage_slug
+  `;
+  const out: Record<string, number> = {};
+  for (const row of rows) {
+    const slug = String((row as { stage_slug: string }).stage_slug);
+    out[slug] = Number((row as { count: number }).count ?? 0);
+  }
+  return out;
+}
+
+/** All festies assigned to each home stage (fallback when none recently active). */
+export async function countAllFestiesByStage(): Promise<Record<string, number>> {
+  const sql = requireDb();
+  const rows = await sql`
+    SELECT stage_slug, COUNT(*)::int AS count
+    FROM festies
+    GROUP BY stage_slug
+  `;
+  const out: Record<string, number> = {};
+  for (const row of rows) {
+    const slug = String((row as { stage_slug: string }).stage_slug);
+    out[slug] = Number((row as { count: number }).count ?? 0);
+  }
+  return out;
+}
+
 /** Active festies for a stage (dim window), excluding given online user ids. */
 export async function listActiveFestiesForStage(
   stageSlug: string,

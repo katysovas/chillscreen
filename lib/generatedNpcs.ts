@@ -23,8 +23,14 @@ const CHANNEL_STAGE_ANCHOR: Partial<Record<StageChannel, StageAnchorKind>> = {
   'silent-disco': 'silent-disco',
 };
 
-/** Share of generated NPCs already in front of the stage when the city loads. */
+/** Share of sampled NPCs already in front of the stage when the city loads. */
 const STAGE_CROWD_AT_LOAD_RATIO = 0.7;
+
+/** Ambient crowd size per visit — fraction of the saved pool. */
+const AMBIENT_SAMPLE_MIN_RATIO = 0.45;
+const AMBIENT_SAMPLE_MIN_FLOOR = 6;
+/** Stage-crowd share jitters per visit so loads do not feel identical. */
+const STAGE_CROWD_RATIO_JITTER = 0.15;
 
 const FILE = generatedNpcsFile as {
   version: number;
@@ -62,6 +68,52 @@ function slugName(name: string): string {
 /** Generated crowd wanders across the full downstage floor. */
 const GENERATED_WANDER: [number, number] = [8, 92];
 
+function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (Math.imul(t ^ (t >>> 7), 61 | t) ^ t) >>> 0;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Pick a random subset of the channel pool — stable for one seed (one stage visit). */
+export function sampleGeneratedNpcs(
+  pool: GeneratedNpc[],
+  seed: number,
+): { npcs: GeneratedNpc[]; stageCrowdRatio: number } {
+  const deduped = dedupeGeneratedNpcs(pool);
+  if (deduped.length === 0) {
+    return { npcs: [], stageCrowdRatio: STAGE_CROWD_AT_LOAD_RATIO };
+  }
+
+  const rand = mulberry32(seed);
+  const minCount = Math.min(
+    deduped.length,
+    Math.max(AMBIENT_SAMPLE_MIN_FLOOR, Math.ceil(deduped.length * AMBIENT_SAMPLE_MIN_RATIO)),
+  );
+  const count = minCount + Math.floor(rand() * (deduped.length - minCount + 1));
+
+  const order = deduped.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [order[i], order[j]] = [order[j]!, order[i]!];
+  }
+
+  const npcs = order
+    .slice(0, count)
+    .map(i => deduped[i])
+    .filter((n): n is GeneratedNpc => n != null && Boolean(n.archetype));
+
+  const stageCrowdRatio = Math.min(
+    0.9,
+    Math.max(0.5, STAGE_CROWD_AT_LOAD_RATIO + (rand() - 0.5) * STAGE_CROWD_RATIO_JITTER * 2),
+  );
+
+  return { npcs, stageCrowdRatio };
+}
+
 function toCharacterDef(
   npc: GeneratedNpc,
   channel: StageChannel,
@@ -69,13 +121,13 @@ function toCharacterDef(
   stageCrowdCount: number,
 ): CharacterDef {
   const fromLeft = index % 2 === 0;
-  const base = ARCHETYPE_PERSONALITY[npc.archetype];
+  const base = ARCHETYPE_PERSONALITY[npc.archetype] ?? ARCHETYPE_PERSONALITY.chiller;
   const anchor = CHANNEL_STAGE_ANCHOR[channel];
   const onStageAtLoad = index < stageCrowdCount;
   const trickleIndex = Math.max(0, index - stageCrowdCount);
 
   return {
-    id: `gen-${channel}-${index}-${slugName(npc.name)}`,
+    id: `gen-${channel}-${slugName(npc.name)}`,
     name: npc.name,
     balloonColor: BALLOON_PALETTE[index % BALLOON_PALETTE.length]!,
     loadout: loadoutForProp(npc.prop),
@@ -94,16 +146,29 @@ function toCharacterDef(
   };
 }
 
-/** Generated NPCs for one stage channel, converted to CharacterDefs. */
+/** Full generated pool for one channel (chat lookup, admin). */
 export function generatedCharactersForChannel(channel: StageChannel): CharacterDef[] {
   const npcs = dedupeGeneratedNpcs(FILE.channels[channel] ?? []);
   const stageCrowdCount = Math.ceil(npcs.length * STAGE_CROWD_AT_LOAD_RATIO);
   return npcs.map((npc, i) => toCharacterDef(npc, channel, i, stageCrowdCount));
 }
 
+/** Random ambient subset for one stage visit — does not affect festie/player NPCs. */
+export function sampledGeneratedCharactersForChannel(
+  channel: StageChannel,
+  seed: number,
+): CharacterDef[] {
+  const pool = FILE.channels[channel] ?? [];
+  const { npcs, stageCrowdRatio } = sampleGeneratedNpcs(pool, seed);
+  const stageCrowdCount = Math.ceil(npcs.length * stageCrowdRatio);
+  return npcs.map((npc, i) => toCharacterDef(npc, channel, i, stageCrowdCount));
+}
+
 /** All generated NPCs across every stage (chat API lookup). */
 export function allGeneratedCharacters(): CharacterDef[] {
-  return (Object.keys(FILE.channels) as StageChannel[]).flatMap(ch =>
-    generatedCharactersForChannel(ch),
-  );
+  return (Object.keys(FILE.channels) as StageChannel[]).flatMap(ch => {
+    const npcs = dedupeGeneratedNpcs(FILE.channels[ch] ?? []);
+    const stageCrowdCount = Math.ceil(npcs.length * STAGE_CROWD_AT_LOAD_RATIO);
+    return npcs.map((npc, i) => toCharacterDef(npc, ch, i, stageCrowdCount));
+  });
 }

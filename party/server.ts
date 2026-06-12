@@ -345,4 +345,12 @@ export default class WhichStageServer implements Party.Server {
       console.error('[festie-seen] fetch failed', err);
     }
   }
+
+  /** HTTP stats for stage picker festie counts (GET /parties/whichstage/:room). */
+  async onRequest(req: Party.Request): Promise<Response> {
+    if (req.method !== 'GET') {
+      return new Response('Method not allowed', { status: 405 });
+    }
+    return Response.json({ players: this.players.size });
+  }
 }

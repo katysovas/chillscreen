@@ -1,11 +1,25 @@
 import type { HTMLAttributes } from 'react';
 import Cinema, { CINEMA_SCALE, CINEMA_WIDTH, CinemaShell } from '../Cinema';
 import Concert, { CONCERT_SCALE, CONCERT_WIDTH, ConcertShell } from '../Concert';
+import DeepSpaceStage, {
+  DEEP_SPACE_HEIGHT,
+  DEEP_SPACE_SCALE,
+  DEEP_SPACE_WIDTH,
+  DeepSpaceShell,
+} from '../DeepSpaceStage';
 import { STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../StageVideoFrame';
 import { StageToiletsFlanking } from './street/StageToiletRow';
-import { cinemaMidX, concertChannel, concertLabel, concertMidX, type VenueKind } from '@/lib/venues';
+import {
+  cinemaMidX,
+  concertChannel,
+  concertLabel,
+  concertMidX,
+  deepSpaceMidX,
+  type VenueKind,
+} from '@/lib/venues';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isVenueLive } from '@/lib/venueRoutes';
+import { STAGE_ANCHOR_Y } from '@/lib/stageLayout';
 
 export type VenueFocus = VenueKind;
 
@@ -24,7 +38,7 @@ export type CityVenuesTileProps = {
   deepLinkRoute?: VenueRoute;
 };
 
-/** Cinema and concert venues for one mid-layer tile. */
+/** Cinema, concert, and Deep Space venues for one mid-layer tile. */
 export function CityVenuesTile({
   tileIndex: t,
   cinemaLive,
@@ -38,17 +52,24 @@ export function CityVenuesTile({
   concertFoY,
   deepLinkRoute,
 }: CityVenuesTileProps) {
+  const isDeepSpace = deepLinkRoute === 'deep-space';
   const concertX = concertMidX(t);
   const cinemaX = cinemaMidX(t);
+  const deepSpaceX = deepSpaceMidX(t);
   const concertLiveNow = isVenueLive(
     'concert', t, cinemaLive, concertLive, 0, 0, 0, 0, 0, focus, deepLinkRoute,
   );
   const cinemaLiveNow = isVenueLive(
     'cinema', t, cinemaLive, concertLive, 0, 0, 0, 0, 0, focus, deepLinkRoute,
   );
+  const deepSpaceLiveNow = isVenueLive(
+    'deep-space', t, cinemaLive, concertLive, 0, 0, 0, 0, 0, focus, deepLinkRoute,
+  );
 
-  // Always render on the tile — parallax viewBox scrolling slides them in from
-  // the edge. Gating on isVenueInView used stale scroll state and made venues pop in.
+  const deepSpaceFoW = DEEP_SPACE_WIDTH * DEEP_SPACE_SCALE;
+  const deepSpaceFoH = DEEP_SPACE_HEIGHT * DEEP_SPACE_SCALE;
+  const deepSpaceFoY = STAGE_ANCHOR_Y - deepSpaceFoH;
+
   const concertBlock =
     concertX != null ? (
       <>
@@ -158,12 +179,55 @@ export function CityVenuesTile({
       </>
     ) : null;
 
-  if (!concertBlock && !cinemaBlock) return null;
+  const deepSpaceBlock =
+    deepSpaceX != null ? (
+      <>
+        <g>
+          <ellipse
+            cx={deepSpaceX}
+            cy={670}
+            rx={deepSpaceFoW / 2 + 24}
+            ry={22}
+            fill="rgba(54,224,200,.06)"
+          />
+          <ellipse
+            cx={deepSpaceX}
+            cy={674}
+            rx={deepSpaceFoW / 2 + 10}
+            ry={8}
+            fill="rgba(54,224,200,.14)"
+          />
+        </g>
+        <foreignObject
+          x={deepSpaceX - deepSpaceFoW / 2}
+          y={deepSpaceFoY}
+          width={deepSpaceFoW}
+          height={deepSpaceFoH}
+          data-stage-video-fo={deepSpaceLiveNow ? true : undefined}
+          style={deepSpaceLiveNow ? STAGE_VIDEO_FO_STYLE : { overflow: 'visible' }}
+        >
+          <div
+            {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
+            style={{
+              width: DEEP_SPACE_WIDTH,
+              transform: `scale(${DEEP_SPACE_SCALE})`,
+              transformOrigin: 'top left',
+              ...(deepSpaceLiveNow ? STAGE_VIDEO_WRAPPER_STYLE : { pointerEvents: 'none' }),
+            }}
+          >
+            {deepSpaceLiveNow ? <DeepSpaceStage live /> : <DeepSpaceShell />}
+          </div>
+        </foreignObject>
+      </>
+    ) : null;
+
+  if (!concertBlock && !cinemaBlock && !deepSpaceBlock) return null;
 
   return (
     <>
-      {concertBlock && deepLinkRoute !== 'cinema' ? concertBlock : null}
-      {cinemaBlock}
+      {concertBlock && deepLinkRoute !== 'cinema' && !isDeepSpace ? concertBlock : null}
+      {!isDeepSpace && cinemaBlock}
+      {isDeepSpace && deepSpaceBlock}
     </>
   );
 }

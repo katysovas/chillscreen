@@ -20,6 +20,8 @@ const LEGACY_VENUE_REDIRECTS: Record<string, string> = {
   'seattle-concerts': 'seattle',
   bumbershoot: 'seattle',
   cinema: 'chill-cinema',
+  deepspace: 'space',
+  'deep-space': 'space',
   'the-forest': 'forest',
   theforest: 'forest',
   silentdisco: 'silent-disco',

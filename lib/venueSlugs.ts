@@ -5,6 +5,7 @@ export type VenueRoute =
   | 'outside-hands'
   | 'seattle-concerts'
   | 'cinema'
+  | 'deep-space'
   | 'tentaroo'
   | 'forest'
   | 'silent-disco';
@@ -22,6 +23,8 @@ export function venueSlugForRoute(route: VenueRoute): string {
       return 'seattle';
     case 'cinema':
       return 'chill-cinema';
+    case 'deep-space':
+      return 'space';
     case 'tentaroo':
       return 'thefarm';
     case 'forest':
@@ -38,6 +41,7 @@ export const VENUE_SLUGS = [
   'sanfrancisco',
   'seattle',
   'chill-cinema',
+  'space',
   'thefarm',
   'forest',
   'silent-disco',
@@ -49,6 +53,7 @@ const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
   sanfrancisco: 'outside-hands',
   seattle: 'seattle-concerts',
   'chill-cinema': 'cinema',
+  space: 'deep-space',
   thefarm: 'tentaroo',
   forest: 'forest',
   'the-forest': 'forest',

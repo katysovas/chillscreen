@@ -32,6 +32,9 @@ export const MID_PARALLAX = 0.35;
 /** Default anchors — concert west, cinema far east (same tile, separated). */
 export const DEFAULT_CINEMA_MID_X = 2350;
 
+/** Deep Space — centered on the SF tile (isolated /space route). */
+export const DEEP_SPACE_MID_X = 1300;
+
 /** Default west anchor for odd tiles (concert). */
 export const DEFAULT_CONCERT_MID_X = 880;
 
@@ -60,7 +63,7 @@ export function isEvenTile(tile: number) {
   return isSanFranciscoTile(tile);
 }
 
-export type VenueKind = 'cinema' | 'concert' | 'coachella' | 'edc' | 'which-stage' | 'forest' | 'silent-disco';
+export type VenueKind = 'cinema' | 'deep-space' | 'concert' | 'coachella' | 'edc' | 'which-stage' | 'forest' | 'silent-disco';
 
 export function tileKind(tile: number): VenueKind {
   if (isSanFranciscoTile(tile)) return 'cinema';
@@ -77,6 +80,12 @@ export function cinemaMidX(tile: number): number | null {
   if (!isSanFranciscoTile(tile)) return null;
   const t = tileRand(tile, 'cinema');
   return Math.round(CINEMA_X_MIN + t * (CINEMA_X_MAX - CINEMA_X_MIN));
+}
+
+/** Deep Space stage x — tile center on SF tiles only. */
+export function deepSpaceMidX(tile: number): number | null {
+  if (!isSanFranciscoTile(tile)) return null;
+  return DEEP_SPACE_MID_X;
 }
 
 /**
@@ -107,6 +116,8 @@ export function stageChannelForVenueKind(kind: VenueKind, tile: number): StageCh
   switch (kind) {
     case 'cinema':
       return 'cinema';
+    case 'deep-space':
+      return 'deep-space';
     case 'concert':
       return concertChannel(tile);
     case 'coachella':
@@ -330,6 +341,11 @@ export function isStageChannelInView(channel: StageChannel, worldOff: number): b
     if (channel === 'cinema') {
       const mx = cinemaMidX(t);
       if (mx != null && isVenueInView(vx, t, mx, CINEMA_VIEW_HALF)) return true;
+      continue;
+    }
+    if (channel === 'deep-space') {
+      const dx = deepSpaceMidX(t);
+      if (dx != null && isVenueInView(vx, t, dx, CINEMA_VIEW_HALF)) return true;
       continue;
     }
     if (channel === 'coachella') {

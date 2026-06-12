@@ -38,6 +38,7 @@ const SIGN_STYLE: Record<VenueRoute, { icon: string; accent: string }> = {
   forest: { icon: '🌲', accent: '#2dd4a0' },
   'silent-disco': { icon: '🎧', accent: '#ff3df0' },
   cinema: { icon: '🎬', accent: '#b88c3d' },
+  'deep-space': { icon: '🛸', accent: '#36e0c8' },
 };
 
 type EdgeSignProps = {

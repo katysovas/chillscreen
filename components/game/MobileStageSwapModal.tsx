@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { festieCountForRoute, useStageFestieCounts } from '@/lib/festie/useStageFestieCounts';
 import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { MobileStageCard } from './MobileStageCard';
@@ -14,6 +15,7 @@ type Props = {
 /** Mobile-only — pick another lounge stage without re-entering name. */
 export function MobileStageSwapModal({ currentRoute, onSwap, onClose }: Props) {
   const [picked, setPicked] = useState<VenueRoute | null>(currentRoute);
+  const festieCounts = useStageFestieCounts();
   const canSwap = picked != null && picked !== currentRoute;
 
   const submit = () => {
@@ -99,6 +101,7 @@ export function MobileStageSwapModal({ currentRoute, onSwap, onClose }: Props) {
               key={stage.route}
               stage={stage}
               selected={picked === stage.route}
+              festieCount={festieCountForRoute(festieCounts, stage.route)}
               onSelect={() => setPicked(stage.route)}
             />
           ))}

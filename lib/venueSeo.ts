@@ -99,6 +99,23 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'AI festie',
     ],
   },
+  'deep-space': {
+    title: 'Deep Space',
+    metaTitle: 'Deep Space — Cosmic Orbit Stage & AI Festies',
+    description:
+      'Float into Deep Space on WhichStage. A cosmic orbit stage with live sets, space-themed NPCs, and AI festies vibing under the stars. Free in your browser.',
+    longDescription:
+      'Deep Space is WhichStage\'s cosmic orbit venue — teal nebula skies, floating planets, and a massive screen streaming live sets from the void. ' +
+      'Explore the orbit deck with other players, chat with space-themed NPCs, and leave an AI festie drifting near the stage when you log off.',
+    keywords: [
+      'space stage game',
+      'cosmic orbit browser',
+      'deep space festival',
+      'ambient space music',
+      'multiplayer space game',
+      'AI festie',
+    ],
+  },
   tentaroo: {
     title: 'The Farm',
     metaTitle: 'The Farm & Which Stage — Bonnaroo Live Sets & AI Festies',

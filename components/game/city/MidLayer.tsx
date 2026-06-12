@@ -44,6 +44,7 @@ import { WHICH_STAGE_MID_X } from './tentaroo';
 import { FestivalStage } from './sandiego/FestivalStage';
 import { SmallTownTile, SmallTownTerrain } from './town';
 import { TransitionWater } from './transition';
+import { OrbitMidTile } from './orbit';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isVenueLive } from '@/lib/venueRoutes';
 import { STAGE_ANCHOR_Y } from '@/lib/stageLayout';
@@ -181,7 +182,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
   function MidLayer({ worldOff, deepLinkRoute, foregroundRef, skyLabelsRef, hideTrees = false, isolatedTileIndex }, ref) {
     const vx = worldOff * MID_F;
     const nearTiles = isolatedTileIndex != null
-      ? nearIsolatedMidTiles(isolatedTileIndex)
+      ? nearIsolatedMidTiles(isolatedTileIndex, deepLinkRoute)
       : nearMidTiles;
 
     const cinemaLive   = cinemaLiveTile(vx);
@@ -201,6 +202,8 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
     const concertFoH = CONCERT_HEIGHT * CONCERT_SCALE;
     const concertFoY = stageGroundY - CONCERT_DECK_VIEWBOX_Y * CONCERT_SCALE;
 
+    const isDeepSpace = deepLinkRoute === 'deep-space';
+
     const renderTile = useCallback((t: number) => {
       const kind  = worldTileKind(t);
       const w     = midWidthForTile(t);
@@ -209,17 +212,21 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
       return (
         <>
           <g transform={scale === 1 ? undefined : `scale(${scale},1)`}>
-            <GradientMidTerrain tileIndex={t} />
+            {!(kind === 'sf' && isDeepSpace) && <GradientMidTerrain tileIndex={t} />}
             <TransitionWater tileIndex={t} />
             {kind === 'town' && <SmallTownTerrain tileIndex={t} />}
             {kind === 'seattle' && <SeattleMidFeatures tileIndex={t} />}
             {kind === 'seattle' && <SeattleBuildingsTile />}
             {kind === 'sf' && (
-              <>
-                <CityBuildingsTile />
-                {!hideTrees && <MidBushes />}
-                <SfMidFeatures />
-              </>
+              isDeepSpace ? (
+                <OrbitMidTile />
+              ) : (
+                <>
+                  <CityBuildingsTile />
+                  {!hideTrees && <MidBushes />}
+                  <SfMidFeatures />
+                </>
+              )
             )}
             {(kind === 'sf' || kind === 'seattle') && (
               <CityVenuesTile
@@ -292,7 +299,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
         </>
       );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, forestLive, silentDiscoLive, focus, deepLinkRoute, hideTrees]);
+    }, [cinemaLive, concertLive, coachellaLive, edcLive, whichStageLive, forestLive, silentDiscoLive, focus, deepLinkRoute, hideTrees, isDeepSpace]);
 
     const renderMidForeground = useCallback((t: number) => {
       const scale = tileContentScale(t);

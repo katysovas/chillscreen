@@ -1,6 +1,6 @@
 import { cityTileIndex } from '@/lib/spawn';
 import { isForestTile, isSilentDiscoTile, isSouthernCaliforniaTile, isTentarooTile, isVegasTile } from '@/lib/worldTiles';
-import { cinemaMidX, coachellaMidX, concertMidX, edcMidX, whichStageMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
+import { cinemaMidX, coachellaMidX, concertMidX, deepSpaceMidX, edcMidX, whichStageMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
 import { midOriginForTile } from '@/lib/worldTileGeometry';
 import { WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
 import { FOREST_STAGE_MID_X } from '@/components/game/city/forest/constants';
@@ -53,6 +53,12 @@ export function worldOffForVenueRoute(route: VenueRoute): number {
       if (midX == null) throw new Error('cinema midX missing');
       return worldOffCenteringMidX(tile, midX);
     }
+    case 'deep-space': {
+      const tile = cityTileIndex('sf');
+      const midX = deepSpaceMidX(tile);
+      if (midX == null) throw new Error('deep-space midX missing');
+      return worldOffCenteringMidX(tile, midX);
+    }
     case 'tentaroo': {
       const tile = cityTileIndex('tentaroo');
       return worldOffCenteringMidX(tile, WHICH_STAGE_MID_X);
@@ -96,6 +102,8 @@ export function isScrollVenueLive(
       return tileIndex === forestLive;
     case 'silent-disco':
       return tileIndex === silentDiscoLive;
+    case 'deep-space':
+      return false;
   }
 }
 
@@ -111,6 +119,8 @@ export function isDeepLinkVenueLive(
   switch (route) {
     case 'cinema':
       return kind === 'cinema' && tileIndex === cityTileIndex('sf');
+    case 'deep-space':
+      return kind === 'deep-space' && tileIndex === cityTileIndex('sf');
     case 'outside-hands':
       return kind === 'concert' && tileIndex === cityTileIndex('sf');
     case 'seattle-concerts':
@@ -143,6 +153,9 @@ export function isVenueLive(
 ): boolean {
   if (deepLinkRoute === 'cinema') {
     return isDeepLinkVenueLive('cinema', kind, tileIndex);
+  }
+  if (deepLinkRoute === 'deep-space') {
+    return isDeepLinkVenueLive('deep-space', kind, tileIndex);
   }
   if (deepLinkRoute && isDeepLinkVenueLive(deepLinkRoute, kind, tileIndex)) {
     return true;

@@ -1,14 +1,16 @@
 'use client';
 
+import { formatStageCrowdCount } from '@/lib/stageCrowdCount';
 import type { MobileLoungeStageOption } from '@/lib/mobileLounge';
 
 type Props = {
   stage: MobileLoungeStageOption;
   selected: boolean;
+  festieCount?: number;
   onSelect: () => void;
 };
 
-export function MobileStageCard({ stage, selected, onSelect }: Props) {
+export function MobileStageCard({ stage, selected, festieCount, onSelect }: Props) {
   return (
     <button
       type="button"
@@ -29,6 +31,11 @@ export function MobileStageCard({ stage, selected, onSelect }: Props) {
       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4, lineHeight: 1.3 }}>
         {stage.tagline}
       </div>
+      {festieCount != null && (
+        <div style={{ fontSize: 10, color: 'rgba(255,180,120,0.85)', marginTop: 6, lineHeight: 1.2 }}>
+          {formatStageCrowdCount(festieCount)}
+        </div>
+      )}
     </button>
   );
 }

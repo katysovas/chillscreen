@@ -27,11 +27,13 @@ type GroundLayerProps = {
   hideTrees?: boolean;
   /** Skip animated sidewalk dogs (e.g. Silent Disco). */
   hideStreetDogs?: boolean;
+  /** Lunar surface only — no street, trees, cats, or props (Chill Cinema / The Orbit). */
+  bareGround?: boolean;
   /** When set, only this city tile is rendered (isolated city mode). */
   isolatedTileIndex?: number;
 };
 
-function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = false) {
+function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = false, bareGround = false) {
   // Draw the road/sidewalk at the tile's natural width and show only the props
   // that fit. Short town tiles previously squeezed everything with a non-uniform
   // scale(scale,1), distorting trees, hydrants, benches and cats — never scale
@@ -39,6 +41,14 @@ function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = fal
   const w = gndWidthForTile(tile);
   // Keep a prop fully inside the tile (account for its art half-width).
   const fits = (x: number, halfW: number) => x <= w - halfW;
+
+  if (bareGround) {
+    return (
+      <g {...DECORATIVE_SHAPE}>
+        <rect x={0} y={GND_Y - 5} width={w} height={215} fill="#1a1430" />
+      </g>
+    );
+  }
 
   return (
     <g {...DECORATIVE_SHAPE}>
@@ -149,7 +159,7 @@ function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = fal
 }
 
 export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
-  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, isolatedTileIndex }, ref) {
+  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, bareGround = false, isolatedTileIndex }, ref) {
     const vx = worldOff * GND_F;
     const nearTiles = isolatedTileIndex != null
       ? nearIsolatedGndTiles(isolatedTileIndex)
@@ -164,7 +174,7 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
         nearTileIndices={nearTiles}
         shapeRendering="optimizeSpeed"
         style={{ zIndex: 5, pointerEvents: 'none' }}
-        children={tile => groundTileContent(tile, hideTrees, hideStreetDogs)}
+        children={tile => groundTileContent(tile, hideTrees, hideStreetDogs, bareGround)}
       />
     );
   },

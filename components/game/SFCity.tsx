@@ -12,6 +12,7 @@ import { setAudioMuted } from '@/lib/audioMute';
 import { playChatInviteBeep } from '@/lib/playChatInviteBeep';
 import { SFX_VOLUME } from '@/lib/sfxVolume';
 import { npcCastForVenue } from '@/lib/npcCast';
+import { ambientSeedForRoute } from '@/lib/ambientSeed';
 import RemotePlayer from './RemotePlayer';
 import { PLAYER_AMBIENT_VISIBLE_MS, useMultiplayer } from '@/lib/multiplayer/useMultiplayer';
 import { filterChatMessage } from '@/lib/messageFilter';
@@ -177,11 +178,17 @@ export default function SFCity({
   const connectNearRef = useRef<(() => void) | null>(null);
 
   const effectiveVenueRoute = venueRoute;
+  const isDeepSpace = effectiveVenueRoute === 'deep-space';
+  /** Stable per tab session — matches stage picker crowd counts. */
+  const ambientSeed = useMemo(
+    () => ambientSeedForRoute(effectiveVenueRoute),
+    [effectiveVenueRoute],
+  );
   // Generated crowd for this stage (+ local Buz). Falls back to legacy cast when
   // no generated NPCs are saved for the channel yet.
   const npcCast = useMemo(
-    () => npcCastForVenue(effectiveVenueRoute),
-    [effectiveVenueRoute],
+    () => npcCastForVenue(effectiveVenueRoute, ambientSeed),
+    [effectiveVenueRoute, ambientSeed],
   );
   const isolatedTile = cityTileForRoute(effectiveVenueRoute);
   const cityBounds = cityWorldOffBounds(effectiveVenueRoute);
@@ -414,21 +421,6 @@ export default function SFCity({
       if (festie) setOwnerFestie(festie);
     });
   }, []);
-
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState !== 'hidden') return;
-      if (!festieSignedIn || !ownerFestie) return;
-      if (showWelcomeRef.current || showCityPickerRef.current) return;
-      if (settingsOpen || lifeModalOpen) return;
-      if (!shouldShowFestieLifeOnTabExit()) return;
-      setLifeModalOpen(true);
-      markFestieLifeTabExitShown();
-      markFestieLifeIntroSeen();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [festieSignedIn, ownerFestie, settingsOpen, lifeModalOpen]);
 
   const handleFestieCreated = useCallback(async () => {
     const festie = await fetchFestie();
@@ -1582,27 +1574,35 @@ export default function SFCity({
       }}
     >
       <div>
-        <SkyLayer ref={skyRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
-        <SkyCloudsLayer ref={cloudsRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
-        <SkyCreaturesLayer period={skyPeriod} />
+        <SkyLayer
+          ref={skyRef}
+          period={skyPeriod}
+          initialViewBoxX={spawnWorldOff * SKY_F}
+          orbitSky={isDeepSpace}
+        />
+        {!isDeepSpace && (
+          <SkyCloudsLayer ref={cloudsRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
+        )}
+        {!isDeepSpace && <SkyCreaturesLayer period={skyPeriod} />}
         <MidLayer
           ref={midRef}
           foregroundRef={midForegroundRef}
           skyLabelsRef={midSkyLabelsRef}
           worldOff={midScrollWorldOff}
           deepLinkRoute={effectiveVenueRoute}
-          hideTrees={mobileDevice}
+          hideTrees={mobileDevice || isDeepSpace}
           isolatedTileIndex={isolatedTile}
         />
         <GroundLayer
           ref={groundRef}
           worldOff={gndScrollWorldOff}
-          hideTrees={mobileDevice}
-          hideStreetDogs={effectiveVenueRoute === 'silent-disco'}
+          hideTrees={mobileDevice || isDeepSpace}
+          hideStreetDogs={effectiveVenueRoute === 'silent-disco' || isDeepSpace}
+          bareGround={isDeepSpace}
           isolatedTileIndex={isolatedTile}
         />
-        <CabanaForegroundLayer ref={cabanaRef} worldOff={gndScrollWorldOff} />
-        {effectiveVenueRoute !== 'silent-disco' && <LovingCarLayer />}
+        {!isDeepSpace && <CabanaForegroundLayer ref={cabanaRef} worldOff={gndScrollWorldOff} />}
+        {effectiveVenueRoute !== 'silent-disco' && !isDeepSpace && <LovingCarLayer />}
 
         {!homePreview && (
           <GroundScoreLayer
