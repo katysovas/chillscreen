@@ -24,6 +24,7 @@ import { generatePairConvo } from '../lib/npcChatter/generate';
 import { resolveModel } from '../lib/npcChatter/models';
 import { chatterApiBase, npcChatterApiUrl } from '../lib/npcChatter/apiBase';
 import { pickConversationSeedRemote } from '../lib/npcChatter/seeds';
+import { isFestieNpcId } from '../lib/festie/toCharacterDef';
 import { npcPairInAnyPlayerView, type PlayerViewSnapshot } from '../lib/npcProximity';
 import { getNpcRosterEntry } from '../lib/npcRoster.server';
 import type { RoomChatLine } from '../lib/npcChatter/prompts';
@@ -202,7 +203,8 @@ export class NpcChatterScheduler {
         const wxA = this.npcWorldX.get(a);
         const wxB = this.npcWorldX.get(b);
         if (wxA == null || wxB == null) continue;
-        if (!npcPairInAnyPlayerView(wxA, wxB, views)) continue;
+        const festiePair = isFestieNpcId(a) || isFestieNpcId(b);
+        if (!festiePair && !npcPairInAnyPlayerView(wxA, wxB, views)) continue;
         ranked.push({
           pair: a < b ? [a, b] : [b, a],
           dist: Math.abs(wxA - wxB),
@@ -295,7 +297,13 @@ export class NpcChatterScheduler {
     const wxA = this.npcWorldX.get(npcA);
     const wxB = this.npcWorldX.get(npcB);
     if (wxA == null || wxB == null) return;
-    if (!npcPairInAnyPlayerView(wxA, wxB, this.deps.getActivePlayerViews())) return;
+    const festiePair = isFestieNpcId(npcA) || isFestieNpcId(npcB);
+    if (
+      !festiePair
+      && !npcPairInAnyPlayerView(wxA, wxB, this.deps.getActivePlayerViews())
+    ) {
+      return;
+    }
     if (!this.bumpHourlyCap()) return;
 
     const lineBudget = pickLineBudget();

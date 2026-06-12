@@ -3,6 +3,7 @@ import {
   PERSONALITY_TRAITS,
   type PersonalityTraitKey,
 } from '@/lib/festie/personalityLevels';
+import { formatFestieTopics } from '@/lib/festie/presets';
 import type { FestiePublic } from '@/lib/festie/types';
 import { BASE_NPC_PROMPT } from '@/lib/npcChat';
 import { cinemaWorldNote, concertWorldNote } from '@/lib/npcChat';
@@ -35,7 +36,7 @@ export function buildFestieSystemPrompt(opts: {
   ];
 
   if (festie.topics.length > 0) {
-    parts.push('', `You care about: ${festie.topics.join(', ')}.`);
+    parts.push('', `You care about: ${formatFestieTopics(festie.topics)}.`);
   }
   if (festie.personality_notes?.trim()) {
     parts.push('', `Owner notes: ${festie.personality_notes.trim()}`);

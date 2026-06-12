@@ -27,6 +27,7 @@ import { GroundScoreLayer } from './GroundScoreLayer';
 import { purchaseVendorItemAsync } from '@/lib/vendorPurchase';
 import { festieLifeFill } from '@/lib/festie/config';
 import { fetchFestie, logoutFestie } from '@/lib/festie/client';
+import { persistFestieStage } from '@/lib/festie/stage';
 import {
   markFestieLifeIntroSeen,
   markFestieLifeTabExitShown,
@@ -695,6 +696,11 @@ export default function SFCity({
     setVenueDressCode(effectiveVenueRoute);
     return () => { setVenueDressCode(null); };
   }, [effectiveVenueRoute]);
+
+  useEffect(() => {
+    if (homePreview || !festieSignedIn) return;
+    persistFestieStage(effectiveVenueRoute);
+  }, [homePreview, festieSignedIn, effectiveVenueRoute]);
 
   useEffect(() => { showWelcomeRef.current = showWelcome; }, [showWelcome]);
   useEffect(() => { showCityPickerRef.current = showCityPicker; }, [showCityPicker]);

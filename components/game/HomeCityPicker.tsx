@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import SFCityLoader from './SFCityLoader';
 import { WelcomePopup } from './WelcomePopup';
 import { fetchAuthMe } from '@/lib/festie/client';
+import type { FestieOwner } from '@/lib/festie/types';
+import { persistFestieStage, venueRouteForStageSlug } from '@/lib/festie/stage';
 import { hydratePlayerSession } from '@/lib/player/session';
 import { identifyPlayer } from '@/lib/analytics';
 import { getPlayerName } from '@/lib/playerStorage';
@@ -29,6 +31,7 @@ export function HomeCityPicker() {
   const [authReady, setAuthReady] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [festieName, setFestieName] = useState<string | null>(null);
+  const [festie, setFestie] = useState<FestieOwner | null>(null);
   const balloonColor = useSyncExternalStore(
     subscribeBalloonColor,
     getSessionBalloonColor,
@@ -44,9 +47,10 @@ export function HomeCityPicker() {
     void (async () => {
       try {
         const profile = await hydratePlayerSession();
-        const { authenticated } = await fetchAuthMe();
-        setIsSignedIn(authenticated);
-        setFestieName(profile.name ?? getPlayerName());
+        const auth = await fetchAuthMe();
+        setIsSignedIn(auth.authenticated);
+        setFestie(auth.festie);
+        setFestieName(auth.festie?.name ?? profile.name ?? getPlayerName());
       } catch {
         setIsSignedIn(false);
       } finally {
@@ -61,8 +65,17 @@ export function HomeCityPicker() {
 
   const handleEnter = (name: string, route: VenueRoute) => {
     identifyPlayer(name);
+    persistFestieStage(route);
     router.push(`/${venueSlugForRoute(route)}`);
   };
+
+  useEffect(() => {
+    if (!authReady || !isSignedIn || !festie) return;
+    const route = venueRouteForStageSlug(festie.stage_slug);
+    if (!route) return;
+    identifyPlayer(festie.name);
+    router.replace(`/${venueSlugForRoute(route)}`);
+  }, [authReady, isSignedIn, festie, router]);
 
   const route = mounted ? previewRoute : SSR_PREVIEW_ROUTE;
 
@@ -99,11 +112,10 @@ export function HomeCityPicker() {
       >
         {muted ? '🔇' : '🔊'}
       </button>
-      {authReady && (
+      {authReady && !isSignedIn && (
         <WelcomePopup
           balloonColor={balloonColor}
-          requireAuth={!isSignedIn}
-          pickStageOnly={isSignedIn}
+          requireAuth
           initialName={festieName ?? undefined}
           onAuthSuccess={name => {
             void hydratePlayerSession().then(profile => {

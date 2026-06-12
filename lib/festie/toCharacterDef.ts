@@ -1,6 +1,7 @@
 import type { CharacterDef } from '@/components/game/characters';
 import type { Personality } from '@/components/game/NPC';
-import { festiePresetById } from '@/lib/festie/presets';
+import { festieModelIdForProvider } from '@/lib/festie/llmProviders';
+import { festiePresetById, formatFestieTopics } from '@/lib/festie/presets';
 import type { FestieAttributes, FestiePublic } from '@/lib/festie/types';
 import { stageAnchorForRoute } from '@/lib/isolatedCity';
 import type { VenueRoute } from '@/lib/venueSlugs';
@@ -29,7 +30,7 @@ function attributesToPersonality(attrs: FestieAttributes): Personality {
       Math.round(3200 - chatty * 2200),
       Math.round(7200 - chatty * 4200),
     ],
-    wanderRange: [8, 92],
+    wanderRange: [-20, 118],
     jumpiness: 0.05 + energy * 0.5,
   };
 }
@@ -42,7 +43,7 @@ function festiePersonalityNotes(festie: FestiePublic): string {
     parts.push(festie.personality_notes.trim());
   }
   if (festie.topics.length > 0) {
-    parts.push(`Into: ${festie.topics.join(', ')}.`);
+    parts.push(`Into: ${formatFestieTopics(festie.topics)}.`);
   }
   return parts.join(' ');
 }
@@ -68,6 +69,7 @@ export function festieToCharacterDef(
     stageCrowd: anchor ?? undefined,
     personality: attributesToPersonality(festie.attributes),
     personalityNotes: festiePersonalityNotes(festie),
+    modelId: festieModelIdForProvider(festie.llm_provider),
   };
 }
 

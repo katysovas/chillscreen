@@ -6,8 +6,9 @@ import {
   SITE_TAGLINE,
   SITE_URL,
 } from '@/lib/site';
-import { venueSeoForRoute } from '@/lib/venueSeo';
-import { parseVenueSlug, VENUE_SLUGS } from '@/lib/venueRoutes';
+import { allStageSeoEntries, venueSeoForRoute } from '@/lib/venueSeo';
+import type { VenueRoute } from '@/lib/venueRoutes';
+import { parseVenueSlug, venueSlugForRoute, VENUE_SLUGS } from '@/lib/venueRoutes';
 
 function absoluteUrl(path: string): string {
   return path.startsWith('http') ? path : `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
@@ -63,12 +64,12 @@ export function webApplicationJsonLd() {
       priceCurrency: 'USD',
     },
     featureList: [
-      'Walk through festival cities, campgrounds, and forests',
-      'Watch synchronized live stages',
-      'Silent disco headphone raves',
-      'Outdoor cinema screenings',
-      'Chat with NPCs',
-      'Multiplayer presence',
+      'Join the AI Festival — create a festie that stays at the stage',
+      'Walk through cities, campgrounds, and glowing forests',
+      'Watch synchronized live festival and DJ sets',
+      'Silent disco headphone raves and outdoor cinema',
+      'Chat with NPCs and other players',
+      'Multiplayer browser presence — no download',
     ],
     screenshot: absoluteUrl(LOGO_PATH),
   };
@@ -132,19 +133,52 @@ export function venueItemListJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: `${SITE_NAME} stages`,
-    itemListElement: VENUE_SLUGS.map((slug, index) => {
-      const route = parseVenueSlug(slug)!;
-      const seo = venueSeoForRoute(route);
-      return {
-        '@type': 'ListItem',
-        position: index + 1,
-        name: seo.title,
-        url: absoluteUrl(`/${slug}`),
-        description: seo.description,
-      };
-    }),
+    name: `${SITE_NAME} festival stages`,
+    description:
+      'Browse live festival stages across desert, city, farm, forest, and silent disco venues in the browser.',
+    numberOfItems: VENUE_SLUGS.length,
+    itemListElement: allStageSeoEntries().map((entry, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: entry.title,
+      url: absoluteUrl(entry.path),
+      description: entry.longDescription,
+    })),
   };
+}
+
+/** Per-stage rich result — music venue + tourist attraction for deep links. */
+export function festivalStageJsonLd(route: VenueRoute) {
+  const seo = venueSeoForRoute(route);
+  const path = `/${venueSlugForRoute(route)}`;
+  const url = absoluteUrl(path);
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'TouristAttraction',
+    '@id': `${url}#stage`,
+    name: `${seo.title} on ${SITE_NAME}`,
+    description: seo.longDescription,
+    url,
+    isAccessibleForFree: true,
+    touristType: 'Festival and live music fans',
+    keywords: seo.keywords.join(', '),
+    additionalType: 'https://schema.org/MusicVenue',
+    containedInPlace: {
+      '@type': 'WebApplication',
+      '@id': `${SITE_URL}/#app`,
+      name: SITE_NAME,
+    },
+  };
+}
+
+export function stagesIndexWebPageJsonLd() {
+  return webPageJsonLd({
+    path: '/stages',
+    title: 'Festival Stages & Live Sets',
+    description:
+      'Directory of every WhichStage festival venue — desert main stages, city concerts, campground rigs, forest lasers, silent disco, and outdoor cinema.',
+  });
 }
 
 /** Default graph for the home page and shared layout. */

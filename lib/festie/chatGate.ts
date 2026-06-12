@@ -20,7 +20,11 @@ function pickTalkedOutLine(festie: FestieRow): string {
   return TALKED_OUT_LINES[idx] ?? TALKED_OUT_LINES[0]!;
 }
 
-/** Server-side gate for offline festie 1:1 chat (tier + rate + cap). */
+/**
+ * Gate for player-initiated 1:1 festie chat (LLM tokens + rate limits).
+ * Does NOT apply to ambient NPC pair chatter — offline festies join room convos
+ * via npcChatter regardless of life tier while they remain on stage.
+ */
 export async function evaluateFestieChatGate(festie: FestieRow): Promise<FestieChatGate> {
   const tier = festieTier(new Date(festie.last_seen_at));
 

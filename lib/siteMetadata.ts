@@ -14,6 +14,7 @@ type PageMetadataOptions = {
   description?: string;
   path?: string;
   noIndex?: boolean;
+  keywords?: string[];
 };
 
 export function buildPageMetadata({
@@ -21,6 +22,7 @@ export function buildPageMetadata({
   description = SITE_DESCRIPTION,
   path = '/',
   noIndex = false,
+  keywords,
 }: PageMetadataOptions = {}): Metadata {
   const canonical = path.startsWith('/') ? path : `/${path}`;
   const pageTitle = title ?? SITE_NAME;
@@ -30,7 +32,7 @@ export function buildPageMetadata({
     metadataBase: new URL(SITE_URL),
     title: title ? { absolute: fullTitle } : { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
     description,
-    keywords: SITE_KEYWORDS,
+    keywords: keywords ?? SITE_KEYWORDS,
     applicationName: SITE_NAME,
     authors: [{ name: SITE_NAME, url: SITE_URL }],
     creator: SITE_NAME,

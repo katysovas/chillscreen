@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { userIdFromRequest } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
+import { getFestieByUserId } from '@/lib/festie/db';
+import { FESTIE_EVENT_TYPES, logFestieEvent } from '@/lib/festie/events';
 import { addPlayerCoinsDb } from '@/lib/player/db';
 import { GROUND_SCORE_MAX_PICKUP } from '@/lib/groundScore';
 
@@ -25,6 +27,13 @@ export async function POST(request: Request) {
     }
 
     const coins = await addPlayerCoinsDb(userId, amount);
+    const festie = await getFestieByUserId(userId);
+    if (festie) {
+      logFestieEvent(festie.id, FESTIE_EVENT_TYPES.COIN_PICKUP, {
+        amount,
+        balance: coins,
+      });
+    }
     return NextResponse.json({ coins });
   } catch (err) {
     console.error('[api/player/coins POST]', err);

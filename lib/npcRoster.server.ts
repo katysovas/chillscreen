@@ -1,26 +1,71 @@
 /**
- * Server-only chatter roster — re-exports from chatterCast + room routing.
+ * Server-only chatter roster — hardcoded NPCs + synced offline festies.
  */
 import { formatNpcBrandedName } from '@/lib/npcBrandedName';
 import {
   chatterNpcIds,
   chatterNpcIdsForRoute,
-  getNpcRosterEntry,
-  isChatterNpc,
+  getNpcRosterEntry as getStaticNpcRosterEntry,
+  isChatterNpc as isStaticChatterNpc,
   type NpcRosterEntry,
 } from '@/lib/chatterCast';
+import { festieToRosterEntry } from '@/lib/festie/chatterRoster';
+import { getFestieById, toFestiePublic } from '@/lib/festie/db';
+import { festieIdFromNpcId, isFestieNpcId } from '@/lib/festie/toCharacterDef';
+import type { FestiePublic } from '@/lib/festie/types';
 import { venueSlugFromRoomId } from '@/lib/npcChatter/roomContext';
 import { parseVenueSlug } from '@/lib/venueSlugs';
 
 export type { NpcRosterEntry };
-export { getNpcRosterEntry, isChatterNpc, chatterNpcIds };
+export { chatterNpcIds };
 
-/** Chatter-eligible ids for this PartyKit room. */
+/** Offline festies on stage — updated by PartyKit festies sync (any life tier on stage). */
+let festieChatterRoster = new Map<string, NpcRosterEntry>();
+
+export function setFestieChatterRoster(festies: FestiePublic[]): void {
+  const entries = festies.map(f => festieToRosterEntry(f));
+  festieChatterRoster = new Map(entries.map(e => [e.id, e]));
+}
+
+export function festieChatterNpcIds(): string[] {
+  return [...festieChatterRoster.keys()];
+}
+
+export function getNpcRosterEntry(id: string): NpcRosterEntry | undefined {
+  return festieChatterRoster.get(id) ?? getStaticNpcRosterEntry(id);
+}
+
+/** DB fallback for API routes when festie roster cache is empty. */
+export async function resolveNpcRosterEntry(id: string): Promise<NpcRosterEntry | undefined> {
+  const cached = getNpcRosterEntry(id);
+  if (cached) return cached;
+
+  if (!isFestieNpcId(id)) return undefined;
+  const festieId = festieIdFromNpcId(id);
+  if (!festieId) return undefined;
+
+  const row = await getFestieById(festieId);
+  if (!row) return undefined;
+  return festieToRosterEntry(toFestiePublic(row));
+}
+
+export function isChatterNpc(id: string): boolean {
+  return festieChatterRoster.has(id) || isStaticChatterNpc(id);
+}
+
+export async function isChatterNpcAllowed(id: string): Promise<boolean> {
+  if (isChatterNpc(id)) return true;
+  return Boolean(await resolveNpcRosterEntry(id));
+}
+
+/** Chatter-eligible ids for this PartyKit room (static cast + synced festies). */
 export function chatterNpcIdsForRoom(roomId: string): string[] {
   const slug = venueSlugFromRoomId(roomId);
   const route = slug ? parseVenueSlug(slug) : null;
-  if (!route) return chatterNpcIds();
-  return chatterNpcIdsForRoute(route);
+  const staticIds = route ? chatterNpcIdsForRoute(route) : chatterNpcIds();
+  const festieIds = festieChatterNpcIds();
+  if (festieIds.length === 0) return staticIds;
+  return [...new Set([...staticIds, ...festieIds])];
 }
 
 export function matchNpcMention(text: string, roomId?: string): string | null {

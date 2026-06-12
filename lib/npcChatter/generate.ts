@@ -1,5 +1,5 @@
 import { sanitizeNpcLine } from '@/lib/messageFilter';
-import { getNpcRosterEntry } from '@/lib/npcRoster.server';
+import { resolveNpcRosterEntry } from '@/lib/npcRoster.server';
 import type { RoomChatLine } from './prompts';
 import { buildLineSystemPrompt, buildSingleReplySystemPrompt } from './prompts';
 import { resolveModel } from './models';
@@ -35,8 +35,8 @@ export type SingleReplyRequest = {
 };
 
 export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatterLine[]> {
-  const npcA = getNpcRosterEntry(req.npcA);
-  const npcB = getNpcRosterEntry(req.npcB);
+  const npcA = await resolveNpcRosterEntry(req.npcA);
+  const npcB = await resolveNpcRosterEntry(req.npcB);
   if (!npcA || !npcB) return [];
 
   const lines: NpcChatterLine[] = [];
@@ -91,7 +91,7 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
 }
 
 export async function generateSingleReply(req: SingleReplyRequest): Promise<NpcChatterLine | null> {
-  const npc = getNpcRosterEntry(req.npc);
+  const npc = await resolveNpcRosterEntry(req.npc);
   if (!npc) return null;
 
   const system = buildSingleReplySystemPrompt({

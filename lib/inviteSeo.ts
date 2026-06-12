@@ -21,7 +21,7 @@ export function invitePageCopy(seo: VenueSeo, friendName: string | null): {
   description: string;
 } {
   if (!friendName) {
-    return { title: seo.title, description: seo.description };
+    return { title: seo.metaTitle, description: seo.description };
   }
   return {
     title: `${friendName} invited you to ${seo.title}`,

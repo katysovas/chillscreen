@@ -1,4 +1,9 @@
 import { FESTIE_CONFIG, festieTier } from '@/lib/festie/config';
+import {
+  DEFAULT_FESTIE_LLM_PROVIDER,
+  type FestieLlmProvider,
+  parseFestieLlmProvider,
+} from '@/lib/festie/llmProviders';
 import type {
   FestieAttributes,
   FestieOwner,
@@ -21,6 +26,7 @@ function rowToFestie(row: Record<string, unknown>): FestieRow {
     topics: Array.isArray(row.topics) ? row.topics.map(String) : [],
     personality_notes: row.personality_notes != null ? String(row.personality_notes) : null,
     stage_slug: String(row.stage_slug),
+    llm_provider: parseFestieLlmProvider(row.llm_provider) ?? DEFAULT_FESTIE_LLM_PROVIDER,
     last_seen_at: String(row.last_seen_at),
     last_chat_at: row.last_chat_at != null ? String(row.last_chat_at) : null,
     notify_email: row.notify_email != null ? String(row.notify_email) : null,
@@ -46,6 +52,7 @@ export function toFestiePublic(row: FestieRow): FestiePublic {
     topics: row.topics,
     personality_notes: row.personality_notes,
     stage_slug: row.stage_slug,
+    llm_provider: row.llm_provider,
     last_seen_at: row.last_seen_at,
     tier: festieTier(new Date(row.last_seen_at)),
   };
@@ -107,6 +114,7 @@ export type UpdateFestieInput = {
   stage_slug?: string;
   notify_email?: string | null;
   email_opted_in?: boolean;
+  llm_provider?: FestieLlmProvider;
 };
 
 export async function updateFestie(userId: string, patch: UpdateFestieInput): Promise<FestieRow | null> {
@@ -127,7 +135,8 @@ export async function updateFestie(userId: string, patch: UpdateFestieInput): Pr
       notify_email = ${patch.notify_email !== undefined
     ? patch.notify_email
     : existing.notify_email},
-      email_opted_in = ${patch.email_opted_in ?? existing.email_opted_in}
+      email_opted_in = ${patch.email_opted_in ?? existing.email_opted_in},
+      llm_provider = ${patch.llm_provider ?? existing.llm_provider}
     WHERE user_id = ${userId}::uuid
     RETURNING *
   `;
@@ -144,7 +153,7 @@ export async function listActiveFestiesForStage(
   const sql = requireDb();
   const rows = excludeUserIds.length > 0
     ? await sql`
-        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at
+        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, llm_provider, last_seen_at
         FROM festies
         WHERE stage_slug = ${stageSlug}
           AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
@@ -152,7 +161,7 @@ export async function listActiveFestiesForStage(
         ORDER BY last_seen_at DESC
       `
     : await sql`
-        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at
+        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, llm_provider, last_seen_at
         FROM festies
         WHERE stage_slug = ${stageSlug}
           AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')

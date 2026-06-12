@@ -13,6 +13,7 @@ import {
   type StageAnchorKind,
 } from '@/lib/stageAnchor';
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
+import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
 import type { ChatLine } from '@/lib/chatLines';
 import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
@@ -282,13 +283,15 @@ export default function NPC({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryDelay, startX, stageAnchor, stageCrowd, characterId]);
 
+  const offlineFestieNpc = isFestieNpcId(characterId);
+
   // ── Decision loop ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!active) return;
     let timer: ReturnType<typeof setTimeout>;
 
     const decide = () => {
-      if (!onScreenRef.current) {
+      if (!offlineFestieNpc && !onScreenRef.current) {
         timer = setTimeout(decide, 800);
         return;
       }
@@ -392,7 +395,7 @@ export default function NPC({
         if (!onScreen) applyWalking(false);
       }
 
-      if (!onScreen) {
+      if (!onScreen && !offlineFestieNpc) {
         screenXRef.current = pct;
         if (divRef.current) divRef.current.style.left = `${pct}%`;
         return worldXRef.current;

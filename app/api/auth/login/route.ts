@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyFestieLogin } from '@/lib/auth/db';
 import { setSessionCookie } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { getFestieByUserId, toFestieOwner } from '@/lib/festie/db';
+import { getFestieByUserId, touchFestieSeen, toFestieOwner } from '@/lib/festie/db';
 import { validateFestieName, validateFestiePassword } from '@/lib/festie/validation';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid name or password' }, { status: 401 });
     }
 
+    await touchFestieSeen(userId);
     const festie = await getFestieByUserId(userId);
     const res = NextResponse.json({
       ok: true,

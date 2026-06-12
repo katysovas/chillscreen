@@ -1,6 +1,7 @@
 import type * as Party from 'partykit/server';
 import { FESTIE_CONFIG } from '../lib/festie/config';
 import type { FestiePublic } from '../lib/festie/types';
+import { setFestieChatterRoster } from '../lib/npcRoster.server';
 import {
   chatPairKey,
   decodeClient,
@@ -295,7 +296,9 @@ export default class WhichStageServer implements Party.Server {
         return [];
       }
       const data = await res.json() as { festies?: FestiePublic[] };
-      return data.festies ?? [];
+      const festies = data.festies ?? [];
+      setFestieChatterRoster(festies);
+      return festies;
     } catch (err) {
       console.error('[festies-sync] fetch failed', err);
       return [];

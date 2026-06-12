@@ -1,4 +1,4 @@
-import { sanitizeNpcLine } from '@/lib/messageFilter';
+import { completeFestieChat } from '@/lib/festie/completeChat';
 import { evaluateFestieChatGate } from '@/lib/festie/chatGate';
 import {
   appendFestieConversation,
@@ -6,6 +6,11 @@ import {
   toFestiePublic,
   touchFestieLastChat,
 } from '@/lib/festie/db';
+import {
+  FESTIE_EVENT_TYPES,
+  logFestieEvent,
+  type FestieChatEventPayload,
+} from '@/lib/festie/events';
 import { festieIdFromNpcId } from '@/lib/festie/toCharacterDef';
 import {
   buildFestieChatMessages,
@@ -16,7 +21,7 @@ import {
 } from '@/lib/festie/chat';
 import { getMergedSeedPools } from '@/lib/seeds/db';
 import { pickSeedForFestie } from '@/lib/seeds/pick';
-import { NPC_CHAT_MODEL, type ChatTurn } from '@/lib/npcChat';
+import type { ChatTurn } from '@/lib/npcChat';
 import { userIdFromRequest } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 
@@ -74,6 +79,15 @@ export async function handleFestieNpcChat(
   if (!gate.useLlm) {
     const reply = gate.cannedReply
       ?? (isGreeting ? pickFestieFallbackGreeting(festie) : pickFestieFallbackReply(festie));
+    recordChatEvent(festieId, {
+      playerName,
+      playerId: userIdFromRequest(request),
+      isGreeting,
+      userMessage: body.message?.trim() ?? null,
+      reply,
+      conversationId: body.conversationId ?? null,
+      llm: false,
+    });
     return Response.json({
       reply,
       conversationId: body.conversationId ?? null,
@@ -83,20 +97,32 @@ export async function handleFestieNpcChat(
   const pools = await getMergedSeedPools(festie.stage_slug);
   const conversationSeed = pickSeedForFestie(festie, pools);
 
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) {
+  const hasLlmKey = Boolean(
+    process.env.OPENROUTER_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim(),
+  );
+  if (!hasLlmKey) {
     const reply = isGreeting
       ? pickFestieFallbackGreeting(festie)
       : pickFestieFallbackReply(festie);
+    const playerId = userIdFromRequest(request);
     const conversationId = await logExchange(
       festieId,
-      userIdFromRequest(request),
+      playerId,
       body.conversationId ?? null,
       isGreeting,
       body.message?.trim() ?? null,
       reply,
     );
     await touchFestieLastChat(festieId);
+    recordChatEvent(festieId, {
+      playerName,
+      playerId,
+      isGreeting,
+      userMessage: body.message?.trim() ?? null,
+      reply,
+      conversationId,
+      llm: false,
+    });
     return Response.json({ reply, conversationId });
   }
 
@@ -119,42 +145,29 @@ export async function handleFestieNpcChat(
       );
 
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: NPC_CHAT_MODEL,
-        messages,
-        max_tokens: 55,
-        temperature: 0.9,
-      }),
-    });
+    const llmReply = await completeFestieChat(festieRow.llm_provider, messages);
+    const reply = llmReply
+      ?? (isGreeting ? pickFestieFallbackGreeting(festie) : pickFestieFallbackReply(festie));
 
-    let reply: string;
-    if (!res.ok) {
-      console.error('[festie chat] OpenAI error', res.status, await res.text());
-      reply = isGreeting
-        ? pickFestieFallbackGreeting(festie)
-        : pickFestieFallbackReply(festie);
-    } else {
-      const data = await res.json();
-      const raw = data.choices?.[0]?.message?.content?.trim();
-      reply = raw ? sanitizeNpcLine(raw) ?? pickFestieFallbackReply(festie)
-        : (isGreeting ? pickFestieFallbackGreeting(festie) : pickFestieFallbackReply(festie));
-    }
-
+    const playerId = userIdFromRequest(request);
     const conversationId = await logExchange(
       festieId,
-      userIdFromRequest(request),
+      playerId,
       body.conversationId ?? null,
       isGreeting,
       body.message?.trim() ?? null,
       reply,
     );
     await touchFestieLastChat(festieId);
+    recordChatEvent(festieId, {
+      playerName,
+      playerId,
+      isGreeting,
+      userMessage: body.message?.trim() ?? null,
+      reply,
+      conversationId,
+      llm: true,
+    });
 
     return Response.json({ reply, conversationId });
   } catch (err) {
@@ -187,4 +200,8 @@ async function logExchange(
   if (entries.length === 0) return conversationId ?? '';
 
   return appendFestieConversation(festieId, playerId, conversationId, entries);
+}
+
+function recordChatEvent(festieId: string, payload: FestieChatEventPayload): void {
+  logFestieEvent(festieId, FESTIE_EVENT_TYPES.CHAT, payload);
 }

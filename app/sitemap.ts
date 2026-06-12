@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/site';
-import { VENUE_SLUGS } from '@/lib/venueRoutes';
+import { allStageSeoEntries } from '@/lib/venueSeo';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -11,6 +11,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 1,
+    },
+    {
+      url: `${SITE_URL}/stages`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.9,
     },
     {
       url: `${SITE_URL}/support`,
@@ -26,11 +32,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const venuePages: MetadataRoute.Sitemap = VENUE_SLUGS.map(slug => ({
-    url: `${SITE_URL}/${slug}`,
+  const venuePages: MetadataRoute.Sitemap = allStageSeoEntries().map(stage => ({
+    url: `${SITE_URL}${stage.path}`,
     lastModified: now,
     changeFrequency: 'weekly',
-    priority: 0.8,
+    priority: 0.85,
   }));
 
   return [...staticPages, ...venuePages];

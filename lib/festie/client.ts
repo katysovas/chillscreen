@@ -1,5 +1,7 @@
 'use client';
 
+import type { FestieEventRow } from '@/lib/festie/events';
+import { markLocalFestieAccount } from '@/lib/festie/localAccount';
 import type { FestieCache, FestieOwner } from '@/lib/festie/types';
 
 let festieCache: FestieCache | null = null;
@@ -49,8 +51,10 @@ export async function loginFestie(name: string, password: string): Promise<Festi
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? res.statusText);
-  const festie = data.festie as FestieOwner;
+  const festie = data.festie as FestieOwner | null;
+  if (!festie) throw new Error('Invalid name or password');
   setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+  markLocalFestieAccount(festie.name);
   return festie;
 }
 
@@ -77,7 +81,23 @@ export type UpdateFestieBody = {
   stage_slug?: string;
   notify_email?: string | null;
   email_opted_in?: boolean;
+  llm_provider?: string;
 };
+
+export type FestieEventsResponse = {
+  since: string;
+  events: FestieEventRow[];
+  coinsEarned: number;
+  chatCount: number;
+};
+
+export async function fetchFestieEvents(since?: string): Promise<FestieEventsResponse> {
+  const qs = since ? `?since=${encodeURIComponent(since)}` : '';
+  const res = await fetch(`/api/festie/events${qs}`, { credentials: 'include' });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+  return data as FestieEventsResponse;
+}
 
 export async function fetchFestie(): Promise<FestieOwner | null> {
   const res = await fetch('/api/festie', { credentials: 'include' });
@@ -86,6 +106,7 @@ export async function fetchFestie(): Promise<FestieOwner | null> {
   const festie = (data.festie as FestieOwner | null) ?? null;
   if (festie) {
     setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+    markLocalFestieAccount(festie.name);
   }
   return festie;
 }
@@ -100,6 +121,7 @@ export async function updateFestie(body: UpdateFestieBody): Promise<FestieOwner>
   if (!res.ok) throw new Error(data.error ?? res.statusText);
   const festie = data.festie as FestieOwner;
   setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+  markLocalFestieAccount(festie.name);
   return festie;
 }
 
@@ -126,5 +148,6 @@ export async function createFestie(body: CreateFestieBody): Promise<FestieOwner>
   if (!res.ok) throw new Error(data.error ?? res.statusText);
   const festie = data.festie as FestieOwner;
   setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+  markLocalFestieAccount(festie.name);
   return festie;
 }

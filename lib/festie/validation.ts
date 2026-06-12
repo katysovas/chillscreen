@@ -11,11 +11,11 @@ export function isValidFestieName(name: string): boolean {
   const trimmed = name.trim();
   return trimmed.length >= 2
     && trimmed.length <= 20
-    && /^[a-zA-Z0-9]+(?: [a-zA-Z0-9]+)*$/.test(trimmed);
+    && /^[a-zA-Z0-9_]+$/.test(trimmed);
 }
 
 export function sanitizeFestieNameInput(value: string): string {
-  return value.replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 20);
+  return value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20);
 }
 
 export function isValidFestiePassword(password: string): boolean {
@@ -30,7 +30,9 @@ export function validateFestiePassword(password: string): string | null {
 }
 
 export function validateFestieName(name: string): string | null {
-  if (!isValidFestieName(name)) return 'Name must be 2–20 letters, numbers, or spaces.';
+  if (!isValidFestieName(name)) {
+    return 'Name must be 2–20 characters: letters, numbers, or underscore (no spaces).';
+  }
   const block = checkBlocklist(name);
   if (!block.ok) {
     if (block.reason === 'profanity') return 'Name contains blocked language.';

@@ -15,20 +15,36 @@ export const FESTIE_PRESETS: FestiePresetDef[] = [
   { id: 'dusk', label: 'Dusk', balloonColor: '#7b5ea7' },
 ];
 
-export const FESTIE_TOPICS = [
-  'house',
-  'techno',
-  'indie',
-  'jam bands',
-  'hip hop',
-  'edm',
-  'folk',
-  'food',
-  'camping',
-  'light shows',
+export const FESTIE_TOPIC_OPTIONS = [
+  { id: 'music', label: 'Music' },
+  { id: 'festivals', label: 'Festivals' },
+  { id: 'sports', label: 'Sports' },
+  { id: 'politics', label: 'Politics' },
+  { id: 'food', label: 'Food' },
+  { id: 'art', label: 'Art' },
+  { id: 'technology', label: 'Technology' },
+  { id: 'gaming', label: 'Gaming' },
+  { id: 'travel', label: 'Travel' },
+  { id: 'nature', label: 'Nature' },
+  { id: 'comedy', label: 'Comedy' },
+  { id: 'movies', label: 'Movies' },
 ] as const;
 
-export type FestieTopic = (typeof FESTIE_TOPICS)[number];
+export const FESTIE_TOPICS = FESTIE_TOPIC_OPTIONS.map(o => o.id);
+
+export type FestieTopic = (typeof FESTIE_TOPIC_OPTIONS)[number]['id'];
+
+const TOPIC_LABEL_BY_ID = Object.fromEntries(
+  FESTIE_TOPIC_OPTIONS.map(o => [o.id, o.label]),
+) as Record<FestieTopic, string>;
+
+export function festieTopicLabel(topicId: string): string {
+  return TOPIC_LABEL_BY_ID[topicId as FestieTopic] ?? topicId;
+}
+
+export function formatFestieTopics(topics: string[]): string {
+  return topics.map(festieTopicLabel).join(', ');
+}
 
 export function festiePresetById(id: FestiePreset): FestiePresetDef {
   return FESTIE_PRESETS.find(p => p.id === id) ?? FESTIE_PRESETS[0]!;

@@ -18,6 +18,7 @@ import {
   validateNotifyEmail,
   validatePersonalityNotes,
 } from '@/lib/festie/validation';
+import { parseFestieLlmProvider } from '@/lib/festie/llmProviders';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,6 +131,13 @@ export async function PATCH(request: Request) {
     }
     if (body.email_opted_in !== undefined) {
       patch.email_opted_in = Boolean(body.email_opted_in);
+    }
+    if (body.llm_provider !== undefined) {
+      const provider = parseFestieLlmProvider(body.llm_provider);
+      if (!provider) {
+        return NextResponse.json({ error: 'Invalid llm_provider' }, { status: 400 });
+      }
+      patch.llm_provider = provider;
     }
 
     const festie = await updateFestie(userId, patch);

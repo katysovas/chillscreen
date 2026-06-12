@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import SFCityLoader from '@/components/game/SFCityLoader';
 import { JsonLd } from '@/components/JsonLd';
 import { invitePageCopy, parseFriendParam } from '@/lib/inviteSeo';
-import { breadcrumbJsonLd, webPageJsonLd } from '@/lib/jsonLd';
+import { breadcrumbJsonLd, festivalStageJsonLd, webPageJsonLd } from '@/lib/jsonLd';
 import { buildPageMetadata } from '@/lib/siteMetadata';
 import { venueSeoForRoute, venuePathForRoute } from '@/lib/venueSeo';
 import { parseVenueSlug, VENUE_SLUGS, worldOffForVenueRoute } from '@/lib/venueRoutes';
@@ -36,6 +36,7 @@ export async function generateMetadata({
     title: copy.title,
     description: copy.description,
     path,
+    keywords: [...seo.keywords, ...seo.title.split(' ')],
   });
 }
 
@@ -58,10 +59,12 @@ export default async function VenuePage({ params, searchParams }: VenuePageProps
             webPageJsonLd({
               path,
               title: copy.title,
-              description: copy.description,
+              description: seo.longDescription,
             }),
+            festivalStageJsonLd(route),
             breadcrumbJsonLd([
               { name: 'WhichStage', path: '/' },
+              { name: 'Stages', path: '/stages' },
               { name: seo.title, path },
             ]),
           ],

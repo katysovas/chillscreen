@@ -9,7 +9,11 @@ import {
   type PersonalityLevel,
   type PersonalityTraitKey,
 } from '@/lib/festie/personalityLevels';
-import { FESTIE_TOPICS } from '@/lib/festie/presets';
+import {
+  FESTIE_LLM_PROVIDER_OPTIONS,
+  type FestieLlmProvider,
+} from '@/lib/festie/llmProviders';
+import { FESTIE_TOPIC_OPTIONS, FESTIE_TOPICS } from '@/lib/festie/presets';
 import { FestieLifeHeader } from './FestieLifeHeader';
 import type { FestieOwner } from '@/lib/festie/types';
 import {
@@ -217,6 +221,7 @@ export function FestieSettingsModal({
   const [chattinessLevel, setChattinessLevel] = useState<PersonalityLevel>(2);
   const [topics, setTopics] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [llmProvider, setLlmProvider] = useState<FestieLlmProvider>('openai');
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -248,8 +253,9 @@ export function FestieSettingsModal({
         setEnergyLevel(attributeToLevel(row.attributes.energy));
         setFriendlinessLevel(attributeToLevel(row.attributes.friendliness));
         setChattinessLevel(attributeToLevel(row.attributes.chattiness));
-        setTopics(row.topics);
+        setTopics(row.topics.filter(t => (FESTIE_TOPICS as readonly string[]).includes(t)));
         setNotes(row.personality_notes ?? '');
+        setLlmProvider(row.llm_provider);
       } catch {
         setLoadError('Could not load festie settings.');
       } finally {
@@ -278,6 +284,7 @@ export function FestieSettingsModal({
         },
         topics,
         personality_notes: notes.trim() || null,
+        llm_provider: llmProvider,
       });
       setFestie(updated);
       onUpdated?.(updated);
@@ -501,22 +508,51 @@ export function FestieSettingsModal({
                 <PersonalityPicker traitKey="chattiness" level={chattinessLevel} onChange={setChattinessLevel} />
               </div>
 
-              <span style={LABEL}>Topics (up to 3)</span>
+              <span style={LABEL}>AI model</span>
+              <p style={{
+                margin: '0 0 8px',
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.45)',
+                fontFamily: 'system-ui,sans-serif',
+                lineHeight: 1.45,
+              }}>
+                Which LLM powers your festie when chatting with seeds on stage.
+              </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                {FESTIE_TOPICS.map(topic => (
+                {FESTIE_LLM_PROVIDER_OPTIONS.map(opt => (
                   <button
-                    key={topic}
+                    key={opt.id}
                     type="button"
-                    onClick={() => toggleTopic(topic)}
+                    onClick={() => setLlmProvider(opt.id)}
                     style={{
                       ...BTN,
                       padding: '5px 10px',
                       fontSize: 12,
-                      background: topics.includes(topic) ? '#e67e22' : 'rgba(255,255,255,0.08)',
+                      background: llmProvider === opt.id ? '#e67e22' : 'rgba(255,255,255,0.08)',
                       color: '#fff',
                     }}
                   >
-                    {topic}
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              <span style={LABEL}>Topics (up to 3)</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                {FESTIE_TOPIC_OPTIONS.map(({ id, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => toggleTopic(id)}
+                    style={{
+                      ...BTN,
+                      padding: '5px 10px',
+                      fontSize: 12,
+                      background: topics.includes(id) ? '#e67e22' : 'rgba(255,255,255,0.08)',
+                      color: '#fff',
+                    }}
+                  >
+                    {label}
                   </button>
                 ))}
               </div>

@@ -1,7 +1,7 @@
 import { generatePairConvo, generateSingleReply } from '@/lib/npcChatter/generate';
 import { verifyChatterRequest } from '@/lib/npcChatter/auth';
 import { clampLineBudget, clampTriggerText, sanitizeRecentChat } from '@/lib/npcChatter/validate';
-import { isChatterNpc } from '@/lib/npcRoster.server';
+import { isChatterNpcAllowed } from '@/lib/npcRoster.server';
 import { HOUSE_MODEL_DEFAULT } from '@/lib/npcChatter/constants';
 
 /** Pair convo = up to 7 sequential LLM calls (~8s each). */
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   if (body.mode === 'reply') {
     const npc = body.npc?.trim();
     const triggerText = clampTriggerText(body.triggerText ?? '');
-    if (!npc || !triggerText || !isChatterNpc(npc)) {
+    if (!npc || !triggerText || !(await isChatterNpcAllowed(npc))) {
       return Response.json({ error: 'Invalid request' }, { status: 400 });
     }
     const line = await generateSingleReply({
@@ -78,7 +78,14 @@ export async function POST(req: Request) {
   const npcA = body.npcA?.trim();
   const npcB = body.npcB?.trim();
   const lineBudget = clampLineBudget(body.lineBudget);
-  if (!stage || !npcA || !npcB || !isChatterNpc(npcA) || !isChatterNpc(npcB) || npcA === npcB) {
+  if (
+    !stage
+    || !npcA
+    || !npcB
+    || npcA === npcB
+    || !(await isChatterNpcAllowed(npcA))
+    || !(await isChatterNpcAllowed(npcB))
+  ) {
     return Response.json({ error: 'Invalid request' }, { status: 400 });
   }
 

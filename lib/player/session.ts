@@ -4,6 +4,7 @@ import { normalizeLoadout } from '@/components/game/characters/loadout/defaults'
 import type { CharacterLoadout } from '@/components/game/characters/loadout/types';
 import { loadoutItem } from '@/components/game/characters/loadout/catalog';
 import { loadoutItemId } from '@/components/game/characters/loadout/types';
+import { markLocalFestieAccount } from '@/lib/festie/localAccount';
 import type { FestieOwner } from '@/lib/festie/types';
 import { STARTING_COINS } from '@/lib/player/constants';
 
@@ -93,6 +94,7 @@ export async function hydratePlayerSession(): Promise<SessionState> {
       loadout: (data.loadout as CharacterLoadout) ?? null,
       festie: (data.festie as FestieOwner | null) ?? null,
     };
+    if (state.festie) markLocalFestieAccount(state.festie.name);
     emit();
     return state;
   } catch {

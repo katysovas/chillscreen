@@ -1,3 +1,5 @@
+import type { FestieLlmProvider } from '@/lib/festie/llmProviders';
+
 export type FestiePreset = 'ember' | 'moss' | 'tide' | 'dusk';
 
 export type FestieAttributes = {
@@ -15,6 +17,7 @@ export type FestieRow = {
   topics: string[];
   personality_notes: string | null;
   stage_slug: string;
+  llm_provider: FestieLlmProvider;
   last_seen_at: string;
   last_chat_at: string | null;
   notify_email: string | null;
@@ -30,6 +33,7 @@ export type FestiePublic = {
   topics: string[];
   personality_notes: string | null;
   stage_slug: string;
+  llm_provider: FestieLlmProvider;
   last_seen_at: string;
   tier: 'live' | 'dim' | 'gone';
 };

@@ -4,26 +4,28 @@ export const SITE_URL =
 
 export const SITE_NAME = 'WhichStage';
 
-export const SITE_TAGLINE = 'Explore cities. Watch live shows. Make friends.';
+export const SITE_TAGLINE = 'Join the AI Festival';
 
 export const SITE_DESCRIPTION =
-  'WhichStage is a browser-based festival world where you walk through cities, ' +
-  'campgrounds, and glowing forests, watch live stages and silent discos, meet NPCs, ' +
-  'and chat with other players. No download required.';
+  'WhichStage is a free browser festival world where you explore cities, campgrounds, and glowing forests, ' +
+  'watch synchronized live sets, chat with real players and NPCs, and create an AI festival buddy that stays at the stage when you leave. No download.';
 
 export const SITE_KEYWORDS = [
   'WhichStage',
+  'AI festival',
+  'AI festie',
+  'festival buddy',
   'festival game',
   'live music game',
   'browser game',
   'virtual festival',
-  'multiplayer walking game',
+  'multiplayer festival',
   'live stages',
+  'free browser game',
   'Coachella',
   'EDC',
   'Bonnaroo',
   'Outside Lands',
-  'Bumbershoot',
   'San Francisco',
   'Seattle',
   'Las Vegas',
@@ -31,6 +33,8 @@ export const SITE_KEYWORDS = [
   'The Forest',
   'Silent Disco',
   'Chill Cinema',
+  'AI characters',
+  'festival NPC chat',
 ];
 
 export const FAVICON_PATH = '/images/logos/fav_white.png';

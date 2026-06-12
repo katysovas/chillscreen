@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { userIdFromRequest } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { touchFestieSeen } from '@/lib/festie/db';
+import { getFestieByUserId, touchFestieSeen } from '@/lib/festie/db';
+import { FESTIE_EVENT_TYPES, logFestieEvent } from '@/lib/festie/events';
 import { verifyChatterRequest } from '@/lib/npcChatter/auth';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,12 @@ export async function POST(request: Request) {
   }
 
   try {
+    const festie = await getFestieByUserId(userId);
+    if (festie) {
+      logFestieEvent(festie.id, FESTIE_EVENT_TYPES.OWNER_LEAVE, {
+        stage_slug: festie.stage_slug,
+      });
+    }
     await touchFestieSeen(userId);
     return NextResponse.json({ ok: true });
   } catch (err) {
