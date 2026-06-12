@@ -1,12 +1,12 @@
 import {
   FESTIE_EVENT_TYPES,
+  hasEnoughRecapEvents,
   type FestieChatEventPayload,
   type FestieCoinPickupPayload,
   type FestieEventRow,
   type FestieLifeLogPayload,
   type FestieNpcChatterPayload,
   type LifeLogKind,
-  hasRecapContent,
   isRecapDisplayEvent,
 } from '@/lib/festie/events';
 export type FestieSessionRecap = {
@@ -227,7 +227,7 @@ export function recapLinesFromEvents(
 }
 
 export function shouldShowSessionRecap(recap: FestieSessionRecap | null | undefined): boolean {
-  return Boolean(recap && hasRecapContent(recap.events));
+  return Boolean(recap && hasEnoughRecapEvents(recap.events));
 }
 
 /** Dev preview — sample last-session activity. */

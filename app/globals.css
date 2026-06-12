@@ -434,44 +434,89 @@ html:has(.game-surface) body {
 @keyframes festie-recap-in {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.97);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-.festie-recap-overlay {
+.festie-recap-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 235;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px;
-  background: rgba(0, 0, 0, 0.58);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  z-index: 37;
+  background: transparent;
+  cursor: default;
+}
+
+.festie-recap-anchor {
+  position: fixed;
+  left: max(12px, calc(env(safe-area-inset-left, 0px) + 8px));
+  bottom: calc(20px + 52px + 12px);
+  z-index: 39;
+  width: min(480px, calc(100vw - 24px));
+  pointer-events: none;
+}
+
+.festie-recap-anchor--mobile {
+  left: 50%;
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  width: min(480px, calc(100vw - 32px));
+}
+
+.festie-recap-anchor .festie-recap-card {
+  pointer-events: auto;
 }
 
 .festie-recap-card {
   --festie-glow: #ef4023;
   position: relative;
-  width: min(94vw, 520px);
-  max-height: min(90vh, 640px);
+  width: 100%;
+  max-height: min(56vh, 460px);
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
+  border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: linear-gradient(165deg, rgba(18, 22, 32, 0.97) 0%, rgba(10, 12, 18, 0.99) 100%);
+  background: linear-gradient(
+    165deg,
+    rgba(18, 22, 32, 0.94) 0%,
+    rgba(10, 12, 18, 0.96) 100%
+  );
   color: rgba(255, 255, 255, 0.92);
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   font-family: system-ui, -apple-system, sans-serif;
   overflow: hidden;
-  animation: festie-recap-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: festie-recap-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.festie-recap-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.festie-recap-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .festie-recap-email-strip {
@@ -550,85 +595,24 @@ html:has(.game-surface) body {
 }
 
 .festie-recap-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 22px 20px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(ellipse 120% 80% at 0% 0%, color-mix(in srgb, var(--festie-glow) 18%, transparent) 0%, transparent 55%);
-  overflow: visible;
-}
-
-.festie-recap-avatar {
-  position: relative;
   flex-shrink: 0;
-  width: 108px;
-  height: 100px;
-  pointer-events: none;
-}
-
-.festie-recap-avatar-glow {
-  position: absolute;
-  inset: 12px 8px 16px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--festie-glow) 45%, transparent) 0%, transparent 70%);
-  filter: blur(8px);
-  pointer-events: none;
-}
-
-.festie-recap-avatar-character {
-  position: absolute;
-  left: 50%;
-  bottom: -12px;
-}
-
-.festie-recap-avatar-character .ch-wrapper {
-  position: relative;
-  z-index: 1;
-}
-
-.festie-recap-header-text {
-  flex: 1;
-  min-width: 0;
-  padding-top: 4px;
-}
-
-.festie-recap-eyebrow {
-  margin: 0 0 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  padding: 14px 36px 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .festie-recap-title {
-  margin: 0 0 6px;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  color: #fff;
-}
-
-.festie-recap-summary {
-  margin: 0 0 4px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.festie-recap-range {
   margin: 0;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.38);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .festie-recap-timeline-wrap {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px 8px;
+  padding: 16px 20px 16px;
 }
 
 .festie-recap-timeline {
@@ -666,6 +650,11 @@ html:has(.game-surface) body {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
+}
+
+.festie-recap-event-dot--coin {
+  background: rgba(201, 162, 39, 0.12);
+  border-color: rgba(201, 162, 39, 0.28);
 }
 
 .festie-recap-event-line {
@@ -711,123 +700,4 @@ html:has(.game-surface) body {
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.55);
   white-space: pre-wrap;
-}
-
-.festie-recap-view-more {
-  display: inline-block;
-  margin-top: 6px;
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  color: color-mix(in srgb, var(--festie-glow) 70%, #fff 30%);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.festie-recap-view-more:hover {
-  color: color-mix(in srgb, var(--festie-glow) 85%, #fff 15%);
-}
-
-.festie-recap-chat-thread {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.festie-recap-chat-row {
-  display: flex;
-  width: 100%;
-}
-
-.festie-recap-chat-row--left {
-  justify-content: flex-start;
-}
-
-.festie-recap-chat-row--right {
-  justify-content: flex-end;
-}
-
-.festie-recap-chat-bubble {
-  max-width: 88%;
-  padding: 8px 11px;
-  border-radius: 14px;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.festie-recap-chat-bubble--left {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom-left-radius: 4px;
-}
-
-.festie-recap-chat-bubble--right {
-  background: color-mix(in srgb, var(--festie-glow) 22%, rgba(255, 255, 255, 0.08));
-  border: 1px solid color-mix(in srgb, var(--festie-glow) 35%, transparent);
-  border-bottom-right-radius: 4px;
-}
-
-.festie-recap-chat-speaker {
-  display: block;
-  margin-bottom: 3px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
-}
-
-.festie-recap-chat-text {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.88);
-  white-space: pre-wrap;
-}
-
-.festie-recap-footer {
-  flex-shrink: 0;
-  padding: 12px 20px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.festie-recap-btn {
-  width: 100%;
-  border: none;
-  border-radius: 12px;
-  padding: 13px 16px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  color: #fff;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--festie-glow) 85%, #fff 15%) 0%, var(--festie-glow) 100%);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--festie-glow) 35%, transparent);
-  transition: transform 0.12s ease, filter 0.12s ease;
-}
-
-.festie-recap-btn:hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
-}
-
-.festie-recap-btn:active {
-  transform: translateY(0);
-  filter: brightness(0.96);
-}
-
-@media (max-width: 420px) {
-  .festie-recap-header {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .festie-recap-avatar {
-    width: 120px;
-    height: 96px;
-  }
 }

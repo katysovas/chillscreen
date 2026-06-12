@@ -141,7 +141,7 @@ const TEST_PLAYER_LOADOUT = {} as const;
 const TEST_CHAT_CONNECT_ON_LOAD = false;
 
 /** Preview session recap modal on load with sample events (testing). */
-const TEST_FESTIE_RECAP_ON_LOAD = false;
+const TEST_FESTIE_RECAP_ON_LOAD = true;
 
 // ─── NPC cast ─────────────────────────────────────────────────────────────────
 
@@ -1747,6 +1747,31 @@ export default function SFCity({
         />
       )}
 
+      {sessionRecapOpen && sessionRecap && ownerFestie && (
+        <>
+          <div
+            className="festie-recap-backdrop"
+            data-paraloid-ui
+            onClick={dismissSessionRecap}
+            aria-hidden
+          />
+          <div
+            className={`festie-recap-anchor${mobileDevice ? ' festie-recap-anchor--mobile' : ''}`}
+            data-paraloid-ui
+          >
+            <FestieSessionRecapModal
+              festieName={ownerFestie.name ?? playerName ?? 'Your festie'}
+              festiePreset={ownerFestie.preset}
+              festie={ownerFestie}
+              onFestieUpdated={festie => setOwnerFestie(festie)}
+              recap={sessionRecap}
+              onDismiss={dismissSessionRecap}
+              forceShowEmailSignup={TEST_FESTIE_RECAP_ON_LOAD}
+            />
+          </div>
+        </>
+      )}
+
       <BottomControlPanel
         worldOff={midScrollWorldOff}
         playerName={playerName}
@@ -1781,19 +1806,6 @@ export default function SFCity({
           onCancel={() => {
             if (!signOutLoading) setSignOutConfirmOpen(false);
           }}
-        />
-      )}
-
-      {sessionRecapOpen && sessionRecap && (
-        <FestieSessionRecapModal
-          festieName={ownerFestie?.name ?? playerName ?? 'Your festie'}
-          festiePreset={ownerFestie?.preset}
-          festie={ownerFestie}
-          onFestieUpdated={festie => setOwnerFestie(festie)}
-          loadout={playerLoadout}
-          recap={sessionRecap}
-          onDismiss={dismissSessionRecap}
-          forceShowEmailSignup={TEST_FESTIE_RECAP_ON_LOAD}
         />
       )}
 

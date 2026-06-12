@@ -1,9 +1,4 @@
-import {
-  countFestieChatsInEvents,
-  hasRecapContent,
-  listFestieEventsSince,
-  sumFestieCoinsSince,
-} from '@/lib/festie/events';
+import { hasEnoughRecapEvents, countFestieChatsInEvents, listFestieEventsSince, sumFestieCoinsSince } from '@/lib/festie/events';
 import { getFestieById } from '@/lib/festie/db';
 import { ensureOfflineFestieActivity } from '@/lib/festie/offlineActivity';
 import { filterRecapEvents, type FestieSessionRecap } from '@/lib/festie/sessionRecap';
@@ -21,7 +16,7 @@ export async function buildFestieSessionRecap(
 
   const events = await listFestieEventsSince(festieId, since, { until });
   const displayEvents = filterRecapEvents(events);
-  if (!hasRecapContent(displayEvents)) return null;
+  if (!hasEnoughRecapEvents(displayEvents)) return null;
 
   return {
     since,

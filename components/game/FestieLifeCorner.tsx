@@ -16,6 +16,8 @@ type Props = {
   onToggle: () => void;
 };
 
+const CORNER_LEFT = 'max(12px, calc(env(safe-area-inset-left, 0px) + 8px))';
+
 /** Bottom-left life status — heart + time-left bar; opens Life modal. */
 export function FestieLifeCorner({
   festie,
@@ -39,7 +41,7 @@ export function FestieLifeCorner({
         className="festie-life-corner-mobile"
         style={{
           position: 'absolute',
-          left: 'max(12px, calc(env(safe-area-inset-left, 0px) + 8px))',
+          left: CORNER_LEFT,
           zIndex: 45,
           pointerEvents: 'auto',
         }}
@@ -83,7 +85,7 @@ export function FestieLifeCorner({
       className="bottom-5"
       style={{
         position: 'absolute',
-        left: 'max(12px, calc(env(safe-area-inset-left, 0px) + 8px))',
+        left: CORNER_LEFT,
         zIndex: 38,
         pointerEvents: 'auto',
         maxWidth: 'min(52vw, 200px)',

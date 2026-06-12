@@ -3,10 +3,9 @@
 import {
   countFestieChatsInEvents,
   FESTIE_EVENT_TYPES,
-  hasRecapContent,
   type FestieEventRow,
 } from '@/lib/festie/events';
-import { filterRecapEvents, type FestieSessionRecap } from '@/lib/festie/sessionRecap';
+import { filterRecapEvents, shouldShowSessionRecap, type FestieSessionRecap } from '@/lib/festie/sessionRecap';
 import { markLocalFestieAccount } from '@/lib/festie/localAccount';
 import { trackFestieSignedIn, trackFestieSignedUp } from '@/lib/analytics';
 import type { FestieCache, FestieOwner } from '@/lib/festie/types';
@@ -75,14 +74,14 @@ export async function acknowledgeFestieReturn(): Promise<void> {
 export async function fetchSessionRecapSince(since: string): Promise<FestieSessionRecap | null> {
   const data = await fetchFestieEvents(since);
   const events = filterRecapEvents(data.events);
-  if (!hasRecapContent(events)) return null;
-  return {
+  const recap: FestieSessionRecap = {
     since: data.since,
     until: new Date().toISOString(),
     events,
     coinsEarned: data.coinsEarned,
     chatCount: countFestieChatsInEvents(events),
   };
+  return shouldShowSessionRecap(recap) ? recap : null;
 }
 
 export async function logoutFestie(): Promise<void> {

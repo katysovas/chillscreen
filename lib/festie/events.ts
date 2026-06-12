@@ -194,6 +194,14 @@ export function hasRecapContent(events: FestieEventRow[]): boolean {
   return events.some(isRecapDisplayEvent);
 }
 
+/** Show session recap only after a meaningful away period — more than 3 activity logs. */
+export const SESSION_RECAP_MIN_EVENT_COUNT = 3;
+
+export function hasEnoughRecapEvents(events: FestieEventRow[]): boolean {
+  const count = events.filter(isRecapDisplayEvent).length;
+  return count > SESSION_RECAP_MIN_EVENT_COUNT;
+}
+
 export function countFestieChatsInEvents(events: FestieEventRow[]): number {
   return events.filter(e =>
     e.type === FESTIE_EVENT_TYPES.CHAT
