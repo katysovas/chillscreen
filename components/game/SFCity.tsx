@@ -1788,9 +1788,12 @@ export default function SFCity({
         <FestieSessionRecapModal
           festieName={ownerFestie?.name ?? playerName ?? 'Your festie'}
           festiePreset={ownerFestie?.preset}
+          festie={ownerFestie}
+          onFestieUpdated={festie => setOwnerFestie(festie)}
           loadout={playerLoadout}
           recap={sessionRecap}
           onDismiss={dismissSessionRecap}
+          forceShowEmailSignup={TEST_FESTIE_RECAP_ON_LOAD}
         />
       )}
 

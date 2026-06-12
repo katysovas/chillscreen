@@ -474,6 +474,81 @@ html:has(.game-surface) body {
   animation: festie-recap-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.festie-recap-email-strip {
+  flex-shrink: 0;
+  padding: 14px 20px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.festie-recap-email-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.festie-recap-email-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.festie-recap-email-input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  outline: none;
+}
+
+.festie-recap-email-input:focus {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.festie-recap-email-error {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #f87171;
+}
+
+.festie-recap-email-btn {
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.festie-recap-email-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.festie-recap-email-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 420px) {
+  .festie-recap-email-row {
+    flex-direction: column;
+  }
+
+  .festie-recap-email-btn {
+    width: 100%;
+  }
+}
+
 .festie-recap-header {
   display: flex;
   align-items: flex-start;

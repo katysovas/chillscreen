@@ -14,15 +14,23 @@ import {
   type RecapLine,
 } from '@/lib/festie/sessionRecap';
 import { festiePresetById } from '@/lib/festie/presets';
-import type { FestiePreset } from '@/lib/festie/types';
+import type { FestieOwner, FestiePreset } from '@/lib/festie/types';
+import {
+  FestieNotifyEmailSignup,
+  festieNeedsNotifyEmail,
+} from './FestieNotifyEmailSignup';
 
 type Props = {
   festieName: string;
   festiePreset?: FestiePreset;
+  festie?: FestieOwner | null;
+  onFestieUpdated?: (festie: FestieOwner) => void;
   /** Player's equipped vendor props — balloon color comes from festie preset. */
   loadout?: CharacterLoadout;
   recap: FestieSessionRecap;
   onDismiss: () => void;
+  /** Dev — show email banner even when notify_email is already set. */
+  forceShowEmailSignup?: boolean;
 };
 
 function formatRecapTime(iso: string): string {
@@ -100,9 +108,12 @@ function RecapEventBody({
 export function FestieSessionRecapModal({
   festieName,
   festiePreset = 'ember',
+  festie = null,
+  onFestieUpdated,
   loadout,
   recap,
   onDismiss,
+  forceShowEmailSignup = false,
 }: Props) {
   const who = festieName.trim() || 'Your festie';
   const lines = recapLinesFromEvents(recap.events, who);
@@ -113,6 +124,8 @@ export function FestieSessionRecapModal({
   );
   const sessionRange = formatRecapSessionRange(recap.since, recap.until);
   const summary = recapSummary(recap, who);
+  const showEmailSignup = Boolean(festie)
+    && (forceShowEmailSignup || festieNeedsNotifyEmail(festie));
   const [expandedNpcIds, setExpandedNpcIds] = useState<Set<number>>(() => new Set());
 
   const toggleNpcExpand = useCallback((id: number) => {
@@ -155,6 +168,15 @@ export function FestieSessionRecapModal({
             <p className="festie-recap-range">{sessionRange}</p>
           </div>
         </header>
+
+        {showEmailSignup && festie && (
+          <FestieNotifyEmailSignup
+            festie={festie}
+            onUpdated={onFestieUpdated}
+            inputId="festie-recap-email-banner"
+            variant="recap"
+          />
+        )}
 
         <div className="festie-recap-timeline-wrap">
           <ol className="festie-recap-timeline">
