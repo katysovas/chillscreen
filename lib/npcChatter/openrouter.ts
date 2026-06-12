@@ -55,14 +55,7 @@ export async function openRouterComplete(
   }
 }
 
-/** Keep at most maxWords whole words — never slice mid-word. */
-function limitWords(text: string, maxWords: number): string {
-  const words = text.split(/\s+/).filter(Boolean);
-  if (words.length <= maxWords) return words.join(' ');
-  return words.slice(0, maxWords).join(' ');
-}
-
-/** Strip quotes, name prefixes, special chars; keep one sentence. */
+/** Strip quotes, name prefixes, special chars; keep one complete sentence for display. */
 export function sanitizeLine(raw: string): string {
   let text = raw
     .replace(/^["'`]+|["'`]+$/g, '')
@@ -73,12 +66,19 @@ export function sanitizeLine(raw: string): string {
     .toLowerCase();
 
   const sentenceEnd = text.search(/[.!?](?:\s|$)/);
-  if (sentenceEnd !== -1) {
+  const hasCompleteSentence = sentenceEnd !== -1;
+  if (hasCompleteSentence) {
     text = text.slice(0, sentenceEnd + 1).trim();
-  } else {
-    const clauseBreak = text.search(/[;—–]/);
-    if (clauseBreak !== -1) text = text.slice(0, clauseBreak).trim();
   }
 
-  return limitWords(text, NPC_LINE_MAX_WORDS);
+  // Never chop a punctuated sentence for the word cap — show the full line in chat.
+  if (hasCompleteSentence) return text;
+
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= NPC_LINE_MAX_WORDS) {
+    return words.join(' ');
+  }
+
+  // Model ran long without ending — keep a short whole-word prefix only as fallback.
+  return words.slice(0, NPC_LINE_MAX_WORDS).join(' ');
 }

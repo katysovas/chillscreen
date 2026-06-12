@@ -74,6 +74,13 @@ const CHAT_ANCHOR = {
   top: -68,
 };
 
+const CHAT_BUBBLE_OVERFLOW: CSSProperties = {
+  overflow: 'visible',
+  overflowWrap: 'break-word',
+  wordBreak: 'break-word',
+  whiteSpace: 'normal',
+};
+
 function chatAnchorStyle(side: BubbleSide, scale: number, mirrored: boolean) {
   const counterScale = `scale(${1 / scale}) scaleX(${mirrored ? -1 : 1})`;
   const shared = {
@@ -85,6 +92,7 @@ function chatAnchorStyle(side: BubbleSide, scale: number, mirrored: boolean) {
     justifyContent: 'flex-end' as const,
     gap: 8,
     pointerEvents: 'auto' as const,
+    ...CHAT_BUBBLE_OVERFLOW,
   };
 
   if (side === 'center') {

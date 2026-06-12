@@ -125,7 +125,8 @@ export function NpcPairChatOverlay({
         bottom: `calc(${CHAR_BOTTOM} + ${NPC_PAIR_CHAT_LIFT_PX}px)`,
         transform: 'translateX(-50%)',
         zIndex: Z_CHAT_OVERLAY,
-        width: 300,
+        width: '100%',
+        maxWidth: 'min(320px, calc(100vw - 32px))',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-end',
@@ -201,7 +202,8 @@ export function PlayerChatOverlay({
           flexDirection: 'column',
           justifyContent: 'flex-end',
           gap: 6,
-          width: 300,
+          width: '100%',
+          maxWidth: 'min(320px, calc(100vw - 32px))',
           transform: `translateX(${midpointPx}px)`,
         }}
       >

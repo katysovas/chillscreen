@@ -116,11 +116,14 @@ html:has(.game-surface) body {
     bottom: var(--char-bottom-mobile, 20%) !important;
   }
 
-  /* Chat bubbles — fit narrow viewports, stay above thumb controls. */
+  /* Chat bubbles — fit narrow viewports, wrap fully (never clip text). */
   .game-surface .game-chat-bubble {
-    max-width: min(260px, calc(100vw - 40px)) !important;
+    max-width: min(280px, calc(100vw - 40px)) !important;
     min-width: 0 !important;
+    overflow: visible !important;
+    overflow-wrap: break-word;
     word-break: break-word;
+    white-space: normal;
   }
 
   .game-surface .game-chat-input-bubble {
@@ -132,7 +135,8 @@ html:has(.game-surface) body {
 
   .game-surface .game-character .game-chat-anchor {
     z-index: 50 !important;
-    max-width: calc(100vw - 16px);
+    overflow: visible !important;
+    max-width: min(320px, calc(100vw - 16px));
   }
 
 }
@@ -224,6 +228,26 @@ html:has(.game-surface) body {
 }
 .game-chat-bubble-stacked {
   will-change: opacity, transform;
+  overflow: visible;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.game-surface .game-character {
+  overflow: visible;
+}
+
+.game-surface .game-chat-anchor {
+  overflow: visible;
+}
+
+.game-surface .game-chat-bubble,
+.game-surface .game-chat-input-bubble {
+  overflow: visible;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 }
 @keyframes chat-in-right {
   from { opacity: 0; }

@@ -33,11 +33,15 @@ const bubbleShell: CSSProperties = {
   borderRadius: 14,
   padding: '8px 13px',
   minWidth: 130,
-  maxWidth: 260,
+  maxWidth: 280,
   textAlign: 'left',
   boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
   lineHeight: 1.4,
   position: 'relative',
+  overflow: 'visible',
+  overflowWrap: 'break-word',
+  wordBreak: 'break-word',
+  whiteSpace: 'normal',
 };
 
 export function AttachedChatBubble({
@@ -75,7 +79,7 @@ export function AttachedChatBubble({
         background: glow ? undefined : bg,
         padding: name ? '7px 13px 8px' : '8px 13px',
         opacity,
-        maxWidth: variant === 'default' ? 260 : 220,
+        maxWidth: variant === 'default' ? 280 : 240,
         animation: animate && ageFromBottom === 0 ? 'chat-in-left 0.22s ease-out both' : undefined,
         transition: 'opacity 0.35s ease, transform 0.35s ease',
         ...(glow ? { ['--glow-color' as string]: glowColor } : {}),
@@ -96,7 +100,17 @@ export function AttachedChatBubble({
           {name}
         </div>
       )}
-      <div style={{ fontSize: 13, color: '#222' }}>{message}</div>
+      <div style={{
+        fontSize: 13,
+        color: '#222',
+        overflow: 'visible',
+        overflowWrap: 'break-word',
+        wordBreak: 'break-word',
+        whiteSpace: 'normal',
+      }}
+      >
+        {message}
+      </div>
       {showTail && <div style={bubbleTailStyle(side)} />}
     </div>
   );

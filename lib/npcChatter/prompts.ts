@@ -36,7 +36,7 @@ function voiceRules(extra = '', topics?: string[]): string {
   return [
     'Voice rules (viral quote-tweet energy — screenshot-worthy):',
     `- ONE complete sentence only. aim for 6–${NPC_LINE_MAX_WORDS} words; never exceed ${NPC_LINE_MAX_WORDS} words.`,
-    '- finish the thought cleanly — no trailing clauses, no cut-off endings.',
+    '- finish the thought cleanly — end with a period; no trailing clauses, no cut-off endings.',
     '- write like a late-night group chat after the headliner — lowercase, casual, slang is fine.',
     '- no curse words (light ok: shit, dumb, stupid, dumbass, etc.). use clean internet slang instead ("bruh", "dude", "cooked", "unhinged", "lowkey", "rent free", "ate", "ate my face", "cringe", "main character", "down bad", "its giving", "touch grass", "crash out", "crashing out", "aura", "aura points", "negative aura", "brainrot", "looksmaxxing", "glazing", "yapping", "yap session", "valid", "based", "mid", "dead", "im dead", "screaming", "not me", "the way", "say less", "bet", "deadass", "sheesh", "ick", "gave me the ick", "bestie", "era", "understood the assignment", "hits different", "sending it", "full send", "headliner energy", "gates open", "drop incoming", "filthy drop", "dirty mix", "festie bestie", "totem", "camp fam", "sunrise set", "day one", "b2b", "melted my face", "feral", "going feral", "lineup szn", "womp womp", "L take", "ratio", "chopped", "six seven", "let him cook", "crying in the club", "be so for real", "be serious", "girl bye", "its not giving", "flopped", "washed").',
     '- plain words only. no fancy vocabulary, no corporate or journalist tone.',

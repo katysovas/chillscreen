@@ -20,12 +20,13 @@ export const SEED_GENERATED_PCT = 0.65;
 export const SEED_AMBIENT_PCT = 0.05;
 
 export const HOUSE_MODEL_DEFAULT = 'openai/gpt-4.1-nano';
-export const NPC_LINE_MAX_TOKENS = 22;
+/** Target max words per NPC chatter line (prompt guidance — complete lines are never chopped for display). */
+export const NPC_LINE_MAX_WORDS = 10;
+/** Room for a short complete sentence without the model getting cut off mid-thought. */
+export const NPC_LINE_MAX_TOKENS = 40;
 export const NPC_LINE_TIMEOUT_MS = 8_000;
 /** OpenRouter sampling — keep ≥0.9; 0.7 reads flat/agreeable. */
 export const NPC_LINE_TEMPERATURE = 0.95;
-/** Target max words per NPC chatter line (prompt + post-process). */
-export const NPC_LINE_MAX_WORDS = 10;
 
 /** Weighted line budgets 3–7 for pair convos. */
 export const LINE_BUDGET_WEIGHTS: { budget: number; weight: number }[] = [
