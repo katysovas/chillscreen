@@ -12,6 +12,17 @@ import type {
   FestieRow,
 } from '@/lib/festie/types';
 import { requireDb } from '@/lib/db';
+import { isMissingColumnError } from '@/lib/dbErrors';
+
+export class FestieSchemaError extends Error {
+  readonly migration: string;
+
+  constructor(migration: string, message: string) {
+    super(message);
+    this.name = 'FestieSchemaError';
+    this.migration = migration;
+  }
+}
 
 function rowToFestie(row: Record<string, unknown>): FestieRow {
   const attrs = row.attributes;
@@ -135,12 +146,32 @@ export async function updateFestie(userId: string, patch: UpdateFestieInput): Pr
       notify_email = ${patch.notify_email !== undefined
     ? patch.notify_email
     : existing.notify_email},
-      email_opted_in = ${patch.email_opted_in ?? existing.email_opted_in},
-      llm_provider = ${patch.llm_provider ?? existing.llm_provider}
+      email_opted_in = ${patch.email_opted_in ?? existing.email_opted_in}
     WHERE user_id = ${userId}::uuid
     RETURNING *
   `;
-  return rowToFestie(rows[0] as Record<string, unknown>);
+  let row = rowToFestie(rows[0] as Record<string, unknown>);
+
+  if (patch.llm_provider !== undefined) {
+    try {
+      const llmRows = await sql`
+        UPDATE festies SET llm_provider = ${patch.llm_provider}
+        WHERE user_id = ${userId}::uuid
+        RETURNING *
+      `;
+      row = rowToFestie(llmRows[0] as Record<string, unknown>);
+    } catch (err) {
+      if (isMissingColumnError(err, 'llm_provider')) {
+        throw new FestieSchemaError(
+          '006_festie_llm_provider',
+          'AI model setting is not available yet — run migration 006_festie_llm_provider.sql on the database.',
+        );
+      }
+      throw err;
+    }
+  }
+
+  return row;
 }
 
 const DIM_WINDOW_HOURS = FESTIE_CONFIG.DIM_WINDOW_MS / (60 * 60 * 1000);
@@ -153,7 +184,7 @@ export async function listActiveFestiesForStage(
   const sql = requireDb();
   const rows = excludeUserIds.length > 0
     ? await sql`
-        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, llm_provider, last_seen_at
+        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at
         FROM festies
         WHERE stage_slug = ${stageSlug}
           AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
@@ -161,7 +192,7 @@ export async function listActiveFestiesForStage(
         ORDER BY last_seen_at DESC
       `
     : await sql`
-        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, llm_provider, last_seen_at
+        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at
         FROM festies
         WHERE stage_slug = ${stageSlug}
           AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')

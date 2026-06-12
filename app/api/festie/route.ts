@@ -4,6 +4,7 @@ import { setSessionCookie, userIdFromRequest } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import {
   createFestieForNewUser,
+  FestieSchemaError,
   getFestieByUserId,
   toFestieOwner,
   updateFestie,
@@ -144,6 +145,13 @@ export async function PATCH(request: Request) {
     if (!festie) return NextResponse.json({ error: 'Festie not found' }, { status: 404 });
     return NextResponse.json({ festie: toFestieOwner(festie) });
   } catch (err) {
+    if (err instanceof FestieSchemaError) {
+      console.error('[api/festie PATCH] schema', err.migration, err.message);
+      return NextResponse.json(
+        { error: err.message, migration: err.migration },
+        { status: 503 },
+      );
+    }
     console.error('[api/festie PATCH]', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
