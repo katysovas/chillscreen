@@ -73,22 +73,33 @@ type Options = PeerEvents & {
 };
 
 // Host of the deployed PartyKit room (whichstage.katysovas.partykit.dev).
-// On localhost we always use the local `partykit dev` server so `.env.local`
-// can keep the production host for deploys. Accepts a bare host or a full URL —
-// PartySocket only wants the host[:port], and auto-selects ws/wss.
+// PartySocket wants bare host[:port] — no protocol.
+//
+// Localhost:
+//   • `npm run dev:local` sets NEXT_PUBLIC_PARTYKIT_LOCAL=true → 127.0.0.1:1999
+//   • plain `npm run dev` uses NEXT_PUBLIC_PARTYKIT_HOST (deployed PartyKit)
+//     so NPC chatter works without a local PartyKit process.
 function partyKitHost(): string {
-  if (typeof window !== 'undefined') {
-    const { hostname } = window.location;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return '127.0.0.1:1999';
-    }
-  }
-  return (
+  const configured = (
     process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? '127.0.0.1:1999'
   )
     .trim()
     .replace(/^[a-z]+:\/\//i, '')
     .replace(/\/+$/, '');
+
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      if (process.env.NEXT_PUBLIC_PARTYKIT_LOCAL === 'true') {
+        return '127.0.0.1:1999';
+      }
+      if (process.env.NEXT_PUBLIC_PARTYKIT_HOST?.trim()) {
+        return configured;
+      }
+      return '127.0.0.1:1999';
+    }
+  }
+  return configured;
 }
 
 export type Multiplayer = {
@@ -139,6 +150,8 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const lastMoveRef = useRef<{ worldX: number; facing: Facing; walking: boolean } | null>(null);
   /** Profile updates that arrive before the socket is open. */
   const pendingProfileRef = useRef<PlayerProfile | null>(null);
+  /** Messages sent before the socket handshake completes. */
+  const pendingSendRef = useRef<object[]>([]);
 
   const [selfId, setSelfId] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
@@ -167,7 +180,19 @@ export function useMultiplayer(opts: Options): Multiplayer {
 
   const sendNow = useCallback((data: object) => {
     const s = socketRef.current;
-    if (s && s.readyState === WebSocket.OPEN) s.send(encode(data as never));
+    if (s && s.readyState === WebSocket.OPEN) {
+      s.send(encode(data as never));
+      return;
+    }
+    pendingSendRef.current.push(data);
+  }, []);
+
+  const flushPending = useCallback(() => {
+    const s = socketRef.current;
+    if (!s || s.readyState !== WebSocket.OPEN) return;
+    const batch = pendingSendRef.current;
+    pendingSendRef.current = [];
+    for (const data of batch) s.send(encode(data as never));
   }, []);
 
   useEffect(() => {
@@ -217,6 +242,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
       announceJoin();
       // Catch profile/loadout that landed while the handshake was in flight.
       flushProfile();
+      flushPending();
     };
 
     const onClose = () => setConnected(false);
@@ -250,6 +276,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
           setRemoteIds([...roster.keys()]);
           // Server ignores moves until join is processed — safe to flush now.
           flushMove();
+          flushPending();
           break;
         }
         case 'joined': {
@@ -353,6 +380,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
       socket.removeEventListener('message', onMessage);
       socket.close();
       socketRef.current = null;
+      pendingSendRef.current = [];
     };
   // PARTYKIT_HOST is constant; refs are stable.
   // eslint-disable-next-line react-hooks/exhaustive-deps

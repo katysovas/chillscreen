@@ -1,3 +1,4 @@
+import { npcChatterLlmConfigured } from '@/lib/npcChatter/completeLine';
 import { generatePairConvo, generateSingleReply } from '@/lib/npcChatter/generate';
 import { verifyChatterRequest } from '@/lib/npcChatter/auth';
 import { clampLineBudget, clampTriggerText, sanitizeRecentChat } from '@/lib/npcChatter/validate';
@@ -42,8 +43,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-  if (!apiKey) {
+  if (!npcChatterLlmConfigured()) {
     return Response.json({ error: 'Service unavailable' }, { status: 503 });
   }
 
@@ -68,7 +68,6 @@ export async function POST(req: Request) {
       recentChat,
       streamTitle,
       channelName,
-      apiKey,
       houseModel,
     });
     if (!line) {
@@ -102,7 +101,6 @@ export async function POST(req: Request) {
     recentChat,
     streamTitle,
     channelName,
-    apiKey,
     houseModel,
   });
 

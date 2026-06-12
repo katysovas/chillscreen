@@ -49,4 +49,5 @@ if [ -z "$(port_pids 1999)" ]; then
 fi
 
 echo "Starting Next.js on :3000..."
+export NEXT_PUBLIC_PARTYKIT_LOCAL=true
 npm run dev

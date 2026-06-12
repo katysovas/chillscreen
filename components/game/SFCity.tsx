@@ -620,6 +620,8 @@ export default function SFCity({
     ],
     [npcCast, mp.festies, effectiveVenueRoute],
   );
+  const effectiveNpcCastRef = useRef(effectiveNpcCast);
+  effectiveNpcCastRef.current = effectiveNpcCast;
 
   const festieDimNpcIds = useMemo(() => {
     const ids = new Set<string>();
@@ -1263,7 +1265,7 @@ export default function SFCity({
       if (now - lastNpcPosSendRef.current <= 500) return;
       lastNpcPosSendRef.current = now;
       const width = window.innerWidth;
-      const positions = effectiveNpcCast
+      const positions = effectiveNpcCastRef.current
         .map((cfg, i) => ({
           id: cfg.id,
           worldX: npcWorldXRefs.current[i]!,

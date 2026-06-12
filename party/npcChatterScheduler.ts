@@ -24,7 +24,11 @@ import { resolveModel } from '../lib/npcChatter/models';
 import { chatterApiBase, npcChatterApiUrl } from '../lib/npcChatter/apiBase';
 import { pickConversationSeedRemote } from '../lib/npcChatter/seeds';
 import { isFestieNpcId } from '../lib/festie/toCharacterDef';
-import { npcPairInAnyPlayerView, type PlayerViewSnapshot } from '../lib/npcProximity';
+import {
+  npcPairEligibleForConvo,
+  npcPairInAnyPlayerView,
+  type PlayerViewSnapshot,
+} from '../lib/npcProximity';
 import { getNpcRosterEntry } from '../lib/npcRoster.server';
 import type { RoomChatLine } from '../lib/npcChatter/prompts';
 import { stageSlugForRoom, streamContextForRoom } from '../lib/npcChatter/roomContext';
@@ -187,8 +191,16 @@ export class NpcChatterScheduler {
     return true;
   }
 
+  /** NPCs the client has actually spawned — positions come from npc-positions only. */
+  private positionedChatterNpcIds(): string[] {
+    const eligible = new Set(chatterNpcIdsForRoom(this.roomId));
+    return [...this.npcWorldX.entries()]
+      .filter(([id, wx]) => eligible.has(id) && Number.isFinite(wx))
+      .map(([id]) => id);
+  }
+
   private pickNpcPair(): [string, string] | null {
-    const ids = chatterNpcIdsForRoom(this.roomId);
+    const ids = this.positionedChatterNpcIds();
     if (ids.length < 2) return null;
 
     const views = this.deps.getActivePlayerViews();
@@ -199,11 +211,13 @@ export class NpcChatterScheduler {
       for (let j = i + 1; j < ids.length; j++) {
         const a = ids[i]!;
         const b = ids[j]!;
-        const wxA = this.npcWorldX.get(a);
-        const wxB = this.npcWorldX.get(b);
-        if (wxA == null || wxB == null) continue;
+        const wxA = this.npcWorldX.get(a)!;
+        const wxB = this.npcWorldX.get(b)!;
         const festiePair = isFestieNpcId(a) || isFestieNpcId(b);
-        if (!festiePair && !npcPairInAnyPlayerView(wxA, wxB, views)) continue;
+        const eligible = festiePair
+          ? npcPairInAnyPlayerView(wxA, wxB, views)
+          : npcPairEligibleForConvo(wxA, wxB, views);
+        if (!eligible) continue;
         ranked.push({
           pair: a < b ? [a, b] : [b, a],
           dist: Math.abs(wxA - wxB),
@@ -297,12 +311,11 @@ export class NpcChatterScheduler {
     const wxB = this.npcWorldX.get(npcB);
     if (wxA == null || wxB == null) return;
     const festiePair = isFestieNpcId(npcA) || isFestieNpcId(npcB);
-    if (
-      !festiePair
-      && !npcPairInAnyPlayerView(wxA, wxB, this.deps.getActivePlayerViews())
-    ) {
-      return;
-    }
+    const views = this.deps.getActivePlayerViews();
+    const inRange = festiePair
+      ? npcPairInAnyPlayerView(wxA, wxB, views)
+      : npcPairEligibleForConvo(wxA, wxB, views);
+    if (!inRange) return;
     if (!this.bumpHourlyCap()) return;
 
     const lineBudget = pickLineBudget();

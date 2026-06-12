@@ -3,7 +3,8 @@ import { resolveNpcRosterEntry } from '@/lib/npcRoster.server';
 import type { RoomChatLine } from './prompts';
 import { buildLineSystemPrompt, buildSingleReplySystemPrompt } from './prompts';
 import { resolveModel } from './models';
-import { openRouterComplete, type ChatMessage } from './openrouter';
+import { completeNpcLine } from './completeLine';
+import type { ChatMessage } from './openrouter';
 import { pickOpeningStance } from './stances';
 
 export type NpcChatterLine = { npc: string; text: string };
@@ -17,7 +18,6 @@ export type PairConvoRequest = {
   recentChat: RoomChatLine[];
   streamTitle: string | null;
   channelName: string;
-  apiKey: string;
   houseModel: string;
   /** Broadcast each line as soon as it is generated (first line = no upstream wait). */
   onLine?: (line: NpcChatterLine) => void | Promise<void>;
@@ -30,7 +30,6 @@ export type SingleReplyRequest = {
   recentChat: RoomChatLine[];
   streamTitle: string | null;
   channelName: string;
-  apiKey: string;
   houseModel: string;
 };
 
@@ -77,7 +76,7 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
       console.log(`[npc-chatter] opener stance: ${openingStance}`);
     }
     console.log(`[npc-chatter] line ${i + 1}/${req.lineBudget} ${speaker.id} → ${model}`);
-    const raw = await openRouterComplete(model, messages, req.apiKey, req.houseModel);
+    const raw = await completeNpcLine(model, messages, req.houseModel);
     const text = raw ? sanitizeNpcLine(raw) : null;
     if (!text) break;
 
@@ -104,10 +103,9 @@ export async function generateSingleReply(req: SingleReplyRequest): Promise<NpcC
   });
 
   const model = resolveModel(npc.modelId, req.houseModel);
-  const text = await openRouterComplete(
+  const text = await completeNpcLine(
     model,
     [{ role: 'system', content: system }],
-    req.apiKey,
     req.houseModel,
   );
   const cleaned = text ? sanitizeNpcLine(text) : null;

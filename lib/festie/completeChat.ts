@@ -29,7 +29,7 @@ export async function completeFestieChat(
     const house = resolveModel(undefined, HOUSE_MODEL_DEFAULT);
     const model = resolveModel(modelId, house);
     const text = await openRouterComplete(model, messages, openRouterKey, house);
-    return text ?? null;
+    if (text) return text;
   }
 
   const openAiKey = process.env.OPENAI_API_KEY?.trim();

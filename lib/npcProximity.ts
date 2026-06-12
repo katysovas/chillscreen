@@ -47,6 +47,26 @@ export function npcPairInAnyPlayerView(
   );
 }
 
+/**
+ * Pair convo eligibility for ambient crowds — midpoint in view and speakers
+ * close enough to plausibly chat (works better than both-in-view with large casts).
+ */
+export function npcPairEligibleForConvo(
+  worldXA: number,
+  worldXB: number,
+  views: PlayerViewSnapshot[],
+): boolean {
+  if (views.length === 0) return false;
+  if (!Number.isFinite(worldXA) || !Number.isFinite(worldXB)) return false;
+  const mid = (worldXA + worldXB) / 2;
+  return views.some(view => {
+    const vw = view.viewportWidth;
+    if (vw <= 0) return false;
+    if (!npcInPlayerView(mid, view.worldOff, vw)) return false;
+    return npcsAreCloseEnoughForPair(worldXA, worldXB, vw);
+  });
+}
+
 export function npcTouchDistPx(viewportWidth: number): number {
   return NPC_TOUCH_DIST_VW * viewportWidth;
 }
