@@ -2,6 +2,7 @@
 
 import type { FestieEventRow } from '@/lib/festie/events';
 import { markLocalFestieAccount } from '@/lib/festie/localAccount';
+import { trackFestieSignedIn, trackFestieSignedUp } from '@/lib/analytics';
 import type { FestieCache, FestieOwner } from '@/lib/festie/types';
 
 let festieCache: FestieCache | null = null;
@@ -55,6 +56,7 @@ export async function loginFestie(name: string, password: string): Promise<Festi
   if (!festie) throw new Error('Invalid name or password');
   setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
   markLocalFestieAccount(festie.name);
+  trackFestieSignedIn(festie);
   return festie;
 }
 
@@ -149,5 +151,6 @@ export async function createFestie(body: CreateFestieBody): Promise<FestieOwner>
   const festie = data.festie as FestieOwner;
   setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
   markLocalFestieAccount(festie.name);
+  trackFestieSignedUp(festie);
   return festie;
 }

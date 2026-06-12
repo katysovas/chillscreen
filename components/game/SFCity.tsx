@@ -49,6 +49,10 @@ import {
   setPlayerName as saveSessionPlayerName,
 } from '@/lib/playerStorage';
 import { identifyPlayer, trackCharacterCreated } from '@/lib/analytics';
+import {
+  trackAmbientNpcChatter,
+  trackPlayerNpcChatLine,
+} from '@/lib/npcChatterAnalytics';
 import { installGameInputAnalytics, trackMobileControl } from '@/lib/gameInputAnalytics';
 import { isChatterMuted } from '@/lib/chatterMuted';
 import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
@@ -553,6 +557,15 @@ export default function SFCity({
 
   chatterHandlersRef.current = {
     onRoomChat: (sender, text) => {
+      if (sender.startsWith('npc:')) {
+        const npcId = sender.slice(4);
+        const cfg = effectiveNpcCast.find(c => c.id === npcId);
+        trackAmbientNpcChatter(npcId, text, 'solo', {
+          stage: effectiveVenueRoute,
+          npcName: cfg ? npcChatLabel(npcId, cfg.name) : undefined,
+        });
+        return;
+      }
       if (skipRoomChatEcho(sender)) return;
       roomChatter.handleRoomChat(sender, text);
     },
@@ -581,7 +594,15 @@ export default function SFCity({
       });
       roomChatter.onNpcConvoStart(participants);
     },
-    onNpcLine: (_convoId, npc, text) => roomChatter.handleNpcLine(npc, text),
+    onNpcLine: (convoId, npc, text) => {
+      const cfg = effectiveNpcCast.find(c => c.id === npc);
+      trackAmbientNpcChatter(npc, text, 'pair', {
+        convoId,
+        stage: effectiveVenueRoute,
+        npcName: cfg ? npcChatLabel(npc, cfg.name) : undefined,
+      });
+      roomChatter.handleNpcLine(npc, text);
+    },
     onNpcConvoEnd: () => {
       releaseNpcConvoSnap();
       roomChatter.onNpcConvoEnd();
@@ -812,6 +833,12 @@ export default function SFCity({
       ({ reply, conversationId }) => {
         setNpcTyping(false);
         if (festieChat && conversationId) festieConvoIdRef.current = conversationId;
+        trackPlayerNpcChatLine(character.id, reply, {
+          npcName: npcChatLabel(character.id, character.name),
+          stage: effectiveVenueRoute,
+          playerName: playerName ?? undefined,
+          conversationId,
+        });
         setNpcMessages(prev => appendChatLine(prev, reply));
         setChatHistory(prev => [
           ...prev,
