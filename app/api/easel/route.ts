@@ -4,21 +4,17 @@ import {
   checkpointEasel,
   completeEasel,
   ensureEaselsForStage,
-  getEaselsForStage,
   getEaselRow,
   hideEasel,
-  rolloverEasel,
+  rowToSlotSync,
+  startNewEaselDrawing,
 } from '@/lib/easel/db';
 import type { EaselRow } from '@/lib/easel/types';
-import { getDrawingForNpc, npcPoolKey } from '@/lib/easel/drawingsPool';
-import { nextDrawingIndex, totalSegments } from '@/lib/easel/segments';
 
 function slotResponse(row: EaselRow) {
   return {
     ok: true,
-    segments_done: row.segments_done,
-    started_at: row.started_at,
-    status: row.status,
+    ...rowToSlotSync(row),
   };
 }
 
@@ -27,9 +23,10 @@ export async function GET(req: Request) {
   const stage = searchParams.get('stage');
   if (!stage) return NextResponse.json({ slots: [] });
   try {
-    const slots = await ensureEaselsForStage(stage);
-    return NextResponse.json({ slots });
-  } catch {
+    const rows = await ensureEaselsForStage(stage);
+    return NextResponse.json({ slots: rows.map(rowToSlotSync) });
+  } catch (err) {
+    console.error('[easel] GET failed', err);
     return NextResponse.json({ slots: [] });
   }
 }
@@ -37,7 +34,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json() as {
-      action: 'checkpoint' | 'complete' | 'rollover' | 'hide';
+      action: 'checkpoint' | 'complete' | 'rollover' | 'hide' | 'new';
       stage: string;
       slot: number;
       segments_done?: number;
@@ -80,19 +77,14 @@ export async function POST(req: Request) {
         if (!updated) return NextResponse.json({ ok: false }, { status: 404 });
         return NextResponse.json(slotResponse(updated));
       }
-      case 'rollover': {
-        const npc = body.npc;
+      case 'new': {
+        const authErr = verifyChatterRequest(req);
+        if (authErr) return authErr;
+        const npc = body.npc?.trim();
         if (!npc) return NextResponse.json({ ok: false }, { status: 400 });
-        const key = npcPoolKey(npc);
-        const pool = await getEaselsForStage(stage);
-        const row = pool.find(r => r.slot === slot);
-        const currentId = row?.drawing_id ?? '';
-        const poolDrawings = (await import('@/lib/easel/drawingsPool')).getNpcPool(key)?.drawings ?? [];
-        const idx = nextDrawingIndex(key, currentId, poolDrawings.length);
-        const next = getDrawingForNpc(key, idx);
-        if (!next) return NextResponse.json({ ok: false }, { status: 404 });
-        await rolloverEasel(stage, slot, npc, next.id, totalSegments(next));
-        break;
+        const updated = await startNewEaselDrawing(stage, slot, npc);
+        if (!updated) return NextResponse.json({ ok: false }, { status: 500 });
+        return NextResponse.json(slotResponse(updated));
       }
       case 'hide':
         await hideEasel(stage, slot);
@@ -102,7 +94,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    console.error('[easel] POST failed', err);
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

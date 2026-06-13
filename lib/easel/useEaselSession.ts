@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { EaselSessionSync } from './types';
+import type { EaselSessionSync, EaselSlotSync } from './types';
 import { easelClockStart } from './sessionClock';
 
 function hasEaselSlots(session: EaselSessionSync | null | undefined): session is EaselSessionSync {
   return Boolean(session?.slots?.length);
 }
 
-function mapSlotFromApi(s: Record<string, unknown>): EaselSessionSync['slots'][number] {
+function mapSlotFromApi(s: Record<string, unknown>): EaselSlotSync {
   return {
     slot: Number(s.slot),
     npc: String(s.npc),
@@ -16,8 +16,10 @@ function mapSlotFromApi(s: Record<string, unknown>): EaselSessionSync['slots'][n
     total_segments: Number(s.total_segments),
     segments_done: Number(s.segments_done),
     rate: Number(s.rate),
-    status: s.status as EaselSessionSync['slots'][number]['status'],
+    status: s.status as EaselSlotSync['status'],
     started_at: s.started_at != null ? String(s.started_at) : undefined,
+    topic: s.topic != null ? String(s.topic) : undefined,
+    program: s.program as EaselSlotSync['program'],
   };
 }
 
@@ -32,6 +34,20 @@ export function fetchLocalEaselSession(stageSlug: string): Promise<EaselSessionS
       return { sessionStart, slots };
     })
     .catch(() => null);
+}
+
+function mergeProgramData(party: EaselSessionSync, local: EaselSessionSync | null): EaselSessionSync {
+  if (!local) return party;
+  const slots = party.slots.map(slot => {
+    const hit = local.slots.find(s => s.slot === slot.slot);
+    if (!hit) return slot;
+    return {
+      ...slot,
+      topic: slot.topic ?? hit.topic,
+      program: slot.program ?? hit.program,
+    };
+  });
+  return { sessionStart: party.sessionStart, slots };
 }
 
 /**
@@ -50,15 +66,26 @@ export function useEaselSession(
       setLocalSession(null);
       return;
     }
-    if (hasEaselSlots(partySession)) return;
-
     let cancelled = false;
     void fetchLocalEaselSession(stageSlug).then(session => {
       if (!cancelled && session) setLocalSession(session);
     });
     return () => { cancelled = true; };
-  }, [enabled, partySession, stageSlug]);
+  }, [enabled, stageSlug, partySession?.sessionStart]);
 
-  if (hasEaselSlots(partySession)) return partySession;
+  useEffect(() => {
+    if (!enabled) return;
+    const refresh = () => {
+      void fetchLocalEaselSession(stageSlug).then(session => {
+        if (session) setLocalSession(session);
+      });
+    };
+    window.addEventListener('easel-updated', refresh);
+    return () => window.removeEventListener('easel-updated', refresh);
+  }, [enabled, stageSlug]);
+
+  if (hasEaselSlots(partySession)) {
+    return mergeProgramData(partySession, localSession);
+  }
   return localSession;
 }

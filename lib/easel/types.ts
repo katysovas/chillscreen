@@ -58,6 +58,8 @@ export type EaselRow = {
   started_at: string;
   completed_at: string | null;
   hidden_at: string | null;
+  topic: string | null;
+  program_json: DrawingProgram | null;
 };
 
 /** Broadcast baseline — clients compute liveDone from sessionStart. */
@@ -71,6 +73,9 @@ export type EaselSlotSync = {
   status: EaselStatus;
   /** DB watched-clock anchor — used to restore progress after reload. */
   started_at?: string;
+  topic?: string;
+  /** AI-generated or legacy stroke program — included in API responses. */
+  program?: DrawingProgram;
 };
 
 export type EaselSessionSync = {

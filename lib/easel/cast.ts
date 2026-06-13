@@ -16,10 +16,11 @@ const EASEL_SPAWN = {
   entryDirection: 'right' as const,
 };
 
-/** Ensure easel owners spawn on-screen immediately and walk to their canvas. */
+/** Ensure easel owners spawn while painting — release to crowd when done. */
 export function mergeEaselOwnersIntoCast(
   cast: CharacterDef[],
   channel: StageChannel,
+  paintingNpcIds: Set<string>,
 ): CharacterDef[] {
   if (channel !== 'cinema') return cast;
 
@@ -29,6 +30,7 @@ export function mergeEaselOwnersIntoCast(
 
   const owners: CharacterDef[] = [];
   for (const id of CINEMA_EASEL_OWNER_IDS) {
+    if (!paintingNpcIds.has(id)) continue;
     const fromCast = cast.find(c => c.id === id);
     const fromPool = pool.find(c => c.id === id);
     const base = fromCast ?? fromPool;

@@ -4,10 +4,7 @@ import { chatterAuthHeader } from '../lib/npcChatter/auth';
 import { chatterApiBase } from '../lib/npcChatter/apiBase';
 import { stageSlugForRoom } from '../lib/npcChatter/roomContext';
 import { liveSegmentsDone } from '../lib/easel/segments';
-import type { EaselRow, EaselSessionSync, EaselSlotSync } from '../lib/easel/types';
-import { EASEL_HOLD_MS } from '../lib/easel/types';
-
-type EaselApiSlot = EaselRow;
+import type { EaselSessionSync, EaselSlotSync } from '../lib/easel/types';
 
 export type EaselSchedulerDeps = {
   room: Party.Room;
@@ -18,7 +15,6 @@ export type EaselSchedulerDeps = {
 export class EaselScheduler {
   private sessionStart: number | null = null;
   private slots: EaselSlotSync[] = [];
-  private holdTimers = new Map<number, ReturnType<typeof setTimeout>>();
   private checkTimer: ReturnType<typeof setInterval> | null = null;
   private readonly roomId: string;
   private readonly env: Record<string, string | undefined>;
@@ -36,10 +32,10 @@ export class EaselScheduler {
     return stageSlugForRoom(this.roomId);
   }
 
-  private async fetchEasels(): Promise<EaselApiSlot[]> {
+  private async fetchEasels(): Promise<EaselSlotSync[]> {
     const res = await fetch(`${this.apiBase()}/api/easel?stage=${encodeURIComponent(this.stageSlug())}`);
     if (!res.ok) return [];
-    const data = await res.json() as { slots: EaselApiSlot[] };
+    const data = await res.json() as { slots: EaselSlotSync[] };
     return data.slots ?? [];
   }
 
@@ -50,19 +46,6 @@ export class EaselScheduler {
       headers: { 'Content-Type': 'application/json', ...chatterAuthHeader(secret) },
       body: JSON.stringify(body),
     });
-  }
-
-  private toSync(rows: EaselApiSlot[]): EaselSlotSync[] {
-    return rows.map(r => ({
-      slot: r.slot,
-      npc: r.npc,
-      drawing_id: r.drawing_id,
-      total_segments: r.total_segments,
-      segments_done: r.segments_done,
-      rate: r.rate,
-      status: r.status,
-      started_at: r.started_at,
-    }));
   }
 
   private broadcastSession() {
@@ -104,44 +87,13 @@ export class EaselScheduler {
       slot.status = 'done';
       slot.segments_done = slot.total_segments;
       this.broadcastSession();
-
-      if (this.holdTimers.has(slot.slot)) clearTimeout(this.holdTimers.get(slot.slot)!);
-      this.holdTimers.set(
-        slot.slot,
-        setTimeout(() => void this.rolloverSlot(slot.slot), EASEL_HOLD_MS),
-      );
     }
-  }
-
-  private async rolloverSlot(slotIndex: number) {
-    this.holdTimers.delete(slotIndex);
-    if (this.deps.playerCount() === 0) return;
-
-    const slot = this.slots.find(s => s.slot === slotIndex);
-    if (!slot) return;
-
-    await this.postEasel({
-      action: 'rollover',
-      stage: this.stageSlug(),
-      slot: slotIndex,
-      npc: slot.npc,
-    });
-
-    const rows = await this.fetchEasels();
-    const updated = rows.find(r => r.slot === slotIndex);
-    if (!updated) return;
-
-    const idx = this.slots.findIndex(s => s.slot === slotIndex);
-    if (idx >= 0) this.slots[idx] = this.toSync([updated])[0]!;
-
-    this.sessionStart = Date.now();
-    this.broadcastSession();
   }
 
   async onFirstPlayer() {
     const rows = await this.fetchEasels();
     if (rows.length === 0) return;
-    this.slots = this.toSync(rows);
+    this.slots = rows;
     this.sessionStart = Date.now();
     this.broadcastSession();
     this.startCheckLoop();
@@ -149,8 +101,6 @@ export class EaselScheduler {
 
   async onLastPlayer() {
     this.stopCheckLoop();
-    for (const t of this.holdTimers.values()) clearTimeout(t);
-    this.holdTimers.clear();
 
     if (this.sessionStart == null) return;
     const now = Date.now();
@@ -170,7 +120,6 @@ export class EaselScheduler {
     this.sessionStart = null;
   }
 
-  /** Send current session to a joining client. */
   syncToClient(send: (msg: ServerMessage) => void) {
     if (this.sessionStart == null) return;
     send({
@@ -181,7 +130,7 @@ export class EaselScheduler {
   }
 
   getStationedNpcIds(): Set<string> {
-    return new Set(this.slots.map(s => s.npc));
+    return new Set(this.slots.filter(s => s.status === 'painting').map(s => s.npc));
   }
 
   getSession(): EaselSessionSync | null {

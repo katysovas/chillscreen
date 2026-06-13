@@ -341,6 +341,14 @@ export default function NPC({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, easelStationOnLoad, easelWalkTargetWorldX]);
 
+  useEffect(() => {
+    if (easelWalkTargetWorldX != null || !easelStationedRef.current) return;
+    easelStationedRef.current = false;
+    setEaselStationed(false);
+    stateRef.current = 'idle';
+    applyWalking(false);
+  }, [easelWalkTargetWorldX]);
+
   const offlineFestieNpc = isFestieNpcId(characterId);
 
   // ── Decision loop ─────────────────────────────────────────────────────────

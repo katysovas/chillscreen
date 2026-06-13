@@ -1,12 +1,27 @@
 import { requireDb } from '@/lib/db';
-import { getDrawingForNpc, npcPoolKey } from './drawingsPool';
+import { npcPoolKey } from './drawingsPool';
+import { buildEaselDrawingContext } from './drawingContext';
+import { generateDrawingProgram } from './generateDrawing';
+import { programFromRow, rowToSlotSync } from './resolveProgram';
 import { totalSegments } from './segments';
-import type { EaselRow, EaselStatus } from './types';
+import type { DrawingProgram, EaselRow, EaselStatus } from './types';
 import { EASEL_DEFAULT_RATE, EASEL_SLOTS_PER_STAGE } from './types';
 
 const DEFAULT_CINEMA_NPCS = ['gen-cinema-vanessa'];
 
 function rowFromDb(r: Record<string, unknown>): EaselRow {
+  let programJson: DrawingProgram | null = null;
+  const raw = r.program_json;
+  if (raw && typeof raw === 'object') {
+    programJson = raw as DrawingProgram;
+  } else if (typeof raw === 'string') {
+    try {
+      programJson = JSON.parse(raw) as DrawingProgram;
+    } catch {
+      programJson = null;
+    }
+  }
+
   return {
     stage: String(r.stage),
     slot: Number(r.slot),
@@ -19,6 +34,8 @@ function rowFromDb(r: Record<string, unknown>): EaselRow {
     started_at: String(r.started_at),
     completed_at: r.completed_at != null ? String(r.completed_at) : null,
     hidden_at: r.hidden_at != null ? String(r.hidden_at) : null,
+    topic: r.topic != null ? String(r.topic) : null,
+    program_json: programJson,
   };
 }
 
@@ -37,29 +54,42 @@ async function insertEaselRow(
   slot: number,
   npc: string,
   drawingId: string,
+  topic: string,
+  program: DrawingProgram,
   totalSeg: number,
 ): Promise<void> {
   const sql = requireDb();
   await sql`
-    INSERT INTO easel (stage, slot, npc, drawing_id, total_segments, segments_done, rate, status)
-    VALUES (${stage}, ${slot}, ${npc}, ${drawingId}, ${totalSeg}, 0, ${EASEL_DEFAULT_RATE}, 'painting')
+    INSERT INTO easel (stage, slot, npc, drawing_id, topic, program_json, total_segments, segments_done, rate, status)
+    VALUES (
+      ${stage}, ${slot}, ${npc}, ${drawingId}, ${topic},
+      ${JSON.stringify(program)}::jsonb,
+      ${totalSeg}, 0, ${EASEL_DEFAULT_RATE}, 'painting'
+    )
     ON CONFLICT (stage, slot) DO NOTHING
   `;
 }
 
-/** Seed one slot when a stage has no easel rows yet. */
+async function createAiDrawingForNpc(stage: string, slot: number, npc: string): Promise<void> {
+  const ctx = buildEaselDrawingContext(npc, stage);
+  const { program, totalSegments: total } = await generateDrawingProgram(ctx);
+  await insertEaselRow(stage, slot, npc, program.id, program.topic, program, total);
+}
+
+/** Seed one slot when a stage has no easel rows yet — AI picks the subject. */
 export async function ensureEaselsForStage(stage: string): Promise<EaselRow[]> {
   let rows = await getEaselsForStage(stage);
-  if (rows.length > 0) return rows;
+  if (rows.length > 0) {
+    return rows.map(row => {
+      if (programFromRow(row)) return row;
+      return row;
+    });
+  }
 
   for (let slot = 0; slot < EASEL_SLOTS_PER_STAGE; slot++) {
     const npc = DEFAULT_CINEMA_NPCS[slot];
     if (!npc) continue;
-    const key = npcPoolKey(npc);
-    const drawing = getDrawingForNpc(key, slot);
-    if (!drawing) continue;
-    const total = totalSegments(drawing);
-    await insertEaselRow(stage, slot, npc, drawing.id, total);
+    await createAiDrawingForNpc(stage, slot, npc);
   }
 
   rows = await getEaselsForStage(stage);
@@ -99,13 +129,13 @@ export async function rolloverEasel(
   slot: number,
   npc: string,
   drawingId: string,
-  totalSegments: number,
+  totalSegmentsCount: number,
 ): Promise<void> {
   const sql = requireDb();
   await sql`
     UPDATE easel
     SET drawing_id = ${drawingId},
-        total_segments = ${totalSegments},
+        total_segments = ${totalSegmentsCount},
         segments_done = 0,
         status = 'painting',
         started_at = now(),
@@ -128,3 +158,33 @@ export async function getEaselRow(stage: string, slot: number): Promise<EaselRow
   ` as Record<string, unknown>[];
   return rows[0] ? rowFromDb(rows[0]) : null;
 }
+
+/** Start a fresh AI drawing on a slot (after hide or admin reset). */
+export async function startNewEaselDrawing(stage: string, slot: number, npc: string): Promise<EaselRow | null> {
+  const ctx = buildEaselDrawingContext(npc, stage);
+  const { program, totalSegments: total } = await generateDrawingProgram(ctx);
+  const sql = requireDb();
+  await sql`
+    INSERT INTO easel (stage, slot, npc, drawing_id, topic, program_json, total_segments, segments_done, rate, status)
+    VALUES (
+      ${stage}, ${slot}, ${npc}, ${program.id}, ${program.topic},
+      ${JSON.stringify(program)}::jsonb,
+      ${total}, 0, ${EASEL_DEFAULT_RATE}, 'painting'
+    )
+    ON CONFLICT (stage, slot) DO UPDATE SET
+      npc = EXCLUDED.npc,
+      drawing_id = EXCLUDED.drawing_id,
+      topic = EXCLUDED.topic,
+      program_json = EXCLUDED.program_json,
+      total_segments = EXCLUDED.total_segments,
+      segments_done = 0,
+      rate = EXCLUDED.rate,
+      status = 'painting',
+      started_at = now(),
+      completed_at = null,
+      hidden_at = null
+  `;
+  return getEaselRow(stage, slot);
+}
+
+export { rowToSlotSync, programFromRow };

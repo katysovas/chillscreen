@@ -1,0 +1,2 @@
+ALTER TABLE easel ADD COLUMN IF NOT EXISTS topic text;
+ALTER TABLE easel ADD COLUMN IF NOT EXISTS program_json jsonb;

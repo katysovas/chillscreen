@@ -1,7 +1,7 @@
 import { easelNpcStandWorldX, easelSlotWorldX } from './layout';
 import type { EaselSessionSync } from './types';
 
-/** Map NPC character id → ground stand target beside its easel (walk, then pin). */
+/** Map NPC character id → ground stand target while actively painting. */
 export function easelWalkTargetWorldXForNpc(
   npcId: string,
   session: EaselSessionSync | null,
@@ -9,7 +9,7 @@ export function easelWalkTargetWorldXForNpc(
   width?: number,
 ): number | undefined {
   if (!session) return undefined;
-  const slot = session.slots.find(s => s.npc === npcId);
+  const slot = session.slots.find(s => s.npc === npcId && s.status === 'painting');
   if (!slot) return undefined;
   return easelNpcStandWorldX(slot.slot, stageSlug, width);
 }
@@ -17,9 +17,10 @@ export function easelWalkTargetWorldXForNpc(
 /** @deprecated use easelWalkTargetWorldXForNpc */
 export const easelStationWorldXForNpc = easelWalkTargetWorldXForNpc;
 
+/** NPCs actively painting — finished painters are released to wander. */
 export function stationedNpcIds(session: EaselSessionSync | null): Set<string> {
   if (!session) return new Set();
-  return new Set(session.slots.map(s => s.npc));
+  return new Set(session.slots.filter(s => s.status === 'painting').map(s => s.npc));
 }
 
 export { easelSlotWorldX, easelNpcStandWorldX };

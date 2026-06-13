@@ -4,6 +4,8 @@ import { memo, useEffect, useRef } from 'react';
 import { createEaselController } from '@/lib/easel/easelController';
 import { checkpointEaselProgress, completeEaselDrawing } from '@/lib/easel/checkpointClient';
 import { getDrawingById, modelLabelForNpc, npcPoolKey, paletteForNpc } from '@/lib/easel/drawingsPool';
+import { notifyEaselUpdated } from '@/lib/easel/notifyUpdated';
+import { programForSlot } from '@/lib/easel/resolveProgram';
 import { clampLiveDone, liveSegmentsDone } from '@/lib/easel/segments';
 import { easelClockStart, parseStartedAtMs } from '@/lib/easel/sessionClock';
 import type { EaselSlotSync } from '@/lib/easel/types';
@@ -61,6 +63,7 @@ export const EaselSlotView = memo(function EaselSlotView({
   const npcKey = npcPoolKey(slot.npc);
   const model = modelLabelForNpc(npcKey);
   const name = slot.npc.split('-').pop() ?? slot.npc;
+  const label = slot.topic?.trim() || programForSlot(slot)?.topic || `${model} ${name}`;
 
   useEffect(() => {
     progressRef.current = baselineFromSlot(slot, sessionStart);
@@ -69,7 +72,7 @@ export const EaselSlotView = memo(function EaselSlotView({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const program = getDrawingById(slot.drawing_id);
+    const program = programForSlot(slot);
     if (!program) return;
 
     const baseline = progressRef.current;
@@ -86,7 +89,7 @@ export const EaselSlotView = memo(function EaselSlotView({
     else ctrl.resume();
 
     return () => ctrl.destroy();
-  }, [slot.drawing_id, slot.rate, slot.total_segments, slot.segments_done, slot.status, slot.started_at, sessionStart, npcKey, paused]);
+  }, [slot, sessionStart, slot.program, slot.drawing_id]);
 
   useEffect(() => {
     if (paused) controllerRef.current.pause();
@@ -105,12 +108,16 @@ export const EaselSlotView = memo(function EaselSlotView({
         startedAt: result.started_at,
       };
       if (result.status === 'done') {
-        controllerRef.current.load({
-          program: getDrawingById(slot.drawing_id)!,
-          palette: paletteForNpc(npcKey),
-          segmentsDone: slot.total_segments,
-          status: 'done',
-        });
+        const doneProgram = programForSlot({ ...slot, status: 'done' }) ?? getDrawingById(slot.drawing_id);
+        if (doneProgram) {
+          controllerRef.current.load({
+            program: doneProgram,
+            palette: paletteForNpc(npcKey),
+            segmentsDone: slot.total_segments,
+            status: 'done',
+          });
+        }
+        notifyEaselUpdated();
       }
     };
 
@@ -164,7 +171,7 @@ export const EaselSlotView = memo(function EaselSlotView({
           letterSpacing: '0.02em',
         }}
       >
-        {model} {name}
+        {label}
       </div>
       <svg
         viewBox="-9 0 64 64"

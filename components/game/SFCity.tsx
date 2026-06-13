@@ -122,6 +122,7 @@ import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
 import { easelWalkTargetWorldXForNpc } from '@/lib/easel/stationed';
 import { mergeEaselOwnersIntoCast, preloadCinemaEaselOwners, isCinemaEaselOwner } from '@/lib/easel/cast';
+import { activePainterNpcIds } from '@/lib/easel/session';
 import { useEaselSession } from '@/lib/easel/useEaselSession';
 import { TEST_EASEL_ON_LOAD } from '@/lib/easel/test';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
@@ -651,8 +652,12 @@ export default function SFCity({
     ];
     if (effectiveVenueRoute !== 'cinema') return base;
     if (!cinemaEaselCastReady && !TEST_EASEL_ON_LOAD) return base;
-    return mergeEaselOwnersIntoCast(base, stageChannelForRoute('cinema'));
-  }, [npcCast, mp.festies, effectiveVenueRoute, cinemaEaselCastReady]);
+    return mergeEaselOwnersIntoCast(
+      base,
+      stageChannelForRoute('cinema'),
+      activePainterNpcIds(activeEaselSession),
+    );
+  }, [npcCast, mp.festies, effectiveVenueRoute, cinemaEaselCastReady, activeEaselSession]);
   const effectiveNpcCastRef = useRef(effectiveNpcCast);
   effectiveNpcCastRef.current = effectiveNpcCast;
 
