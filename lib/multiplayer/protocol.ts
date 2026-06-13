@@ -9,6 +9,7 @@
 
 import type { FestiePublic } from '../festie/types';
 import type { StageSync } from '../stageVideos';
+import type { EaselSessionSync, EaselSlotSync } from '../easel/types';
 
 export type Facing = 'left' | 'right';
 
@@ -113,7 +114,11 @@ export type ServerMessage =
       meta?: NpcConvoMeta;
     }
   | { t: 'npc-line'; convoId: string; npc: string; text: string }
-  | { t: 'npc-convo-end'; convoId: string };
+  | { t: 'npc-convo-end'; convoId: string }
+  | { t: 'easel-session'; sessionStart: number; slots: EaselSlotSync[] }
+  | { t: 'easel-update'; sessionStart: number; slots: EaselSlotSync[] };
+
+export type { EaselSessionSync, EaselSlotSync };
 
 /** Stable key for a player↔player chat pair. */
 export function chatPairKey(a: string, b: string): string {

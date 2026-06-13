@@ -11,6 +11,7 @@ import {
   type PlayerLoadoutSync,
   type NpcConvoMeta,
   type PlayerProfile,
+  type EaselSessionSync,
 } from './protocol';
 import { applyServerStageSync } from '@/lib/stageClock';
 import { isChatterMuted } from '@/lib/chatterMuted';
@@ -121,6 +122,8 @@ export type Multiplayer = {
   npcConvoPairs: NpcConvoPair[];
   /** Offline festies on this stage (owner excluded while online). */
   festies: FestiePublic[];
+  /** Ambient NPC easel session — null until first watcher in room. */
+  easelSession: EaselSessionSync | null;
   sendMove: (worldX: number, facing: Facing, walking: boolean) => void;
   sendProfile: (profile: PlayerProfile) => void;
   openPeerChat: (to: string) => void;
@@ -161,6 +164,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const [remoteNpcChats, setRemoteNpcChats] = useState<RemoteNpcChat[]>([]);
   const [npcConvoPairs, setNpcConvoPairs] = useState<NpcConvoPair[]>([]);
   const [festies, setFesties] = useState<FestiePublic[]>([]);
+  const [easelSession, setEaselSession] = useState<EaselSessionSync | null>(null);
 
   const connectRequestedRef = useRef(false);
 
@@ -367,6 +371,12 @@ export function useMultiplayer(opts: Options): Multiplayer {
         case 'festies-sync':
           setFesties(msg.festies);
           break;
+        case 'easel-session':
+        case 'easel-update':
+          if (msg.slots?.length) {
+            setEaselSession({ sessionStart: msg.sessionStart, slots: msg.slots });
+          }
+          break;
       }
     };
 
@@ -420,7 +430,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
 
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
-    chatPairs, remoteNpcChats, npcConvoPairs, festies,
+    chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
     sendAmbientMessage, sendRoomChat, sendNpcChat, sendNpcPositions,
   };

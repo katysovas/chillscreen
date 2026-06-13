@@ -84,6 +84,7 @@ import {
   cityTileForRoute,
   cityWorldOffBounds,
   partyRoomIdForRoute,
+  stageChannelForRoute,
   stageWorldOffForRoute,
 } from '@/lib/isolatedCity';
 import { setVenueDressCode } from '@/lib/dressCode';
@@ -118,9 +119,11 @@ import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsMod
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
-import { cinemaCanvasAnchorWorldX } from '@/lib/cinemaCanvasLayout';
-import { CinemaCanvasGroundLayer } from './cinema/CinemaCanvasGroundLayer';
-import { CinemaCanvasProvider } from './cinema/CinemaCanvasContext';
+import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
+import { easelWalkTargetWorldXForNpc } from '@/lib/easel/stationed';
+import { mergeEaselOwnersIntoCast, preloadCinemaEaselOwners, isCinemaEaselOwner } from '@/lib/easel/cast';
+import { useEaselSession } from '@/lib/easel/useEaselSession';
+import { TEST_EASEL_ON_LOAD } from '@/lib/easel/test';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
 import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
@@ -619,13 +622,37 @@ export default function SFCity({
   const mpRef = useRef(mp);
   mpRef.current = mp;
 
-  const effectiveNpcCast = useMemo(
-    () => [
+  const easelStageSlug = stageSlugFromVenueRoute(effectiveVenueRoute);
+  const easelSessionEnabled = effectiveVenueRoute === 'cinema' && !homePreview;
+  const activeEaselSession = useEaselSession(easelStageSlug, easelSessionEnabled, mp.easelSession);
+  const [cinemaEaselCastReady, setCinemaEaselCastReady] = useState(false);
+
+  useEffect(() => {
+    if (effectiveVenueRoute !== 'cinema') {
+      setCinemaEaselCastReady(false);
+      return;
+    }
+    let cancelled = false;
+    void preloadCinemaEaselOwners().then(() => {
+      if (!cancelled) setCinemaEaselCastReady(true);
+    });
+    return () => { cancelled = true; };
+  }, [effectiveVenueRoute]);
+
+  const easelsActive =
+    easelSessionEnabled
+    && (TEST_EASEL_ON_LOAD || (!showWelcome && !showCityPicker))
+    && Boolean(activeEaselSession?.slots.length);
+
+  const effectiveNpcCast = useMemo(() => {
+    const base = [
       ...npcCast,
       ...festiesToCharacterDefs(mp.festies, effectiveVenueRoute),
-    ],
-    [npcCast, mp.festies, effectiveVenueRoute],
-  );
+    ];
+    if (effectiveVenueRoute !== 'cinema') return base;
+    if (!cinemaEaselCastReady && !TEST_EASEL_ON_LOAD) return base;
+    return mergeEaselOwnersIntoCast(base, stageChannelForRoute('cinema'));
+  }, [npcCast, mp.festies, effectiveVenueRoute, cinemaEaselCastReady]);
   const effectiveNpcCastRef = useRef(effectiveNpcCast);
   effectiveNpcCastRef.current = effectiveNpcCast;
 
@@ -1600,14 +1627,6 @@ export default function SFCity({
         userSelect: 'none',
       }}
     >
-      <CinemaCanvasProvider
-        active={
-          !homePreview
-          && effectiveVenueRoute === 'cinema'
-          && !showWelcome
-          && !showCityPicker
-        }
-      >
       <div>
         {isDeepSpace ? (
           <SpaceParallaxStars />
@@ -1658,7 +1677,13 @@ export default function SFCity({
           />
         )}
 
-        {!homePreview && <CinemaCanvasGroundLayer />}
+        {!homePreview && (
+          <StageEaselsLayer
+            active={easelsActive}
+            stageSlug={easelStageSlug}
+            session={activeEaselSession}
+          />
+        )}
 
         {/* Autonomous NPCs */}
         {!homePreview && crowdVisualsReady && effectiveNpcCast.map((cfg, i) => {
@@ -1673,9 +1698,8 @@ export default function SFCity({
             index={i}
             {...cfg}
             stageAnchor={cfg.stageAnchor}
-            wanderAttractWorldX={
-              effectiveVenueRoute === 'cinema' ? cinemaCanvasAnchorWorldX() : undefined
-            }
+            easelWalkTargetWorldX={easelWalkTargetWorldXForNpc(cfg.id, activeEaselSession, easelStageSlug)}
+            easelStationOnLoad={TEST_EASEL_ON_LOAD && isCinemaEaselOwner(cfg.id)}
             startX={testing ? 55 : cfg.startX}
             entryDelay={testing ? 0 : cfg.entryDelay}
             paused={chatConnected}
@@ -1779,7 +1803,6 @@ export default function SFCity({
           </div>
         ))}
       </div>
-      </CinemaCanvasProvider>
 
       {!homePreview && (
       <>

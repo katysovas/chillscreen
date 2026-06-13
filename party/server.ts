@@ -17,6 +17,7 @@ import { filterChatMessage } from '../lib/messageFilter';
 import { DEFAULT_DURATION_MS, STAGE_EPOCH, type StageSync } from '../lib/stageVideos';
 import type { PlayerViewSnapshot } from '../lib/npcProximity';
 import { NpcChatterScheduler } from './npcChatterScheduler';
+import { EaselScheduler } from './easelScheduler';
 
 /**
  * WhichStage presence room.
@@ -40,6 +41,7 @@ export default class WhichStageServer implements Party.Server {
   private festieSeenTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private stageSync: StageSync | null = null;
   private chatter: NpcChatterScheduler;
+  private easels: EaselScheduler;
 
   constructor(readonly room: Party.Room) {
     this.chatter = new NpcChatterScheduler({
@@ -48,6 +50,11 @@ export default class WhichStageServer implements Party.Server {
       playerCount: () => this.players.size,
       getActivePlayerViews: () => this.activePlayerViews(),
       getStageSync: () => this.stageSync,
+    });
+    this.easels = new EaselScheduler({
+      room: this.room,
+      broadcast: msg => this.room.broadcast(encode(msg)),
+      playerCount: () => this.players.size,
     });
   }
 
@@ -72,6 +79,7 @@ export default class WhichStageServer implements Party.Server {
       festies,
     };
     conn.send(encode(welcome));
+    this.easels.syncToClient(msg => conn.send(encode(msg)));
   }
 
   onMessage(raw: string, sender: Party.Connection) {
@@ -112,6 +120,7 @@ export default class WhichStageServer implements Party.Server {
           this.chatter.setChatterDisabled(true);
         } else if (wasEmpty) {
           this.chatter.onFirstPlayer();
+          void this.easels.onFirstPlayer();
         }
         this.broadcastExcept(sender.id, { t: 'joined', player });
         void this.broadcastFestiesSync();
@@ -251,6 +260,7 @@ export default class WhichStageServer implements Party.Server {
     }
     if (this.players.size === 0) {
       this.chatter.onLastPlayer();
+      void this.easels.onLastPlayer();
     }
   }
 
