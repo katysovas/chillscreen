@@ -1,8 +1,8 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
-import SFCityLoader from './SFCityLoader';
 import { WelcomePopup } from './WelcomePopup';
 import { persistFestieStage, venueRouteForStageSlug } from '@/lib/festie/stage';
 import { hydratePlayerSession } from '@/lib/player/session';
@@ -18,11 +18,17 @@ import {
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
 
+const SFCityLoader = dynamic(() => import('./SFCityLoader'), {
+  ssr: false,
+  loading: () => null,
+});
+
 type BootPhase = 'loading' | 'guest' | 'redirecting';
 
 /** Home `/` — resolve auth first, then one stage backdrop + city picker overlay. */
 export function HomeCityPicker() {
   const router = useRouter();
+  const [clientReady, setClientReady] = useState(false);
   const [phase, setPhase] = useState<BootPhase>('loading');
   const [previewRoute, setPreviewRoute] = useState<VenueRoute | null>(null);
   const [muted, setMuted] = useState(false);
@@ -33,6 +39,10 @@ export function HomeCityPicker() {
     getSessionBalloonColor,
     getServerBalloonColor,
   );
+
+  useEffect(() => {
+    setClientReady(true);
+  }, []);
 
   useEffect(() => {
     if (bootedRef.current) return;
@@ -72,7 +82,7 @@ export function HomeCityPicker() {
     router.push(`/${venueSlugForRoute(route)}`);
   };
 
-  if (phase !== 'guest' || previewRoute == null) {
+  if (!clientReady || phase !== 'guest' || previewRoute == null) {
     return null;
   }
 

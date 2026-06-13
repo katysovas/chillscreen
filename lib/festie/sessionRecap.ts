@@ -8,6 +8,7 @@ import {
   type FestieNpcChatterPayload,
   type LifeLogKind,
   isRecapDisplayEvent,
+  SESSION_RECAP_MIN_EVENT_COUNT,
 } from '@/lib/festie/events';
 export type FestieSessionRecap = {
   since: string;
@@ -15,6 +16,7 @@ export type FestieSessionRecap = {
   events: FestieEventRow[];
   coinsEarned: number;
   chatCount: number;
+  festieName?: string;
 };
 
 export type RecapLine = {
@@ -142,12 +144,44 @@ export function filterRecapEvents(events: FestieEventRow[]): FestieEventRow[] {
   return events.filter(isRecapDisplayEvent);
 }
 
+/** Ambient festival logs with no random-NPC subject — always shown. */
+const AMBIENT_LIFE_LOG_KINDS: ReadonlySet<LifeLogKind> = new Set([
+  'overheard',
+  'presence',
+  'mystery',
+  'crowd_milestone',
+  'lost_found',
+  'weather',
+  'sound_check',
+]);
+
+/** Life logs about the owner's festie, or venue-wide ambient moments. */
+export function isOwnerCentricLifeLog(
+  payload: FestieLifeLogPayload,
+  festieName: string,
+): boolean {
+  if (AMBIENT_LIFE_LOG_KINDS.has(payload.kind)) return true;
+  const who = festieName.trim().toLowerCase();
+  if (!who) return false;
+  return payload.text.toLowerCase().includes(who);
+}
+
+export function filterOwnerCentricRecapEvents(
+  events: FestieEventRow[],
+  festieName: string,
+): FestieEventRow[] {
+  return filterRecapEvents(events).filter(event => {
+    if (event.type !== FESTIE_EVENT_TYPES.LIFE_LOG) return true;
+    return isOwnerCentricLifeLog(event.payload as FestieLifeLogPayload, festieName);
+  });
+}
+
 export function recapLinesFromEvents(
   events: FestieEventRow[],
   festieName: string,
 ): RecapLine[] {
   const who = festieName.trim() || 'Your festie';
-  return filterRecapEvents(events).map(event => {
+  return filterOwnerCentricRecapEvents(events, who).map(event => {
     if (event.type === FESTIE_EVENT_TYPES.COIN_PICKUP) {
       const p = event.payload as FestieCoinPickupPayload;
       return {
@@ -226,8 +260,16 @@ export function recapLinesFromEvents(
   });
 }
 
-export function shouldShowSessionRecap(recap: FestieSessionRecap | null | undefined): boolean {
-  return Boolean(recap && hasEnoughRecapEvents(recap.events));
+export function shouldShowSessionRecap(
+  recap: FestieSessionRecap | null | undefined,
+  festieName?: string,
+): boolean {
+  if (!recap) return false;
+  const who = festieName?.trim() || recap.festieName?.trim();
+  if (who) {
+    return filterOwnerCentricRecapEvents(recap.events, who).length > SESSION_RECAP_MIN_EVENT_COUNT;
+  }
+  return hasEnoughRecapEvents(recap.events);
 }
 
 /** Dev preview — sample last-session activity. */
@@ -290,8 +332,8 @@ export function sampleSessionRecap(festieName: string): FestieSessionRecap {
       type: FESTIE_EVENT_TYPES.LIFE_LOG,
       created_at: new Date(Date.now() - 2.1 * 60 * 60 * 1000).toISOString(),
       payload: {
-        kind: 'greg_sighting',
-        text: 'someone claims they saw greg near the tents. unconfirmed',
+        kind: 'lost_item',
+        text: `${festieName.toLowerCase()} lost a glowstick, not looking for it`,
         synthesized: true,
       },
     },
@@ -302,7 +344,7 @@ export function sampleSessionRecap(festieName: string): FestieSessionRecap {
       created_at: new Date(Date.now() - 1.8 * 60 * 60 * 1000).toISOString(),
       payload: {
         kind: 'dance',
-        text: 'busted out the silent disco shuffle for 45 seconds. no witnesses',
+        text: `${festieName.toLowerCase()} busted out the silent disco shuffle for 45 seconds. no witnesses`,
         synthesized: true,
       },
     },
@@ -326,7 +368,7 @@ export function sampleSessionRecap(festieName: string): FestieSessionRecap {
       created_at: new Date(Date.now() - 0.6 * 60 * 60 * 1000).toISOString(),
       payload: {
         kind: 'food_incident',
-        text: 'lost a fry to a very confident pigeon. mutual respect',
+        text: `${festieName.toLowerCase()} lost a fry to a very confident pigeon. mutual respect`,
         synthesized: true,
       },
     },
@@ -342,7 +384,7 @@ export function sampleSessionRecap(festieName: string): FestieSessionRecap {
 
 export function recapSummary(recap: FestieSessionRecap, festieName: string): string {
   const who = festieName.trim() || 'Your festie';
-  const display = filterRecapEvents(recap.events);
+  const display = filterOwnerCentricRecapEvents(recap.events, who);
   const flavorLogs = display.filter(e => e.type === FESTIE_EVENT_TYPES.LIFE_LOG).length;
   const chats = recap.chatCount;
   const coins = recap.coinsEarned;

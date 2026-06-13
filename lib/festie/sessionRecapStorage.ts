@@ -22,3 +22,13 @@ export function markSessionRecapAcked(festieId: string, since: string): void {
     /* quota / private mode */
   }
 }
+
+/** Away-period start from the last dismissed recap — survives last_seen_at refresh. */
+export function getLastAckedRecapSince(festieId: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return sessionStorage.getItem(key(festieId));
+  } catch {
+    return null;
+  }
+}

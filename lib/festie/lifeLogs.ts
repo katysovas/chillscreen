@@ -34,10 +34,6 @@ type LifeLogResult = { kind: LifeLogKind; text: string } | null;
 
 type LifeLogGenerator = (ctx: LifeLogContext) => LifeLogResult;
 
-const FLAVOR_NPC_NAMES = [
-  'baz', 'sunshine', 'greg', 'river', 'nova', 'peach', 'riff', 'cleo',
-];
-
 const OVERHEARD_LINES = [
   'I swear that drop reset my whole personality',
   'does anyone know where the silent disco moved to',
@@ -94,23 +90,6 @@ const FOOD_INCIDENTS = [
   '{npc} spilled lemonade and declared it performance art',
   '{npc} ate a whole pizza slice in one bite. witnesses applauded',
   '{npc} found a fry on the ground. considered it. moved on',
-];
-
-const NPC_INTERACTIONS = [
-  '{a} asked {b} a lot of questions. {b} left',
-  '{a} tried to explain the set list to {b}. {b} nodded and walked away',
-  '{a} and {b} argued about the best genre. both were wrong',
-  '{a} borrowed {b}\'s fan. returned it with extra glitter',
-  '{a} told {b} a secret about the afterparty. {b} already knew',
-  '{a} challenged {b} to a dance-off. {b} won by standing still',
-];
-
-const GREG_SIGHTINGS = [
-  'someone claims they saw greg near the tents. unconfirmed',
-  'greg may have been spotted by the art cars. he vanished when approached',
-  'two people swear greg was in line for merch. greg denies everything',
-  'greg was allegedly seen vibing near the side stage. no photo exists',
-  'a vendor thinks greg bought a corn dog. greg has never been here',
 ];
 
 const NAPS = [
@@ -231,18 +210,8 @@ export function venueLabelForSlug(slug: string): string {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function pickNpc(ctx: LifeLogContext, offset = 0): string {
-  const pool = ctx.npcPool.map(n => n.displayName);
-  const all = [...pool, ...FLAVOR_NPC_NAMES];
-  const idx = Math.floor(ctx.rng() * all.length + offset) % all.length;
-  return all[idx] ?? 'someone';
-}
-
-function pickTwoNpcs(ctx: LifeLogContext): [string, string] {
-  const a = pickNpc(ctx);
-  let b = pickNpc(ctx, 3);
-  if (b.toLowerCase() === a.toLowerCase()) b = pickNpc(ctx, 7);
-  return [a, b];
+function festieLabel(ctx: LifeLogContext): string {
+  return ctx.festie.name.trim().toLowerCase() || 'your festie';
 }
 
 function fill(template: string, vars: Record<string, string>): string {
@@ -297,12 +266,12 @@ const GENERATORS: LifeLogGenerator[] = [
     text: `overheard near ${pickLandmark(ctx)}: "${OVERHEARD_LINES[Math.floor(ctx.rng() * OVERHEARD_LINES.length)]!}"`,
   }),
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const stream = streamAtTime(ctx.route, ctx.at.getTime());
     if (!stream) return null;
     return {
       kind: 'stream_watched',
-      text: `${npc.toLowerCase()} watched ${stream.hours} hour${stream.hours === 1 ? '' : 's'} of ${stream.title}`,
+      text: `${who} watched ${stream.hours} hour${stream.hours === 1 ? '' : 's'} of ${stream.title}`,
     };
   },
   ctx => {
@@ -317,58 +286,37 @@ const GENERATORS: LifeLogGenerator[] = [
     };
   },
   ctx => {
-    const npc = pickNpc(ctx);
-    const coins = 1 + Math.floor(ctx.rng() * 8);
-    return {
-      kind: 'npc_coins',
-      text: `${npc.toLowerCase()} found ${coins} coin${coins === 1 ? '' : 's'} near ${pickLandmark(ctx)}. kept it`,
-    };
-  },
-  ctx => {
-    const useOwner = ctx.ownerOwnedItemNames.length > 0 && ctx.rng() > 0.55;
-    const name = useOwner ? ctx.festie.name : pickNpc(ctx);
+    const who = festieLabel(ctx);
     const item = pickPurchasedItem(ctx);
     return {
       kind: 'lost_item',
-      text: `${name.toLowerCase()} lost a ${item}, not looking for it`,
+      text: `${who} lost a ${item}, not looking for it`,
     };
   },
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = FAILED_PLANS[Math.floor(ctx.rng() * FAILED_PLANS.length)]!;
-    return { kind: 'failed_plan', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'failed_plan', text: fill(tpl, { npc: who }) };
   },
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = SCENERY[Math.floor(ctx.rng() * SCENERY.length)]!;
-    return { kind: 'scenery', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'scenery', text: fill(tpl, { npc: who }) };
   },
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = FOOD_INCIDENTS[Math.floor(ctx.rng() * FOOD_INCIDENTS.length)]!;
-    return { kind: 'food_incident', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'food_incident', text: fill(tpl, { npc: who }) };
   },
   ctx => {
-    const [a, b] = pickTwoNpcs(ctx);
-    const tpl = NPC_INTERACTIONS[Math.floor(ctx.rng() * NPC_INTERACTIONS.length)]!;
-    return {
-      kind: 'npc_interaction',
-      text: fill(tpl, { a: a.toLowerCase(), b: b.toLowerCase() }),
-    };
-  },
-  ctx => ({
-    kind: 'greg_sighting',
-    text: GREG_SIGHTINGS[Math.floor(ctx.rng() * GREG_SIGHTINGS.length)]!,
-  }),
-  ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = NAPS[Math.floor(ctx.rng() * NAPS.length)]!;
-    return { kind: 'nap', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'nap', text: fill(tpl, { npc: who }) };
   },
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = TRADES[Math.floor(ctx.rng() * TRADES.length)]!;
-    return { kind: 'trade', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'trade', text: fill(tpl, { npc: who }) };
   },
   ctx => {
     const tpl = MYSTERIES[Math.floor(ctx.rng() * MYSTERIES.length)]!;
@@ -379,46 +327,46 @@ const GENERATORS: LifeLogGenerator[] = [
     text: CROWD_MILESTONES[Math.floor(ctx.rng() * CROWD_MILESTONES.length)]!,
   }),
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = ANIMAL_CAMEOS[Math.floor(ctx.rng() * ANIMAL_CAMEOS.length)]!;
-    return { kind: 'animal', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'animal', text: fill(tpl, { npc: who }) };
   },
   ctx => ({
     kind: 'lost_found',
     text: LOST_FOUND[Math.floor(ctx.rng() * LOST_FOUND.length)]!,
   }),
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = DANCE_LOGS[Math.floor(ctx.rng() * DANCE_LOGS.length)]!;
-    return { kind: 'dance', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'dance', text: fill(tpl, { npc: who }) };
   },
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = QUEUE_REPORTS[Math.floor(ctx.rng() * QUEUE_REPORTS.length)]!;
-    return { kind: 'queue', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'queue', text: fill(tpl, { npc: who }) };
   },
   ctx => ({
     kind: 'weather',
     text: WEATHER_NOTES[Math.floor(ctx.rng() * WEATHER_NOTES.length)]!,
   }),
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = MERCH_INCIDENTS[Math.floor(ctx.rng() * MERCH_INCIDENTS.length)]!;
-    return { kind: 'merch', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'merch', text: fill(tpl, { npc: who }) };
   },
   ctx => ({
     kind: 'sound_check',
     text: SOUND_CHECKS[Math.floor(ctx.rng() * SOUND_CHECKS.length)]!,
   }),
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = WANDERING_LOGS[Math.floor(ctx.rng() * WANDERING_LOGS.length)]!;
-    return { kind: 'wandering', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'wandering', text: fill(tpl, { npc: who }) };
   },
   ctx => {
-    const npc = pickNpc(ctx);
+    const who = festieLabel(ctx);
     const tpl = COLLECTION_UPDATES[Math.floor(ctx.rng() * COLLECTION_UPDATES.length)]!;
-    return { kind: 'collection', text: fill(tpl, { npc: npc.toLowerCase() }) };
+    return { kind: 'collection', text: fill(tpl, { npc: who }) };
   },
 ];
 

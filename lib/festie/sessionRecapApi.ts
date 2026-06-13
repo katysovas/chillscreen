@@ -1,7 +1,7 @@
 import { hasEnoughRecapEvents, countFestieChatsInEvents, listFestieEventsSince, sumFestieCoinsSince } from '@/lib/festie/events';
 import { getFestieById } from '@/lib/festie/db';
 import { ensureOfflineFestieActivity } from '@/lib/festie/offlineActivity';
-import { filterRecapEvents, type FestieSessionRecap } from '@/lib/festie/sessionRecap';
+import { filterOwnerCentricRecapEvents, filterRecapEvents, type FestieSessionRecap } from '@/lib/festie/sessionRecap';
 
 /** Build recap for the offline window [since, until) — last session only. */
 export async function buildFestieSessionRecap(
@@ -15,13 +15,17 @@ export async function buildFestieSessionRecap(
   }
 
   const events = await listFestieEventsSince(festieId, since, { until });
-  const displayEvents = filterRecapEvents(events);
+  const festieName = festie?.name ?? '';
+  const displayEvents = festieName
+    ? filterOwnerCentricRecapEvents(events, festieName)
+    : filterRecapEvents(events);
   if (!hasEnoughRecapEvents(displayEvents)) return null;
 
   return {
     since,
     until,
     events: displayEvents,
+    festieName: festieName || undefined,
     coinsEarned: await sumFestieCoinsSince(festieId, since, until),
     chatCount: countFestieChatsInEvents(displayEvents),
   };

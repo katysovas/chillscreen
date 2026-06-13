@@ -38,9 +38,15 @@ export default function SFCityLoader({
   serverBootOverlay = false,
 }: SFCityLoaderProps) {
   const [Game, setGame] = useState<SFCityComponent | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [showShell, setShowShell] = useState(false);
   const [shellVisible, setShellVisible] = useState(false);
+  const [debugPin, setDebugPin] = useState(false);
   const loadedRef = useRef(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const channel = stageChannelForRoute(venueRoute);
@@ -49,9 +55,13 @@ export default function SFCityLoader({
   }, [venueRoute]);
 
   useEffect(() => {
+    if (!mounted) return;
+
     let fadeTimer: ReturnType<typeof setTimeout> | undefined;
     let raf = 0;
     let cancelled = false;
+
+    setDebugPin(keepVenueBootOverlay());
 
     if (!serverBootOverlay) {
       setShowShell(true);
@@ -85,14 +95,14 @@ export default function SFCityLoader({
       if (fadeTimer) clearTimeout(fadeTimer);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [venueRoute, serverBootOverlay]);
+  }, [mounted, venueRoute, serverBootOverlay]);
 
-  const pinBootShell = keepVenueBootOverlay() && !serverBootOverlay;
+  const renderClientShell = mounted && !serverBootOverlay && (showShell || debugPin);
 
   return (
     <>
-      {(pinBootShell || (!serverBootOverlay && showShell)) && (
-        <StageBootShell visible={pinBootShell || shellVisible} />
+      {renderClientShell && (
+        <StageBootShell visible={debugPin || shellVisible} />
       )}
       {Game && (
         <Game

@@ -113,7 +113,7 @@ import { HelpFaqModal } from './HelpFaqModal';
 import { SignOutConfirmModal } from './SignOutConfirmModal';
 import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
-import { FestieSessionRecapModal } from './FestieSessionRecapModal';
+import { FestieSessionRecapOverlay } from './FestieSessionRecapOverlay';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
@@ -430,8 +430,8 @@ export default function SFCity({
     if (festie) setOwnerFestie(festie);
   }, []);
 
-  const openSessionRecap = useCallback((recap: FestieSessionRecap | null, needsAck: boolean) => {
-    if (!shouldShowSessionRecap(recap)) return;
+  const openSessionRecap = useCallback((recap: FestieSessionRecap | null, needsAck: boolean, festieName?: string) => {
+    if (!shouldShowSessionRecap(recap, festieName)) return;
     recapNeedsAckRef.current = needsAck;
     setSessionRecap(recap);
     setSessionRecapOpen(true);
@@ -445,19 +445,18 @@ export default function SFCity({
     if (wasSessionRecapAcked(festie.id, festie.last_seen_at)) return;
 
     if (TEST_FESTIE_RECAP_ON_LOAD) {
-      openSessionRecap(sampleSessionRecap(festie.name), false);
+      openSessionRecap(sampleSessionRecap(festie.name), false, festie.name);
       return;
     }
 
-    const recap = await fetchSessionRecapSince(festie.last_seen_at);
-    openSessionRecap(recap, needsAck);
+    const recap = await fetchSessionRecapSince(festie.last_seen_at, festie.name);
+    openSessionRecap(recap, needsAck, festie.name);
   }, [sessionRecapOpen, openSessionRecap]);
 
   const dismissSessionRecap = useCallback(() => {
     const since = sessionRecap?.since;
     const festieId = ownerFestie?.id;
     setSessionRecapOpen(false);
-    setSessionRecap(null);
     if (since && festieId) markSessionRecapAcked(festieId, since);
     if (recapNeedsAckRef.current) {
       recapNeedsAckRef.current = false;
@@ -476,7 +475,7 @@ export default function SFCity({
 
     if (TEST_FESTIE_RECAP_ON_LOAD) {
       const name = ownerFestie?.name ?? playerName ?? 'Moonbeam';
-      openSessionRecap(sampleSessionRecap(name), false);
+      openSessionRecap(sampleSessionRecap(name), false, name);
       return;
     }
 
@@ -1777,28 +1776,15 @@ export default function SFCity({
       )}
 
       {sessionRecapOpen && sessionRecap && ownerFestie && (
-        <>
-          <div
-            className="festie-recap-backdrop"
-            data-paraloid-ui
-            onClick={dismissSessionRecap}
-            aria-hidden
-          />
-          <div
-            className={`festie-recap-anchor${mobileDevice ? ' festie-recap-anchor--mobile' : ''}`}
-            data-paraloid-ui
-          >
-            <FestieSessionRecapModal
-              festieName={ownerFestie.name ?? playerName ?? 'Your festie'}
-              festiePreset={ownerFestie.preset}
-              festie={ownerFestie}
-              onFestieUpdated={festie => setOwnerFestie(festie)}
-              recap={sessionRecap}
-              onDismiss={dismissSessionRecap}
-              forceShowEmailSignup={TEST_FESTIE_RECAP_ON_LOAD}
-            />
-          </div>
-        </>
+        <FestieSessionRecapOverlay
+          festie={ownerFestie}
+          festieName={ownerFestie.name ?? playerName ?? 'Your festie'}
+          recap={sessionRecap}
+          isMobile={mobileDevice}
+          onFestieUpdated={festie => setOwnerFestie(festie)}
+          onDismiss={dismissSessionRecap}
+          forceShowEmailSignup={TEST_FESTIE_RECAP_ON_LOAD}
+        />
       )}
 
       <BottomControlPanel
@@ -1842,6 +1828,7 @@ export default function SFCity({
         <FestieLifeModal
           festie={ownerFestie}
           ownerOnline={ownerOnline}
+          sessionRecap={sessionRecap}
           refillFrom={lifeRefillFromRef.current}
           onClose={() => {
             setLifeModalOpen(false);
@@ -1901,7 +1888,7 @@ export default function SFCity({
           requireAuth={!festieSignedIn}
           pickStageOnly={festieSignedIn}
           onAuthSuccess={(name, sessionRecap) => {
-            openSessionRecap(sessionRecap ?? null, false);
+            openSessionRecap(sessionRecap ?? null, false, name);
             void hydratePlayerSession().then(profile => {
               setFestieSignedIn(profile.authenticated);
               if (profile.name) setPlayerName(profile.name);

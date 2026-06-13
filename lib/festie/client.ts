@@ -5,7 +5,7 @@ import {
   FESTIE_EVENT_TYPES,
   type FestieEventRow,
 } from '@/lib/festie/events';
-import { filterRecapEvents, shouldShowSessionRecap, type FestieSessionRecap } from '@/lib/festie/sessionRecap';
+import { filterOwnerCentricRecapEvents, shouldShowSessionRecap, type FestieSessionRecap } from '@/lib/festie/sessionRecap';
 import { markLocalFestieAccount } from '@/lib/festie/localAccount';
 import { trackFestieSignedIn, trackFestieSignedUp } from '@/lib/analytics';
 import type { FestieCache, FestieOwner } from '@/lib/festie/types';
@@ -71,17 +71,49 @@ export async function acknowledgeFestieReturn(): Promise<void> {
   await fetch('/api/festie/seen', { ...fetchOpts, method: 'POST' });
 }
 
-export async function fetchSessionRecapSince(since: string): Promise<FestieSessionRecap | null> {
+export async function fetchSessionRecapSince(
+  since: string,
+  festieName?: string,
+): Promise<FestieSessionRecap | null> {
   const data = await fetchFestieEvents(since);
-  const events = filterRecapEvents(data.events);
+  const who = festieName?.trim() ?? '';
+  const events = who
+    ? filterOwnerCentricRecapEvents(data.events, who)
+    : data.events;
   const recap: FestieSessionRecap = {
     since: data.since,
     until: new Date().toISOString(),
     events,
     coinsEarned: data.coinsEarned,
     chatCount: countFestieChatsInEvents(events),
+    festieName: who || undefined,
   };
-  return shouldShowSessionRecap(recap) ? recap : null;
+  return shouldShowSessionRecap(recap, who || undefined) ? recap : null;
+}
+
+/** Recent activity for Life modal history — no minimum event threshold. */
+export async function fetchFestieHistorySince(
+  since: string,
+  festieName: string,
+): Promise<FestieSessionRecap> {
+  const data = await fetchFestieEvents(since);
+  const events = filterOwnerCentricRecapEvents(data.events, festieName);
+  return {
+    since: data.since,
+    until: new Date().toISOString(),
+    events,
+    coinsEarned: data.coinsEarned,
+    chatCount: countFestieChatsInEvents(events),
+    festieName,
+  };
+}
+
+/** Same window as the session recap popup — before last_seen_at is refreshed. */
+export function historySinceForFestie(
+  festie: { id: string; last_seen_at: string },
+  ackedSince?: string | null,
+): string {
+  return ackedSince ?? festie.last_seen_at;
 }
 
 export async function logoutFestie(): Promise<void> {

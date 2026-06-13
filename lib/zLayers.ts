@@ -8,6 +8,9 @@ export const Z_CONTROLS = 100;
 /** Standard in-game modals and panels (Help, Festie Life, vendor shop). */
 export const Z_MODAL = 500;
 
+/** Session recap popup — above controls, below nested modals. */
+export const Z_SESSION_RECAP = 505;
+
 /** Modals that stack on top of other modals (settings, sign-out confirm). */
 export const Z_MODAL_NESTED = 510;
 

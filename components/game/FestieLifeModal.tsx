@@ -1,27 +1,49 @@
 'use client';
 
+import { useState, type CSSProperties } from 'react';
 import { Z_MODAL } from '@/lib/zLayers';
 import { FestieLifeHeader } from './FestieLifeHeader';
 import { FestieLifePanel } from './FestieLifePanel';
+import { FestieHistoryPanel } from './FestieHistoryPanel';
 import type { FestieOwner } from '@/lib/festie/types';
+import type { FestieSessionRecap } from '@/lib/festie/sessionRecap';
+
+type LifeTab = 'life' | 'history';
 
 type Props = {
   festie: FestieOwner;
   ownerOnline: boolean;
+  sessionRecap?: FestieSessionRecap | null;
   onClose: () => void;
   onOpenSettings: () => void;
   onUpdated?: (festie: FestieOwner) => void;
   refillFrom?: number | null;
 };
 
+const tabStyle = (active: boolean): CSSProperties => ({
+  flex: 1,
+  padding: '10px 12px',
+  border: 'none',
+  borderRadius: 10,
+  background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+  color: active ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.45)',
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'system-ui,sans-serif',
+});
+
 export function FestieLifeModal({
   festie,
   ownerOnline,
+  sessionRecap = null,
   onClose,
   onOpenSettings,
   onUpdated,
   refillFrom = null,
 }: Props) {
+  const [tab, setTab] = useState<LifeTab>('life');
+
   return (
     <div
       data-paraloid-ui
@@ -80,11 +102,48 @@ export function FestieLifeModal({
           </button>
         </div>
 
-        <FestieLifePanel
-          festie={festie}
-          ownerOnline={ownerOnline}
-          onUpdated={onUpdated}
-        />
+        <div
+          role="tablist"
+          aria-label="Festie life sections"
+          style={{
+            display: 'flex',
+            gap: 6,
+            padding: 4,
+            marginBottom: 16,
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.05)',
+          }}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'life'}
+            style={tabStyle(tab === 'life')}
+            onClick={() => setTab('life')}
+          >
+            Life
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'history'}
+            style={tabStyle(tab === 'history')}
+            onClick={() => setTab('history')}
+          >
+            History
+          </button>
+        </div>
+
+        {tab === 'life' ? (
+          <FestieLifePanel
+            festie={festie}
+            ownerOnline={ownerOnline}
+            onUpdated={onUpdated}
+            emailInputId="festie-life-email"
+          />
+        ) : (
+          <FestieHistoryPanel festie={festie} sessionRecap={sessionRecap} />
+        )}
 
         <button
           type="button"
