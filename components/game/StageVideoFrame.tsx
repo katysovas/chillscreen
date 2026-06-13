@@ -11,11 +11,14 @@ export const STAGE_VIDEO_FO_STYLE: CSSProperties = {
   overflow: 'visible',
   pointerEvents: 'auto',
   touchAction: 'manipulation',
+  willChange: 'transform',
 };
 
 export const STAGE_VIDEO_WRAPPER_STYLE: CSSProperties = {
   pointerEvents: 'auto',
   touchAction: 'manipulation',
+  willChange: 'transform',
+  isolation: 'isolate',
 };
 
 type StageVideoFrameProps = {
@@ -51,6 +54,8 @@ export function StageVideoFrame({
     overflow: 'hidden',
     pointerEvents: 'auto',
     touchAction: 'manipulation',
+    willChange: 'transform',
+    isolation: 'isolate',
   };
 
   if (!src) return <div style={hostStyle} />;
