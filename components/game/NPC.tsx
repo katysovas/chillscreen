@@ -59,6 +59,8 @@ type NPCProps = NPCConfig & {
   index: number;
   stageAnchor?: StageAnchorKind;
   stageCrowd?: StageAnchorKind;
+  /** World-x that attracts idle wander targets — e.g. the cinema easel. */
+  wanderAttractWorldX?: number;
   paused: boolean;
   greeting: boolean;
   /** Soft connect glow — local or remote 1:1 conversation. */
@@ -108,7 +110,7 @@ export default function NPC({
   index,
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
-  personality, stageAnchor, stageCrowd,
+  personality, stageAnchor, stageCrowd, wanderAttractWorldX,
   paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false, greetingChat,
   spaceFloat = false,
 }: NPCProps) {
@@ -207,6 +209,11 @@ export default function NPC({
   const pickWanderTarget = (curWorldX: number) => {
     const anchor = anchorWorldX();
     if (stageAnchor && anchor != null) return pickAnchorTarget(anchor);
+
+    // Attract toward a fixed world point (e.g. cinema easel) ~32% of the time.
+    if (wanderAttractWorldX != null && Number.isFinite(wanderAttractWorldX) && Math.random() < 0.32) {
+      return wanderAttractWorldX + rndBetween(-48, 48);
+    }
 
     const [prefLo, prefHi] = personality.wanderRange;
     const curPct = worldXToScreenPct(curWorldX, gameWorldOffRef.current);

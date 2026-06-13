@@ -117,6 +117,10 @@ import { FestieSessionRecapOverlay } from './FestieSessionRecapOverlay';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
+import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
+import { cinemaCanvasAnchorWorldX } from '@/lib/cinemaCanvasLayout';
+import { CinemaCanvasGroundLayer } from './cinema/CinemaCanvasGroundLayer';
+import { CinemaCanvasProvider } from './cinema/CinemaCanvasContext';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
 import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
@@ -1302,6 +1306,7 @@ export default function SFCity({
         window.innerWidth,
         npcWorldXRefs.current,
       );
+      runAllWorldPositionTicks(worldRef.current, window.innerWidth);
     };
 
     connectNearRef.current = () => {
@@ -1595,6 +1600,14 @@ export default function SFCity({
         userSelect: 'none',
       }}
     >
+      <CinemaCanvasProvider
+        active={
+          !homePreview
+          && effectiveVenueRoute === 'cinema'
+          && !showWelcome
+          && !showCityPicker
+        }
+      >
       <div>
         {isDeepSpace ? (
           <SpaceParallaxStars />
@@ -1645,6 +1658,8 @@ export default function SFCity({
           />
         )}
 
+        {!homePreview && <CinemaCanvasGroundLayer />}
+
         {/* Autonomous NPCs */}
         {!homePreview && crowdVisualsReady && effectiveNpcCast.map((cfg, i) => {
           if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
@@ -1658,6 +1673,9 @@ export default function SFCity({
             index={i}
             {...cfg}
             stageAnchor={cfg.stageAnchor}
+            wanderAttractWorldX={
+              effectiveVenueRoute === 'cinema' ? cinemaCanvasAnchorWorldX() : undefined
+            }
             startX={testing ? 55 : cfg.startX}
             entryDelay={testing ? 0 : cfg.entryDelay}
             paused={chatConnected}
@@ -1761,6 +1779,7 @@ export default function SFCity({
           </div>
         ))}
       </div>
+      </CinemaCanvasProvider>
 
       {!homePreview && (
       <>
