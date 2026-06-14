@@ -20,12 +20,17 @@ function mapSlotFromApi(s: Record<string, unknown>): EaselSlotSync {
     started_at: s.started_at != null ? String(s.started_at) : undefined,
     topic: s.topic != null ? String(s.topic) : undefined,
     program: s.program as EaselSlotSync['program'],
+    completed_at: s.completed_at != null ? String(s.completed_at) : undefined,
   };
 }
 
 /** Local watched-clock session when PartyKit is offline or not yet running easels. */
-export function fetchLocalEaselSession(stageSlug: string): Promise<EaselSessionSync | null> {
-  return fetch(`/api/easel?stage=${encodeURIComponent(stageSlug)}`)
+export function fetchLocalEaselSession(
+  stageSlug: string,
+  opts?: { ensure?: boolean },
+): Promise<EaselSessionSync | null> {
+  const ensureQs = opts?.ensure ? '&ensure=1' : '';
+  return fetch(`/api/easel?stage=${encodeURIComponent(stageSlug)}${ensureQs}`)
     .then(r => (r.ok ? r.json() : null))
     .then((data: { slots?: Record<string, unknown>[] } | null) => {
       if (!data?.slots?.length) return null;
@@ -58,8 +63,10 @@ export function useEaselSession(
   stageSlug: string,
   enabled: boolean,
   partySession: EaselSessionSync | null,
+  opts?: { ensureOnLoad?: boolean },
 ): EaselSessionSync | null {
   const [localSession, setLocalSession] = useState<EaselSessionSync | null>(null);
+  const ensureOnLoad = opts?.ensureOnLoad ?? false;
 
   useEffect(() => {
     if (!enabled) {
@@ -67,11 +74,11 @@ export function useEaselSession(
       return;
     }
     let cancelled = false;
-    void fetchLocalEaselSession(stageSlug).then(session => {
+    void fetchLocalEaselSession(stageSlug, { ensure: ensureOnLoad }).then(session => {
       if (!cancelled && session) setLocalSession(session);
     });
     return () => { cancelled = true; };
-  }, [enabled, stageSlug, partySession?.sessionStart]);
+  }, [enabled, stageSlug, partySession?.sessionStart, ensureOnLoad]);
 
   useEffect(() => {
     if (!enabled) return;

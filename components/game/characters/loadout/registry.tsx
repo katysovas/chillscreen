@@ -107,6 +107,9 @@ export function preloadLoadoutImages(itemIds: string[]): Promise<void> {
     if (id === 'party-glowsticks') {
       for (const src of GLOWSTICK_IMAGE_SRCS) urls.add(src);
     }
+    if (id === 'hand-brush') {
+      urls.add('/images/props/hands_brush.svg');
+    }
   }
   if (urls.size === 0) return Promise.resolve();
   return Promise.all([...urls].map(preloadImage)).then(() => {});
@@ -131,6 +134,9 @@ export function areLoadoutItemsReady(itemIds: string[]): boolean {
       for (const src of GLOWSTICK_IMAGE_SRCS) {
         if (!imagesReady.has(src)) return false;
       }
+    }
+    if (id === 'hand-brush' && !imagesReady.has('/images/props/hands_brush.svg')) {
+      return false;
     }
   }
   return true;

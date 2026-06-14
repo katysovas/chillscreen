@@ -121,9 +121,14 @@ import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
 import { easelWalkTargetWorldXForNpc } from '@/lib/easel/stationed';
-import { mergeEaselOwnersIntoCast, preloadCinemaEaselOwners, isCinemaEaselOwner } from '@/lib/easel/cast';
+import { mergeEaselOwnersIntoCast, preloadEaselOwners, isEaselPainterForChannel } from '@/lib/easel/cast';
+import { easelHandLoadout } from '@/lib/easel/brushLoadout';
+import { easelPaintingContextForNpc } from '@/lib/easel/chatContext';
+import { ensureEaselSession } from '@/lib/easel/checkpointClient';
+import { notifyEaselUpdated } from '@/lib/easel/notifyUpdated';
 import { activePainterNpcIds } from '@/lib/easel/session';
 import { useEaselSession } from '@/lib/easel/useEaselSession';
+import { useEaselHoldAdvance } from '@/lib/easel/useEaselHoldAdvance';
 import { TEST_EASEL_ON_LOAD } from '@/lib/easel/test';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
@@ -146,6 +151,11 @@ const TEST_PLAYER_VARIANT_GALLERY = false;
 
 /** Equip loadout items on the player at startup (testing). */
 const TEST_PLAYER_LOADOUT = {} as const;
+
+/** Equip gas mask on a cinema NPC at startup (testing). */
+const TEST_NPC_MASK_ON_LOAD = false;
+const TEST_NPC_MASK_ID = 'gen-cinema-vanessa';
+const TEST_NPC_MASK_ITEM = 'mask-gasmask' as const;
 
 /** Auto-connect player + first NPC on load to preview chat connect glow (testing). */
 const TEST_CHAT_CONNECT_ON_LOAD = false;
@@ -623,22 +633,43 @@ export default function SFCity({
   const mpRef = useRef(mp);
   mpRef.current = mp;
 
+  const easelChannel = stageChannelForRoute(effectiveVenueRoute);
   const easelStageSlug = stageSlugFromVenueRoute(effectiveVenueRoute);
-  const easelSessionEnabled = effectiveVenueRoute === 'cinema' && !homePreview;
-  const activeEaselSession = useEaselSession(easelStageSlug, easelSessionEnabled, mp.easelSession);
-  const [cinemaEaselCastReady, setCinemaEaselCastReady] = useState(false);
+  const easelSessionEnabled = !homePreview;
+  const easelUserActive = TEST_EASEL_ON_LOAD || mp.connected || (!showWelcome && !showCityPicker);
+  const activeEaselSession = useEaselSession(
+    easelStageSlug,
+    easelSessionEnabled,
+    mp.easelSession,
+    { ensureOnLoad: TEST_EASEL_ON_LOAD },
+  );
+  const partyDrivesEasel = Boolean(mp.easelSession?.slots?.length);
+  useEaselHoldAdvance(
+    easelStageSlug,
+    activeEaselSession,
+    easelSessionEnabled && easelUserActive && !partyDrivesEasel,
+  );
+  const [easelCastReady, setEaselCastReady] = useState(false);
 
   useEffect(() => {
-    if (effectiveVenueRoute !== 'cinema') {
-      setCinemaEaselCastReady(false);
+    if (!easelSessionEnabled || partyDrivesEasel) return;
+    if (!mp.connected && !TEST_EASEL_ON_LOAD) return;
+    void ensureEaselSession(easelStageSlug).then(slots => {
+      if (slots.length > 0) notifyEaselUpdated();
+    });
+  }, [easelSessionEnabled, easelStageSlug, mp.connected, partyDrivesEasel]);
+
+  useEffect(() => {
+    if (!easelSessionEnabled) {
+      setEaselCastReady(false);
       return;
     }
     let cancelled = false;
-    void preloadCinemaEaselOwners().then(() => {
-      if (!cancelled) setCinemaEaselCastReady(true);
+    void preloadEaselOwners(easelChannel).then(() => {
+      if (!cancelled) setEaselCastReady(true);
     });
     return () => { cancelled = true; };
-  }, [effectiveVenueRoute]);
+  }, [effectiveVenueRoute, easelChannel, easelSessionEnabled]);
 
   const easelsActive =
     easelSessionEnabled
@@ -650,14 +681,14 @@ export default function SFCity({
       ...npcCast,
       ...festiesToCharacterDefs(mp.festies, effectiveVenueRoute),
     ];
-    if (effectiveVenueRoute !== 'cinema') return base;
-    if (!cinemaEaselCastReady && !TEST_EASEL_ON_LOAD) return base;
+    if (!easelSessionEnabled) return base;
+    if (!easelCastReady && !TEST_EASEL_ON_LOAD) return base;
     return mergeEaselOwnersIntoCast(
       base,
-      stageChannelForRoute('cinema'),
+      easelChannel,
       activePainterNpcIds(activeEaselSession),
     );
-  }, [npcCast, mp.festies, effectiveVenueRoute, cinemaEaselCastReady, activeEaselSession]);
+  }, [npcCast, mp.festies, effectiveVenueRoute, easelCastReady, activeEaselSession, easelSessionEnabled, easelChannel]);
   const effectiveNpcCastRef = useRef(effectiveNpcCast);
   effectiveNpcCastRef.current = effectiveNpcCast;
 
@@ -877,7 +908,14 @@ export default function SFCity({
     let cancelled = false;
     const dressCodeExtras = effectiveVenueRoute === 'silent-disco' ? ['hat-headphones'] : [];
     void preloadCrowdLoadouts(
-      [playerLoadout, ...effectiveNpcCast.map(c => c.loadout)],
+      [
+        playerLoadout,
+        ...effectiveNpcCast.map(c => (
+          TEST_NPC_MASK_ON_LOAD && c.id === TEST_NPC_MASK_ID
+            ? { ...(c.loadout ?? {}), mask: TEST_NPC_MASK_ITEM }
+            : c.loadout
+        )),
+      ],
       dressCodeExtras,
     )
       .then(() => {
@@ -979,6 +1017,7 @@ export default function SFCity({
 
     const character = effectiveNpcCast[greetingNpc];
     const message = sentMessageRef.current;
+    const easelPainting = easelPaintingContextForNpc(character.id, activeEaselSession);
 
     if (isChatterMuted()) {
       setNpcTyping(false);
@@ -996,6 +1035,7 @@ export default function SFCity({
         history: chatHistoryRef.current,
         cinemaNowPlaying: cinemaNowRef.current,
         concertNowPlaying: concertNowRef.current,
+        easelPainting,
         conversationId: festieChat ? festieConvoIdRef.current : undefined,
       },
       controller.signal,
@@ -1027,7 +1067,7 @@ export default function SFCity({
     });
 
     return () => controller.abort();
-  }, [chatSendTick, greetingNpc, playerName]);
+  }, [chatSendTick, greetingNpc, playerName, activeEaselSession]);
 
   const clearAmbientHide = useCallback(() => {
     if (ambientHideRef.current) clearTimeout(ambientHideRef.current);
@@ -1696,15 +1736,20 @@ export default function SFCity({
           const testing = TEST_SPAWN_NPC_ID === cfg.id;
           const chatConnected = isNpcChatConnected(i, cfg.id);
           const npcLabel = npcChatLabel(cfg.id, cfg.name);
+          const isPainting = activePainterNpcIds(activeEaselSession).has(cfg.id);
+          const baseLoadout = TEST_NPC_MASK_ON_LOAD && cfg.id === TEST_NPC_MASK_ID
+            ? { ...(cfg.loadout ?? {}), mask: TEST_NPC_MASK_ITEM }
+            : cfg.loadout;
           return (
           <NPC
             key={cfg.id}
             characterId={cfg.id}
             index={i}
             {...cfg}
+            loadout={easelHandLoadout(baseLoadout, isPainting)}
             stageAnchor={cfg.stageAnchor}
             easelWalkTargetWorldX={easelWalkTargetWorldXForNpc(cfg.id, activeEaselSession, easelStageSlug)}
-            easelStationOnLoad={TEST_EASEL_ON_LOAD && isCinemaEaselOwner(cfg.id)}
+            easelStationOnLoad={TEST_EASEL_ON_LOAD && isEaselPainterForChannel(cfg.id, easelChannel) && activePainterNpcIds(activeEaselSession).has(cfg.id)}
             startX={testing ? 55 : cfg.startX}
             entryDelay={testing ? 0 : cfg.entryDelay}
             paused={chatConnected}

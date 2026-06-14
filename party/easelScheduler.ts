@@ -3,14 +3,18 @@ import { encode, type ServerMessage } from '../lib/multiplayer/protocol';
 import { chatterAuthHeader } from '../lib/npcChatter/auth';
 import { chatterApiBase } from '../lib/npcChatter/apiBase';
 import { stageSlugForRoom } from '../lib/npcChatter/roomContext';
+import { easelHoldExpired } from '../lib/easel/lifecycle';
 import { liveSegmentsDone } from '../lib/easel/segments';
 import type { EaselSessionSync, EaselSlotSync } from '../lib/easel/types';
+import { EASEL_HOLD_MS } from '../lib/easel/types';
 
 export type EaselSchedulerDeps = {
   room: Party.Room;
   broadcast: (msg: ServerMessage) => void;
   playerCount: () => number;
 };
+
+type SlotApiPayload = EaselSlotSync & { ok?: boolean; waiting?: boolean };
 
 export class EaselScheduler {
   private sessionStart: number | null = null;
@@ -32,20 +36,29 @@ export class EaselScheduler {
     return stageSlugForRoom(this.roomId);
   }
 
+  private authHeaders(): Record<string, string> {
+    const secret = this.env.NPC_CHATTER_SECRET?.trim();
+    return chatterAuthHeader(secret);
+  }
+
   private async fetchEasels(): Promise<EaselSlotSync[]> {
-    const res = await fetch(`${this.apiBase()}/api/easel?stage=${encodeURIComponent(this.stageSlug())}`);
+    const stage = this.stageSlug();
+    const res = await fetch(
+      `${this.apiBase()}/api/easel?stage=${encodeURIComponent(stage)}&sync=1`,
+    );
     if (!res.ok) return [];
     const data = await res.json() as { slots: EaselSlotSync[] };
     return data.slots ?? [];
   }
 
-  private async postEasel(body: Record<string, unknown>): Promise<void> {
-    const secret = this.env.NPC_CHATTER_SECRET?.trim();
-    await fetch(`${this.apiBase()}/api/easel`, {
+  private async postEasel(body: Record<string, unknown>): Promise<SlotApiPayload | null> {
+    const res = await fetch(`${this.apiBase()}/api/easel`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...chatterAuthHeader(secret) },
+      headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
       body: JSON.stringify(body),
     });
+    if (!res.ok) return null;
+    return res.json() as Promise<SlotApiPayload>;
   }
 
   private broadcastSession() {
@@ -60,7 +73,7 @@ export class EaselScheduler {
 
   private startCheckLoop() {
     this.stopCheckLoop();
-    this.checkTimer = setInterval(() => void this.checkCompletions(), 1000);
+    this.checkTimer = setInterval(() => void this.checkSession(), 1000);
   }
 
   private stopCheckLoop() {
@@ -70,27 +83,86 @@ export class EaselScheduler {
     }
   }
 
-  private async checkCompletions() {
+  private applySlotFromApi(slot: number, payload: SlotApiPayload | null) {
+    if (!payload || payload.ok === false) return false;
+    const idx = this.slots.findIndex(s => s.slot === slot);
+    const next: EaselSlotSync = {
+      slot: payload.slot ?? slot,
+      npc: payload.npc,
+      drawing_id: payload.drawing_id,
+      total_segments: payload.total_segments,
+      segments_done: payload.segments_done,
+      rate: payload.rate,
+      status: payload.status,
+      started_at: payload.started_at,
+      topic: payload.topic,
+      program: payload.program,
+      completed_at: payload.completed_at,
+    };
+    if (idx >= 0) this.slots[idx] = next;
+    else this.slots.push(next);
+    return true;
+  }
+
+  private async checkSession() {
     if (this.sessionStart == null || this.deps.playerCount() === 0) return;
     const now = Date.now();
+    const stage = this.stageSlug();
+    let changed = false;
 
-    for (const slot of this.slots) {
-      if (slot.status !== 'painting') continue;
-      const live = liveSegmentsDone(slot.segments_done, slot.rate, this.sessionStart, now);
-      if (live < slot.total_segments) continue;
+    for (const slot of [...this.slots]) {
+      if (slot.status === 'painting') {
+        const live = liveSegmentsDone(slot.segments_done, slot.rate, this.sessionStart, now);
+        if (live < slot.total_segments) continue;
 
-      await this.postEasel({
-        action: 'complete',
-        stage: this.stageSlug(),
-        slot: slot.slot,
-      });
-      slot.status = 'done';
-      slot.segments_done = slot.total_segments;
-      this.broadcastSession();
+        const result = await this.postEasel({
+          action: 'complete',
+          stage,
+          slot: slot.slot,
+        });
+        if (this.applySlotFromApi(slot.slot, result)) {
+          console.log(
+            `[easel:party] completed slot ${slot.slot} — hold ${EASEL_HOLD_MS / 1000}s before next painter`,
+          );
+          changed = true;
+        }
+        continue;
+      }
+
+      if (slot.status === 'done' && easelHoldExpired(slot.completed_at, now)) {
+        const result = await this.postEasel({
+          action: 'advanceIfReady',
+          stage,
+          slot: slot.slot,
+        });
+        if (result?.waiting) continue;
+
+        if (result && result.status === 'painting') {
+          this.slots = [result];
+          this.sessionStart = Date.now();
+          console.log(`[easel:party] next painter ${result.npc} @ slot ${slot.slot}`);
+          changed = true;
+          continue;
+        }
+
+        const refreshed = await this.fetchEasels();
+        if (refreshed.length === 0) {
+          this.slots = [];
+          changed = true;
+        } else {
+          this.slots = refreshed;
+          this.sessionStart = Date.now();
+          changed = true;
+        }
+      }
     }
+
+    if (changed) this.broadcastSession();
   }
 
   async onFirstPlayer() {
+    const stage = this.stageSlug();
+    await this.postEasel({ action: 'ensureSession', stage });
     const rows = await this.fetchEasels();
     if (rows.length === 0) return;
     this.slots = rows;

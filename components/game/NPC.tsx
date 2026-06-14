@@ -462,7 +462,9 @@ export default function NPC({
           worldXRef.current = easelWalkTargetWorldX;
           targetWorldRef.current = easelWalkTargetWorldX;
           stateRef.current = 'idle';
-          applyFacing('right');
+          if (!pausedRef.current) {
+            applyFacing('right');
+          }
           applyWalking(false);
         }
       } else if (stageAnchor && !heldForConvo) {
@@ -543,8 +545,8 @@ export default function NPC({
   useEffect(() => {
     const justDisconnected = wasGreetingRef.current && !greeting;
     wasGreetingRef.current = greeting;
-    if (justDisconnected) fleeFromPlayer();
-  }, [greeting]);
+    if (justDisconnected && easelWalkTargetWorldX == null) fleeFromPlayer();
+  }, [greeting, easelWalkTargetWorldX]);
 
   if (!active) return null;
 

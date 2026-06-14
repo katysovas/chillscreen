@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  EMPTY_STAGE_SYNC,
-  mergePartialPlaylists,
+  DEFAULT_STAGE_SYNC,
+  mergeStageSyncPlaylists,
   scheduleFor,
   type ScheduledVideo,
   type StageChannel,
   type StageSync,
   type StageVideo,
-} from './stageSyncCore';
+} from './stageVideos';
 
 /**
  * Shared synchronized-playback clock.
@@ -38,12 +38,14 @@ const listeners = new Set<() => void>();
 /** Apply the server handshake: align our clock + adopt the pinned playlists. */
 export function applyServerStageSync(
   serverNow: number,
-  sync: StageSync,
+  sync: Pick<StageSync, 'epoch' | 'defaultDurationMs'> & {
+    playlists: Partial<Record<StageChannel, StageVideo[]>>;
+  },
   source?: SyncSource,
 ) {
   const playlists = serverSync
-    ? mergePartialPlaylists(serverSync.playlists, sync.playlists)
-    : mergePartialPlaylists(undefined, sync.playlists);
+    ? mergeStageSyncPlaylists(serverSync.playlists, sync.playlists)
+    : mergeStageSyncPlaylists(undefined, sync.playlists);
 
   // PartyKit owns the clock once connected; API can still upgrade fallback playlists.
   if (source === 'api' && syncSource === 'partykit' && serverSync) {
@@ -62,19 +64,16 @@ export function applyServerStageSync(
 /** Seed one channel's fallback playlist before the API/PartyKit handshake. */
 export function applyLocalChannelPlaylist(channel: StageChannel, videos: StageVideo[]) {
   if (!videos.length) return;
-  const sync: StageSync = {
-    epoch: EMPTY_STAGE_SYNC.epoch,
-    defaultDurationMs: EMPTY_STAGE_SYNC.defaultDurationMs,
-    playlists: { [channel]: videos },
-  };
+  const playlists = mergeStageSyncPlaylists(serverSync?.playlists, { [channel]: videos });
   if (serverSync) {
-    serverSync = {
-      ...serverSync,
-      playlists: mergePartialPlaylists(serverSync.playlists, sync.playlists),
-    };
+    serverSync = { ...serverSync, playlists };
     if (!syncSource) syncSource = 'local';
   } else {
-    serverSync = sync;
+    serverSync = {
+      epoch: DEFAULT_STAGE_SYNC.epoch,
+      defaultDurationMs: DEFAULT_STAGE_SYNC.defaultDurationMs,
+      playlists,
+    };
     syncSource = 'local';
   }
   for (const notify of listeners) notify();
@@ -91,6 +90,11 @@ export function bootstrapStageSyncFromApi(channel: StageChannel) {
 
   apiFetchAbort?.abort();
   bootstrapStarted = true;
+  if (bootstrapChannel !== channel) {
+    // Venue changed — drop stale partial sync so curated channels re-pin from bundled JSON.
+    serverSync = null;
+    syncSource = null;
+  }
   bootstrapChannel = channel;
 
   const controller = new AbortController();
@@ -116,7 +120,7 @@ export function bootstrapStageSyncFromApi(channel: StageChannel) {
 }
 
 export function getStageSync(): StageSync {
-  return serverSync ?? EMPTY_STAGE_SYNC;
+  return serverSync ?? DEFAULT_STAGE_SYNC;
 }
 
 export function syncedNow(): number {

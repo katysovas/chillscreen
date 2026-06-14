@@ -1,8 +1,8 @@
 import { NPC_LINE_TIMEOUT_MS } from '@/lib/npcChatter/constants';
 import type { ChatMessage } from '@/lib/npcChatter/openrouter';
 
-const DRAWING_MAX_TOKENS = 1800;
-const DRAWING_TEMPERATURE = 0.92;
+const DRAWING_MAX_TOKENS = 4096;
+const DRAWING_TEMPERATURE = 0.95;
 const DRAWING_TIMEOUT_MS = Math.max(NPC_LINE_TIMEOUT_MS, 20_000);
 
 async function llmComplete(model: string, messages: ChatMessage[]): Promise<string | null> {

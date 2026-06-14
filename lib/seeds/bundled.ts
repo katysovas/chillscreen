@@ -5,6 +5,7 @@
 
 import seedsData from '@/data/seeds.json';
 import type { SeedPools } from '@/lib/seeds/db';
+import { canonicalVenueSlug } from '@/lib/venueSlugs';
 
 type SeedPool = {
   generated?: string[];
@@ -23,13 +24,17 @@ const seeds = seedsData as BundledSeedsFile;
 export function getBundledSeedPools(stageSlug: string | null | undefined): SeedPools {
   const globalGenerated = seeds.generated ?? [];
   const globalFallback = seeds.fallback ?? [];
-  if (!stageSlug?.trim()) {
+  const trimmed = stageSlug?.trim() ?? '';
+  const stageSlugKey = trimmed ? canonicalVenueSlug(trimmed) : null;
+  if (!stageSlugKey) {
     return {
       generated: [...globalGenerated],
       fallback: [...globalFallback],
     };
   }
-  const stage = seeds.stages?.[stageSlug.trim()] ?? {};
+  const stage = seeds.stages?.[stageSlugKey]
+    ?? seeds.stages?.[trimmed]
+    ?? {};
   return {
     generated: [...globalGenerated, ...(stage.generated ?? [])],
     fallback: [...globalFallback, ...(stage.fallback ?? [])],

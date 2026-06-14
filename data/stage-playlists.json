@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-12T23:42:48.307Z",
+  "updatedAt": "2026-06-14T03:43:50.302Z",
   "channels": {
     "cinema": {
       "label": "Chill Cinema",
@@ -101,6 +101,31 @@
         {
           "id": "bZWh_pkifJM",
           "title": "Ghibli Vibes 🌻 ~ Lofi Coffee ☕ | Deep focus to study / relax / work [ Lofi Hip Hop - Lofi Music ]"
+        },
+        {
+          "id": "Bk3vbzQOSis",
+          "title": "Trip-Hop, Downtempo, Chill Music, Broken Beat Vinyl Mix by Fragmented Beats @ Fonoteca Listening Bar",
+          "durationSec": 6770
+        },
+        {
+          "id": "-B4LuoW9ROM",
+          "title": "Downtempo & Trip Hop – ROCKY | Disco Duro Radio 05",
+          "durationSec": 2869
+        },
+        {
+          "id": "EnYmqdQA73s",
+          "title": "CloZee - Sunset Dreamtempo Set",
+          "durationSec": 3426
+        },
+        {
+          "id": "7fTb-YK_YOQ",
+          "title": "NNS 021 | Downtempo, Dub, World | Laid-back Downtempo & Spacy Dub Mix by Nina Yamada",
+          "durationSec": 3450
+        },
+        {
+          "id": "yXqTV-cwyeo",
+          "title": "Broken Beat, Trip-Hop, Mystical Funk, Downtempo, Acid Jazz, Lo-Fi Vinyl Mix by Fragmented Beats",
+          "durationSec": 7648
         }
       ]
     },
@@ -668,6 +693,36 @@
           "id": "6phNZu4n2UM",
           "title": "Space City - Cosmic Music For Space Traveling",
           "durationSec": 7207
+        },
+        {
+          "id": "UuU-Go8GoeY",
+          "title": "DEKEL Downtempo @ The Dome - Ozora Festival 2023 (Full Movie)",
+          "durationSec": 4872
+        },
+        {
+          "id": "rJTnDeCEG8Q",
+          "title": "”LOWSYNC” Downtempo,Electronic,World DJ MIX / tsubasabclrs / by MUSIC LOUNGE STRUT at Koenji, Tokyo",
+          "durationSec": 3050
+        },
+        {
+          "id": "KTDJVwB_A3Y",
+          "title": "Kalya Scintilla LIVE @ OZORA Dome 2025 (World Fusion BassMusic Downtempo Electronica)",
+          "durationSec": 7018
+        },
+        {
+          "id": "-ljOpZ03x1I",
+          "title": "Joris Voorn Vinyl DJ Mix | Classic Dub Techno & More",
+          "durationSec": 5000
+        },
+        {
+          "id": "oDKKs3eu84s",
+          "title": "Jade Sebire - Dub Techno / Deep Techno vinyl dj set.",
+          "durationSec": 5315
+        },
+        {
+          "id": "C_VAhfhwN4Y",
+          "title": "Andrey Pushkarev - Vinyl DJ Mix | Recorded in a pressing plant (Dub & Deep Techno)",
+          "durationSec": 5802
         }
       ]
     }

@@ -67,7 +67,7 @@ export function validateProgram(program: unknown): program is DrawingProgram {
   if (!program || typeof program !== 'object') return false;
   const p = program as DrawingProgram;
   if (!p.id || !p.npc || !Array.isArray(p.strokes)) return false;
-  if (p.strokes.length < 1 || p.strokes.length > 40) return false;
+  if (p.strokes.length < 1 || p.strokes.length > 55) return false;
   for (const s of p.strokes) {
     if (!Array.isArray(s.p) || s.p.length < 2) return false;
     for (const pt of s.p) {

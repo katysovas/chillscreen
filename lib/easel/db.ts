@@ -1,13 +1,26 @@
 import { requireDb } from '@/lib/db';
-import { npcPoolKey } from './drawingsPool';
 import { buildEaselDrawingContext } from './drawingContext';
 import { generateDrawingProgram } from './generateDrawing';
-import { programFromRow, rowToSlotSync } from './resolveProgram';
-import { totalSegments } from './segments';
+import { easelHoldExpired } from './lifecycle';
+import { logEaselDrawing } from './logDrawing';
+import { pickNextEaselNpc } from './npcRotation';
+import { programFromRow, rowNeedsAiUpgrade, rowToSlotSync } from './resolveProgram';
+import { easelStageLookupSlugs, normalizeEaselStage } from './stageKey';
 import type { DrawingProgram, EaselRow, EaselStatus } from './types';
 import { EASEL_DEFAULT_RATE, EASEL_SLOTS_PER_STAGE } from './types';
 
-const DEFAULT_CINEMA_NPCS = ['gen-cinema-vanessa'];
+async function migrateLegacyStageRows(rows: EaselRow[]): Promise<void> {
+  const sql = requireDb();
+  for (const row of rows) {
+    const canonical = normalizeEaselStage(row.stage);
+    if (row.stage === canonical) continue;
+    await sql`
+      UPDATE easel SET stage = ${canonical}
+      WHERE stage = ${row.stage} AND slot = ${row.slot}
+    `;
+    row.stage = canonical;
+  }
+}
 
 function rowFromDb(r: Record<string, unknown>): EaselRow {
   let programJson: DrawingProgram | null = null;
@@ -41,59 +54,138 @@ function rowFromDb(r: Record<string, unknown>): EaselRow {
 
 export async function getEaselsForStage(stage: string): Promise<EaselRow[]> {
   const sql = requireDb();
+  const slugs = easelStageLookupSlugs(stage);
   const rows = await sql`
     SELECT * FROM easel
-    WHERE stage = ${stage} AND hidden_at IS NULL AND slot < ${EASEL_SLOTS_PER_STAGE}
+    WHERE stage = ANY(${slugs}) AND hidden_at IS NULL AND slot < ${EASEL_SLOTS_PER_STAGE}
     ORDER BY slot
   ` as Record<string, unknown>[];
-  return rows.map(rowFromDb);
-}
-
-async function insertEaselRow(
-  stage: string,
-  slot: number,
-  npc: string,
-  drawingId: string,
-  topic: string,
-  program: DrawingProgram,
-  totalSeg: number,
-): Promise<void> {
-  const sql = requireDb();
-  await sql`
-    INSERT INTO easel (stage, slot, npc, drawing_id, topic, program_json, total_segments, segments_done, rate, status)
-    VALUES (
-      ${stage}, ${slot}, ${npc}, ${drawingId}, ${topic},
-      ${JSON.stringify(program)}::jsonb,
-      ${totalSeg}, 0, ${EASEL_DEFAULT_RATE}, 'painting'
-    )
-    ON CONFLICT (stage, slot) DO NOTHING
-  `;
+  const parsed = rows.map(rowFromDb);
+  await migrateLegacyStageRows(parsed);
+  return parsed;
 }
 
 async function createAiDrawingForNpc(stage: string, slot: number, npc: string): Promise<void> {
-  const ctx = buildEaselDrawingContext(npc, stage);
-  const { program, totalSegments: total } = await generateDrawingProgram(ctx);
-  await insertEaselRow(stage, slot, npc, program.id, program.topic, program, total);
+  await startNewEaselDrawing(stage, slot, npc);
 }
 
-/** Seed one slot when a stage has no easel rows yet — AI picks the subject. */
-export async function ensureEaselsForStage(stage: string): Promise<EaselRow[]> {
+function logExistingEaselRow(row: EaselRow, stage: string): void {
+  const program = programFromRow(row);
+  const topic = row.topic ?? program?.topic ?? row.drawing_id;
+  logEaselDrawing('server', row.npc, topic, {
+    stage,
+    slot: row.slot,
+    status: row.status,
+    source: row.program_json ? 'ai-db' : 'missing',
+    progress: `${row.segments_done}/${row.total_segments}`,
+  });
+}
+
+async function upgradeEaselRowToAi(stage: string, row: EaselRow): Promise<EaselRow> {
+  const stageKey = normalizeEaselStage(stage);
+  console.log(
+    `[easel:server] replacing legacy drawing "${row.drawing_id}" with AI program for ${row.npc}`,
+  );
+  const ctx = await buildEaselDrawingContext(row.npc, stageKey);
+  const { program, totalSegments: total } = await generateDrawingProgram(ctx);
+  const wasDone = row.status === 'done';
+  const sql = requireDb();
+  const slugs = easelStageLookupSlugs(stageKey);
+  if (wasDone) {
+    await sql`
+      UPDATE easel SET
+        stage = ${stageKey},
+        drawing_id = ${program.id},
+        topic = ${program.topic},
+        program_json = ${JSON.stringify(program)}::jsonb,
+        total_segments = ${total},
+        segments_done = ${total},
+        status = 'done',
+        started_at = now()
+      WHERE stage = ANY(${slugs}) AND slot = ${row.slot}
+    `;
+  } else {
+    await sql`
+      UPDATE easel SET
+        stage = ${stageKey},
+        drawing_id = ${program.id},
+        topic = ${program.topic},
+        program_json = ${JSON.stringify(program)}::jsonb,
+        total_segments = ${total},
+        segments_done = 0,
+        status = 'painting',
+        started_at = now(),
+        completed_at = null
+      WHERE stage = ANY(${slugs}) AND slot = ${row.slot}
+    `;
+  }
+  const updated = await getEaselRow(stageKey, row.slot);
+  if (!updated) throw new Error('easel upgrade failed');
+  logExistingEaselRow(updated, stageKey);
+  return updated;
+}
+
+/** Upgrade legacy rows without seeding or advancing holds. */
+export async function getVisibleEasels(stage: string): Promise<EaselRow[]> {
   let rows = await getEaselsForStage(stage);
-  if (rows.length > 0) {
-    return rows.map(row => {
-      if (programFromRow(row)) return row;
-      return row;
-    });
+  for (const row of rows) {
+    if (rowNeedsAiUpgrade(row)) {
+      await upgradeEaselRowToAi(stage, row);
+    }
   }
-
-  for (let slot = 0; slot < EASEL_SLOTS_PER_STAGE; slot++) {
-    const npc = DEFAULT_CINEMA_NPCS[slot];
-    if (!npc) continue;
-    await createAiDrawingForNpc(stage, slot, npc);
-  }
-
   rows = await getEaselsForStage(stage);
+  for (const row of rows) logExistingEaselRow(row, stage);
   return rows;
+}
+
+/** Upgrade legacy rows and advance finished easels past the hold window. */
+export async function syncEaselSessionForPlayers(stage: string): Promise<EaselRow[]> {
+  const rows = await getVisibleEasels(stage);
+  for (const row of rows) {
+    if (row.status === 'done' && easelHoldExpired(row.completed_at)) {
+      await advanceEaselAfterHold(stage, row.slot);
+    }
+  }
+
+  return getEaselsForStage(stage);
+}
+
+/**
+ * Start the easel when a real user is present and no visible canvas exists.
+ * Also advances any easels past the post-completion hold.
+ */
+export async function ensureEaselSessionStarted(stage: string): Promise<EaselRow[]> {
+  const stageKey = normalizeEaselStage(stage);
+  await syncEaselSessionForPlayers(stageKey);
+  let rows = await getEaselsForStage(stageKey);
+  if (rows.length === 0) {
+    const npc = await pickNextEaselNpc(stageKey);
+    console.log(`[easel:server] user session — ${npc} begins painting @ ${stageKey}`);
+    await startNewEaselDrawing(stageKey, 0, npc);
+    rows = await getEaselsForStage(stageKey);
+  }
+  for (const row of rows) logExistingEaselRow(row, stageKey);
+  return rows;
+}
+
+/** After hold expires: hide finished canvas, next NPC starts a fresh painting. */
+export async function advanceEaselAfterHold(stage: string, slot: number): Promise<EaselRow | null> {
+  const row = await getEaselRow(stage, slot);
+  if (!row || row.status !== 'done' || !easelHoldExpired(row.completed_at)) {
+    return row;
+  }
+
+  const nextNpc = await pickNextEaselNpc(stage, row.npc);
+  console.log(
+    `[easel:server] hold ended — hiding slot ${slot}, ${nextNpc} starts next painting @ ${stage}`,
+  );
+  await hideEasel(stage, slot);
+  return startNewEaselDrawing(stage, slot, nextNpc);
+}
+
+/** @deprecated Use ensureEaselSessionStarted when users are present, or getEaselsForStage for read-only. */
+export async function ensureEaselsForStage(stage: string): Promise<EaselRow[]> {
+  return ensureEaselSessionStarted(stage);
 }
 
 export async function checkpointEasel(
@@ -101,27 +193,33 @@ export async function checkpointEasel(
   slot: number,
   segmentsDone: number,
 ): Promise<EaselRow | null> {
+  const stageKey = normalizeEaselStage(stage);
+  const slugs = easelStageLookupSlugs(stageKey);
   const sql = requireDb();
   await sql`
     UPDATE easel
     SET segments_done = ${segmentsDone},
+        stage = ${stageKey},
         started_at = now()
-    WHERE stage = ${stage} AND slot = ${slot} AND status = 'painting'
+    WHERE stage = ANY(${slugs}) AND slot = ${slot} AND status = 'painting'
   `;
-  return getEaselRow(stage, slot);
+  return getEaselRow(stageKey, slot);
 }
 
 export async function completeEasel(stage: string, slot: number): Promise<EaselRow | null> {
+  const stageKey = normalizeEaselStage(stage);
+  const slugs = easelStageLookupSlugs(stageKey);
   const sql = requireDb();
   await sql`
     UPDATE easel
     SET status = 'done',
+        stage = ${stageKey},
         completed_at = now(),
         segments_done = total_segments,
         started_at = now()
-    WHERE stage = ${stage} AND slot = ${slot}
+    WHERE stage = ANY(${slugs}) AND slot = ${slot}
   `;
-  return getEaselRow(stage, slot);
+  return getEaselRow(stageKey, slot);
 }
 
 export async function rolloverEasel(
@@ -131,43 +229,55 @@ export async function rolloverEasel(
   drawingId: string,
   totalSegmentsCount: number,
 ): Promise<void> {
+  const stageKey = normalizeEaselStage(stage);
+  const slugs = easelStageLookupSlugs(stageKey);
   const sql = requireDb();
   await sql`
     UPDATE easel
-    SET drawing_id = ${drawingId},
+    SET stage = ${stageKey},
+        drawing_id = ${drawingId},
         total_segments = ${totalSegmentsCount},
         segments_done = 0,
         status = 'painting',
         started_at = now(),
         completed_at = null
-    WHERE stage = ${stage} AND slot = ${slot} AND npc = ${npc}
+    WHERE stage = ANY(${slugs}) AND slot = ${slot} AND npc = ${npc}
   `;
 }
 
 export async function hideEasel(stage: string, slot: number): Promise<void> {
+  const stageKey = normalizeEaselStage(stage);
+  const slugs = easelStageLookupSlugs(stageKey);
   const sql = requireDb();
   await sql`
-    UPDATE easel SET hidden_at = now() WHERE stage = ${stage} AND slot = ${slot}
+    UPDATE easel SET hidden_at = now(), stage = ${stageKey}
+    WHERE stage = ANY(${slugs}) AND slot = ${slot}
   `;
 }
 
 export async function getEaselRow(stage: string, slot: number): Promise<EaselRow | null> {
+  const slugs = easelStageLookupSlugs(stage);
   const sql = requireDb();
   const rows = await sql`
-    SELECT * FROM easel WHERE stage = ${stage} AND slot = ${slot}
+    SELECT * FROM easel WHERE stage = ANY(${slugs}) AND slot = ${slot}
   ` as Record<string, unknown>[];
-  return rows[0] ? rowFromDb(rows[0]) : null;
+  if (!rows[0]) return null;
+  const row = rowFromDb(rows[0]);
+  await migrateLegacyStageRows([row]);
+  return row;
 }
 
 /** Start a fresh AI drawing on a slot (after hide or admin reset). */
 export async function startNewEaselDrawing(stage: string, slot: number, npc: string): Promise<EaselRow | null> {
-  const ctx = buildEaselDrawingContext(npc, stage);
+  const stageKey = normalizeEaselStage(stage);
+  console.log(`[easel:server] starting fresh drawing for ${npc} @ ${stageKey} slot ${slot}`);
+  const ctx = await buildEaselDrawingContext(npc, stageKey);
   const { program, totalSegments: total } = await generateDrawingProgram(ctx);
   const sql = requireDb();
   await sql`
     INSERT INTO easel (stage, slot, npc, drawing_id, topic, program_json, total_segments, segments_done, rate, status)
     VALUES (
-      ${stage}, ${slot}, ${npc}, ${program.id}, ${program.topic},
+      ${stageKey}, ${slot}, ${npc}, ${program.id}, ${program.topic},
       ${JSON.stringify(program)}::jsonb,
       ${total}, 0, ${EASEL_DEFAULT_RATE}, 'painting'
     )
@@ -184,7 +294,7 @@ export async function startNewEaselDrawing(stage: string, slot: number, npc: str
       completed_at = null,
       hidden_at = null
   `;
-  return getEaselRow(stage, slot);
+  return getEaselRow(stageKey, slot);
 }
 
 export { rowToSlotSync, programFromRow };

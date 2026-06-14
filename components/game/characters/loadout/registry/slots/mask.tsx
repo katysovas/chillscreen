@@ -7,4 +7,6 @@ export const RENDERERS: Record<string, ItemRenderer> = {
   'mask-3': ctx => <MaskProp variant="mask-3" ctx={ctx} />,
   'mask-6': ctx => <MaskProp variant="mask-6" ctx={ctx} />,
   'mask-mando': ctx => <MaskProp variant="mask-mando" ctx={ctx} />,
+  'mask-gasmask': ctx => <MaskProp variant="mask-gasmask" ctx={ctx} />,
+  'mask-astronaut': ctx => <MaskProp variant="mask-astronaut" ctx={ctx} />,
 };

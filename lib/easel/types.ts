@@ -76,6 +76,8 @@ export type EaselSlotSync = {
   topic?: string;
   /** AI-generated or legacy stroke program — included in API responses. */
   program?: DrawingProgram;
+  /** Set when status is done — used for post-completion hold timer. */
+  completed_at?: string;
 };
 
 export type EaselSessionSync = {
@@ -87,5 +89,5 @@ export const EASEL_LOGICAL_SIZE = 96;
 export const EASEL_SLOTS_PER_STAGE = 1;
 export const EASEL_STEP_MS = 600;
 export const EASEL_SEGMENTS_PER_STEP = 2;
-export const EASEL_HOLD_MS = 8_000;
-export const EASEL_DEFAULT_RATE = 0.35;
+export const EASEL_HOLD_MS = 120_000;
+export const EASEL_DEFAULT_RATE = 0.5;

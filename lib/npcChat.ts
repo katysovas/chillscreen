@@ -1,4 +1,6 @@
 import CHARACTERS, { type CharacterDef } from '@/components/game/characters';
+import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
+import { easelPaintingContextForNpc, easelPaintingWorldNote } from '@/lib/easel/chatContext';
 import { allGeneratedCharacters } from '@/lib/generatedNpcs';
 import { npcDisplayNameForCharacter } from '@/lib/npcRoster';
 import { bitcoinWorldNote, formatBitcoinUsd, type BitcoinSnapshot } from '@/lib/bitcoinPrice';
@@ -60,9 +62,12 @@ export function buildNpcSystemPrompt(
   cinemaNowPlaying?: string | null,
   concertNowPlaying?: string | null,
   bitcoinSnapshot?: BitcoinSnapshot | null,
+  easelPainting?: EaselPaintingChatContext | null,
 ): string {
   const btcNote =
     character.id === 'satosh' ? `\n${bitcoinWorldNote(bitcoinSnapshot ?? null)}` : '';
+  const easelNote = easelPaintingWorldNote(easelPainting);
+  const easelBlock = easelNote ? `\n${easelNote}` : '';
 
   return `${BASE_NPC_PROMPT}
 
@@ -70,7 +75,7 @@ Your name is ${npcDisplayNameForCharacter({ id: character.id, name: character.na
 Personality: ${character.personalityNotes}
 How you move through the world: ${movementVibe(character)}.
 ${cinemaWorldNote(cinemaNowPlaying)}
-${concertWorldNote(concertNowPlaying)}${btcNote}`;
+${concertWorldNote(concertNowPlaying)}${btcNote}${easelBlock}`;
 }
 
 export function pickFallbackReply(
@@ -103,13 +108,18 @@ export function buildGreetingMessages(
   cinemaNowPlaying?: string | null,
   concertNowPlaying?: string | null,
   bitcoinSnapshot?: BitcoinSnapshot | null,
+  easelPainting?: EaselPaintingChatContext | null,
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+  const easelHint = easelPainting
+    ? ' You are mid-painting at the easel — the greeting can nod at your drawing if it fits naturally.'
+    : '';
+
   return [
     {
       role: 'system',
-      content: `${buildNpcSystemPrompt(character, cinemaNowPlaying, concertNowPlaying, bitcoinSnapshot)}
+      content: `${buildNpcSystemPrompt(character, cinemaNowPlaying, concertNowPlaying, bitcoinSnapshot, easelPainting)}
 
-The player just walked up to you on the street to connect. Give a warm in-character greeting — one very short sentence (under 12 words if possible). This is the very start of the conversation.`,
+The player just walked up to you on the street to connect. Give a warm in-character greeting — one very short sentence (under 12 words if possible). This is the very start of the conversation.${easelHint}`,
     },
     {
       role: 'user',
@@ -126,12 +136,13 @@ export function buildChatMessages(
   cinemaNowPlaying?: string | null,
   concertNowPlaying?: string | null,
   bitcoinSnapshot?: BitcoinSnapshot | null,
+  easelPainting?: EaselPaintingChatContext | null,
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   const trimmed = history.slice(-8);
   return [
     {
       role: 'system',
-      content: buildNpcSystemPrompt(character, cinemaNowPlaying, concertNowPlaying, bitcoinSnapshot),
+      content: buildNpcSystemPrompt(character, cinemaNowPlaying, concertNowPlaying, bitcoinSnapshot, easelPainting),
     },
     ...trimmed.map(t => ({ role: t.role, content: t.content })),
     {

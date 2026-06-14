@@ -10,6 +10,7 @@ export {
   parseVenueSlug,
   VENUE_SLUGS,
   venueSlugForRoute,
+  canonicalVenueSlug,
 } from '@/lib/venueSlugs';
 import type { VenueRoute } from '@/lib/venueSlugs';
 

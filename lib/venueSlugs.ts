@@ -22,7 +22,7 @@ export function venueSlugForRoute(route: VenueRoute): string {
     case 'seattle-concerts':
       return 'seattle';
     case 'cinema':
-      return 'chill-cinema';
+      return 'cinema';
     case 'deep-space':
       return 'space';
     case 'tentaroo':
@@ -40,7 +40,7 @@ export const VENUE_SLUGS = [
   'lasvegas',
   'sanfrancisco',
   'seattle',
-  'chill-cinema',
+  'cinema',
   'space',
   'thefarm',
   'forest',
@@ -52,6 +52,7 @@ const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
   lasvegas: 'edc',
   sanfrancisco: 'outside-hands',
   seattle: 'seattle-concerts',
+  cinema: 'cinema',
   'chill-cinema': 'cinema',
   space: 'deep-space',
   thefarm: 'tentaroo',
@@ -65,4 +66,11 @@ const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
 /** Parse a URL segment like `thedesert`. */
 export function parseVenueSlug(slug: string): VenueRoute | null {
   return SLUG_TO_ROUTE[slug.toLowerCase().replace(/_/g, '-')] ?? null;
+}
+
+/** Canonical path slug — maps legacy URLs (e.g. chill-cinema → cinema). */
+export function canonicalVenueSlug(slug: string): string {
+  const key = slug.toLowerCase().replace(/_/g, '-');
+  if (key === 'chill-cinema') return 'cinema';
+  return key;
 }

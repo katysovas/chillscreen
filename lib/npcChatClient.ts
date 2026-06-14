@@ -1,4 +1,5 @@
 import { isChatterMuted } from '@/lib/chatterMuted';
+import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
 import { NPC_TYPING_MS } from '@/lib/npcChat';
 
 export type NpcChatRequest = {
@@ -9,6 +10,8 @@ export type NpcChatRequest = {
   isGreeting?: boolean;
   cinemaNowPlaying?: string | null;
   concertNowPlaying?: string | null;
+  /** Active easel painting — informs replies about the canvas. */
+  easelPainting?: EaselPaintingChatContext | null;
   /** Festie 1:1 chats — persisted in festie_conversations. */
   conversationId?: string | null;
 };

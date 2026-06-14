@@ -26,9 +26,10 @@ const CONFETTI_SRC = '/images/props/festival_confetti.svg';
 const FIREWORKS_SRC = '/images/props/festival_fireworks.svg';
 const STICKER_SRC = '/images/props/sticker.svg';
 const TOTEM_SRC = '/images/props/hands_totem.svg';
+const BRUSH_SRC = '/images/props/hands_brush.svg';
 
 type HandPropProps = {
-  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza' | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle' | 'water' | 'juice' | 'coffee' | 'glowsticks' | 'confetti' | 'fireworks' | 'sticker' | 'totem';
+  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza' | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle' | 'water' | 'juice' | 'coffee' | 'glowsticks' | 'confetti' | 'fireworks' | 'sticker' | 'totem' | 'brush';
   ctx: LoadoutRenderCtx;
 };
 
@@ -288,6 +289,17 @@ export function HandProp({ variant, ctx }: HandPropProps) {
             src={TOTEM_SRC}
             alt=""
             className="ch-lo-totem-img"
+            draggable={false}
+          />
+        </div>
+      );
+    case 'brush':
+      return (
+        <div className="ch-lo-brush">
+          <img
+            src={BRUSH_SRC}
+            alt=""
+            className="ch-lo-brush-img"
             draggable={false}
           />
         </div>

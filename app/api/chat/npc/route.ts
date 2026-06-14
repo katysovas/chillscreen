@@ -1,4 +1,5 @@
 import { fetchBitcoinUsdSnapshot } from '@/lib/bitcoinPrice';
+import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
 import { handleFestieNpcChat } from '@/lib/festie/chatHandler';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { sanitizeNpcLine } from '@/lib/messageFilter';
@@ -20,6 +21,7 @@ type RequestBody = {
   isGreeting?: boolean;
   cinemaNowPlaying?: string | null;
   concertNowPlaying?: string | null;
+  easelPainting?: EaselPaintingChatContext | null;
   conversationId?: string | null;
 };
 
@@ -31,7 +33,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { characterId, history = [], isGreeting = false, cinemaNowPlaying, concertNowPlaying } = body;
+  const { characterId, history = [], isGreeting = false, cinemaNowPlaying, concertNowPlaying, easelPainting } = body;
   const playerName = body.playerName?.trim() || 'friend';
 
   if (!characterId) {
@@ -70,6 +72,7 @@ export async function POST(req: Request) {
         cinemaNowPlaying,
         concertNowPlaying,
         bitcoinSnapshot,
+        easelPainting,
       )
     : buildChatMessages(
         character,
@@ -79,6 +82,7 @@ export async function POST(req: Request) {
         cinemaNowPlaying,
         concertNowPlaying,
         bitcoinSnapshot,
+        easelPainting,
       );
 
   try {

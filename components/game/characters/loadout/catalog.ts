@@ -141,6 +141,15 @@ export const LOADOUT_CATALOG: Record<string, LoadoutItemDef> = {
     holdSide: 'right',
     defaultProps: {},
   },
+  'hand-brush': {
+    id: 'hand-brush',
+    slot: 'hand',
+    name: 'Paintbrush',
+    description: 'Easel sketch brush.',
+    handMounted: true,
+    holdSide: 'right',
+    defaultProps: {},
+  },
   'food-lollipop': {
     id: 'food-lollipop',
     slot: 'hand',
@@ -458,6 +467,22 @@ export const LOADOUT_CATALOG: Record<string, LoadoutItemDef> = {
     name: 'Mando Helmet',
     description: 'This is the way.',
     vendorPrice: 200,
+    defaultProps: {},
+  },
+  'mask-gasmask': {
+    id: 'mask-gasmask',
+    slot: 'mask',
+    name: 'Gas Mask',
+    description: 'Full-face filter for the dusty dancefloor.',
+    vendorPrice: 175,
+    defaultProps: {},
+  },
+  'mask-astronaut': {
+    id: 'mask-astronaut',
+    slot: 'mask',
+    name: 'Astronaut Helmet',
+    description: 'Houston, the bass drop was nominal.',
+    vendorPrice: 225,
     defaultProps: {},
   },
 

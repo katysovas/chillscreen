@@ -3,8 +3,9 @@
 import { memo, useEffect, useRef } from 'react';
 import { createEaselController } from '@/lib/easel/easelController';
 import { checkpointEaselProgress, completeEaselDrawing } from '@/lib/easel/checkpointClient';
-import { getDrawingById, modelLabelForNpc, npcPoolKey, paletteForNpc } from '@/lib/easel/drawingsPool';
+import { modelLabelForNpc, npcPoolKey, paletteForNpc } from '@/lib/easel/drawingsPool';
 import { notifyEaselUpdated } from '@/lib/easel/notifyUpdated';
+import { logEaselDrawing } from '@/lib/easel/logDrawing';
 import { programForSlot } from '@/lib/easel/resolveProgram';
 import { clampLiveDone, liveSegmentsDone } from '@/lib/easel/segments';
 import { easelClockStart, parseStartedAtMs } from '@/lib/easel/sessionClock';
@@ -64,6 +65,25 @@ export const EaselSlotView = memo(function EaselSlotView({
   const model = modelLabelForNpc(npcKey);
   const name = slot.npc.split('-').pop() ?? slot.npc;
   const label = slot.topic?.trim() || programForSlot(slot)?.topic || `${model} ${name}`;
+  const loggedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const program = programForSlot(slot);
+    if (!program) {
+      console.warn('[easel:client] no AI program on slot — waiting for server', slot.drawing_id);
+      return;
+    }
+    const key = `${slot.drawing_id}:${slot.status}:${slot.segments_done}`;
+    if (loggedRef.current === key) return;
+    loggedRef.current = key;
+    logEaselDrawing('client', slot.npc, label, {
+      stage: stageSlug,
+      slot: slot.slot,
+      status: slot.status,
+      progress: `${slot.segments_done}/${slot.total_segments}`,
+      id: slot.drawing_id,
+    });
+  }, [slot, stageSlug, label]);
 
   useEffect(() => {
     progressRef.current = baselineFromSlot(slot, sessionStart);
@@ -73,7 +93,10 @@ export const EaselSlotView = memo(function EaselSlotView({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const program = programForSlot(slot);
-    if (!program) return;
+    if (!program) {
+      console.warn('[easel:client] no AI program to render', slot.drawing_id);
+      return;
+    }
 
     const baseline = progressRef.current;
     const ctrl = controllerRef.current;
@@ -108,7 +131,7 @@ export const EaselSlotView = memo(function EaselSlotView({
         startedAt: result.started_at,
       };
       if (result.status === 'done') {
-        const doneProgram = programForSlot({ ...slot, status: 'done' }) ?? getDrawingById(slot.drawing_id);
+        const doneProgram = programForSlot({ ...slot, status: 'done' });
         if (doneProgram) {
           controllerRef.current.load({
             program: doneProgram,
@@ -118,6 +141,11 @@ export const EaselSlotView = memo(function EaselSlotView({
           });
         }
         notifyEaselUpdated();
+        logEaselDrawing('client', slot.npc, label, {
+          stage: stageSlug,
+          status: 'done',
+          finished: true,
+        });
       }
     };
 

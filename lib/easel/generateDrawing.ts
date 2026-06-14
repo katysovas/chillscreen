@@ -1,6 +1,9 @@
 import { npcPoolKey, paletteForNpc } from './drawingsPool';
 import { completeDrawingJson } from './completeDrawing';
 import type { EaselDrawingContext } from './drawingContext';
+import { isDuplicateDrawingId, isDuplicateTopic } from './drawingHistory';
+import { buildRichFallbackProgram } from './fallbackSketches';
+import { logEaselContext, logEaselDrawing } from './logDrawing';
 import { totalSegments, validateProgram } from './segments';
 import type { DrawingProgram, DrawingStroke } from './types';
 
@@ -8,6 +11,11 @@ export type GeneratedDrawing = {
   program: DrawingProgram;
   totalSegments: number;
 };
+
+const MAX_GENERATION_ATTEMPTS = 3;
+const MIN_STROKES = 12;
+const MIN_SEGMENTS = 22;
+const MIN_PALETTE_INDICES = 3;
 
 function extractJsonObject(raw: string): unknown {
   const trimmed = raw.trim();
@@ -21,6 +29,10 @@ function extractJsonObject(raw: string): unknown {
     }
     throw new Error('invalid json');
   }
+}
+
+function uniqueDrawingId(npcKey: string): string {
+  return `ai_${npcKey}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function normalizeProgram(
@@ -50,13 +62,13 @@ function normalizeProgram(
     if (p.length < 2) continue;
     strokes.push({
       pi: Math.max(0, Math.min(3, Math.floor(Number(row.pi) || 0))),
-      w: Math.max(2, Math.min(5, Math.floor(Number(row.w) || 3))),
+      w: Math.max(2, Math.min(6, Math.floor(Number(row.w) || 3))),
       p,
     });
   }
 
   const program: DrawingProgram = {
-    id: `ai_${npcKey}_${Date.now()}`,
+    id: uniqueDrawingId(npcKey),
     npc: npcKey,
     model: ctx.modelId.split('/').pop() ?? 'npc',
     topic,
@@ -65,72 +77,142 @@ function normalizeProgram(
   return validateProgram(program) ? program : null;
 }
 
-function buildSystemPrompt(ctx: EaselDrawingContext): string {
+function buildSystemPrompt(ctx: EaselDrawingContext, attempt: number): string {
   const streamLine = ctx.streamTitle
     ? `The screen is playing "${ctx.streamTitle}" on ${ctx.channelName}.`
     : `The ${ctx.channelName} stream is ambient background.`;
   const seedLine = ctx.seedPrompt
     ? `Conversation seed: ${ctx.seedPrompt}`
     : 'No seed — invent something from your personality and the moment.';
+  const vibeLine = ctx.vibe ? `Vibe: ${ctx.vibe}.` : '';
+  const priorLine = ctx.priorTopics.length > 0
+    ? `Already painted here (NEVER repeat these subjects or close variants): ${ctx.priorTopics.join('; ')}.`
+    : 'No prior paintings on this easel — pick something fresh.';
 
   return [
-    `You are ${ctx.npcName}, sketching on a small 96×96 easel at an outdoor cinema.`,
+    `You are ${ctx.npcName}, sketching on a small 96×96 easel at an outdoor cinema lawn.`,
     `Personality: ${ctx.personalityNotes}`,
-    `Time of day: ${ctx.skyPeriod}.`,
+    vibeLine,
+    `Time of day: ${ctx.skyPeriod}. Let lighting shape the mood (stars at night, long shadows at sunset, soft haze in fog).`,
     streamLine,
     seedLine,
-    `Unique moment id: ${ctx.uniqueNonce} — pick a fresh, specific subject; never default to cats or generic icons unless the moment truly calls for it.`,
+    priorLine,
+    `Unique moment id: ${ctx.uniqueNonce}-a${attempt} — new subject required; different from all prior paintings.`,
+    '',
+    'Think like a quick but thoughtful observational doodle — what would THIS character notice right now?',
+    'Good subjects: projector beam, blanket grid from above, wine in a coffee cup, fog rolling in,',
+    'marquee lights, lawn chair silhouette, snack tray, couple arguing quietly, jacket someone forgot,',
+    'film reel, popcorn bucket detail, string lights, thermos on grass, screen glow on faces.',
+    'Never reuse generic defaults (cats, hearts, smiley faces) unless the stream or seed explicitly calls for them.',
     '',
     'Return ONLY valid JSON:',
-    '{ "topic": "2-4 word label", "strokes": [ { "pi": 0, "w": 3, "p": [[x,y], ...] }, ... ] }',
+    '{ "topic": "2-5 word label", "strokes": [ { "pi": 0, "w": 3, "p": [[x,y], ...] }, ... ] }',
     '',
-    'Rules:',
-    '- 6–14 strokes total; each stroke is a connected polyline (2–12 points).',
-    '- Coordinates integers 0–96; compose a recognizable doodle (face, object, scene fragment).',
-    '- pi = palette index 0–3 (0 main, 1 outline, 2 accent, 3 highlight).',
-    '- w = stroke width 2–4.',
-    '- Simple line art — no fills, no text, no emoji.',
-    '- Subject must reflect personality + time + stream/seed right now.',
+    'Composition rules:',
+    '- 18–32 strokes total — lean detailed, not minimal.',
+    '- Layer the drawing: background hint → main subject → small telling details (3+ layers).',
+    '- Each stroke is a connected polyline with 2–18 integer points (curves need more points).',
+    '- Coordinates integers 0–96; fill most of the canvas — avoid tiny centered icons.',
+    '- Use ALL palette indices: pi 0 main fill lines, 1 outlines/shadows, 2 accents, 3 highlights/sparkles.',
+    '- Mix stroke widths: w=2 fine detail, w=3 body, w=4–5 bold silhouettes.',
+    '- Simple line art only — no fills, no text, no emoji — but rich contour and cross-hatching is welcome.',
+    '- Subject must reflect personality + time + stream/seed; include at least one small "crowd-watcher" detail.',
+    '- Must differ from every item in the already-painted list.',
   ].join('\n');
 }
 
-/** Minimal fallback when LLM is unavailable. */
+function buildUserPrompt(ctx: EaselDrawingContext): string {
+  const mood = ctx.skyPeriod === 'night' ? 'night sky, screen glow'
+    : ctx.skyPeriod === 'evening' ? 'golden hour warmth'
+      : ctx.skyPeriod === 'morning' ? 'soft morning light'
+        : 'clear open-air mood';
+  return [
+    `Sketch one cohesive scene or object for the easel now.`,
+    `Mood: ${mood}.`,
+    ctx.streamTitle ? `Echo something from "${ctx.streamTitle}" without copying it literally.` : '',
+    `Be specific to ${ctx.npcName}'s point of view — not a generic clipart doodle.`,
+  ].filter(Boolean).join(' ');
+}
+
+function programIsTooSimple(program: DrawingProgram): boolean {
+  if (program.strokes.length < MIN_STROKES) return true;
+  if (totalSegments(program) < MIN_SEGMENTS) return true;
+  const paletteUsed = new Set(program.strokes.map(s => s.pi ?? 0));
+  return paletteUsed.size < MIN_PALETTE_INDICES;
+}
+
+function programIsDuplicate(program: DrawingProgram, ctx: EaselDrawingContext): boolean {
+  return isDuplicateTopic(program.topic, ctx.priorTopics)
+    || isDuplicateDrawingId(program.id, ctx.priorDrawingIds);
+}
+
+/** Minimal fallback when LLM is unavailable — still avoids prior topics. */
 function fallbackProgram(ctx: EaselDrawingContext): DrawingProgram {
-  const npcKey = npcPoolKey(ctx.npcId);
-  const topic = ctx.streamTitle?.split(/\s+/).slice(0, 2).join(' ') || ctx.skyPeriod;
-  return {
-    id: `fb_${npcKey}_${Date.now()}`,
-    npc: npcKey,
-    model: 'fallback',
-    topic,
-    strokes: [
-      { pi: 0, w: 3, p: [[20, 70], [76, 70], [76, 30], [20, 30], [20, 70]] },
-      { pi: 1, w: 2, p: [[30, 45], [66, 45]] },
-      { pi: 2, w: 2, p: [[38, 55], [40, 57]] },
-      { pi: 2, w: 2, p: [[56, 55], [54, 57]] },
-      { pi: 1, w: 2, p: [[48, 62], [52, 64], [48, 66]] },
-    ],
-  };
+  return buildRichFallbackProgram(ctx);
+}
+
+async function generateOnce(
+  ctx: EaselDrawingContext,
+  attempt: number,
+): Promise<{ program: DrawingProgram; source: 'ai' | 'fallback' } | null> {
+  const messages = [
+    { role: 'system' as const, content: buildSystemPrompt(ctx, attempt) },
+    { role: 'user' as const, content: buildUserPrompt(ctx) },
+  ];
+  const raw = await completeDrawingJson(ctx.modelId, messages);
+
+  if (raw) {
+    try {
+      const program = normalizeProgram(extractJsonObject(raw) as Record<string, unknown>, ctx);
+      if (program && programIsDuplicate(program, ctx)) {
+        console.warn('[easel:server] duplicate topic from LLM, retrying', program.topic);
+      } else if (program && programIsTooSimple(program)) {
+        console.warn('[easel:server] sketch too simple, retrying', {
+          strokes: program.strokes.length,
+          segments: totalSegments(program),
+        });
+      } else if (program) {
+        return { program, source: 'ai' };
+      }
+    } catch {
+      /* retry */
+    }
+  }
+  return null;
 }
 
 export async function generateDrawingProgram(ctx: EaselDrawingContext): Promise<GeneratedDrawing> {
-  const system = buildSystemPrompt(ctx);
-  const raw = await completeDrawingJson(ctx.modelId, [{ role: 'system', content: system }]);
+  logEaselContext(ctx);
 
-  let program: DrawingProgram | null = null;
-  if (raw) {
-    try {
-      program = normalizeProgram(extractJsonObject(raw) as Record<string, unknown>, ctx);
-    } catch {
-      program = null;
+  for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
+    const hit = await generateOnce(ctx, attempt);
+    if (hit) {
+      void paletteForNpc(hit.program.npc);
+      const total = totalSegments(hit.program);
+      logEaselDrawing('server', ctx.npcId, hit.program.topic, {
+        source: hit.source,
+        model: ctx.modelId,
+        strokes: hit.program.strokes.length,
+        segments: total,
+        attempt: attempt + 1,
+      });
+      return { program: hit.program, totalSegments: total };
     }
   }
 
-  if (!program) {
-    console.warn('[easel] LLM drawing failed — using fallback', ctx.npcId);
-    program = fallbackProgram(ctx);
+  console.warn('[easel:server] LLM drawing failed or repeated — using unique fallback', ctx.npcId);
+  let program = fallbackProgram(ctx);
+  if (programIsDuplicate(program, ctx)) {
+    program = { ...program, topic: `sketch ${Date.now()}`, id: uniqueDrawingId(program.npc).replace(/^ai_/, 'fb_') };
   }
 
   void paletteForNpc(program.npc);
-  return { program, totalSegments: totalSegments(program) };
+  const total = totalSegments(program);
+  logEaselDrawing('server', ctx.npcId, program.topic, {
+    source: 'fallback',
+    model: ctx.modelId,
+    strokes: program.strokes.length,
+    segments: total,
+  });
+  return { program, totalSegments: total };
 }

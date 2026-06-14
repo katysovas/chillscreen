@@ -1,14 +1,16 @@
 import type { CharacterDef } from '@/components/game/characters';
 import type { StageChannel } from '@/lib/stageVideos';
+import { preloadLoadoutItems } from '@/components/game/characters/loadout';
 import {
   generatedCharactersForChannel,
   loadGeneratedNpcsForChannel,
 } from '@/lib/generatedNpcsClient';
-
-/** Easel owner seeded in DB for chill-cinema — must appear in cast to walk + draw. */
-export const CINEMA_EASEL_OWNER_IDS = [
-  'gen-cinema-vanessa',
-] as const;
+import { EASEL_HAND_BRUSH_ID } from './brushLoadout';
+import {
+  CINEMA_EASEL_NPC_IDS,
+  easelNpcIdsForChannel,
+  isEaselPainterForChannel,
+} from './npcRotation';
 
 const EASEL_SPAWN = {
   entryDelay: 0,
@@ -16,24 +18,21 @@ const EASEL_SPAWN = {
   entryDirection: 'right' as const,
 };
 
-/** Ensure easel owners spawn while painting — release to crowd when done. */
+/** Ensure easel painters spawn while painting — release to crowd when done. */
 export function mergeEaselOwnersIntoCast(
   cast: CharacterDef[],
   channel: StageChannel,
   paintingNpcIds: Set<string>,
 ): CharacterDef[] {
-  if (channel !== 'cinema') return cast;
+  if (paintingNpcIds.size === 0) return cast;
 
   const pool = generatedCharactersForChannel(channel);
-  const ownerSet = new Set<string>(CINEMA_EASEL_OWNER_IDS);
-  const rest = cast.filter(c => !ownerSet.has(c.id));
+  const paintingSet = new Set(paintingNpcIds);
+  const rest = cast.filter(c => !paintingSet.has(c.id));
 
   const owners: CharacterDef[] = [];
-  for (const id of CINEMA_EASEL_OWNER_IDS) {
-    if (!paintingNpcIds.has(id)) continue;
-    const fromCast = cast.find(c => c.id === id);
-    const fromPool = pool.find(c => c.id === id);
-    const base = fromCast ?? fromPool;
+  for (const id of paintingNpcIds) {
+    const base = cast.find(c => c.id === id) ?? pool.find(c => c.id === id);
     if (!base) continue;
     owners.push({ ...base, ...EASEL_SPAWN });
   }
@@ -41,11 +40,27 @@ export function mergeEaselOwnersIntoCast(
   return [...owners, ...rest];
 }
 
-export function isCinemaEaselOwner(npcId: string): boolean {
-  return (CINEMA_EASEL_OWNER_IDS as readonly string[]).includes(npcId);
+/** @deprecated use isEaselPainterForChannel */
+export function isCinemaEaselPainter(npcId: string): boolean {
+  return isEaselPainterForChannel(npcId, 'cinema');
 }
 
-/** Warm the cinema NPC pool so easel owners resolve on first merge. */
-export function preloadCinemaEaselOwners(): Promise<void> {
-  return loadGeneratedNpcsForChannel('cinema').then(() => {});
+/** @deprecated Use isEaselPainterForChannel */
+export function isCinemaEaselOwner(npcId: string): boolean {
+  return isCinemaEaselPainter(npcId);
 }
+
+/** Warm the channel NPC pool so easel painters resolve on first merge. */
+export function preloadEaselOwners(channel: StageChannel): Promise<void> {
+  return Promise.all([
+    loadGeneratedNpcsForChannel(channel),
+    preloadLoadoutItems([EASEL_HAND_BRUSH_ID]),
+  ]).then(() => {});
+}
+
+/** @deprecated use preloadEaselOwners */
+export function preloadCinemaEaselOwners(): Promise<void> {
+  return preloadEaselOwners('cinema');
+}
+
+export { CINEMA_EASEL_NPC_IDS, easelNpcIdsForChannel, isEaselPainterForChannel };

@@ -46,6 +46,8 @@ export const LOADOUT_STYLES = `
   .ch-lo-mask-6{top:-0px;width:260px;height:165px;display:block;}
   .ch-lo-mask-2,.ch-lo-mask-3{top:-110px;width:320px;height:200px;display:block;}
   .ch-lo-mask-mando{top:-110px;width:280px;height:280px;display:block;}
+  .ch-lo-mask-gasmask{top:-60px;width:320px;height:205px;display:block;}
+  .ch-lo-mask-astronaut{top:-110px;width:250px;height:250px;display:block;}
   .ch-lo-mask-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none;}
 
   /* ── Necklace (pearls — pendant reuses .ch-necklace) ──────────────────── */
@@ -90,6 +92,8 @@ export const LOADOUT_STYLES = `
   .ch-lo-tacos-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-popcorn{position:absolute;left:-109px;top:4px;width:220px;height:138px;transform:rotate(70deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
   .ch-lo-popcorn-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-brush{position:absolute;left:-2px;top:-100px;width:120px;height:120px;transform:rotate(180deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-brush-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-lollipop{position:absolute;left:-18px;top:-260px;width:182px;height:260px;transform:rotate(110deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
   .ch-lo-lollipop-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-martini{position:absolute;left:-99px;top:-22px;width:220px;height:138px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}

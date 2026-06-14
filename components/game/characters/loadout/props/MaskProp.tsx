@@ -6,6 +6,8 @@ const MASK_SRC = {
   'mask-3': '/images/props/mask_3.svg',
   'mask-6': '/images/props/mask_6.svg',
   'mask-mando': '/images/props/mask_mando.svg',
+  'mask-gasmask': '/images/props/mask_gasmask.svg',
+  'mask-astronaut': '/images/props/mask_astronaut.svg',
 } as const;
 
 const MASK_CLASS = {
@@ -14,6 +16,8 @@ const MASK_CLASS = {
   'mask-3': 'ch-lo-mask-3',
   'mask-6': 'ch-lo-mask-6',
   'mask-mando': 'ch-lo-mask-mando',
+  'mask-gasmask': 'ch-lo-mask-gasmask',
+  'mask-astronaut': 'ch-lo-mask-astronaut',
 } as const;
 
 type MaskVariant = keyof typeof MASK_SRC;
