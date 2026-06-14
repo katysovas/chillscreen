@@ -15,6 +15,7 @@ import {
 } from '@/lib/stageAnchor';
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
 import { setEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
+import { easelPaintingChatter } from '@/lib/easel/paintingLabel';
 import {
   pickWorldXOutsideEaselBlock,
   shouldNpcAvoidEaselCanvas,
@@ -594,10 +595,10 @@ export default function NPC({
 
   const paintingMessages = useMemo((): ChatLine[] => {
     if (!easelPaintingLabel) return [];
-    return [createChatLine(easelPaintingLabel)];
+    return [createChatLine(easelPaintingChatter(easelPaintingLabel))];
   }, [easelPaintingLabel]);
 
-  const showPaintingBubble = paintingMessages.length > 0;
+  const showPaintingBubble = easelStationed && Boolean(easelPaintingLabel);
   const bubbleSide = screenXToBubbleSide(screenX);
 
   if (!active) return null;
@@ -630,7 +631,7 @@ export default function NPC({
           outfit={outfit}
           scale={scale}
           bubbleSide={bubbleSide}
-          chatConnected={chatConnected || greeting || easelStationed || showPaintingBubble}
+          chatConnected={chatConnected || greeting || showPaintingBubble}
           chatOverlay={
             showPaintingBubble ? (
               <NpcChatOverlay

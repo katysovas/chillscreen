@@ -10,6 +10,11 @@ export function easelPaintingLabelForSlot(slot: EaselSlotSync): string {
   return slot.topic?.trim() || programForSlot(slot)?.topic || `${model} ${name}`;
 }
 
+/** Bubble line while an NPC is at the easel. */
+export function easelPaintingChatter(title: string): string {
+  return `Currently doodling ${title}..`;
+}
+
 /** Label for the NPC actively painting — null once their canvas is finished. */
 export function easelPaintingLabelForNpc(
   npcId: string,
