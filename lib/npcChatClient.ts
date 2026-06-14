@@ -19,18 +19,56 @@ export type NpcChatRequest = {
 export async function fetchNpcReply(
   body: NpcChatRequest,
   signal: AbortSignal,
-): Promise<{ reply?: string; conversationId?: string } | undefined> {
-  if (isChatterMuted()) return undefined;
-  const res = await fetch('/api/chat/npc', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal,
-  });
-  const data = await res.json();
+): Promise<{ reply?: string; conversationId?: string; error?: string } | undefined> {
+  if (isChatterMuted()) {
+    console.log('[npc-chat] skipped — chatter muted (?mute=true)');
+    return undefined;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch('/api/chat/npc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return undefined;
+    console.error('[npc-chat] fetch failed', { characterId: body.characterId, err });
+    return undefined;
+  }
+
+  let data: Record<string, unknown>;
+  try {
+    data = await res.json() as Record<string, unknown>;
+  } catch (err) {
+    console.error('[npc-chat] invalid JSON response', res.status, err);
+    return undefined;
+  }
+
+  if (!res.ok) {
+    console.error('[npc-chat] API error', {
+      status: res.status,
+      characterId: body.characterId,
+      error: data.error ?? data,
+    });
+    return undefined;
+  }
+
+  const reply = typeof data.reply === 'string' ? data.reply : undefined;
+  if (!reply?.trim()) {
+    console.warn('[npc-chat] API ok but empty reply — check OpenAI / festie LLM logs', {
+      characterId: body.characterId,
+      isGreeting: body.isGreeting,
+      data,
+    });
+  }
+
   return {
-    reply: data.reply as string | undefined,
-    conversationId: data.conversationId as string | undefined,
+    reply,
+    conversationId: typeof data.conversationId === 'string' ? data.conversationId : undefined,
+    error: typeof data.error === 'string' ? data.error : undefined,
   };
 }
 
@@ -68,13 +106,24 @@ export async function fetchNpcReplyWithTyping(
       });
     }
 
-    if (signal.aborted || !result?.reply) return;
+    if (signal.aborted) return;
+
+    if (!result?.reply?.trim()) {
+      console.warn('[npc-chat] no reply to show', {
+        characterId: body.characterId,
+        message: body.message?.slice(0, 80),
+        apiError: result?.error,
+      });
+      return;
+    }
+
     onReply({
       reply: result.reply,
       conversationId: result.conversationId,
     });
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return;
+    console.error('[npc-chat] client failed', { characterId: body.characterId, err });
     throw err;
   }
 }

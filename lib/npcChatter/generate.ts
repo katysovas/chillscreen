@@ -78,7 +78,15 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
     console.log(`[npc-chatter] line ${i + 1}/${req.lineBudget} ${speaker.id} → ${model}`);
     const raw = await completeNpcLine(model, messages, req.houseModel);
     const text = raw ? sanitizeNpcLine(raw) : null;
-    if (!text) break;
+    if (!text) {
+      console.error('[npc-chatter] pair line failed', {
+        speaker: speaker.id,
+        model,
+        line: i + 1,
+        budget: req.lineBudget,
+      });
+      break;
+    }
 
     const line = { npc: speaker.id, text };
     lines.push(line);
@@ -109,6 +117,9 @@ export async function generateSingleReply(req: SingleReplyRequest): Promise<NpcC
     req.houseModel,
   );
   const cleaned = text ? sanitizeNpcLine(text) : null;
-  if (!cleaned) return null;
+  if (!cleaned) {
+    console.error('[npc-chatter] single reply generation failed', { npc: req.npc, model });
+    return null;
+  }
   return { npc: npc.id, text: cleaned };
 }

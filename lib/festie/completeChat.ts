@@ -30,10 +30,14 @@ export async function completeFestieChat(
     const model = resolveModel(modelId, house);
     const text = await openRouterComplete(model, messages, openRouterKey, house);
     if (text) return text;
+    console.warn('[festie chat] OpenRouter empty — trying OpenAI direct', { provider, model });
   }
 
   const openAiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!openAiKey) return null;
+  if (!openAiKey) {
+    console.error('[festie chat] no OPENAI_API_KEY for direct fallback', { provider });
+    return null;
+  }
 
   const directModel = festieOpenAiDirectModel(provider);
   try {

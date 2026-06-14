@@ -58,6 +58,7 @@ export async function POST(req: Request) {
 
   const key = process.env.OPENAI_API_KEY;
   if (!key) {
+    console.warn('[openai] OPENAI_API_KEY missing — NPC chat using fallback text', characterId);
     return Response.json({
       reply: isGreeting
         ? pickFallbackGreeting(character, bitcoinSnapshot)
@@ -101,7 +102,8 @@ export async function POST(req: Request) {
     });
 
     if (!res.ok) {
-      console.error('OpenAI error', res.status, await res.text());
+      const detail = await res.text();
+      console.error('[openai] NPC chat request failed', res.status, characterId, detail.slice(0, 400));
       return Response.json({
         reply: isGreeting
           ? pickFallbackGreeting(character, bitcoinSnapshot)
@@ -114,6 +116,7 @@ export async function POST(req: Request) {
     const reply = raw ? sanitizeNpcLine(raw) : null;
 
     if (!reply) {
+      console.warn('[openai] empty NPC chat completion — using fallback', characterId, { raw: raw?.slice(0, 120) });
       return Response.json({
         reply: isGreeting
           ? pickFallbackGreeting(character, bitcoinSnapshot)
@@ -123,7 +126,7 @@ export async function POST(req: Request) {
 
     return Response.json({ reply });
   } catch (err) {
-    console.error('NPC chat failed', err);
+    console.error('[openai] NPC chat failed', characterId, err);
     return Response.json({
       reply: isGreeting
         ? pickFallbackGreeting(character, bitcoinSnapshot)

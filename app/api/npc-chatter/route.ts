@@ -44,6 +44,7 @@ export async function POST(req: Request) {
   }
 
   if (!npcChatterLlmConfigured()) {
+    console.error('[npc-chatter] LLM not configured — set OPENROUTER_API_KEY or OPENAI_API_KEY');
     return Response.json({ error: 'Service unavailable' }, { status: 503 });
   }
 
@@ -71,6 +72,7 @@ export async function POST(req: Request) {
       houseModel,
     });
     if (!line) {
+      console.error('[npc-chatter] single reply failed', { npc, stage, triggerText: triggerText.slice(0, 80) });
       return Response.json({ error: 'Generation failed' }, { status: 502 });
     }
     return Response.json({ lines: [line] });
@@ -105,6 +107,13 @@ export async function POST(req: Request) {
   });
 
   if (lines.length < 2) {
+    console.error('[npc-chatter] pair convo failed', {
+      stage,
+      npcA,
+      npcB,
+      lineCount: lines.length,
+      lineBudget,
+    });
     return Response.json({ error: 'Generation failed' }, { status: 502 });
   }
 

@@ -262,7 +262,8 @@ export class NpcChatterScheduler {
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        console.error('[npc-chatter] api', res.status, await res.text());
+        const body = await res.text();
+        console.error('[npc-chatter] party → API failed', res.status, this.apiUrl(), body.slice(0, 400));
         return null;
       }
       const data = await res.json() as { lines?: NpcChatterLine[] };
@@ -294,7 +295,10 @@ export class NpcChatterScheduler {
       channelName,
     });
     const line = lines?.[0];
-    if (!line) return;
+    if (!line) {
+      console.error('[npc-chatter] party single reply empty', { npcId, triggerText: triggerText.slice(0, 80) });
+      return;
+    }
     this.deps.broadcast({ t: 'room-chat', sender: `npc:${line.npc}`, text: line.text });
     this.appendBuffer(`npc:${line.npc}`, line.text);
   }

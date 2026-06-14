@@ -250,11 +250,26 @@ export function useMultiplayer(opts: Options): Multiplayer {
       flushPending();
     };
 
-    const onClose = () => setConnected(false);
+    const onClose = (e: CloseEvent) => {
+      setConnected(false);
+      if (e.code !== 1000 && e.code !== 1001) {
+        console.warn('[partykit] disconnected', opts.roomId, { code: e.code, reason: e.reason || '(none)' });
+      }
+    };
+
+    const onError = () => {
+      console.error('[partykit] websocket error', opts.roomId);
+    };
 
     const onMessage = (e: MessageEvent) => {
-      const msg = decodeServer(typeof e.data === 'string' ? e.data : '');
-      if (!msg) return;
+      const raw = typeof e.data === 'string' ? e.data : '';
+      const msg = decodeServer(raw);
+      if (!msg) {
+        if (raw.length > 0) {
+          console.warn('[partykit] unparseable message', opts.roomId, raw.slice(0, 120));
+        }
+        return;
+      }
       const roster = remoteStateRef.current;
       const ev = eventsRef.current;
 
@@ -383,11 +398,13 @@ export function useMultiplayer(opts: Options): Multiplayer {
 
     socket.addEventListener('open', onOpen);
     socket.addEventListener('close', onClose);
+    socket.addEventListener('error', onError);
     socket.addEventListener('message', onMessage);
 
     return () => {
       socket.removeEventListener('open', onOpen);
       socket.removeEventListener('close', onClose);
+      socket.removeEventListener('error', onError);
       socket.removeEventListener('message', onMessage);
       socket.close();
       socketRef.current = null;

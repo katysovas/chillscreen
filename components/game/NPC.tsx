@@ -14,6 +14,11 @@ import {
 } from '@/lib/stageAnchor';
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
 import { setEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
+import {
+  pickWorldXOutsideEaselBlock,
+  shouldNpcAvoidEaselCanvas,
+  worldXBlocksEaselCanvas,
+} from '@/lib/easel/canvasBlocking';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
@@ -241,36 +246,45 @@ export default function NPC({
 
     // Attract toward a fixed world point (e.g. cinema easel) ~32% of the time.
     if (wanderAttractWorldX != null && Number.isFinite(wanderAttractWorldX) && Math.random() < 0.32) {
-      return wanderAttractWorldX + rndBetween(-48, 48);
+      const attracted = wanderAttractWorldX + rndBetween(-48, 48);
+      if (!shouldNpcAvoidEaselCanvas(characterId) || !worldXBlocksEaselCanvas(attracted)) {
+        return attracted;
+      }
     }
 
     const [prefLo, prefHi] = personality.wanderRange;
     const curPct = worldXToScreenPct(curWorldX, gameWorldOffRef.current);
     const avoiding = Date.now() < avoidPlayerUntil.current;
 
+    let targetWorldX: number;
     if (avoiding) {
       const targetPct = curPct <= 50
         ? rndBetween(SCREEN_MIN, 12)
         : rndBetween(88, SCREEN_MAX);
-      return pctToWorld(
+      targetWorldX = pctToWorld(
+        curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
+      );
+    } else if (Math.random() < NPC_FAR_WANDER_CHANCE) {
+      const targetPct = curPct < 50
+        ? rndBetween(SCREEN_MIN, prefLo)
+        : rndBetween(prefHi, SCREEN_MAX);
+      targetWorldX = pctToWorld(
+        curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
+      );
+    } else {
+      const targetPct = rndBetween(
+        Math.max(SCREEN_MIN, prefLo),
+        Math.min(SCREEN_MAX, prefHi),
+      );
+      targetWorldX = pctToWorld(
         curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
       );
     }
 
-    let targetPct: number;
-    if (Math.random() < NPC_FAR_WANDER_CHANCE) {
-      targetPct = curPct < 50
-        ? rndBetween(SCREEN_MIN, prefLo)
-        : rndBetween(prefHi, SCREEN_MAX);
-    } else {
-      targetPct = rndBetween(
-        Math.max(SCREEN_MIN, prefLo),
-        Math.min(SCREEN_MAX, prefHi),
-      );
+    if (shouldNpcAvoidEaselCanvas(characterId) && worldXBlocksEaselCanvas(targetWorldX)) {
+      return pickWorldXOutsideEaselBlock(curWorldX);
     }
-    return pctToWorld(
-      curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
-    );
+    return targetWorldX;
   };
 
   const fleeFromPlayer = () => {
@@ -533,6 +547,21 @@ export default function NPC({
           applyFacing(diff > 0 ? 'right' : 'left');
           applyWalking(true);
         }
+      }
+
+      // Idle in front of an active canvas — step aside (walking through is fine).
+      if (
+        !heldForConvo
+        && !pausedRef.current
+        && easelWalkTargetWorldX == null
+        && shouldNpcAvoidEaselCanvas(characterId)
+        && stateRef.current === 'idle'
+        && worldXBlocksEaselCanvas(worldXRef.current)
+      ) {
+        targetWorldRef.current = pickWorldXOutsideEaselBlock(worldXRef.current);
+        stateRef.current = 'wandering';
+        applyFacing(targetWorldRef.current > worldXRef.current ? 'right' : 'left');
+        applyWalking(true);
       }
 
       screenXRef.current = pct;

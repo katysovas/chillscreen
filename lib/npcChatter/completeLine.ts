@@ -37,8 +37,12 @@ async function openAiDirectComplete(
       return null;
     }
     const data = await res.json();
-    const text = data.choices?.[0]?.message?.content?.trim();
-    return text ? sanitizeLine(text) : null;
+    const raw = data.choices?.[0]?.message?.content?.trim();
+    if (!raw) {
+      console.warn('[openai] empty NPC line completion', model);
+      return null;
+    }
+    return sanitizeLine(raw);
   } catch (err) {
     console.error('[openai] failed', err);
     return null;
@@ -57,10 +61,15 @@ export async function completeNpcLine(
   if (openRouterKey) {
     const text = await openRouterComplete(model, messages, openRouterKey, fallbackModel);
     if (text) return text;
+  } else {
+    console.warn('[npc-chatter] OPENROUTER_API_KEY missing — trying OpenAI direct', model);
   }
 
   const openAiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!openAiKey) return null;
+  if (!openAiKey) {
+    console.error('[npc-chatter] no LLM keys configured (OPENROUTER_API_KEY / OPENAI_API_KEY)');
+    return null;
+  }
 
   if (openRouterKey) {
     console.warn('[npc-chatter] OpenRouter failed — falling back to OpenAI direct', model);
@@ -71,8 +80,11 @@ export async function completeNpcLine(
   if (text) return text;
 
   if (fallbackModel && fallbackModel !== model) {
-    return openAiDirectComplete(openAiDirectModel(fallbackModel), messages, openAiKey);
+    const fallbackText = await openAiDirectComplete(openAiDirectModel(fallbackModel), messages, openAiKey);
+    if (fallbackText) return fallbackText;
   }
+
+  console.error('[npc-chatter] all LLM providers failed for line', { model, fallbackModel });
   return null;
 }
 

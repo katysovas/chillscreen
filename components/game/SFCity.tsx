@@ -121,6 +121,8 @@ import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
 import { easelWalkTargetWorldXForNpc } from '@/lib/easel/stationed';
+import { setActiveEaselCanvasBlockZone } from '@/lib/easel/canvasBlocking';
+import { easelSlotWorldX } from '@/lib/easel/layout';
 import { mergeEaselOwnersIntoCast, preloadEaselOwners, isEaselPainterForChannel } from '@/lib/easel/cast';
 import { easelHandLoadout } from '@/lib/easel/brushLoadout';
 import { easelPaintingContextForNpc } from '@/lib/easel/chatContext';
@@ -676,6 +678,18 @@ export default function SFCity({
     && (TEST_EASEL_ON_LOAD || (!showWelcome && !showCityPicker))
     && Boolean(activeEaselSession?.slots.length);
 
+  useEffect(() => {
+    const painting = activeEaselSession?.slots.find(s => s.status === 'painting');
+    if (!painting) {
+      setActiveEaselCanvasBlockZone(null);
+      return;
+    }
+    setActiveEaselCanvasBlockZone({
+      canvasWorldX: easelSlotWorldX(painting.slot, easelStageSlug),
+      painterNpcId: painting.npc,
+    });
+  }, [activeEaselSession, easelStageSlug]);
+
   const effectiveNpcCast = useMemo(() => {
     const base = [
       ...npcCast,
@@ -1061,6 +1075,11 @@ export default function SFCity({
       },
     ).catch(err => {
       if (err instanceof DOMException && err.name === 'AbortError') return;
+      console.error('[npc-chat] reply failed in UI', {
+        npcId: character.id,
+        message: message.slice(0, 80),
+        err,
+      });
       setNpcTyping(false);
       setNpcMessages(prev => appendChatLine(prev, pickFallbackReply(character)));
       setTimeout(() => chatInputRef.current?.focus(), 0);

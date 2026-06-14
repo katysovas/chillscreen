@@ -46,7 +46,11 @@ export class EaselScheduler {
     const res = await fetch(
       `${this.apiBase()}/api/easel?stage=${encodeURIComponent(stage)}&sync=1`,
     );
-    if (!res.ok) return [];
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      console.error('[easel:party] fetch easels failed', res.status, stage, detail.slice(0, 300));
+      return [];
+    }
     const data = await res.json() as { slots: EaselSlotSync[] };
     return data.slots ?? [];
   }
@@ -57,7 +61,11 @@ export class EaselScheduler {
       headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
       body: JSON.stringify(body),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      console.error('[easel:party] POST failed', res.status, body.action, detail.slice(0, 300));
+      return null;
+    }
     return res.json() as Promise<SlotApiPayload>;
   }
 

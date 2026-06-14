@@ -31,7 +31,11 @@ async function openRouterRequest(
   }
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content?.trim();
-  return text ? sanitizeLine(text) : null;
+  if (!text) {
+    console.warn('[openrouter] empty completion', model, JSON.stringify(data).slice(0, 300));
+    return null;
+  }
+  return sanitizeLine(text);
 }
 
 export async function openRouterComplete(
