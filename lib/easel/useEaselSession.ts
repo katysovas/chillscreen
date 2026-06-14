@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { EaselSessionSync, EaselSlotSync } from './types';
 import { easelClockStart } from './sessionClock';
 import { narrowEaselSession, pickVisibleEaselSlots } from './visibleSlots';
@@ -96,8 +96,10 @@ export function useEaselSession(
     return () => window.removeEventListener('easel-updated', refresh);
   }, [enabled, stageSlug]);
 
-  if (hasEaselSlots(partySession)) {
-    return narrowEaselSession(mergeProgramData(partySession, localSession));
-  }
-  return narrowEaselSession(localSession);
+  return useMemo(() => {
+    if (hasEaselSlots(partySession)) {
+      return narrowEaselSession(mergeProgramData(partySession, localSession));
+    }
+    return narrowEaselSession(localSession);
+  }, [partySession, localSession]);
 }

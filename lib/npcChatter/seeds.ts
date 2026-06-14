@@ -1,4 +1,5 @@
 import { fetchSeedPoolsRemote } from '@/lib/npcChatter/fetchSeedPools';
+import { activeDemoSeed } from '@/lib/npcChatter/demoSeed';
 import { getBundledSeedPools } from '@/lib/seeds/bundled';
 import type { SeedPools } from '@/lib/seeds/db';
 import { pickConversationSeedFromPools, type SeedPick } from '@/lib/seeds/pick';
@@ -33,6 +34,9 @@ export function pickConversationSeed(
   channelName: string,
   stageSlugOrPools: string | null | undefined | SeedPools,
 ): SeedPick {
+  const demo = activeDemoSeed();
+  if (demo) return { kind: 'demo', seed: demo };
+
   const pools = isSeedPools(stageSlugOrPools)
     ? stageSlugOrPools
     : getBundledSeedPools(stageSlugOrPools);
@@ -53,6 +57,11 @@ async function loadSeedPools(
   return pools;
 }
 
+/** Pinned demo seed — skips pool / stream / ambient rolls. */
+export function pinnedConversationSeed(seed: string): SeedPick {
+  return { kind: 'demo', seed: seed.trim().slice(0, 300) };
+}
+
 /** Fetch pools (cached) then pick — PartyKit pair chatter. */
 export async function pickConversationSeedRemote(
   streamTitle: string | null,
@@ -61,6 +70,9 @@ export async function pickConversationSeedRemote(
   apiBase: string,
   secret?: string,
 ): Promise<SeedPick> {
+  const demo = activeDemoSeed();
+  if (demo) return { kind: 'demo', seed: demo };
+
   const pools = await loadSeedPools(stageSlug, apiBase, secret);
   return pickConversationSeedFromPools(streamTitle, channelName, pools);
 }

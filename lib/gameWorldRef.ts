@@ -17,3 +17,7 @@ export function resetGameCameraSeed(): void {
 export function worldXToScreenPct(worldX: number, worldOff: number, width = typeof window !== 'undefined' ? window.innerWidth : 1200) {
   return 50 + ((worldX - worldOff) / width) * 100;
 }
+
+export function screenPctToWorldX(pct: number, worldOff: number, width = typeof window !== 'undefined' ? window.innerWidth : 1200) {
+  return worldOff + ((pct - 50) / 100) * width;
+}

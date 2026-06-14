@@ -1,17 +1,21 @@
 'use client';
 import type { CSSProperties, ReactNode } from 'react';
 import { chatBubbleOpacity, type ChatLine, type ChatThreadLine, type KeyedChatLine } from '@/lib/chatLines';
+import {
+  playerBubbleSide as playerBubbleSideForViewport,
+  screenXToBubbleSide as screenXToBubbleSideForViewport,
+} from '@/lib/chatBubbleViewport';
 
 export type BubbleSide = 'left' | 'right' | 'center';
 
 /** Bubble sits above the character's left or right side based on screen position. */
 export function screenXToBubbleSide(screenX: number): BubbleSide {
-  return screenX < 50 ? 'left' : 'right';
+  return screenXToBubbleSideForViewport(screenX);
 }
 
 /** Player is centred — place bubble on the side away from the NPC. */
 export function playerBubbleSide(npcScreenX: number): BubbleSide {
-  return npcScreenX >= 50 ? 'left' : 'right';
+  return playerBubbleSideForViewport(npcScreenX);
 }
 
 function bubbleTailStyle(

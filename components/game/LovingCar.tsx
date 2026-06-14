@@ -1,7 +1,8 @@
 'use client';
 
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { gameWorldOffRef, worldXToScreenPct } from '@/lib/gameWorldRef';
+import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { LVC_CSS } from './lovingCarStyles';
 
 const DRIVE_MS = 12_000;
@@ -209,9 +210,25 @@ const LovingCarPass = memo(function LovingCarPass() {
   );
 });
 
-/** Loving car — world-anchored, drives left → right on load. */
+/** Loving car — world-anchored, drives left → right on load. Hidden on mobile. */
 export const LovingCarLayer = memo(function LovingCarLayer() {
-  useEffect(() => { injectStylesOnce(); }, []);
+  const [hiddenOnMobile, setHiddenOnMobile] = useState(
+    () => typeof window !== 'undefined' && isMobileLoungeDevice(),
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const sync = () => setHiddenOnMobile(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    if (!hiddenOnMobile) injectStylesOnce();
+  }, [hiddenOnMobile]);
+
+  if (hiddenOnMobile) return null;
 
   return (
     <div className="lvc-layer">

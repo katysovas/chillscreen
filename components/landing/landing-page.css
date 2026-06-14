@@ -434,7 +434,6 @@
   left: 50%;
   top: -2%;
   bottom: auto;
-  width: min(1280px, 210vw);
   max-width: none;
   transform: translateX(-50%);
   opacity: 0.4;

@@ -15,7 +15,8 @@ import {
 } from './protocol';
 import { applyServerStageSync } from '@/lib/stageClock';
 import { isChatterMuted } from '@/lib/chatterMuted';
-import { ierror, iwarn } from '@/lib/internalDebug';
+import { isChatterDebugMode } from '@/lib/chatterDebug';
+import { ilog, ierror, iwarn } from '@/lib/internalDebug';
 
 /** What a remote avatar needs to render — kept in a ref, mutated without rerenders. */
 export type RemotePlayerState = {
@@ -78,10 +79,15 @@ type Options = PeerEvents & {
 // PartySocket wants bare host[:port] — no protocol.
 //
 // Localhost:
+//   • `?debug=true` → always 127.0.0.1:1999 (local PartyKit + demo seed JSON)
 //   • `npm run dev:local` sets NEXT_PUBLIC_PARTYKIT_LOCAL=true → 127.0.0.1:1999
 //   • plain `npm run dev` uses NEXT_PUBLIC_PARTYKIT_HOST (deployed PartyKit)
 //     so NPC chatter works without a local PartyKit process.
 function partyKitHost(): string {
+  if (typeof window !== 'undefined' && isChatterDebugMode()) {
+    return '127.0.0.1:1999';
+  }
+
   const configured = (
     process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? '127.0.0.1:1999'
   )
@@ -204,8 +210,13 @@ export function useMultiplayer(opts: Options): Multiplayer {
   useEffect(() => {
     if (!shouldConnect) return;
 
-    const socket = new PartySocket({ host: partyKitHost(), room: opts.roomId });
+    const host = partyKitHost();
+    const socket = new PartySocket({ host, room: opts.roomId });
     socketRef.current = socket;
+
+    if (isChatterDebugMode()) {
+      ilog('[partykit] debug mode — connecting to', host, 'room', opts.roomId);
+    }
 
     const announceJoin = () => {
       const last = lastMoveRef.current;
@@ -219,6 +230,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
         facing: Facing;
         walking: boolean;
         chatterMuted?: boolean;
+        chatterDebug?: boolean;
         userId?: string;
       } = {
         t: 'join',
@@ -228,6 +240,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
         walking: last?.walking ?? false,
       };
       if (isChatterMuted()) join.chatterMuted = true;
+      if (isChatterDebugMode()) join.chatterDebug = true;
       const userId = userIdRef?.current?.trim();
       if (userId) join.userId = userId;
       sendNow(join);
@@ -259,7 +272,10 @@ export function useMultiplayer(opts: Options): Multiplayer {
     };
 
     const onError = () => {
-      ierror('[partykit] websocket error', opts.roomId);
+      ierror('[partykit] websocket error', opts.roomId, 'host', host);
+      if (isChatterDebugMode()) {
+        ierror('[partykit] debug mode needs local PartyKit — run: npm run party:dev');
+      }
     };
 
     const onMessage = (e: MessageEvent) => {
@@ -450,7 +466,6 @@ export function useMultiplayer(opts: Options): Multiplayer {
     (npcId: string) => connectAndSend({ t: 'easel-painter-ready', npcId }),
     [connectAndSend],
   );
-
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
     chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,

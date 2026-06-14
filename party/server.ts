@@ -35,6 +35,8 @@ export default class WhichStageServer implements Party.Server {
   private npcChats = new Map<string, string>();
   /** Players who joined with `?mute=true` — disables room NPC chatter while any remain. */
   private chatterMutedPlayers = new Set<string>();
+  /** Players who joined with `?debug=true` — demo seed only while any remain. */
+  private chatterDebugPlayers = new Set<string>();
   /** connId → signed-in user id (for hiding that owner's offline festie). */
   private connUserIds = new Map<string, string>();
   /** Debounced last_seen_at when owner disconnects (userId → timer). */
@@ -50,13 +52,14 @@ export default class WhichStageServer implements Party.Server {
       playerCount: () => this.players.size,
       getActivePlayerViews: () => this.activePlayerViews(),
       getStageSync: () => this.stageSync,
-      internalDebug: () => this.chatterMutedPlayers.size > 0,
+      internalDebug: () => this.chatterMutedPlayers.size > 0 || this.chatterDebugPlayers.size > 0,
+      chatterDebug: () => this.chatterDebugPlayers.size > 0,
     });
     this.easels = new EaselScheduler({
       room: this.room,
       broadcast: msg => this.room.broadcast(encode(msg)),
       playerCount: () => this.players.size,
-      internalDebug: () => this.chatterMutedPlayers.size > 0,
+      internalDebug: () => this.chatterMutedPlayers.size > 0 || this.chatterDebugPlayers.size > 0,
     });
   }
 
@@ -124,6 +127,9 @@ export default class WhichStageServer implements Party.Server {
         } else if (wasEmpty) {
           this.chatter.onFirstPlayer();
           void this.easels.onFirstPlayer();
+        }
+        if (msg.chatterDebug) {
+          this.chatterDebugPlayers.add(sender.id);
         }
         this.broadcastExcept(sender.id, { t: 'joined', player });
         void this.broadcastFestiesSync();
@@ -251,6 +257,7 @@ export default class WhichStageServer implements Party.Server {
       );
     }
     const wasMuted = this.chatterMutedPlayers.delete(conn.id);
+    this.chatterDebugPlayers.delete(conn.id);
     const userId = this.connUserIds.get(conn.id);
     this.connUserIds.delete(conn.id);
     if (this.players.delete(conn.id)) {

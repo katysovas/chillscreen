@@ -16,11 +16,19 @@ function hashSeed(seed: number | string): number {
 
 /**
  * Stable sidewalk depth offset (px) from a character id or index.
- * Spreads the crowd vertically so balloons/sprites don't fully stack.
+ * Three depth rows at 0 / 50 / 100px (positive = lower on screen).
  */
 export function crowdDepthOffsetPx(seed: number | string): number {
   const h = hashSeed(seed);
-  const sign = h % 2 === 0 ? 1 : -1;
-  const magnitude = 5 + (h % 6); // 5–10px
-  return sign * magnitude;
+  const tier = h % 3;
+  return tier * 50;
+}
+
+/** Crowd z-index range — lower on screen (larger depthY) renders on top. */
+export const CROWD_Z_MIN = 18;
+export const CROWD_Z_MAX = 20;
+
+/** z-index for crowd characters — lower on screen (larger depthY) stacks above. */
+export function crowdDepthZIndex(depthY: number): number {
+  return CROWD_Z_MIN + Math.min(2, Math.round(depthY / 50));
 }

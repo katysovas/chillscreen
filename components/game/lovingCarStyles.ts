@@ -566,4 +566,11 @@ export const LVC_CSS = `
   .lvc-love-back .lvc-love-wrap:nth-child(6) { animation: lvc-love5 3s infinite ease-in 3s; }
   .lvc-love-back .lvc-love-wrap:nth-child(7) { animation: lvc-love5 3s infinite ease-in 3.5s; }
   .lvc-love-back .lvc-love-wrap:nth-child(8) { animation: lvc-love5 3s infinite ease-in 4s; }
+
+  @media (max-width: 767px) {
+    .lvc-layer {
+      display: none !important;
+      visibility: hidden !important;
+    }
+  }
 `;

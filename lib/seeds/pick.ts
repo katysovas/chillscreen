@@ -3,10 +3,12 @@ import {
   SEED_GENERATED_PCT,
   SEED_STREAM_REACTIVE_PCT,
 } from '@/lib/npcChatter/constants';
+import { activeDemoSeed } from '@/lib/npcChatter/demoSeed';
 import type { FestiePublic } from '@/lib/festie/types';
 import type { SeedPools } from '@/lib/seeds/db';
 
 export type SeedPick =
+  | { kind: 'demo'; seed: string }
   | { kind: 'stream'; seed: string }
   | { kind: 'topic'; seed: string }
   | { kind: 'ambient'; seed: null };
@@ -22,6 +24,9 @@ export function pickConversationSeedFromPools(
   channelName: string,
   pools: SeedPools,
 ): SeedPick {
+  const demo = activeDemoSeed();
+  if (demo) return { kind: 'demo', seed: demo };
+
   const roll = Math.random();
   if (roll < SEED_STREAM_REACTIVE_PCT && streamTitle?.trim()) {
     return {
@@ -45,6 +50,9 @@ export function pickSeedForFestie(
   festie: FestiePublic,
   pools: SeedPools,
 ): string | null {
+  const demo = activeDemoSeed();
+  if (demo) return demo;
+
   const topics = festie.topics.map(t => t.toLowerCase()).filter(Boolean);
   const all = [...pools.generated, ...pools.fallback];
   if (all.length === 0) return null;

@@ -3,6 +3,7 @@ import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
 import { handleFestieNpcChat } from '@/lib/festie/chatHandler';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { internalDebugFromRequest, ierror, iwarn, runWithInternalDebug } from '@/lib/internalDebug';
+import { chatterDebugFromRequest, runWithChatterDebug } from '@/lib/chatterDebug';
 import { sanitizeNpcLine } from '@/lib/messageFilter';
 import {
   buildChatMessages,
@@ -28,6 +29,7 @@ type RequestBody = {
 
 export async function POST(req: Request) {
   return runWithInternalDebug(internalDebugFromRequest(req), async () => {
+  return runWithChatterDebug(chatterDebugFromRequest(req), async () => {
     let body: RequestBody;
     try {
       body = await req.json();
@@ -135,5 +137,6 @@ export async function POST(req: Request) {
           : pickFallbackReply(character, bitcoinSnapshot),
       });
     }
+  });
   });
 }

@@ -1,4 +1,5 @@
 import { ierror, ilog, iwarn } from '@/lib/internalDebug';
+import { activeDemoSeed } from '@/lib/npcChatter/demoSeed';
 import { sanitizeNpcLine } from '@/lib/messageFilter';
 import { resolveNpcRosterEntry } from '@/lib/npcRoster.server';
 import type { RoomChatLine } from './prompts';
@@ -48,7 +49,7 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
     const speaker = isA ? npcA : npcB;
     const isOpener = i === 0;
     const isCloser = i === req.lineBudget - 1;
-    const seed = isA && isOpener ? req.seed : null;
+    const seed = isA && isOpener ? (activeDemoSeed() ?? req.seed) : null;
 
     const system = buildLineSystemPrompt({
       npc: speaker,

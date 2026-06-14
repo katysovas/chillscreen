@@ -52,6 +52,8 @@ export type ClientMessage =
       walking: boolean;
       /** From `?mute=true` — disables room NPC chatter while this player is present. */
       chatterMuted?: boolean;
+      /** From `?debug=true` — demo seed only, internal QA. */
+      chatterDebug?: boolean;
       /** Signed-in account id — hides that user's offline festie NPC while online. */
       userId?: string;
     }

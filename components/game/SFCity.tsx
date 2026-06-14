@@ -70,6 +70,7 @@ import {
 } from '@/lib/npcChatterAnalytics';
 import { installGameInputAnalytics, trackMobileControl } from '@/lib/gameInputAnalytics';
 import { isChatterMuted } from '@/lib/chatterMuted';
+import { isChatterDebugMode } from '@/lib/chatterDebug';
 import { ierror } from '@/lib/internalDebug';
 import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
@@ -136,7 +137,7 @@ import { useEaselSession } from '@/lib/easel/useEaselSession';
 import { useEaselHoldAdvance } from '@/lib/easel/useEaselHoldAdvance';
 import { TEST_EASEL_ON_LOAD } from '@/lib/easel/test';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
-import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
+import { Z_CHAT_CHARACTER, Z_PLAYER_CHARACTER } from '@/lib/zLayers';
 import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
 import { getNpcConvoAnchor, setNpcConvoAnchor } from '@/lib/npcConvoAnchor';
 import { releaseNpcConvoSnap, snapNpcPairForConvo } from '@/lib/npcConvoSnap';
@@ -251,20 +252,68 @@ export default function SFCity({
   const lastMidScrollTileRef = useRef<number | null>(null);
   const lastGndScrollTileRef = useRef<number | null>(null);
 
+  /**
+   * Mobile mid-layer viewport.
+   *
+   * The scene SVG is 1400×900. On portrait mobile, `preserveAspectRatio="xMidYMid slice"`
+   * scales by height (factor ≈ 0.938) and shows only ~416 SVG units wide — far less than
+   * the widest stage (Concert, 887 SVG units). Stages are severely clipped.
+   *
+   * Fix (mobile only, mid/foreground layers only):
+   * - ViewBox width: 900 (fits Concert at 887 SVG units, +7 margin each side)
+   * - ViewBox height: 900 (square — forces scale = min(vw/900, vh/900) = vw/900 ≈ 0.433,
+   *   which is width-constrained so all 900 units are shown)
+   * - preserveAspectRatio = "xMidYMax meet": the 390×390 rendered scene anchors to the
+   *   screen bottom, which puts SVG y=685 (ground/sidewalk) at CSS y≈751 px — exactly
+   *   matching CHAR_BOTTOM=11% on an 844 px screen. Characters align with stage ground.
+   * - ViewBox X offset: +250 re-centres the 900-wide window on the same world centre that
+   *   the desktop 1400-wide window uses (desktop centre = midVx+700, mobile = midVx+250+450).
+   */
+  const MOBILE_MID_VB_W = 900;
+  // The desktop scene centres at x=700 in the 1400-wide viewBox.
+  // Shift the mobile viewBox so the same scene centre falls at x=450 (half of 900).
+  const MOBILE_MID_VB_X_OFFSET = 700 - MOBILE_MID_VB_W / 2; // desktop centre 700, mobile centre 450 → +250
+  // xMidYMax anchors the scene bottom to the screen bottom.
+  // vb_h is computed per-frame so mid-layer y=660 (stage ground) lands at exactly
+  // the same CSS pixel as ground-layer y=685 (sidewalk, rendered via slice at scale vh/900).
+  // Formula: vb_h = STAGE_GND + (900 − GND_LAYER_Y) * vh/vw = 660 + 215 * vh/vw
+  const MOBILE_MID_PAR = 'xMidYMax meet';
+
   /** Update scrolling SVG viewBoxes directly — zero React overhead. */
   const updateViewBoxes = (off: number) => {
     const skyVx = off * SKY_F;
     const midVx = off * MID_F;
     const gndVx = off * GND_F;
     const vb    = (x: number) => `${x} 0 1400 900`;
+
     skyRef.current?.setAttribute('viewBox', vb(skyVx));
-    midRef.current?.setAttribute('viewBox', vb(midVx));
-    midForegroundRef.current?.setAttribute('viewBox', vb(midVx));
-    midSkyLabelsRef.current?.setAttribute('viewBox', vb(midVx));
     groundRef.current?.setAttribute('viewBox', vb(gndVx));
     cabanaRef.current?.setAttribute('viewBox', vb(gndVx));
     navSignsRef.current?.setAttribute('viewBox', vb(gndVx));
     cloudsRef.current?.setAttribute('viewBox', vb(skyVx));
+
+    // On mobile portrait, zoom the stage layer out to show the full stage width.
+    if (typeof window !== 'undefined' && window.innerWidth <= 767) {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      // stage ground (y=660) in mid-layer must match GND_Y=685 in ground layer (slice, scale=vh/900).
+      const mvb_h = Math.round(660 + 215 * vh / vw);
+      const mvx = midVx + MOBILE_MID_VB_X_OFFSET;
+      const mvb = `${mvx} 0 ${MOBILE_MID_VB_W} ${mvb_h}`;
+      midRef.current?.setAttribute('viewBox', mvb);
+      midRef.current?.setAttribute('preserveAspectRatio', MOBILE_MID_PAR);
+      midForegroundRef.current?.setAttribute('viewBox', mvb);
+      midForegroundRef.current?.setAttribute('preserveAspectRatio', MOBILE_MID_PAR);
+      midSkyLabelsRef.current?.setAttribute('viewBox', mvb);
+      midSkyLabelsRef.current?.setAttribute('preserveAspectRatio', MOBILE_MID_PAR);
+    } else {
+      midRef.current?.setAttribute('viewBox', vb(midVx));
+      midRef.current?.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+      midForegroundRef.current?.setAttribute('viewBox', vb(midVx));
+      midForegroundRef.current?.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+      midSkyLabelsRef.current?.setAttribute('viewBox', vb(midVx));
+      midSkyLabelsRef.current?.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    }
   };
 
   // ── Greeting / collision ───────────────────────────────────────────────────
@@ -712,6 +761,10 @@ export default function SFCity({
       activePainterNpcIds(activeEaselSession),
     );
   }, [npcCast, mp.festies, effectiveVenueRoute, easelCastReady, activeEaselSession, easelSessionEnabled, easelChannel]);
+  const effectiveNpcCastKey = useMemo(
+    () => effectiveNpcCast.map(c => c.id).join('\0'),
+    [effectiveNpcCast],
+  );
   const effectiveNpcCastRef = useRef(effectiveNpcCast);
   effectiveNpcCastRef.current = effectiveNpcCast;
 
@@ -761,10 +814,14 @@ export default function SFCity({
     },
     onNpcConvoStart: (convoId, participants, _meta) => {
       const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const isMobile = width <= 767;
+      const snapOpts = isMobile
+        ? { forceMidWorldX: worldRef.current }
+        : { fallbackMidWorldX: worldRef.current };
       const snapped = snapNpcPairForConvo(participants[0], participants[1], width, {
         npcCast: effectiveNpcCast,
         npcWorldXRefs,
-      }, { fallbackMidWorldX: worldRef.current });
+      }, snapOpts);
 
       const anchor = snapped
         ?? (() => {
@@ -785,11 +842,15 @@ export default function SFCity({
       const pair = mpRef.current?.npcConvoPairs.find(p => p.convoId === convoId);
       if (pair) {
         const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        const isMobile = width <= 767;
         if (!hasNpcConvoHold(pair.participants[0])) {
+          const snapOpts = isMobile
+            ? { forceMidWorldX: worldRef.current }
+            : { fallbackMidWorldX: worldRef.current };
           snapNpcPairForConvo(pair.participants[0], pair.participants[1], width, {
             npcCast: effectiveNpcCast,
             npcWorldXRefs,
-          }, { fallbackMidWorldX: worldRef.current });
+          }, snapOpts);
         }
         const heldA = getNpcConvoHold(pair.participants[0]);
         const heldB = getNpcConvoHold(pair.participants[1]);
@@ -881,12 +942,16 @@ export default function SFCity({
     updateViewBoxes(spawnWorldOff);
     npcWorldXRefs.current = effectiveNpcCast.map((_, i) => npcWorldXRefs.current[i] ?? Infinity);
     npcDancingRef.current = effectiveNpcCast.map((_, i) => npcDancingRef.current[i] ?? false);
-    setNpcDancing(prev => effectiveNpcCast.map((_, i) => prev[i] ?? false));
+    setNpcDancing(prev => {
+      const next = effectiveNpcCast.map((_, i) => prev[i] ?? false);
+      if (next.length === prev.length && next.every((v, i) => v === prev[i])) return prev;
+      return next;
+    });
     lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
     lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
   // updateViewBoxes is stable (no deps)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spawnWorldOff, effectiveNpcCast]);
+  }, [spawnWorldOff, effectiveNpcCastKey]);
 
   const navigateToCity = useCallback((route: VenueRoute) => {
     setShowCityPicker(false);
@@ -1862,7 +1927,7 @@ export default function SFCity({
             bottom: CHAR_BOTTOM,
             transform: `translate(${inConversation ? chatConnectSpreadPlayerPx(greetNpcX) : 0}px, ${playerDepthY}px)`,
             transition: 'transform 0.25s ease',
-            zIndex: inConversation ? Z_CHAT_CHARACTER : 20,
+            zIndex: inConversation ? Z_CHAT_CHARACTER : Z_PLAYER_CHARACTER,
           }}>
             <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
               <Character
@@ -1948,7 +2013,7 @@ export default function SFCity({
               ? nearPeerName
               : null
         }
-        hidden={showWelcome || showCityPicker}
+        hidden={showWelcome || showCityPicker || isChatterDebugMode()}
         onConnectTap={mobileDevice ? () => connectNearRef.current?.() : undefined}
         onOpenCityPicker={() => setShowCityPicker(true)}
         vendorShopOpen={vendorShopManualOpen}
@@ -2063,6 +2128,7 @@ export default function SFCity({
         />
       )}
 
+      {!isChatterDebugMode() && (
       <div data-paraloid-ui className="hidden md:flex" style={{
         position: 'absolute', bottom: 22, right: 22,
         gap: 10, alignItems: 'center', zIndex: 40,
@@ -2117,6 +2183,7 @@ export default function SFCity({
           </button>
         )}
       </div>
+      )}
 
       {showMobileChatBar && (
         <MobileChatInputBar
@@ -2141,7 +2208,7 @@ export default function SFCity({
         />
       )}
 
-      {!showWelcome && !showCityPicker && (
+      {!showWelcome && !showCityPicker && !isChatterDebugMode() && (
         <MobileGameControls
           muted={muted}
           vendorShopOpen={vendorShopManualOpen}

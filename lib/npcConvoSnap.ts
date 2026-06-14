@@ -39,22 +39,37 @@ export function snapNpcPairForConvo(
   idB: string,
   viewportWidth: number,
   ctx: SnapContext,
-  opts?: { fallbackMidWorldX?: number },
+  opts?: {
+    fallbackMidWorldX?: number;
+    /**
+     * When set, the pair is always snapped to this world-x regardless of their
+     * current positions. Use the current camera offset (worldRef) to center the
+     * pair on screen — important on narrow mobile viewports where NPCs near an
+     * edge would otherwise place the chat column off-screen.
+     */
+    forceMidWorldX?: number;
+  },
 ): [number, number] | null {
   const idxA = ctx.npcCast.findIndex(c => c.id === idA);
   const idxB = ctx.npcCast.findIndex(c => c.id === idB);
 
-  let wxA = idxA >= 0 ? ctx.npcWorldXRefs.current[idxA]! : Number.NaN;
-  let wxB = idxB >= 0 ? ctx.npcWorldXRefs.current[idxB]! : Number.NaN;
-  if (!Number.isFinite(wxA) && Number.isFinite(wxB)) wxA = wxB;
-  if (!Number.isFinite(wxB) && Number.isFinite(wxA)) wxB = wxA;
-
   let mid: number | null = null;
-  if (Number.isFinite(wxA) && Number.isFinite(wxB)) {
-    mid = (wxA + wxB) / 2;
-  } else if (opts?.fallbackMidWorldX != null && Number.isFinite(opts.fallbackMidWorldX)) {
-    mid = opts.fallbackMidWorldX;
+
+  if (opts?.forceMidWorldX != null && Number.isFinite(opts.forceMidWorldX)) {
+    mid = opts.forceMidWorldX;
+  } else {
+    let wxA = idxA >= 0 ? ctx.npcWorldXRefs.current[idxA]! : Number.NaN;
+    let wxB = idxB >= 0 ? ctx.npcWorldXRefs.current[idxB]! : Number.NaN;
+    if (!Number.isFinite(wxA) && Number.isFinite(wxB)) wxA = wxB;
+    if (!Number.isFinite(wxB) && Number.isFinite(wxA)) wxB = wxA;
+
+    if (Number.isFinite(wxA) && Number.isFinite(wxB)) {
+      mid = (wxA + wxB) / 2;
+    } else if (opts?.fallbackMidWorldX != null && Number.isFinite(opts.fallbackMidWorldX)) {
+      mid = opts.fallbackMidWorldX;
+    }
   }
+
   if (mid == null) return null;
 
   const [holdA, holdB] = pinNpcPairWorldX(idA, idB, mid, viewportWidth);

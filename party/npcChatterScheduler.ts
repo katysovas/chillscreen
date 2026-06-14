@@ -34,6 +34,7 @@ import type { RoomChatLine } from '../lib/npcChatter/prompts';
 import { stageSlugForRoom, streamContextForRoom } from '../lib/npcChatter/roomContext';
 import type { StageSync } from '../lib/stageVideos';
 import { ierror, ilog, INTERNAL_DEBUG_HEADER, runWithInternalDebug } from '../lib/internalDebug';
+import { CHATTER_DEBUG_HEADER, runWithChatterDebug } from '../lib/chatterDebug';
 
 type NpcChatterLine = { npc: string; text: string };
 
@@ -45,6 +46,8 @@ export type ChatterSchedulerDeps = {
   getStageSync: () => StageSync | null;
   /** True when a player joined with ?mute=true — enables internal debug logs. */
   internalDebug: () => boolean;
+  /** True when a player joined with ?debug=true — demo seed only. */
+  chatterDebug: () => boolean;
 };
 
 export class NpcChatterScheduler {
@@ -258,10 +261,12 @@ export class NpcChatterScheduler {
 
   private async fetchChatter(body: object): Promise<NpcChatterLine[] | null> {
     return runWithInternalDebug(this.deps.internalDebug(), async () => {
+    return runWithChatterDebug(this.deps.chatterDebug(), async () => {
     try {
-      const debugHeaders: Record<string, string> = this.deps.internalDebug()
-        ? { [INTERNAL_DEBUG_HEADER]: 'true' }
-        : {};
+      const debugHeaders: Record<string, string> = {
+        ...(this.deps.internalDebug() ? { [INTERNAL_DEBUG_HEADER]: 'true' } : {}),
+        ...(this.deps.chatterDebug() ? { [CHATTER_DEBUG_HEADER]: 'true' } : {}),
+      };
       const res = await fetch(this.apiUrl(), {
         method: 'POST',
         headers: {
@@ -282,6 +287,7 @@ export class NpcChatterScheduler {
       ierror('[npc-chatter] fetch failed', err);
       return null;
     }
+    });
     });
   }
 
@@ -318,6 +324,7 @@ export class NpcChatterScheduler {
 
   private async runPairConvo() {
     return runWithInternalDebug(this.deps.internalDebug(), async () => {
+    return runWithChatterDebug(this.deps.chatterDebug(), async () => {
     if (this.chatterDisabled || this.deps.playerCount() === 0) return;
     if (this.activeConvo) return;
 
@@ -345,6 +352,9 @@ export class NpcChatterScheduler {
       this.chatterApiBase(),
       this.env.NPC_CHATTER_SECRET,
     );
+    if (seedPick.kind === 'demo') {
+      ilog('[npc-chatter] using demo seed', seedPick.seed.slice(0, 80));
+    }
     const houseModel = this.env.HOUSE_MODEL?.trim() || HOUSE_MODEL_DEFAULT;
     const rosterA = getNpcRosterEntry(npcA);
     const rosterB = getNpcRosterEntry(npcB);
@@ -405,6 +415,7 @@ export class NpcChatterScheduler {
 
     this.deps.broadcast({ t: 'npc-convo-end', convoId });
     this.activeConvo = false;
+    });
     });
   }
 

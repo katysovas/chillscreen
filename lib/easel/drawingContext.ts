@@ -21,7 +21,7 @@ export type EaselDrawingContext = {
   streamTitle: string | null;
   channelName: string;
   seedPrompt: string | null;
-  seedKind: 'stream' | 'topic' | 'ambient';
+  seedKind: 'stream' | 'topic' | 'ambient' | 'demo';
   uniqueNonce: string;
   /** Topics this NPC already painted here — must not repeat. */
   priorTopics: string[];

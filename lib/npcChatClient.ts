@@ -1,5 +1,6 @@
 import { isChatterMuted } from '@/lib/chatterMuted';
 import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
+import { chatterDebugFetchHeaders } from '@/lib/chatterDebug';
 import { ilog, iwarn, ierror, internalDebugFetchHeaders } from '@/lib/internalDebug';
 import { NPC_TYPING_MS } from '@/lib/npcChat';
 
@@ -33,6 +34,7 @@ export async function fetchNpcReply(
       headers: {
         'Content-Type': 'application/json',
         ...internalDebugFetchHeaders(),
+        ...chatterDebugFetchHeaders(),
       },
       body: JSON.stringify(body),
       signal,

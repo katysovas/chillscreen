@@ -1,4 +1,5 @@
 import { isChatterMuted } from './chatterMuted';
+import { isChatterDebugMode } from './chatterDebug';
 
 /** Request header — browser sends when `?mute=true` for server-side debug logs. */
 export const INTERNAL_DEBUG_HEADER = 'x-internal-debug';
@@ -20,9 +21,9 @@ export function runWithInternalDebug<T>(active: boolean, fn: () => T): T {
   }
 }
 
-/** True when `?mute=true` (browser) or request/party has internal debug on. */
+/** True when `?mute=true` or `?debug=true` (browser) or request/party has internal debug on. */
 export function isInternalDebugActive(): boolean {
-  if (typeof window !== 'undefined') return isChatterMuted();
+  if (typeof window !== 'undefined') return isChatterMuted() || isChatterDebugMode();
   return serverDebugActive;
 }
 
@@ -43,6 +44,6 @@ export function ierror(...args: unknown[]): void {
 
 /** Extra headers for fetch calls when internal debug is enabled. */
 export function internalDebugFetchHeaders(): Record<string, string> {
-  if (typeof window === 'undefined' || !isChatterMuted()) return {};
+  if (typeof window === 'undefined' || !isInternalDebugActive()) return {};
   return { [INTERNAL_DEBUG_HEADER]: 'true' };
 }

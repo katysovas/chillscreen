@@ -19,6 +19,10 @@ import {
   chatConnectSpreadPlayerPx,
   chatConnectSpreadPx,
 } from '@/lib/chatConnectSpread';
+import {
+  chatColumnMaxWidthPx,
+  clampOverlayCenterPx,
+} from '@/lib/chatBubbleViewport';
 import { CHAR_BOTTOM, NPC_PAIR_CHAT_LIFT_PX } from './groundLayout';
 import { Z_CHAT_OVERLAY } from '@/lib/zLayers';
 
@@ -107,10 +111,16 @@ export function NpcPairChatOverlay({
       const spreadB = chatConnectSpreadPx(bPct);
       const aCenterPx = (aPct / 100) * vw + spreadA;
       const bCenterPx = (bPct / 100) * vw + spreadB;
-      const midScreenPct = ((aCenterPx + bCenterPx) / 2 / vw) * 100;
+      const midCenterPx = (aCenterPx + bCenterPx) / 2;
 
       if (divRef.current) {
-        divRef.current.style.left = `${midScreenPct}%`;
+        const columnW = chatColumnMaxWidthPx(vw);
+        divRef.current.style.maxWidth = `${columnW}px`;
+        divRef.current.style.width = `${columnW}px`;
+        const measured = divRef.current.getBoundingClientRect().width;
+        const overlayW = measured > 0 ? measured : columnW;
+        const clampedCenter = clampOverlayCenterPx(midCenterPx, overlayW, vw);
+        divRef.current.style.left = `${clampedCenter}px`;
       }
       setScreenPcts(prev =>
         prev[0] === aPct && prev[1] === bPct ? prev : [aPct, bPct],
@@ -129,6 +139,7 @@ export function NpcPairChatOverlay({
   return (
     <div
       ref={divRef}
+      className="game-chat-pair-overlay"
       style={{
         position: 'absolute',
         left: '50%',
@@ -136,7 +147,10 @@ export function NpcPairChatOverlay({
         transform: 'translateX(-50%)',
         zIndex: Z_CHAT_OVERLAY,
         width: '100%',
-        maxWidth: 'min(320px, calc(100vw - 32px))',
+        maxWidth: chatColumnMaxWidthPx(
+          typeof window !== 'undefined' ? window.innerWidth : 1200,
+        ),
+        boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-end',
@@ -202,18 +216,27 @@ export function PlayerChatOverlay({
   const side = playerBubbleSide(npcScreenX);
   const playerSpread = chatConnectSpreadPlayerPx(npcScreenX);
   const partnerSpread = chatConnectSpreadPx(npcScreenX);
-  const midpointPx = connectedChatMidpointOffsetPx(npcScreenX, vw, playerSpread, partnerSpread);
+  const rawMidpointPx = connectedChatMidpointOffsetPx(npcScreenX, vw, playerSpread, partnerSpread);
+  const columnW = chatColumnMaxWidthPx(vw);
+  const playerCenterPx = vw * 0.5 + playerSpread;
+  const midpointPx = clampOverlayCenterPx(
+    playerCenterPx + rawMidpointPx,
+    columnW,
+    vw,
+  ) - playerCenterPx;
 
   if (chatMode === 'chat') {
     return (
       <div
+        className="game-chat-thread-overlay"
         style={{
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-end',
           gap: 6,
           width: '100%',
-          maxWidth: 'min(320px, calc(100vw - 32px))',
+          maxWidth: columnW,
+          boxSizing: 'border-box',
           transform: `translateX(${midpointPx}px)`,
         }}
       >

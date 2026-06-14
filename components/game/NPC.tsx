@@ -4,7 +4,7 @@ import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
-import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
+import { CHAR_BOTTOM, crowdDepthOffsetPx, crowdDepthZIndex } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import {
@@ -21,6 +21,11 @@ import {
   shouldNpcAvoidEaselCanvas,
   worldXBlocksEaselCanvas,
 } from '@/lib/easel/canvasBlocking';
+import {
+  isInDesktopBottomControlsBand,
+  nudgeWorldXAwayFromDesktopControls,
+  rndScreenPctAvoidDesktopControls,
+} from '@/lib/desktopControlsZone';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
@@ -129,9 +134,12 @@ export default function NPC({
   personality, stageAnchor, stageCrowd, wanderAttractWorldX, easelStationWorldX,
   onEaselStationed,
   easelPaintingLabel,
-  paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false, greetingChat,
+  paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false,   greetingChat,
   spaceFloat = false,
 }: NPCProps) {
+  const depthY = useMemo(() => crowdDepthOffsetPx(characterId), [characterId]);
+  const depthZ = crowdDepthZIndex(depthY);
+
   // ── React state: only for infrequent visual changes ─────────────────────────
   const [jumping,   setJumping]  = useState(false);
   const [active,    setActive]   = useState(false);
@@ -277,9 +285,11 @@ export default function NPC({
         curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
       );
     } else {
-      const targetPct = rndBetween(
+      const width = vw();
+      const targetPct = rndScreenPctAvoidDesktopControls(
         Math.max(SCREEN_MIN, prefLo),
         Math.min(SCREEN_MAX, prefHi),
+        width,
       );
       targetWorldX = pctToWorld(
         curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
@@ -314,9 +324,11 @@ export default function NPC({
   };
 
   const spawnInPlace = (worldX: number) => {
-    worldXRef.current = worldX;
-    targetWorldRef.current = worldX;
-    const pct = worldXToScreenPct(worldX, gameWorldOffRef.current, vw());
+    const width = vw();
+    const off = gameWorldOffRef.current;
+    worldXRef.current = nudgeWorldXAwayFromDesktopControls(worldX, off, width);
+    targetWorldRef.current = worldXRef.current;
+    const pct = worldXToScreenPct(worldXRef.current, off, width);
     screenXRef.current = pct;
     onScreenRef.current = true;
     if (divRef.current) {
@@ -349,7 +361,8 @@ export default function NPC({
       }
 
       worldXRef.current = pctToWorld(startX);
-      const entryTargetPct = rndBetween(25, 75);
+      const width = vw();
+      const entryTargetPct = rndScreenPctAvoidDesktopControls(25, 75, width);
       targetWorldRef.current = pctToWorld(entryTargetPct);
       facingRef.current = entryTargetPct > startX ? 'right' : 'left';
       walkingRef.current = true;
@@ -529,13 +542,29 @@ export default function NPC({
         const spd    = (personality.speed / 100) * width;
 
         if (Math.abs(diff) < spd) {
-          worldXRef.current = target;
+          worldXRef.current = nudgeWorldXAwayFromDesktopControls(target, off, width);
+          targetWorldRef.current = worldXRef.current;
           stateRef.current = 'idle';
           applyWalking(false);
         } else {
           worldXRef.current += diff > 0 ? spd : -spd;
           applyFacing(diff > 0 ? 'right' : 'left');
           applyWalking(true);
+        }
+      }
+
+      if (
+        !heldForConvo
+        && !pausedRef.current
+        && stateRef.current === 'idle'
+        && easelStationWorldX == null
+        && !stageAnchor
+        && isInDesktopBottomControlsBand(pct, width)
+      ) {
+        const nudged = nudgeWorldXAwayFromDesktopControls(worldXRef.current, off, width);
+        if (nudged !== worldXRef.current) {
+          worldXRef.current = nudged;
+          targetWorldRef.current = nudged;
         }
       }
 
@@ -557,7 +586,6 @@ export default function NPC({
       screenXRef.current = pct;
       if (divRef.current) {
         divRef.current.style.left = `${pct}%`;
-        const depthY = crowdDepthOffsetPx(characterId);
         const spread = chatConnectedRef.current ? chatConnectSpreadPx(pct) : 0;
         divRef.current.style.transform = `translate(${spread}px, ${depthY}px)`;
       }
@@ -566,7 +594,7 @@ export default function NPC({
 
     return () => { setNpcMovementTick(index, null); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, index, personality, stageAnchor, spaceFloat]);
+  }, [active, index, personality, stageAnchor, spaceFloat, depthY]);
 
   // ── Flee on disconnect ─────────────────────────────────────────────────────
   const wasGreetingRef = useRef(false);
@@ -582,7 +610,9 @@ export default function NPC({
   }, [easelPaintingLabel]);
 
   const showPaintingBubble = easelStationed && Boolean(easelPaintingLabel);
-  const bubbleSide = showPaintingBubble ? 'left' : screenXToBubbleSide(screenX);
+  const bubbleSide = showPaintingBubble
+    ? (screenX < 28 ? 'right' : 'left')
+    : screenXToBubbleSide(screenX);
 
   if (!active) return null;
 
@@ -593,8 +623,8 @@ export default function NPC({
       style={{
         position: 'absolute',
         bottom: CHAR_BOTTOM,
-        transform: `translateY(${crowdDepthOffsetPx(characterId)}px)`,
-        zIndex: greeting ? Z_CHAT_CHARACTER : showPaintingBubble ? 19 : 18,
+        transform: `translateY(${depthY}px)`,
+        zIndex: greeting ? Z_CHAT_CHARACTER : showPaintingBubble ? depthZ + 1 : depthZ,
         opacity: dimmed ? 0.6 : 1,
         filter: dimmed ? 'brightness(0.85)' : undefined,
         transition: 'opacity 0.4s ease, filter 0.4s ease',

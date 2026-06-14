@@ -5,7 +5,9 @@ import { clampLineBudget, clampTriggerText, sanitizeRecentChat } from '@/lib/npc
 import { isChatterNpcAllowed } from '@/lib/npcRoster.server';
 import { logFestiePairChatter } from '@/lib/festie/logNpcChatter';
 import { HOUSE_MODEL_DEFAULT } from '@/lib/npcChatter/constants';
+import { activeDemoSeed } from '@/lib/npcChatter/demoSeed';
 import { ierror, runWithInternalDebug, internalDebugFromRequest } from '@/lib/internalDebug';
+import { chatterDebugFromRequest, runWithChatterDebug } from '@/lib/chatterDebug';
 
 /** Pair convo = up to 7 sequential LLM calls (~8s each). */
 export const maxDuration = 60;
@@ -37,6 +39,7 @@ export async function POST(req: Request) {
   if (denied) return denied;
 
   return runWithInternalDebug(internalDebugFromRequest(req), async () => {
+  return runWithChatterDebug(chatterDebugFromRequest(req), async () => {
   let body: PairBody | ReplyBody;
   try {
     body = await req.json();
@@ -93,7 +96,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  const seed = typeof body.seed === 'string' ? body.seed.slice(0, 300) : null;
+  const seed = activeDemoSeed() ?? (typeof body.seed === 'string' ? body.seed.slice(0, 300) : null);
 
   const lines = await generatePairConvo({
     stage,
@@ -121,5 +124,6 @@ export async function POST(req: Request) {
   void logFestiePairChatter(npcA, npcB, lines);
 
   return Response.json({ lines });
+  });
   });
 }
