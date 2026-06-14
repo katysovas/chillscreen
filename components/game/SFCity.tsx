@@ -121,11 +121,12 @@ import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, Sti
 import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
-import { easelWalkTargetWorldXForNpc } from '@/lib/easel/stationed';
+import { easelStationWorldXForNpc } from '@/lib/easel/stationed';
+import { isEaselPainterReady, subscribeEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import { easelPaintingLabelForNpc } from '@/lib/easel/paintingLabel';
 import { setActiveEaselCanvasBlockZone } from '@/lib/easel/canvasBlocking';
 import { easelSlotWorldX } from '@/lib/easel/layout';
-import { mergeEaselOwnersIntoCast, preloadEaselOwners, isEaselPainterForChannel } from '@/lib/easel/cast';
+import { mergeEaselOwnersIntoCast, preloadEaselOwners } from '@/lib/easel/cast';
 import { easelHandLoadout } from '@/lib/easel/brushLoadout';
 import { easelPaintingContextForNpc } from '@/lib/easel/chatContext';
 import { ensureEaselSession } from '@/lib/easel/checkpointClient';
@@ -681,15 +682,19 @@ export default function SFCity({
     && Boolean(activeEaselSession?.slots.length);
 
   useEffect(() => {
-    const painting = activeEaselSession?.slots.find(s => s.status === 'painting');
-    if (!painting) {
-      setActiveEaselCanvasBlockZone(null);
-      return;
-    }
-    setActiveEaselCanvasBlockZone({
-      canvasWorldX: easelSlotWorldX(painting.slot, easelStageSlug),
-      painterNpcId: painting.npc,
-    });
+    const syncBlockZone = () => {
+      const painting = activeEaselSession?.slots.find(s => s.status === 'painting');
+      if (!painting || !isEaselPainterReady(painting.npc)) {
+        setActiveEaselCanvasBlockZone(null);
+        return;
+      }
+      setActiveEaselCanvasBlockZone({
+        canvasWorldX: easelSlotWorldX(painting.slot, easelStageSlug),
+        painterNpcId: painting.npc,
+      });
+    };
+    syncBlockZone();
+    return subscribeEaselPainterReady(syncBlockZone);
   }, [activeEaselSession, easelStageSlug]);
 
   const effectiveNpcCast = useMemo(() => {
@@ -1772,8 +1777,9 @@ export default function SFCity({
             {...cfg}
             loadout={easelHandLoadout(baseLoadout, isPainting)}
             stageAnchor={cfg.stageAnchor}
-            easelWalkTargetWorldX={easelWalkTargetWorldXForNpc(cfg.id, activeEaselSession, easelStageSlug)}
-            easelStationOnLoad={TEST_EASEL_ON_LOAD && isEaselPainterForChannel(cfg.id, easelChannel) && activePainterNpcIds(activeEaselSession).has(cfg.id)}
+            easelStationWorldX={isPainting
+              ? easelStationWorldXForNpc(cfg.id, activeEaselSession, easelStageSlug)
+              : undefined}
             onEaselStationed={isPainting ? () => mpRef.current?.sendEaselPainterReady(cfg.id) : undefined}
             easelPaintingLabel={easelPaintingLabel}
             startX={testing ? 55 : cfg.startX}

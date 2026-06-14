@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { EaselSessionSync, EaselSlotSync } from './types';
 import { easelClockStart } from './sessionClock';
+import { narrowEaselSession, pickVisibleEaselSlots } from './visibleSlots';
 
 function hasEaselSlots(session: EaselSessionSync | null | undefined): session is EaselSessionSync {
   return Boolean(session?.slots?.length);
@@ -34,8 +35,12 @@ export function fetchLocalEaselSession(
     .then(r => (r.ok ? r.json() : null))
     .then((data: { slots?: Record<string, unknown>[] } | null) => {
       if (!data?.slots?.length) return null;
-      const slots = data.slots.map(mapSlotFromApi);
-      const sessionStart = easelClockStart(slots[0]!, Date.now());
+      const slots = pickVisibleEaselSlots(data.slots.map(mapSlotFromApi));
+      if (!slots.length) return null;
+      const slot = slots[0]!;
+      const sessionStart = slot.status === 'painting' && slot.segments_done <= 0
+        ? 0
+        : easelClockStart(slot, Date.now());
       return { sessionStart, slots };
     })
     .catch(() => null);
@@ -92,7 +97,7 @@ export function useEaselSession(
   }, [enabled, stageSlug]);
 
   if (hasEaselSlots(partySession)) {
-    return mergeProgramData(partySession, localSession);
+    return narrowEaselSession(mergeProgramData(partySession, localSession));
   }
-  return localSession;
+  return narrowEaselSession(localSession);
 }

@@ -1,4 +1,8 @@
-/** Client-side: NPC has reached the easel stand target (glow bubble on). */
+'use client';
+
+import { useEffect, useState } from 'react';
+
+/** Client-side: NPC has reached the easel stand (canvas may show + clock runs). */
 
 type Listener = () => void;
 
@@ -18,4 +22,22 @@ export function isEaselPainterReady(npcId: string): boolean {
 export function subscribeEaselPainterReady(listener: Listener): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+/** Reactive painter-ready flag — false until NPC is stationed at the easel. */
+export function useEaselPainterReady(npcId: string, required: boolean): boolean {
+  const [ready, setReady] = useState(() => !required || isEaselPainterReady(npcId));
+
+  useEffect(() => {
+    if (!required) {
+      setReady(true);
+      return;
+    }
+    setReady(isEaselPainterReady(npcId));
+    return subscribeEaselPainterReady(() => {
+      setReady(isEaselPainterReady(npcId));
+    });
+  }, [npcId, required]);
+
+  return ready;
 }

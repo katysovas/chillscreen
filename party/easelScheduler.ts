@@ -5,6 +5,7 @@ import { chatterApiBase } from '../lib/npcChatter/apiBase';
 import { stageSlugForRoom } from '../lib/npcChatter/roomContext';
 import { easelHoldExpired } from '../lib/easel/lifecycle';
 import { liveSegmentsDone } from '../lib/easel/segments';
+import { pickVisibleEaselSlots } from '../lib/easel/visibleSlots';
 import type { EaselSessionSync, EaselSlotSync } from '../lib/easel/types';
 import { EASEL_HOLD_MS } from '../lib/easel/types';
 import { ierror, ilog, INTERNAL_DEBUG_HEADER, runWithInternalDebug } from '../lib/internalDebug';
@@ -81,12 +82,17 @@ export class EaselScheduler {
     });
   }
 
+  private visibleSlots(): EaselSlotSync[] {
+    return pickVisibleEaselSlots(this.slots);
+  }
+
   private broadcastSession() {
-    if (this.sessionStart == null || this.slots.length === 0) return;
+    const slots = this.visibleSlots();
+    if (this.sessionStart == null || slots.length === 0) return;
     const msg: ServerMessage = {
       t: 'easel-session',
       sessionStart: this.sessionStart,
-      slots: this.slots,
+      slots,
     };
     this.deps.broadcast(msg);
   }
@@ -115,6 +121,10 @@ export class EaselScheduler {
     }
   }
 
+  private normalizeSlots() {
+    this.slots = pickVisibleEaselSlots(this.slots);
+  }
+
   private applySlotFromApi(slot: number, payload: SlotApiPayload | null) {
     if (!payload || payload.ok === false) return false;
     const idx = this.slots.findIndex(s => s.slot === slot);
@@ -133,12 +143,14 @@ export class EaselScheduler {
     };
     if (idx >= 0) this.slots[idx] = next;
     else this.slots.push(next);
+    this.normalizeSlots();
     return true;
   }
 
   private async checkSession() {
     return runWithInternalDebug(this.deps.internalDebug(), async () => {
     if (this.sessionStart == null || this.sessionStart <= 0 || this.deps.playerCount() === 0) return;
+    this.normalizeSlots();
     const now = Date.now();
     const stage = this.stageSlug();
     let changed = false;
@@ -178,7 +190,7 @@ export class EaselScheduler {
           continue;
         }
 
-        const refreshed = await this.fetchEasels();
+        const refreshed = pickVisibleEaselSlots(await this.fetchEasels());
         if (refreshed.length === 0) {
           this.slots = [];
           changed = true;
@@ -197,7 +209,7 @@ export class EaselScheduler {
   async onFirstPlayer() {
     const stage = this.stageSlug();
     await this.postEasel({ action: 'ensureSession', stage });
-    const rows = await this.fetchEasels();
+    const rows = pickVisibleEaselSlots(await this.fetchEasels());
     if (rows.length === 0) return;
     this.slots = rows;
     this.sessionStart = 0;
@@ -227,11 +239,12 @@ export class EaselScheduler {
   }
 
   syncToClient(send: (msg: ServerMessage) => void) {
-    if (this.sessionStart == null) return;
+    const slots = this.visibleSlots();
+    if (this.sessionStart == null || slots.length === 0) return;
     send({
       t: 'easel-session',
       sessionStart: this.sessionStart,
-      slots: this.slots,
+      slots,
     });
   }
 
@@ -240,7 +253,8 @@ export class EaselScheduler {
   }
 
   getSession(): EaselSessionSync | null {
-    if (this.sessionStart == null) return null;
-    return { sessionStart: this.sessionStart, slots: this.slots };
+    const slots = this.visibleSlots();
+    if (this.sessionStart == null || slots.length === 0) return null;
+    return { sessionStart: this.sessionStart, slots };
   }
 }

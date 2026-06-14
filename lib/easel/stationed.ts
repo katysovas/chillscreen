@@ -1,8 +1,8 @@
 import { easelNpcStandWorldX, easelSlotWorldX } from './layout';
 import type { EaselSessionSync } from './types';
 
-/** Map NPC character id → ground stand target while actively painting. */
-export function easelWalkTargetWorldXForNpc(
+/** Ground stand position — NPC teleports here when assigned as painter. */
+export function easelStationWorldXForNpc(
   npcId: string,
   session: EaselSessionSync | null,
   stageSlug: string,
@@ -14,8 +14,8 @@ export function easelWalkTargetWorldXForNpc(
   return easelNpcStandWorldX(slot.slot, stageSlug, width);
 }
 
-/** @deprecated use easelWalkTargetWorldXForNpc */
-export const easelStationWorldXForNpc = easelWalkTargetWorldXForNpc;
+/** @deprecated use easelStationWorldXForNpc */
+export const easelWalkTargetWorldXForNpc = easelStationWorldXForNpc;
 
 /** NPCs actively painting — finished painters are released to wander. */
 export function stationedNpcIds(session: EaselSessionSync | null): Set<string> {

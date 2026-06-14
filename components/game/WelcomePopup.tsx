@@ -13,13 +13,13 @@ import {
   sanitizeFestieNameInput,
 } from '@/lib/festie/validation';
 import { isMobileLoungeDevice, MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
-import { LOGO_PATH } from '@/lib/site';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
 
 type Props = {
   balloonColor: string;
   initialRoute?: VenueRoute;
+  initialAuthIntent?: AuthIntent;
   onEnter: (name: string, route: VenueRoute) => void;
   requireAuth?: boolean;
   pickStageOnly?: boolean;
@@ -62,40 +62,6 @@ const PRIMARY_BTN: React.CSSProperties = {
   fontFamily: 'system-ui,sans-serif',
   transition: 'background 0.2s, color 0.2s, box-shadow 0.2s',
 };
-
-const HERO_TITLE: React.CSSProperties = {
-  margin: 0,
-  fontSize: 17,
-  fontWeight: 600,
-  color: 'rgba(255,255,255,0.88)',
-  textAlign: 'center',
-  fontFamily: 'system-ui,sans-serif',
-  lineHeight: 1.4,
-};
-
-const HERO_SUB: React.CSSProperties = {
-  margin: '6px 0 0',
-  fontSize: 12,
-  color: 'rgba(255,255,255,0.4)',
-  fontFamily: 'system-ui,sans-serif',
-  textAlign: 'center',
-  lineHeight: 1.45,
-};
-
-function ModalHero() {
-  return (
-    <div style={{ marginBottom: 20 }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={LOGO_PATH}
-        alt="WhichStage"
-        style={{ height: 44, margin: '0 auto 16px', display: 'block', objectFit: 'contain' }}
-      />
-      <h1 style={HERO_TITLE}>Join the AI Festival</h1>
-      <p style={HERO_SUB}>Explore stages. Watch live sets. Blend in.</p>
-    </div>
-  );
-}
 
 function ProgressBar({ pct }: { pct: number }) {
   return (
@@ -175,6 +141,7 @@ function AuthTabs({
 export function WelcomePopup({
   balloonColor,
   initialRoute,
+  initialAuthIntent,
   onEnter,
   requireAuth = true,
   pickStageOnly = false,
@@ -184,7 +151,7 @@ export function WelcomePopup({
 }: Props) {
   const [step, setStep] = useState<1 | 2>(pickStageOnly ? 2 : requireAuth ? 1 : 2);
   const [authIntent, setAuthIntent] = useState<AuthIntent>(() =>
-    hasLocalFestieAccount() ? 'signin' : 'create',
+    initialAuthIntent ?? (hasLocalFestieAccount() ? 'signin' : 'create'),
   );
   const [draft, setDraft] = useState(() => {
     if (initialName?.trim()) return initialName.trim();
@@ -338,8 +305,6 @@ export function WelcomePopup({
         {(requireAuth || pickStageOnly) && <ProgressBar pct={progressPct} />}
 
         <div style={{ padding: mobile ? '28px 22px 24px' : '32px 36px 28px' }}>
-          <ModalHero />
-
           {showStep1 && (
             <>
               <AuthTabs authIntent={authIntent} onChange={setAuthMode} />

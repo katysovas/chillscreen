@@ -7,6 +7,7 @@ import { pickNextEaselNpc } from './npcRotation';
 import { nextEaselSlot } from './stageAnchor';
 import { programFromRow, rowNeedsAiUpgrade, rowToSlotSync } from './resolveProgram';
 import { easelStageLookupSlugs, normalizeEaselStage } from './stageKey';
+import { pickVisibleEaselSlot, pickVisibleEaselSlots } from './visibleSlots';
 import type { DrawingProgram, EaselRow, EaselStatus } from './types';
 import { EASEL_DEFAULT_RATE, EASEL_SLOTS_PER_STAGE } from './types';
 
@@ -53,7 +54,7 @@ function rowFromDb(r: Record<string, unknown>): EaselRow {
   };
 }
 
-export async function getEaselsForStage(stage: string): Promise<EaselRow[]> {
+async function fetchVisibleEaselRows(stage: string): Promise<EaselRow[]> {
   const sql = requireDb();
   const slugs = easelStageLookupSlugs(stage);
   const rows = await sql`
@@ -64,6 +65,22 @@ export async function getEaselsForStage(stage: string): Promise<EaselRow[]> {
   const parsed = rows.map(rowFromDb);
   await migrateLegacyStageRows(parsed);
   return parsed;
+}
+
+export async function getEaselsForStage(stage: string): Promise<EaselRow[]> {
+  return pickVisibleEaselSlots(await fetchVisibleEaselRows(stage));
+}
+
+/** Hide stale visible rows so only one canvas shows per room (self-heals prod DB). */
+async function pruneExtraVisibleEasels(stage: string): Promise<void> {
+  const rows = await fetchVisibleEaselRows(stage);
+  const keep = pickVisibleEaselSlot(rows);
+  if (!keep) return;
+  for (const row of rows) {
+    if (row.slot !== keep.slot) {
+      await hideEasel(stage, row.slot);
+    }
+  }
 }
 
 async function createAiDrawingForNpc(stage: string, slot: number, npc: string): Promise<void> {
@@ -128,27 +145,30 @@ async function upgradeEaselRowToAi(stage: string, row: EaselRow): Promise<EaselR
 
 /** Upgrade legacy rows without seeding or advancing holds. */
 export async function getVisibleEasels(stage: string): Promise<EaselRow[]> {
-  let rows = await getEaselsForStage(stage);
+  let rows = await fetchVisibleEaselRows(stage);
   for (const row of rows) {
     if (rowNeedsAiUpgrade(row)) {
       await upgradeEaselRowToAi(stage, row);
     }
   }
-  rows = await getEaselsForStage(stage);
+  rows = pickVisibleEaselSlots(await fetchVisibleEaselRows(stage));
   for (const row of rows) logExistingEaselRow(row, stage);
   return rows;
 }
 
 /** Upgrade legacy rows and advance finished easels past the hold window. */
 export async function syncEaselSessionForPlayers(stage: string): Promise<EaselRow[]> {
-  const rows = await getVisibleEasels(stage);
+  const stageKey = normalizeEaselStage(stage);
+  await getVisibleEasels(stageKey);
+  await pruneExtraVisibleEasels(stageKey);
+  const rows = await getEaselsForStage(stageKey);
   for (const row of rows) {
     if (row.status === 'done' && easelHoldExpired(row.completed_at)) {
-      await advanceEaselAfterHold(stage, row.slot);
+      await advanceEaselAfterHold(stageKey, row.slot);
     }
   }
 
-  return getEaselsForStage(stage);
+  return getEaselsForStage(stageKey);
 }
 
 /**

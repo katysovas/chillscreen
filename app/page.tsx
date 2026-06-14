@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { HomeCityPicker } from '@/components/game/HomeCityPicker';
-import { VenueBootOverlay } from '@/components/game/VenueBootOverlay';
 import { JsonLd } from '@/components/JsonLd';
 import { venueItemListJsonLd } from '@/lib/jsonLd';
 import { buildPageMetadata } from '@/lib/siteMetadata';
@@ -16,7 +15,6 @@ export default function Home() {
   return (
     <>
       <JsonLd data={venueItemListJsonLd()} />
-      <VenueBootOverlay />
       <HomeCityPicker />
     </>
   );
