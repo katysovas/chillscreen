@@ -13,6 +13,7 @@ import {
   sanitizeFestieNameInput,
 } from '@/lib/festie/validation';
 import { isMobileLoungeDevice, MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
+import { LOGO_PATH, SITE_TAGLINE } from '@/lib/site';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
 
@@ -62,6 +63,40 @@ const PRIMARY_BTN: React.CSSProperties = {
   fontFamily: 'system-ui,sans-serif',
   transition: 'background 0.2s, color 0.2s, box-shadow 0.2s',
 };
+
+const HERO_TITLE: React.CSSProperties = {
+  margin: 0,
+  fontSize: 17,
+  fontWeight: 600,
+  color: 'rgba(255,255,255,0.88)',
+  textAlign: 'center',
+  fontFamily: 'system-ui,sans-serif',
+  lineHeight: 1.4,
+};
+
+const HERO_SUB: React.CSSProperties = {
+  margin: '6px 0 0',
+  fontSize: 12,
+  color: 'rgba(255,255,255,0.4)',
+  fontFamily: 'system-ui,sans-serif',
+  textAlign: 'center',
+  lineHeight: 1.45,
+};
+
+function ModalHero() {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={LOGO_PATH}
+        alt="WhichStage"
+        style={{ height: 44, margin: '0 auto 16px', display: 'block', objectFit: 'contain' }}
+      />
+      <h1 style={HERO_TITLE}>{SITE_TAGLINE}</h1>
+      <p style={HERO_SUB}>Explore stages. Watch live sets. Blend in.</p>
+    </div>
+  );
+}
 
 function ProgressBar({ pct }: { pct: number }) {
   return (
@@ -149,10 +184,11 @@ export function WelcomePopup({
   onFestieCreated,
   initialName,
 }: Props) {
-  const [step, setStep] = useState<1 | 2>(pickStageOnly ? 2 : requireAuth ? 1 : 2);
-  const [authIntent, setAuthIntent] = useState<AuthIntent>(() =>
-    initialAuthIntent ?? (hasLocalFestieAccount() ? 'signin' : 'create'),
-  );
+  const signInOnly = requireAuth && !pickStageOnly && !initialRoute;
+  const [authIntent, setAuthIntent] = useState<AuthIntent>(() => {
+    if (signInOnly) return 'signin';
+    return initialAuthIntent ?? (hasLocalFestieAccount() ? 'signin' : 'create');
+  });
   const [draft, setDraft] = useState(() => {
     if (initialName?.trim()) return initialName.trim();
     return getLocalFestieName() ?? '';
@@ -165,18 +201,17 @@ export function WelcomePopup({
 
   const nameValid = isValidFestieName(draft);
   const passwordValid = isValidFestiePassword(password);
-  const canAdvanceStep1 = nameValid && passwordValid;
-  const canSubmit = pickStageOnly
-    ? Boolean(draft.trim()) && picked !== null
-    : requireAuth
-      ? step === 1
-        ? canAdvanceStep1
-        : nameValid && passwordValid && picked !== null
-      : false;
+  const canSubmitAuth = nameValid && passwordValid;
+  const canSubmitStagePick = Boolean(draft.trim()) && picked !== null;
+  const isCreate = authIntent === 'create';
 
   useEffect(() => {
     if (initialName?.trim()) setDraft(initialName.trim());
   }, [initialName]);
+
+  useEffect(() => {
+    if (initialRoute) setPicked(initialRoute);
+  }, [initialRoute]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -186,80 +221,55 @@ export function WelcomePopup({
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  const advanceFromStep1 = async () => {
-    if (!canAdvanceStep1 || loading) return;
+  const submitAuth = async () => {
+    if (!canSubmitAuth || loading) return;
     setError(null);
+    setLoading(true);
 
-    if (authIntent === 'signin') {
-      setLoading(true);
-      try {
+    try {
+      if (authIntent === 'signin') {
         const { festie, sessionRecap } = await loginFestie(draft.trim(), password);
-        setDraft(festie.name);
         onAuthSuccess?.(festie.name, sessionRecap);
         const savedRoute = venueRouteForStageSlug(festie.stage_slug);
-        if (savedRoute) {
-          onEnter(festie.name, savedRoute);
+        const route = savedRoute ?? initialRoute;
+        if (!route) {
+          setError('No home stage found — pick a stage from the homepage first.');
           return;
         }
-        setPicked(null);
-        setStep(2);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-      } finally {
-        setLoading(false);
+        onEnter(festie.name, route);
+        return;
       }
-      return;
-    }
 
-    setStep(2);
+      const route = initialRoute ?? picked;
+      if (!route) {
+        setError('Pick a stage from the homepage to create your festie.');
+        return;
+      }
+
+      await createFestie({
+        name: draft.trim(),
+        password,
+        preset: 'ember',
+        attributes: { energy: 5, friendliness: 5, chattiness: 5 },
+        topics: [],
+        personality_notes: null,
+        stage_slug: venueSlugForRoute(route),
+      });
+      onFestieCreated?.();
+      onAuthSuccess?.(draft.trim());
+      onEnter(draft.trim(), route);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const submit = async () => {
-    if (requireAuth && step === 1) {
-      await advanceFromStep1();
-      return;
-    }
-
+  const submitStagePick = () => {
     const name = draft.trim();
-    if (!canSubmit || !picked) return;
-
-    if (pickStageOnly) {
-      onEnter(name, picked);
-      return;
-    }
-
-    if (requireAuth) {
-      setLoading(true);
-      setError(null);
-      try {
-        if (authIntent === 'signin') {
-          onEnter(name, picked);
-          return;
-        }
-        await createFestie({
-          name,
-          password,
-          preset: 'ember',
-          attributes: { energy: 5, friendliness: 5, chattiness: 5 },
-          topics: [],
-          personality_notes: null,
-          stage_slug: venueSlugForRoute(picked),
-        });
-        onFestieCreated?.();
-        onAuthSuccess?.(name);
-        onEnter(name, picked);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-        setLoading(false);
-      }
-    }
+    if (!canSubmitStagePick) return;
+    onEnter(name, picked!);
   };
-
-  const showStep1 = requireAuth && step === 1;
-  const showStep2 = step === 2 || (!requireAuth && pickStageOnly);
-  const isCreate = authIntent === 'create';
-  const progressPct = pickStageOnly ? 100 : step === 1 ? 50 : 100;
-  const modalWidth = showStep2 && !showStep1 ? 680 : 520;
 
   const setAuthMode = (mode: AuthIntent) => {
     setAuthIntent(mode);
@@ -279,6 +289,10 @@ export function WelcomePopup({
       ? '0 2px 10px rgba(230, 126, 34, 0.35)'
       : '0 2px 10px rgba(74, 143, 212, 0.35)';
   };
+
+  const showAuth = requireAuth && !pickStageOnly;
+  const showStagePick = pickStageOnly;
+  const modalWidth = showStagePick ? 680 : 520;
 
   return (
     <div style={{
@@ -302,12 +316,16 @@ export function WelcomePopup({
         boxShadow: '0 32px 80px rgba(0,0,0,0.9)',
         fontFamily: "Georgia,'Times New Roman',serif",
       }}>
-        {(requireAuth || pickStageOnly) && <ProgressBar pct={progressPct} />}
+        <ProgressBar pct={100} />
 
         <div style={{ padding: mobile ? '28px 22px 24px' : '32px 36px 28px' }}>
-          {showStep1 && (
+          <ModalHero />
+
+          {showAuth && (
             <>
-              <AuthTabs authIntent={authIntent} onChange={setAuthMode} />
+              {!signInOnly && (
+                <AuthTabs authIntent={authIntent} onChange={setAuthMode} />
+              )}
 
               <div style={{
                 position: 'relative',
@@ -362,14 +380,12 @@ export function WelcomePopup({
                     placeholder="6–64 characters"
                     autoComplete={isCreate ? 'new-password' : 'current-password'}
                     onKeyDown={e => {
-                      if (e.key === 'Enter' && canAdvanceStep1 && !loading) void advanceFromStep1();
+                      if (e.key === 'Enter' && canSubmitAuth && !loading) void submitAuth();
                     }}
                     style={INPUT}
                   />
                 </label>
               </div>
-
-              
 
               {error && (
                 <p style={{
@@ -385,18 +401,18 @@ export function WelcomePopup({
 
               <button
                 type="button"
-                onClick={() => void advanceFromStep1()}
-                disabled={!canAdvanceStep1 || loading}
+                onClick={() => void submitAuth()}
+                disabled={!canSubmitAuth || loading}
                 style={{
                   ...PRIMARY_BTN,
-                  cursor: canAdvanceStep1 && !loading ? 'pointer' : 'default',
-                  background: primaryBtnBg(canAdvanceStep1 && !loading),
-                  color: canAdvanceStep1 && !loading ? '#fff' : 'rgba(255,255,255,0.3)',
-                  boxShadow: primaryBtnShadow(canAdvanceStep1 && !loading),
+                  cursor: canSubmitAuth && !loading ? 'pointer' : 'default',
+                  background: primaryBtnBg(canSubmitAuth && !loading),
+                  color: canSubmitAuth && !loading ? '#fff' : 'rgba(255,255,255,0.3)',
+                  boxShadow: primaryBtnShadow(canSubmitAuth && !loading),
                 }}
               >
                 {loading
-                  ? 'Signing in…'
+                  ? (isCreate ? 'Creating festie…' : 'Signing in…')
                   : isCreate
                     ? 'Create festie →'
                     : 'Sign in →'}
@@ -404,7 +420,7 @@ export function WelcomePopup({
             </>
           )}
 
-          {showStep2 && (
+          {showStagePick && (
             <>
               <h2 style={{
                 margin: '0 0 8px',
@@ -417,31 +433,15 @@ export function WelcomePopup({
                 Pick a stage
               </h2>
 
-              {requireAuth && !pickStageOnly && (
-                <p style={{
-                  margin: '0 0 20px',
-                  fontSize: 13,
-                  textAlign: 'center',
-                  color: 'rgba(255,255,255,0.5)',
-                  fontFamily: 'system-ui,sans-serif',
-                }}>
-                  {isCreate
-                    ? `Where should ${draft.trim() || 'your festie'} hang out?`
-                    : `Pick a stage for ${draft.trim() || 'your festie'}`}
-                </p>
-              )}
-
-              {pickStageOnly && (
-                <p style={{
-                  margin: '0 0 20px',
-                  fontSize: 13,
-                  textAlign: 'center',
-                  color: 'rgba(255,255,255,0.5)',
-                  fontFamily: 'system-ui,sans-serif',
-                }}>
-                  Where are you heading?
-                </p>
-              )}
+              <p style={{
+                margin: '0 0 20px',
+                fontSize: 13,
+                textAlign: 'center',
+                color: 'rgba(255,255,255,0.5)',
+                fontFamily: 'system-ui,sans-serif',
+              }}>
+                Where are you heading?
+              </p>
 
               <div style={{
                 display: 'grid',
@@ -472,47 +472,20 @@ export function WelcomePopup({
                 </p>
               )}
 
-              <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                {requireAuth && !pickStageOnly && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep(1);
-                      setError(null);
-                      setLoading(false);
-                    }}
-                    style={{
-                      ...PRIMARY_BTN,
-                      width: 'auto',
-                      flex: '0 0 auto',
-                      padding: '12px 18px',
-                      background: 'rgba(255,255,255,0.1)',
-                      color: '#fff',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Back
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => void submit()}
-                  disabled={!canSubmit || loading}
-                  style={{
-                    ...PRIMARY_BTN,
-                    flex: 1,
-                    cursor: canSubmit && !loading ? 'pointer' : 'default',
-                    background: primaryBtnBg(canSubmit && !loading),
-                    color: canSubmit && !loading ? '#fff' : 'rgba(255,255,255,0.3)',
-                    boxShadow: primaryBtnShadow(canSubmit && !loading),
-                  }}
-                >
-                {loading
-                  ? (isCreate ? 'Creating festie…' : 'Entering…')
-                  : (isCreate ? 'Create & enter →' : 'Enter festival →')}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={submitStagePick}
+                disabled={!canSubmitStagePick}
+                style={{
+                  ...PRIMARY_BTN,
+                  cursor: canSubmitStagePick ? 'pointer' : 'default',
+                  background: primaryBtnBg(canSubmitStagePick),
+                  color: canSubmitStagePick ? '#fff' : 'rgba(255,255,255,0.3)',
+                  boxShadow: primaryBtnShadow(canSubmitStagePick),
+                }}
+              >
+                Enter festival →
+              </button>
             </>
           )}
         </div>

@@ -5,7 +5,7 @@ import { LANDING_HERO } from './landingHeroCopy';
 import { useLandingFestieTotal } from './useLandingFestieTotal';
 
 type Props = {
-  onEnter: () => void;
+  onScrollToStages: () => void;
 };
 
 function ArrowIcon() {
@@ -22,13 +22,13 @@ function ArrowIcon() {
   );
 }
 
-export function LandingHeroCta({ onEnter }: Props) {
+export function LandingHeroCta({ onScrollToStages }: Props) {
   const festieTotal = useLandingFestieTotal();
   const festieDisplay = festieTotal.toLocaleString();
   const stageCount = VENUE_SLUGS.length;
 
   return (
-    <button type="button" className="hero-cta-bar" onClick={onEnter}>
+    <button type="button" className="hero-cta-bar" onClick={onScrollToStages}>
       <span className="hero-cta-bar__action">
         {LANDING_HERO.cta}
         <ArrowIcon />

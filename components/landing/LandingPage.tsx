@@ -22,7 +22,8 @@ const spaceMono = Space_Mono({
 });
 
 type Props = {
-  onEnter: (route?: VenueRoute) => void;
+  onScrollToStages: () => void;
+  onStageEnter: (route: VenueRoute) => void;
   onSignIn: () => void;
 };
 
@@ -96,7 +97,7 @@ const GALLERY_ITEMS = [
 ] as const;
 */
 
-export function LandingPage({ onEnter, onSignIn }: Props) {
+export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props) {
   const starsRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -202,7 +203,7 @@ export function LandingPage({ onEnter, onSignIn }: Props) {
           <button type="button" className="nav-pill nav-pill--ghost" onClick={onSignIn}>
             Sign In
           </button>
-          <button type="button" className="nav-pill nav-pill--join" onClick={() => onEnter()}>
+          <button type="button" className="nav-pill nav-pill--join" onClick={onScrollToStages}>
             {LANDING_HERO.navCta}
           </button>
         </div>
@@ -221,7 +222,7 @@ export function LandingPage({ onEnter, onSignIn }: Props) {
 
         <div className="hero-content">
           <LandingHeroHeader />
-          <LandingHeroCta onEnter={() => onEnter()} />
+          <LandingHeroCta onScrollToStages={onScrollToStages} />
         </div>
 
         <svg className="hero-arc-svg" width="460" height="280" viewBox="0 0 460 280" fill="none" aria-hidden>
@@ -248,7 +249,7 @@ export function LandingPage({ onEnter, onSignIn }: Props) {
                 type="button"
                 className={layoutClass(stage.layout)}
                 style={{ background: stage.background }}
-                onClick={() => onEnter(stage.route)}
+                onClick={() => onStageEnter(stage.route)}
               >
                 {stage.bgImage && (
                   // eslint-disable-next-line @next/next/no-img-element

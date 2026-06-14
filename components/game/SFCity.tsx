@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Character from './Character';
 import NPC, { worldXToScreenPct } from './NPC';
 import { AmbientPlayerOverlay, NpcPairChatOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
@@ -192,6 +192,8 @@ export default function SFCity({
   muted: mutedProp,
 }: SFCityProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const skyPeriod  = useSkyPeriod();
 
   const [mobileDevice, setMobileDevice] = useState(
@@ -896,6 +898,27 @@ export default function SFCity({
     setMobileDevice(isMobileLoungeDevice());
     if (homePreview || !profileReady) return;
 
+    const welcomeFromUrl = searchParams.get('welcome') === '1';
+
+    if (festieSignedIn) {
+      if (welcomeFromUrl) router.replace(pathname);
+      const storedName = getPlayerName();
+      if (storedName) {
+        setPlayerName(storedName);
+        identifyPlayer(storedName);
+        return scheduleIdleCallback(
+          () => mpRef.current?.requestConnect(),
+          { timeout: 4_000 },
+        );
+      }
+      return;
+    }
+
+    if (welcomeFromUrl) {
+      setShowWelcome(true);
+      return;
+    }
+
     const storedName = getPlayerName();
     if (storedName) {
       setPlayerName(storedName);
@@ -907,7 +930,7 @@ export default function SFCity({
     }
 
     setShowWelcome(true);
-  }, [homePreview, profileReady]);
+  }, [festieSignedIn, homePreview, pathname, profileReady, router, searchParams]);
 
   useEffect(() => {
     installGameInputAnalytics();
@@ -1173,6 +1196,9 @@ export default function SFCity({
     profileRef.current = profile;
     setPlayerName(name);
     setShowWelcome(false);
+    if (searchParams.get('welcome') === '1') {
+      router.replace(pathname);
+    }
     trackCharacterCreated(name);
     mpRef.current?.sendProfile(profile);
     mpRef.current?.requestConnect();

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import SFCityLoader from '@/components/game/SFCityLoader';
 import { VenueBootOverlay } from '@/components/game/VenueBootOverlay';
 import { JsonLd } from '@/components/JsonLd';
@@ -72,11 +73,13 @@ export default async function VenuePage({ params, searchParams }: VenuePageProps
         }}
       />
       <VenueBootOverlay />
-      <SFCityLoader
-        spawnWorldOff={worldOffForVenueRoute(route)}
-        venueRoute={route}
-        serverBootOverlay
-      />
+      <Suspense fallback={null}>
+        <SFCityLoader
+          spawnWorldOff={worldOffForVenueRoute(route)}
+          venueRoute={route}
+          serverBootOverlay
+        />
+      </Suspense>
     </>
   );
 }
