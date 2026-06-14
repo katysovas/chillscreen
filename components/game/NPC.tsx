@@ -215,6 +215,7 @@ export default function NPC({
     if (divRef.current) {
       divRef.current.style.left = `${pct}%`;
       divRef.current.style.visibility = 'visible';
+      divRef.current.style.transform = 'translate(0px, 0px)';
     }
     stateRef.current = 'idle';
     applyFacing('right');
@@ -562,7 +563,8 @@ export default function NPC({
       if (divRef.current) {
         divRef.current.style.left = `${pct}%`;
         const spread = chatConnectedRef.current ? chatConnectSpreadPx(pct) : 0;
-        divRef.current.style.transform = `translate(${spread}px, ${depthY}px)`;
+        const y = easelStationedRef.current ? 0 : depthY;
+        divRef.current.style.transform = `translate(${spread}px, ${y}px)`;
       }
       return worldXRef.current;
     });
@@ -585,8 +587,10 @@ export default function NPC({
   }, [easelPaintingLabel]);
 
   const showPaintingBubble = easelStationed && Boolean(easelPaintingLabel);
+  /** Easel canvas anchors at CHAR_BOTTOM — painters must match, not use crowd depth. */
+  const effectiveDepthY = showPaintingBubble || easelStationed || easelStationWorldX != null ? 0 : depthY;
   const bubbleSide = showPaintingBubble
-    ? (screenX < 28 ? 'right' : 'left')
+    ? 'left'
     : screenXToBubbleSide(screenX);
 
   if (!active) return null;
@@ -598,7 +602,7 @@ export default function NPC({
       style={{
         position: 'absolute',
         bottom: CHAR_BOTTOM,
-        transform: `translateY(${depthY}px)`,
+        transform: `translateY(${effectiveDepthY}px)`,
         zIndex: greeting ? Z_CHAT_CHARACTER : showPaintingBubble ? depthZ + 1 : depthZ,
         opacity: dimmed ? 0.6 : 1,
         filter: dimmed ? 'brightness(0.85)' : undefined,
@@ -628,9 +632,8 @@ export default function NPC({
                 npcTyping={false}
                 messages={paintingMessages}
                 side={bubbleSide}
-                glowColor={balloonColor}
                 showTail
-                tailAlign="speaker"
+                tailAlign="edge"
                 faded
               />
             ) : undefined

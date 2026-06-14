@@ -76,11 +76,10 @@ const CHAT_ANCHOR = {
   top: -68,
 };
 
-/** Painter at easel — bubble left of festie, clear of canvas on the right. */
+/** Painter at easel — same anchor as the standard left bubble (left of the festie). */
 const EASEL_CHAT_ANCHOR = {
-  left: 196,
-  top: -58,
-  shiftX: '-118%',
+  left: CHAT_ANCHOR.left,
+  top: CHAT_ANCHOR.top,
 };
 
 const CHAT_BUBBLE_OVERFLOW: CSSProperties = {
@@ -109,11 +108,12 @@ function chatAnchorStyle(
   };
 
   if (easelChatAnchor) {
+    // Same as standard left bubble — bubble to the left of the NPC, tail points right at head.
     return {
       ...shared,
-      left: EASEL_CHAT_ANCHOR.left,
       top: EASEL_CHAT_ANCHOR.top,
-      transform: `translate(${EASEL_CHAT_ANCHOR.shiftX}, -100%) ${counterScale}`,
+      left: EASEL_CHAT_ANCHOR.left,
+      transform: `translate(-100%, -100%) ${counterScale}`,
       transformOrigin: 'bottom right',
       alignItems: 'flex-end' as const,
     };
@@ -185,7 +185,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     const counterScale = `scale(${1 / sc}) scaleX(${mirrored ? -1 : 1})`;
     if (easelChatAnchorRef.current) {
       chatAnchorRef.current.style.transform =
-        `translate(${EASEL_CHAT_ANCHOR.shiftX}, -100%) ${counterScale}`;
+        `translate(-100%, -100%) ${counterScale}`;
       return;
     }
     chatAnchorRef.current.style.transform = s === 'center'

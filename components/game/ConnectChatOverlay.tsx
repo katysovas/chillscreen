@@ -45,7 +45,7 @@ export function NpcChatOverlay({
   glowColor?: string;
   /** Speech tail pointing at the NPC. */
   showTail?: boolean;
-  tailAlign?: 'edge' | 'center' | 'speaker';
+  tailAlign?: 'edge' | 'center' | 'speaker' | 'easel';
   /** Softer ambient bubble (e.g. easel painting). */
   faded?: boolean;
 }) {
@@ -69,7 +69,8 @@ export function NpcChatOverlay({
         nameOnEveryBubble
         showTailOnNewest={showTail}
         tailAlign={tailAlign}
-        opacityScale={faded ? 0.52 : 1}
+        opacityScale={faded ? 0.38 : 1}
+        noAnimate={faded}
       />
     </div>
   );

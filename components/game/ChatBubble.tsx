@@ -20,7 +20,7 @@ export function playerBubbleSide(npcScreenX: number): BubbleSide {
 
 function bubbleTailStyle(
   bubbleSide: BubbleSide,
-  tailAlign: 'edge' | 'center' | 'speaker' = 'edge',
+  tailAlign: 'edge' | 'center' | 'speaker' | 'easel' = 'edge',
 ): CSSProperties {
   const triangle: CSSProperties = {
     position: 'absolute',
@@ -38,6 +38,22 @@ function bubbleTailStyle(
       bottom: -7,
       left: '50%',
       marginLeft: -7,
+    };
+  }
+
+  if (tailAlign === 'easel') {
+    // Bubble sits left of canvas — horizontal tail on the right edge points at the easel.
+    return {
+      position: 'absolute',
+      width: 0,
+      height: 0,
+      top: '55%',
+      right: -8,
+      marginTop: -6,
+      borderTop: '6px solid transparent',
+      borderBottom: '6px solid transparent',
+      borderLeft: '8px solid #fff',
+      filter: 'drop-shadow(2px 0 2px rgba(0,0,0,0.07))',
     };
   }
 
@@ -100,8 +116,8 @@ export function AttachedChatBubble({
   variant?: 'default' | 'self' | 'partner';
   /** Balloon color — matches character connect glow. */
   glowColor?: string;
-  /** Tail points at speaker — `speaker` for side-anchored NPC bubbles. */
-  tailAlign?: 'edge' | 'center' | 'speaker';
+  /** Tail points at speaker — `speaker` for side-anchored NPC bubbles; `easel` for painter at canvas. */
+  tailAlign?: 'edge' | 'center' | 'speaker' | 'easel';
   /** Extra fade multiplier (e.g. painting chatter). */
   opacityScale?: number;
 }) {
@@ -435,6 +451,7 @@ export function ChatBubbleStack({
   nameOnEveryBubble = false,
   tailAlign = 'edge',
   opacityScale = 1,
+  noAnimate = false,
 }: {
   messages: ChatLine[];
   name?: string;
@@ -442,8 +459,9 @@ export function ChatBubbleStack({
   showTailOnNewest?: boolean;
   glowColor?: string;
   nameOnEveryBubble?: boolean;
-  tailAlign?: 'edge' | 'center' | 'speaker';
+  tailAlign?: 'edge' | 'center' | 'speaker' | 'easel';
   opacityScale?: number;
+  noAnimate?: boolean;
 }) {
   if (messages.length === 0) return null;
   const total = messages.length;
@@ -462,7 +480,7 @@ export function ChatBubbleStack({
             ageFromBottom={ageFromBottom}
             stackSize={total}
             showTail={showTailOnNewest && isNewest && total === 1}
-            animate={isNewest}
+            animate={noAnimate ? false : isNewest}
             tailAlign={tailAlign}
             opacityScale={opacityScale}
           />
