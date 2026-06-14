@@ -18,6 +18,8 @@ export type EaselControllerLoad = {
 
 export type EaselController = {
   mount(canvas: HTMLCanvasElement, dpr?: number): void;
+  /** Re-apply backing store after layout (e.g. parent was visibility:hidden at mount). */
+  relayout(): boolean;
   load(opts: EaselControllerLoad): void;
   setProgressSource(fn: () => number): void;
   pause(): void;
@@ -39,7 +41,21 @@ export function createEaselController(): EaselController {
   let paused = false;
   let stepMs = EASEL_STEP_MS;
   let segmentsPerStep = EASEL_SEGMENTS_PER_STEP;
+  let lastStatus: EaselStatus = 'painting';
   const PAPER = '#fdfcf8';
+
+  function applyCanvasSize(): boolean {
+    if (!canvas || !ctx) return false;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+    displayScale = rect.width / EASEL_LOGICAL_SIZE;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr * displayScale, 0, 0, dpr * displayScale, 0, 0);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    return true;
+  }
 
   function paintPaper() {
     if (!ctx || !canvas) return;
@@ -95,15 +111,19 @@ export function createEaselController(): EaselController {
     mount(el, devicePixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio : 1) {
       canvas = el;
       dpr = devicePixelRatio;
-      const rect = el.getBoundingClientRect();
-      displayScale = rect.width / EASEL_LOGICAL_SIZE;
-      el.width = Math.round(rect.width * dpr);
-      el.height = Math.round(rect.height * dpr);
       ctx = el.getContext('2d');
       if (!ctx) return;
-      ctx.setTransform(dpr * displayScale, 0, 0, dpr * displayScale, 0, 0);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      applyCanvasSize();
+    },
+
+    relayout() {
+      if (!canvas || !ctx || !program) return false;
+      const saved = cursor;
+      if (!applyCanvasSize()) return false;
+      seek(saved);
+      if (!paused && lastStatus === 'painting' && segs.length > cursor) startTimer();
+      else stopTimer();
+      return true;
     },
 
     load(opts) {
@@ -112,6 +132,8 @@ export function createEaselController(): EaselController {
       segs = flattenProgram(opts.program);
       stepMs = opts.stepMs ?? EASEL_STEP_MS;
       segmentsPerStep = opts.segmentsPerStep ?? EASEL_SEGMENTS_PER_STEP;
+      lastStatus = opts.status;
+      if (!ctx || !applyCanvasSize()) return;
       seek(opts.segmentsDone);
       if (opts.status === 'painting') startTimer();
       else stopTimer();

@@ -38,9 +38,13 @@ function baselineFromSlot(
   painterReady: boolean,
 ): ProgressBaseline {
   const clockSessionStart = painterReady && sessionStart > 0 ? sessionStart : 0;
+  let clockStart = easelClockStart(slot, clockSessionStart);
+  if (painterReady && slot.status === 'painting' && clockStart <= 0) {
+    clockStart = Date.now();
+  }
   return {
     segmentsDone: slot.segments_done,
-    clockStart: easelClockStart(slot, clockSessionStart),
+    clockStart,
     status: slot.status,
     startedAt: slot.started_at,
   };
@@ -111,33 +115,47 @@ export const EaselSlotView = memo(function EaselSlotView({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const program = programForSlot(slot);
-    if (!program) {
-      iwarn('[easel:client] no AI program to render', slot.drawing_id);
-      return;
-    }
+    if (!canvas || !painterReady) return;
 
-    const baseline = progressRef.current;
-    const ctrl = controllerRef.current;
-    ctrl.mount(canvas);
-    ctrl.load({
-      program,
-      palette: paletteForNpc(npcKey),
-      segmentsDone: liveDoneForBaseline(slot, baseline),
-      status: baseline.status,
+    const bindCanvas = () => {
+      const program = programForSlot(slot);
+      if (!program) {
+        iwarn('[easel:client] no AI program to render', slot.drawing_id);
+        return;
+      }
+
+      const baseline = progressRef.current;
+      const ctrl = controllerRef.current;
+      ctrl.mount(canvas);
+      ctrl.load({
+        program,
+        palette: paletteForNpc(npcKey),
+        segmentsDone: liveDoneForBaseline(slot, baseline),
+        status: baseline.status,
+      });
+      ctrl.setProgressSource(() => liveDoneForBaseline(slot, progressRef.current));
+      if (paused) ctrl.pause();
+      else ctrl.resume();
+    };
+
+    bindCanvas();
+
+    const ro = new ResizeObserver(() => {
+      const ctrl = controllerRef.current;
+      if (ctrl.relayout()) {
+        if (paused) ctrl.pause();
+        else ctrl.resume();
+      } else {
+        bindCanvas();
+      }
     });
-    ctrl.setProgressSource(() => liveDoneForBaseline(slot, progressRef.current));
-    if (paused) ctrl.pause();
-    else ctrl.resume();
+    ro.observe(canvas);
 
-    return () => ctrl.destroy();
-  }, [slot, sessionStart, slot.program, slot.drawing_id]);
-
-  useEffect(() => {
-    if (paused) controllerRef.current.pause();
-    else controllerRef.current.resume();
-  }, [paused]);
+    return () => {
+      ro.disconnect();
+      controllerRef.current.destroy();
+    };
+  }, [slot, sessionStart, slot.program, slot.drawing_id, painterReady, paused, npcKey]);
 
   useEffect(() => {
     if (slot.status === 'done') return;
