@@ -29,6 +29,8 @@ const MASK_ITEMS = [
   'mask-mando',
   'mask-gasmask',
   'mask-astronaut',
+  'mask-husky',
+  'mask-fox',
 ] as const;
 
 const HAND_ITEMS = ['hand-sword', 'hand-lightsaber', 'hand-boombox', 'hand-balloons', 'hand-balloons-2', 'hand-totem'] as const;
@@ -140,6 +142,8 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'mask-mando': '/images/props/mask_mando.svg',
   'mask-gasmask': '/images/props/mask_gasmask.svg',
   'mask-astronaut': '/images/props/mask_astronaut.svg',
+  'mask-husky': '/images/props/mask_husky.svg',
+  'mask-fox': '/images/props/mask_fox.svg',
   'shades-glasses': '/images/props/glasses.svg',
   'shades-glasses-blue': '/images/props/glasses_blue.svg',
   'shades-glasses-green': '/images/props/glasses_green.svg',
@@ -190,6 +194,8 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'mask-mando': { width: 32, height: 32 },
   'mask-gasmask': { width: 36, height: 36 },
   'mask-astronaut': { width: 32, height: 32 },
+  'mask-husky': { width: 28, height: 36 },
+  'mask-fox': { width: 32, height: 32 },
   'shades-glasses': { width: 36, height: 16 },
   'shades-glasses-blue': { width: 36, height: 16 },
   'shades-glasses-green': { width: 36, height: 16 },

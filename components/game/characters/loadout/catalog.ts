@@ -485,6 +485,22 @@ export const LOADOUT_CATALOG: Record<string, LoadoutItemDef> = {
     vendorPrice: 225,
     defaultProps: {},
   },
+  'mask-husky': {
+    id: 'mask-husky',
+    slot: 'mask',
+    name: 'Husky Mask',
+    description: 'Awoo through the subwoofers.',
+    vendorPrice: 175,
+    defaultProps: {},
+  },
+  'mask-fox': {
+    id: 'mask-fox',
+    slot: 'mask',
+    name: 'Fox Mask',
+    description: 'What does the fox say? Bass drops.',
+    vendorPrice: 175,
+    defaultProps: {},
+  },
 
   // ── Necklace ─────────────────────────────────────────────────────────────
   'necklace-pendant': {

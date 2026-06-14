@@ -48,6 +48,8 @@ export const LOADOUT_STYLES = `
   .ch-lo-mask-mando{top:-110px;width:280px;height:280px;display:block;}
   .ch-lo-mask-gasmask{top:-60px;width:320px;height:205px;display:block;}
   .ch-lo-mask-astronaut{top:-110px;width:250px;height:250px;display:block;}
+  .ch-lo-mask-husky{top:-118px;width:210px;height:294px;display:block;}
+  .ch-lo-mask-fox{top:-115px;width:215px;height:215px;display:block;}
   .ch-lo-mask-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none;}
 
   /* ── Necklace (pearls — pendant reuses .ch-necklace) ──────────────────── */
