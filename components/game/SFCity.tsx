@@ -1750,6 +1750,7 @@ export default function SFCity({
             stageAnchor={cfg.stageAnchor}
             easelWalkTargetWorldX={easelWalkTargetWorldXForNpc(cfg.id, activeEaselSession, easelStageSlug)}
             easelStationOnLoad={TEST_EASEL_ON_LOAD && isEaselPainterForChannel(cfg.id, easelChannel) && activePainterNpcIds(activeEaselSession).has(cfg.id)}
+            onEaselStationed={isPainting ? () => mpRef.current?.sendEaselPainterReady(cfg.id) : undefined}
             startX={testing ? 55 : cfg.startX}
             entryDelay={testing ? 0 : cfg.entryDelay}
             paused={chatConnected}

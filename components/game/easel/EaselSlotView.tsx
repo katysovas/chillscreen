@@ -19,6 +19,8 @@ type Props = {
   slot: EaselSlotSync;
   sessionStart: number;
   paused?: boolean;
+  /** Painting NPC is at the easel stand — drawing clock may run. */
+  painterReady?: boolean;
 };
 
 type ProgressBaseline = {
@@ -28,10 +30,15 @@ type ProgressBaseline = {
   startedAt?: string;
 };
 
-function baselineFromSlot(slot: EaselSlotSync, sessionStart: number): ProgressBaseline {
+function baselineFromSlot(
+  slot: EaselSlotSync,
+  sessionStart: number,
+  painterReady: boolean,
+): ProgressBaseline {
+  const clockSessionStart = painterReady && sessionStart > 0 ? sessionStart : 0;
   return {
     segmentsDone: slot.segments_done,
-    clockStart: easelClockStart(slot, sessionStart),
+    clockStart: easelClockStart(slot, clockSessionStart),
     status: slot.status,
     startedAt: slot.started_at,
   };
@@ -51,10 +58,11 @@ export const EaselSlotView = memo(function EaselSlotView({
   slot,
   sessionStart,
   paused = false,
+  painterReady = true,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const controllerRef = useRef(createEaselController());
-  const progressRef = useRef<ProgressBaseline>(baselineFromSlot(slot, sessionStart));
+  const progressRef = useRef<ProgressBaseline>(baselineFromSlot(slot, sessionStart, painterReady));
   const completingRef = useRef(false);
   const unit = EASEL_DISPLAY_WIDTH;
   const artScale = unit / 460;
@@ -86,8 +94,20 @@ export const EaselSlotView = memo(function EaselSlotView({
   }, [slot, stageSlug, label]);
 
   useEffect(() => {
-    progressRef.current = baselineFromSlot(slot, sessionStart);
-  }, [slot, sessionStart]);
+    progressRef.current = baselineFromSlot(slot, sessionStart, painterReady);
+  }, [slot, sessionStart, painterReady]);
+
+  const wasPainterReadyRef = useRef(painterReady);
+  useEffect(() => {
+    const justReady = painterReady && !wasPainterReadyRef.current;
+    wasPainterReadyRef.current = painterReady;
+    if (!justReady) return;
+    const partyJustStarted = sessionStart > 0 && Date.now() - sessionStart < 3000;
+    progressRef.current = {
+      ...progressRef.current,
+      clockStart: partyJustStarted ? sessionStart : Date.now(),
+    };
+  }, [painterReady, sessionStart]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -121,6 +141,7 @@ export const EaselSlotView = memo(function EaselSlotView({
 
   useEffect(() => {
     if (slot.status === 'done') return;
+    if (!painterReady) return;
 
     const applyCheckpoint = (result: { segments_done: number; started_at: string; status: 'painting' | 'done' }) => {
       const ms = parseStartedAtMs(result.started_at) ?? Date.now();
@@ -182,7 +203,7 @@ export const EaselSlotView = memo(function EaselSlotView({
       document.removeEventListener('visibilitychange', onHide);
       persist();
     };
-  }, [stageSlug, slot, npcKey]);
+  }, [stageSlug, slot, npcKey, painterReady]);
 
   return (
     <div style={{ position: 'relative', width: unit, height: unit }}>

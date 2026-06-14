@@ -13,6 +13,7 @@ import {
   type StageAnchorKind,
 } from '@/lib/stageAnchor';
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
+import { setEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
@@ -65,6 +66,8 @@ type NPCProps = NPCConfig & {
   easelWalkTargetWorldX?: number;
   /** Testing — teleport to easel as soon as target is known. */
   easelStationOnLoad?: boolean;
+  /** Fired when NPC pins at the easel stand (starts drawing clock). */
+  onEaselStationed?: () => void;
   paused: boolean;
   greeting: boolean;
   /** Soft connect glow — local or remote 1:1 conversation. */
@@ -115,6 +118,7 @@ export default function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality, stageAnchor, stageCrowd, wanderAttractWorldX, easelWalkTargetWorldX, easelStationOnLoad,
+  onEaselStationed,
   paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false, greetingChat,
   spaceFloat = false,
 }: NPCProps) {
@@ -188,6 +192,8 @@ export default function NPC({
   const stationAtEasel = (worldX: number) => {
     easelStationedRef.current = true;
     setEaselStationed(true);
+    setEaselPainterReady(characterId, true);
+    onEaselStationed?.();
     worldXRef.current = worldX;
     targetWorldRef.current = worldX;
     const pct = worldXToScreenPct(worldX, gameWorldOffRef.current, vw());
@@ -345,9 +351,12 @@ export default function NPC({
     if (easelWalkTargetWorldX != null || !easelStationedRef.current) return;
     easelStationedRef.current = false;
     setEaselStationed(false);
+    setEaselPainterReady(characterId, false);
     stateRef.current = 'idle';
     applyWalking(false);
-  }, [easelWalkTargetWorldX]);
+  }, [easelWalkTargetWorldX, characterId]);
+
+  useEffect(() => () => setEaselPainterReady(characterId, false), [characterId]);
 
   const offlineFestieNpc = isFestieNpcId(characterId);
 

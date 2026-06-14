@@ -86,7 +86,8 @@ export type EaselSessionSync = {
 };
 
 export const EASEL_LOGICAL_SIZE = 96;
-export const EASEL_SLOTS_PER_STAGE = 1;
+/** Distinct ground positions per stage — easels rotate through these, off the downstage lane. */
+export const EASEL_SLOTS_PER_STAGE = 4;
 export const EASEL_STEP_MS = 600;
 export const EASEL_SEGMENTS_PER_STEP = 2;
 export const EASEL_HOLD_MS = 120_000;

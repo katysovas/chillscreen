@@ -4,6 +4,7 @@ import { generateDrawingProgram } from './generateDrawing';
 import { easelHoldExpired } from './lifecycle';
 import { logEaselDrawing } from './logDrawing';
 import { pickNextEaselNpc } from './npcRotation';
+import { nextEaselSlot } from './stageAnchor';
 import { programFromRow, rowNeedsAiUpgrade, rowToSlotSync } from './resolveProgram';
 import { easelStageLookupSlugs, normalizeEaselStage } from './stageKey';
 import type { DrawingProgram, EaselRow, EaselStatus } from './types';
@@ -176,11 +177,12 @@ export async function advanceEaselAfterHold(stage: string, slot: number): Promis
   }
 
   const nextNpc = await pickNextEaselNpc(stage, row.npc);
+  const nextSlot = nextEaselSlot(slot);
   console.log(
-    `[easel:server] hold ended — hiding slot ${slot}, ${nextNpc} starts next painting @ ${stage}`,
+    `[easel:server] hold ended — hiding slot ${slot}, ${nextNpc} starts @ slot ${nextSlot} (${stage})`,
   );
   await hideEasel(stage, slot);
-  return startNewEaselDrawing(stage, slot, nextNpc);
+  return startNewEaselDrawing(stage, nextSlot, nextNpc);
 }
 
 /** @deprecated Use ensureEaselSessionStarted when users are present, or getEaselsForStage for read-only. */

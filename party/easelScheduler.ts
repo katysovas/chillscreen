@@ -62,13 +62,23 @@ export class EaselScheduler {
   }
 
   private broadcastSession() {
-    if (this.sessionStart == null) return;
+    if (this.sessionStart == null || this.slots.length === 0) return;
     const msg: ServerMessage = {
       t: 'easel-session',
       sessionStart: this.sessionStart,
       slots: this.slots,
     };
     this.deps.broadcast(msg);
+  }
+
+  /** Client reports the painting NPC is at the easel — begin the watched clock. */
+  onPainterReady(npcId: string) {
+    if (this.sessionStart == null || this.sessionStart > 0) return;
+    const painting = this.slots.some(s => s.status === 'painting' && s.npc === npcId);
+    if (!painting) return;
+    this.sessionStart = Date.now();
+    console.log(`[easel:party] painter ready — ${npcId}, clock started`);
+    this.broadcastSession();
   }
 
   private startCheckLoop() {
@@ -105,7 +115,7 @@ export class EaselScheduler {
   }
 
   private async checkSession() {
-    if (this.sessionStart == null || this.deps.playerCount() === 0) return;
+    if (this.sessionStart == null || this.sessionStart <= 0 || this.deps.playerCount() === 0) return;
     const now = Date.now();
     const stage = this.stageSlug();
     let changed = false;
@@ -139,8 +149,8 @@ export class EaselScheduler {
 
         if (result && result.status === 'painting') {
           this.slots = [result];
-          this.sessionStart = Date.now();
-          console.log(`[easel:party] next painter ${result.npc} @ slot ${slot.slot}`);
+          this.sessionStart = 0;
+          console.log(`[easel:party] next painter ${result.npc} @ slot ${slot.slot} — waiting at easel`);
           changed = true;
           continue;
         }
@@ -151,7 +161,7 @@ export class EaselScheduler {
           changed = true;
         } else {
           this.slots = refreshed;
-          this.sessionStart = Date.now();
+          this.sessionStart = 0;
           changed = true;
         }
       }
@@ -166,7 +176,7 @@ export class EaselScheduler {
     const rows = await this.fetchEasels();
     if (rows.length === 0) return;
     this.slots = rows;
-    this.sessionStart = Date.now();
+    this.sessionStart = 0;
     this.broadcastSession();
     this.startCheckLoop();
   }

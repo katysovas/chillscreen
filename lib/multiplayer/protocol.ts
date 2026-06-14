@@ -69,7 +69,9 @@ export type ClientMessage =
   // NPC 1:1 chat — broadcast so everyone sees the connect glow.
   | { t: 'npc-chat'; npcId: string; open: boolean }
   /** Throttled NPC world-x snapshot for proximity-gated pair chatter. */
-  | { t: 'npc-positions'; positions: { id: string; worldX: number }[]; viewportWidth: number };
+  | { t: 'npc-positions'; positions: { id: string; worldX: number }[]; viewportWidth: number }
+  /** Painting NPC reached the easel — starts the watched drawing clock. */
+  | { t: 'easel-painter-ready'; npcId: string };
 
 /** Debug metadata for NPC↔NPC pair convos. */
 export type NpcConvoMeta = {

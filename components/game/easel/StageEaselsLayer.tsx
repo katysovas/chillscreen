@@ -4,6 +4,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { CHAR_BOTTOM } from '@/components/game/groundLayout';
 import { worldXToScreenPct } from '@/components/game/NPC';
 import { easelSlotWorldX } from '@/lib/easel/layout';
+import { isEaselPainterReady, subscribeEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import type { EaselSessionSync, EaselSlotSync } from '@/lib/easel/types';
 import { venueSlugForRoute } from '@/lib/venueSlugs';
 import { setWorldPositionTick } from '@/lib/worldPositionTicks';
@@ -30,7 +31,22 @@ function EaselSlotLayer({
   const outerRef = useRef<HTMLDivElement>(null);
   const worldXRef = useRef<number | null>(null);
   const onScreenRef = useRef(false);
-  const [paused, setPaused] = useState(true);
+  const [onScreenPaused, setOnScreenPaused] = useState(true);
+  const painting = slot.status === 'painting';
+  const [painterReady, setPainterReady] = useState(() =>
+    !painting || isEaselPainterReady(slot.npc),
+  );
+
+  useEffect(() => {
+    if (!painting) {
+      setPainterReady(true);
+      return;
+    }
+    setPainterReady(isEaselPainterReady(slot.npc));
+    return subscribeEaselPainterReady(() => {
+      setPainterReady(isEaselPainterReady(slot.npc));
+    });
+  }, [slot.npc, painting]);
 
   useEffect(() => {
     worldXRef.current = easelSlotWorldX(slot.slot, stageSlug);
@@ -50,10 +66,12 @@ function EaselSlotLayer({
       if (onScreen !== onScreenRef.current) {
         onScreenRef.current = onScreen;
         el.style.visibility = onScreen ? 'visible' : 'hidden';
-        setPaused(!onScreen);
+        setOnScreenPaused(!onScreen);
       }
     });
   }, []);
+
+  const paused = onScreenPaused || (painting && !painterReady);
 
   return (
     <div
@@ -68,12 +86,18 @@ function EaselSlotLayer({
         visibility: 'hidden',
       }}
     >
-      <EaselSlotView stageSlug={stageSlug} slot={slot} sessionStart={sessionStart} paused={paused} />
+      <EaselSlotView
+        stageSlug={stageSlug}
+        slot={slot}
+        sessionStart={sessionStart}
+        paused={paused}
+        painterReady={painterReady}
+      />
     </div>
   );
 }
 
-/** Single ambient NPC easel per stage. */
+/** Rotating ambient easels — one active painter; slots are off-stage wing positions. */
 export const StageEaselsLayer = memo(function StageEaselsLayer({ active, stageSlug, session }: Props) {
   if (!active || !session?.slots?.length) return null;
 

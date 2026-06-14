@@ -134,6 +134,7 @@ export type Multiplayer = {
   sendRoomChat: (text: string) => void;
   sendNpcChat: (npcId: string, open: boolean) => void;
   sendNpcPositions: (positions: { id: string; worldX: number }[], viewportWidth: number) => void;
+  sendEaselPainterReady: (npcId: string) => void;
 };
 
 /**
@@ -427,11 +428,15 @@ export function useMultiplayer(opts: Options): Multiplayer {
       connectAndSend({ t: 'npc-positions', positions, viewportWidth }),
     [connectAndSend],
   );
+  const sendEaselPainterReady = useCallback(
+    (npcId: string) => connectAndSend({ t: 'easel-painter-ready', npcId }),
+    [connectAndSend],
+  );
 
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
     chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
-    sendAmbientMessage, sendRoomChat, sendNpcChat, sendNpcPositions,
+    sendAmbientMessage, sendRoomChat, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
   };
 }

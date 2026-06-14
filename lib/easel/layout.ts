@@ -1,4 +1,4 @@
-import { easelMidAnchorWorldX } from './stageAnchor';
+import { easelSlotAnchorWorldX } from './stageAnchor';
 import { venueSlugForRoute } from '@/lib/venueSlugs';
 import { EASEL_SLOTS_PER_STAGE } from './types';
 
@@ -8,18 +8,13 @@ export const EASEL_DISPLAY_WIDTH = EASEL_ART_SIZE * EASEL_DISPLAY_SCALE;
 export const EASEL_FRAME_LEFT = 94;
 export const EASEL_FRAME_TOP = 80;
 
-/** Ground-world spacing between easel slots (px). */
-const SLOT_SPACING_GROUND = 130;
-
 /** Fixed ground worldX for easel slot — never changes while walking. */
 export function easelSlotWorldX(
   slot: number,
   stageSlug: string,
   viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200,
 ): number {
-  const base = easelMidAnchorWorldX(stageSlug, viewportWidth);
-  if (EASEL_SLOTS_PER_STAGE <= 1) return base;
-  return base + slot * SLOT_SPACING_GROUND;
+  return easelSlotAnchorWorldX(slot, stageSlug, viewportWidth);
 }
 
 /** NPC stand position — slightly left of easel, facing the canvas. */

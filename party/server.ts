@@ -221,6 +221,9 @@ export default class WhichStageServer implements Party.Server {
       case 'npc-positions':
         this.chatter.updateNpcPositions(msg.positions, msg.viewportWidth, sender.id);
         break;
+      case 'easel-painter-ready':
+        this.easels.onPainterReady(msg.npcId);
+        break;
     }
   }
 
