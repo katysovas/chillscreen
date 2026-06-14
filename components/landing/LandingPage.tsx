@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { Syne, Space_Mono } from 'next/font/google';
-import { LOGO_PATH, TWITTER_HANDLE } from '@/lib/site';
+import { SITE_NAME, TWITTER_HANDLE, TWITTER_URL } from '@/lib/site';
+
+const TRANSPARENT_LOGO_PATH = '/images/logos/logo_transparent.png';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { LANDING_FAQ, LANDING_STAGES } from './landingData';
 import { LANDING_HERO } from './landingHeroCopy';
@@ -100,7 +102,6 @@ const GALLERY_ITEMS = [
 export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props) {
   const starsRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [contactError, setContactError] = useState('');
 
@@ -176,6 +177,15 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
     return 'stage-card stage-small';
   };
 
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleNavScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    scrollToSection(id);
+  };
+
   /*
   const galleryClass = (i: number, wide?: boolean) => {
     if (wide) return 'gi gi-6';
@@ -193,18 +203,40 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
         <rect width="100%" height="100%" filter="url(#lp-gf)" />
       </svg>
 
-      <nav className="nav" ref={navRef}>
+      <nav className="nav" ref={navRef} aria-label="Primary">
         <div className="nav-logo">
           <a href="#hero" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <Image src={LOGO_PATH} alt="Which Stage" width={818} height={138} style={{ height: 30, width: 'auto' }} priority />
+            <Image src={TRANSPARENT_LOGO_PATH} alt="Which Stage" width={818} height={138} style={{ height: 30, width: 'auto' }} priority />
           </a>
         </div>
+        <ul className="nav-links">
+          <li>
+            <a className="nav-link" href="#stages" onClick={e => handleNavScroll(e, 'stages')}>
+              Join The Stage
+            </a>
+          </li>
+          <li>
+            <a className="nav-link" href="#faq" onClick={e => handleNavScroll(e, 'faq')}>
+              FAQ
+            </a>
+          </li>
+          <li>
+            <a className="nav-link" href="#contact" onClick={e => handleNavScroll(e, 'contact')}>
+              Get In Touch
+            </a>
+          </li>
+        </ul>
         <div className="nav-actions">
           <button type="button" className="nav-pill nav-pill--ghost" onClick={onSignIn}>
             Sign In
           </button>
-          <button type="button" className="nav-pill nav-pill--join" onClick={onScrollToStages}>
-            {LANDING_HERO.navCta}
+          <button
+            type="button"
+            className="nav-pill nav-pill--join"
+            aria-label={LANDING_HERO.navCta}
+            onClick={onScrollToStages}
+          >
+            <span className="nav-join-text">{LANDING_HERO.navCta}</span>
           </button>
         </div>
       </nav>
@@ -235,7 +267,7 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
 
         <div className="hero-scroll" aria-hidden>
           <div className="hero-scroll-line" />
-          <span className="hero-scroll-txt">scroll</span>
+          <span className="hero-scroll-txt">scroll · the party's down here</span>
         </div>
       </section>
 
@@ -253,14 +285,21 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
               >
                 {stage.bgImage && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img className="stage-bg-img" src={stage.bgImage} alt="" />
+                  <img
+                    className="stage-bg-img stage-bg-photo"
+                    src={stage.bgImage}
+                    alt=""
+                    onError={e => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 )}
                 <div className="stage-accent" style={{ ['--sa' as string]: stage.accent }} />
                 <div className="stage-content">
                   {stage.live && (
                     <div className="stage-live-tag">
                       <span className="stage-live-dot" />
-                      LIVE NOW
+                      New Stage
                     </div>
                   )}
                   <h3 className="stage-name">{stage.name}</h3>
@@ -275,31 +314,43 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
         </div>
       </section>
 
-      <section className="section faq-section" id="faq">
+      <section
+        className="section faq-section"
+        id="faq"
+        aria-labelledby="faq-heading"
+        itemScope
+        itemType="https://schema.org/FAQPage"
+      >
         <div className="inner">
           <p className="section-label">AI goes to the festival</p>
-          <h2 className="section-title">Questions?</h2>
-          <div>
-            {LANDING_FAQ.map((item, i) => {
-              const open = openFaq === i;
-              return (
-                <div key={item.q} className={`faq-item${open ? ' open' : ''}`}>
-                  <button
-                    type="button"
-                    className="faq-q"
-                    aria-expanded={open}
-                    onClick={() => setOpenFaq(open ? null : i)}
-                  >
-                    <span className="faq-num">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="faq-q-text">{item.q}</span>
-                    <span className="faq-icon" aria-hidden>+</span>
-                  </button>
-                  <div className="faq-a" role="region">
-                    <div className="faq-a-inner">{item.a}</div>
-                  </div>
+          <h2 id="faq-heading" className="section-title">
+            Questions?
+          </h2>
+          <div className="faq-list">
+            {LANDING_FAQ.map((item, i) => (
+              <article
+                key={item.q}
+                className="faq-item"
+                itemScope
+                itemProp="mainEntity"
+                itemType="https://schema.org/Question"
+              >
+                <h3 className="faq-q" itemProp="name">
+                  <span className="faq-num">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="faq-q-text">{item.q}</span>
+                </h3>
+                <div
+                  className="faq-a"
+                  itemScope
+                  itemProp="acceptedAnswer"
+                  itemType="https://schema.org/Answer"
+                >
+                  <p className="faq-a-inner" itemProp="text">
+                    {item.a}
+                  </p>
                 </div>
-              );
-            })}
+              </article>
+            ))}
           </div>
         </div>
       </section>
@@ -342,12 +393,16 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
         <div className="inner">
           <div className="contact-grid">
             <div>
-              <p className="section-label">Get in touch</p>
+              
               <h2 className="section-title" style={{ marginBottom: 0 }}>Say<br />hello.</h2>
               <p className="contact-blurb">
-                Help us build Which Stage. Whether you&apos;re an artist, a developer, or just a fan of live music and AI — we want to hear from you.
+              Help build the festival of the future. Whether you make music, write code, or just love a good set in strange company - we want to hear from you.
               </p>
-              <p className="contact-handle">→ {TWITTER_HANDLE}</p>
+              <p className="contact-handle">
+                <a className="contact-handle-link" href={TWITTER_URL} target="_blank" rel="noopener noreferrer">
+                  → {TWITTER_HANDLE}
+                </a>
+              </p>
             </div>
             <form className="c-form" onSubmit={e => void handleContactSubmit(e)}>
               <div>
@@ -382,9 +437,9 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
 
       <footer className="footer">
         <div className="footer-logo">
-          <Image src={LOGO_PATH} alt="Which Stage" width={818} height={138} style={{ height: 26, width: 'auto' }} />
+          <Image src={TRANSPARENT_LOGO_PATH} alt="Which Stage" width={818} height={138} style={{ height: 26, width: 'auto' }} />
         </div>
-        <p className="footer-copy">© 2026 WhichStage. No download needed.</p>
+        <p className="footer-copy">© {new Date().getFullYear()} {SITE_NAME}.</p>
       </footer>
     </div>
   );

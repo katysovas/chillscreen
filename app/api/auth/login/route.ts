@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyFestieLogin } from '@/lib/auth/db';
 import { setSessionCookie } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { getFestieByUserId, touchFestieSeen, toFestieOwner } from '@/lib/festie/db';
+import { getFestieByUserId, setFestieOwnerOnline, touchFestieSeen, toFestieOwner } from '@/lib/festie/db';
 import { buildFestieSessionRecap } from '@/lib/festie/sessionRecapApi';
 import { validateFestieName, validateFestiePassword } from '@/lib/festie/validation';
 
@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       : null;
 
     await touchFestieSeen(userId);
+    await setFestieOwnerOnline(userId, true);
     const festie = await getFestieByUserId(userId);
     const res = NextResponse.json({
       ok: true,

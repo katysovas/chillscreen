@@ -20,6 +20,7 @@ export type FestieRow = {
   llm_provider: FestieLlmProvider;
   last_seen_at: string;
   last_chat_at: string | null;
+  owner_online: boolean;
   notify_email: string | null;
   email_opted_in: boolean;
   created_at: string;

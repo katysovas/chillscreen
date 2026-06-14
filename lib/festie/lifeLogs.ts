@@ -243,7 +243,7 @@ function pickPurchasedItem(ctx: LifeLogContext): string {
   return pool[Math.floor(ctx.rng() * pool.length)] ?? 'mystery sticker';
 }
 
-function streamAtTime(route: VenueRoute | null, atMs: number): { title: string; hours: number } | null {
+export function streamAtTime(route: VenueRoute | null, atMs: number): { title: string; hours: number } | null {
   if (!route) return null;
   let channel: StageChannel;
   try {

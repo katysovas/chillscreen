@@ -49,9 +49,9 @@ export const OG_IMAGE_PATH = '/opengraph-image';
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 
-export const TWITTER_HANDLE = '@whichstage';
+export const TWITTER_HANDLE = '@aifesties';
+export const TWITTER_URL = 'https://x.com/aifesties';
 
 export const CONTACT = {
-  support: 'support@whichstage.com',
-  privacy: 'privacy@whichstage.com',
+  support: 'whichstageteam@gmail.com',
 } as const;

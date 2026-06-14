@@ -2,9 +2,8 @@ import { npcChatterLlmConfigured } from '@/lib/npcChatter/completeLine';
 import { generatePairConvo, generateSingleReply } from '@/lib/npcChatter/generate';
 import { verifyChatterRequest } from '@/lib/npcChatter/auth';
 import { clampLineBudget, clampTriggerText, sanitizeRecentChat } from '@/lib/npcChatter/validate';
-import { isChatterNpcAllowed, resolveNpcRosterEntry } from '@/lib/npcRoster.server';
-import { logFestieNpcChatter } from '@/lib/festie/logNpcChatter';
-import { festieIdFromNpcId, isFestieNpcId } from '@/lib/festie/toCharacterDef';
+import { isChatterNpcAllowed } from '@/lib/npcRoster.server';
+import { logFestiePairChatter } from '@/lib/festie/logNpcChatter';
 import { HOUSE_MODEL_DEFAULT } from '@/lib/npcChatter/constants';
 import { ierror, runWithInternalDebug, internalDebugFromRequest } from '@/lib/internalDebug';
 
@@ -123,34 +122,4 @@ export async function POST(req: Request) {
 
   return Response.json({ lines });
   });
-}
-
-async function logFestiePairChatter(
-  npcA: string,
-  npcB: string,
-  lines: { npc: string; text: string }[],
-): Promise<void> {
-  for (const npcId of [npcA, npcB]) {
-    if (!isFestieNpcId(npcId)) continue;
-    const festieId = festieIdFromNpcId(npcId);
-    if (!festieId) continue;
-
-    const partnerId = npcId === npcA ? npcB : npcA;
-    const partnerEntry = await resolveNpcRosterEntry(partnerId);
-    const festieLines = lines.filter(l => l.npc === npcId);
-    const partnerLines = lines.filter(l => l.npc === partnerId);
-    if (festieLines.length === 0) continue;
-
-    logFestieNpcChatter(festieId, {
-      partnerNpcId: partnerId,
-      partnerNpcName: partnerEntry?.displayName ?? partnerId,
-      festieLine: festieLines.map(l => l.text).join(' '),
-      partnerLine: partnerLines.map(l => l.text).join(' '),
-      transcript: lines.map(l => ({
-        role: l.npc === npcId ? 'festie' : 'partner',
-        text: l.text,
-      })),
-      synthesized: false,
-    });
-  }
 }

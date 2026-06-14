@@ -17,6 +17,7 @@ import type { FestieRow } from '@/lib/festie/types';
 /**
  * Backfill festival life logs while the owner was away.
  * Runs before recap fetch — random timestamps, varied log types.
+ * NPC pair chats are generated on a cron while offline (see offlineChatterCron).
  */
 export async function ensureOfflineFestieActivity(
   festie: FestieRow,

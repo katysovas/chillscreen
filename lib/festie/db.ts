@@ -41,6 +41,7 @@ function rowToFestie(row: Record<string, unknown>): FestieRow {
     llm_provider: parseFestieLlmProvider(row.llm_provider) ?? DEFAULT_FESTIE_LLM_PROVIDER,
     last_seen_at: toIsoTimestamp(row.last_seen_at),
     last_chat_at: row.last_chat_at != null ? toIsoTimestamp(row.last_chat_at) : null,
+    owner_online: row.owner_online != null ? Boolean(row.owner_online) : false,
     notify_email: row.notify_email != null ? String(row.notify_email) : null,
     email_opted_in: Boolean(row.email_opted_in),
     created_at: toIsoTimestamp(row.created_at),
@@ -244,6 +245,43 @@ export async function touchFestieSeen(userId: string): Promise<void> {
   await sql`
     UPDATE festies SET last_seen_at = now() WHERE user_id = ${userId}::uuid
   `;
+}
+
+export async function setFestieOwnerOnline(userId: string, online: boolean): Promise<void> {
+  const sql = requireDb();
+  await sql`
+    UPDATE festies SET owner_online = ${online} WHERE user_id = ${userId}::uuid
+  `;
+}
+
+/** Offline festies due for one ambient NPC chat (~2h cadence while owner is away). */
+export async function listFestiesDueForOfflineNpcChat(limit = 5): Promise<FestieRow[]> {
+  const sql = requireDb();
+  const chatIntervalSec = Math.floor(FESTIE_CONFIG.OFFLINE_CHAT_INTERVAL_MS / 1000);
+  const liveSec = Math.floor(FESTIE_CONFIG.LIVE_WINDOW_MS / 1000);
+  const maxChats = FESTIE_CONFIG.MAX_CHATS_PER_OFFLINE_CYCLE;
+
+  const rows = await sql`
+    SELECT f.*
+    FROM festies f
+    WHERE f.owner_online = false
+      AND f.last_seen_at > now() - make_interval(secs => ${liveSec})
+      AND (
+        (f.last_chat_at IS NULL AND f.last_seen_at <= now() - make_interval(secs => ${chatIntervalSec}))
+        OR f.last_chat_at <= now() - make_interval(secs => ${chatIntervalSec})
+      )
+      AND (
+        SELECT COUNT(*)::int
+        FROM festie_events e
+        WHERE e.festie_id = f.id
+          AND e.type = 'npc_chatter'
+          AND e.created_at >= f.last_seen_at
+      ) < ${maxChats}
+    ORDER BY COALESCE(f.last_chat_at, f.last_seen_at) ASC
+    LIMIT ${limit}
+  `;
+
+  return rows.map(r => rowToFestie(r as Record<string, unknown>));
 }
 
 export async function getFestieById(festieId: string): Promise<FestieRow | null> {

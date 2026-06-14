@@ -7,6 +7,7 @@ import {
   SITE_TAGLINE,
   SITE_URL,
 } from '@/lib/site';
+import { LANDING_PAGE_DESCRIPTION, LANDING_PAGE_TITLE } from '@/lib/landingSeo';
 import { allStageSeoEntries, venueSeoForRoute } from '@/lib/venueSeo';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { parseVenueSlug, venueSlugForRoute, VENUE_SLUGS } from '@/lib/venueRoutes';
@@ -180,6 +181,43 @@ export function stagesIndexWebPageJsonLd() {
     description:
       'Directory of every WhichStage festival venue — desert main stages, city concerts, campground rigs, forest lasers, silent disco, and outdoor cinema.',
   });
+}
+
+type FaqEntry = { readonly q: string; readonly a: string };
+
+export function faqPageJsonLd(items: readonly FaqEntry[]) {
+  const url = absoluteUrl('/');
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    '@id': `${url}#faq`,
+    url,
+    inLanguage: 'en-US',
+    isPartOf: { '@id': `${url}#webpage` },
+    mainEntity: items.map(item => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.a,
+      },
+    })),
+  };
+}
+
+export function homePageJsonLd() {
+  return webPageJsonLd({
+    path: '/',
+    title: LANDING_PAGE_TITLE,
+    description: LANDING_PAGE_DESCRIPTION,
+  });
+}
+
+export function homePageGraphJsonLd(faq: readonly FaqEntry[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [homePageJsonLd(), faqPageJsonLd(faq), venueItemListJsonLd()],
+  };
 }
 
 /** Default graph for the home page and shared layout. */

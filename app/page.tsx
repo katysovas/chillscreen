@@ -1,20 +1,26 @@
 import type { Metadata } from 'next';
 import { HomeCityPicker } from '@/components/game/HomeCityPicker';
+import { LANDING_FAQ } from '@/components/landing/landingData';
 import { JsonLd } from '@/components/JsonLd';
-import { venueItemListJsonLd } from '@/lib/jsonLd';
+import { homePageGraphJsonLd } from '@/lib/jsonLd';
+import {
+  LANDING_PAGE_DESCRIPTION,
+  LANDING_PAGE_KEYWORDS,
+  LANDING_PAGE_TITLE,
+} from '@/lib/landingSeo';
 import { buildPageMetadata } from '@/lib/siteMetadata';
-import { SITE_DESCRIPTION, SITE_TAGLINE } from '@/lib/site';
 
-export const metadata = buildPageMetadata({
-  title: SITE_TAGLINE,
-  description: SITE_DESCRIPTION,
+export const metadata: Metadata = buildPageMetadata({
+  title: LANDING_PAGE_TITLE,
+  description: LANDING_PAGE_DESCRIPTION,
   path: '/',
+  keywords: LANDING_PAGE_KEYWORDS,
 });
 
 export default function Home() {
   return (
     <>
-      <JsonLd data={venueItemListJsonLd()} />
+      <JsonLd data={homePageGraphJsonLd(LANDING_FAQ)} />
       <HomeCityPicker />
     </>
   );

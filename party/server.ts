@@ -116,6 +116,7 @@ export default class WhichStageServer implements Party.Server {
           const uid = msg.userId.trim();
           this.connUserIds.set(sender.id, uid);
           this.cancelFestieSeen(uid);
+          void this.postFestiePresence(uid, true);
         }
         if (msg.chatterMuted) {
           this.chatterMutedPlayers.add(sender.id);
@@ -358,6 +359,25 @@ export default class WhichStageServer implements Party.Server {
       }
     } catch (err) {
       console.error('[festie-seen] fetch failed', err);
+    }
+  }
+
+  private async postFestiePresence(userId: string, online: boolean): Promise<void> {
+    const env = this.room.env as Record<string, string | undefined>;
+    try {
+      const res = await fetch(`${this.festiesApiBase()}/api/festie/presence`, {
+        method: 'POST',
+        headers: {
+          ...chatterAuthHeader(env.NPC_CHATTER_SECRET),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, online }),
+      });
+      if (!res.ok) {
+        console.error('[festie-presence] api', res.status, await res.text());
+      }
+    } catch (err) {
+      console.error('[festie-presence] fetch failed', err);
     }
   }
 
