@@ -6,6 +6,7 @@ import { isChatterNpcAllowed, resolveNpcRosterEntry } from '@/lib/npcRoster.serv
 import { logFestieNpcChatter } from '@/lib/festie/logNpcChatter';
 import { festieIdFromNpcId, isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { HOUSE_MODEL_DEFAULT } from '@/lib/npcChatter/constants';
+import { ierror, runWithInternalDebug, internalDebugFromRequest } from '@/lib/internalDebug';
 
 /** Pair convo = up to 7 sequential LLM calls (~8s each). */
 export const maxDuration = 60;
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
   const denied = verifyChatterRequest(req);
   if (denied) return denied;
 
+  return runWithInternalDebug(internalDebugFromRequest(req), async () => {
   let body: PairBody | ReplyBody;
   try {
     body = await req.json();
@@ -44,7 +46,7 @@ export async function POST(req: Request) {
   }
 
   if (!npcChatterLlmConfigured()) {
-    console.error('[npc-chatter] LLM not configured — set OPENROUTER_API_KEY or OPENAI_API_KEY');
+    ierror('[npc-chatter] LLM not configured — set OPENROUTER_API_KEY or OPENAI_API_KEY');
     return Response.json({ error: 'Service unavailable' }, { status: 503 });
   }
 
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
       houseModel,
     });
     if (!line) {
-      console.error('[npc-chatter] single reply failed', { npc, stage, triggerText: triggerText.slice(0, 80) });
+      ierror('[npc-chatter] single reply failed', { npc, stage, triggerText: triggerText.slice(0, 80) });
       return Response.json({ error: 'Generation failed' }, { status: 502 });
     }
     return Response.json({ lines: [line] });
@@ -107,7 +109,7 @@ export async function POST(req: Request) {
   });
 
   if (lines.length < 2) {
-    console.error('[npc-chatter] pair convo failed', {
+    ierror('[npc-chatter] pair convo failed', {
       stage,
       npcA,
       npcB,
@@ -120,6 +122,7 @@ export async function POST(req: Request) {
   void logFestiePairChatter(npcA, npcB, lines);
 
   return Response.json({ lines });
+  });
 }
 
 async function logFestiePairChatter(

@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import Character, { type CharacterHandle } from './Character';
+import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
 import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
@@ -32,6 +33,7 @@ import {
   NPC_WANDER_START_CHANCE,
 } from '@/lib/npcMovementTuning';
 import type { ChatLine } from '@/lib/chatLines';
+import { createChatLine } from '@/lib/chatLines';
 import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
 // ── Personality ────────────────────────────────────────────────────────────────
 export type Personality = {
@@ -73,6 +75,8 @@ type NPCProps = NPCConfig & {
   easelStationOnLoad?: boolean;
   /** Fired when NPC pins at the easel stand (starts drawing clock). */
   onEaselStationed?: () => void;
+  /** Drawing subject — shown in chat bubble while status is painting. */
+  easelPaintingLabel?: string | null;
   paused: boolean;
   greeting: boolean;
   /** Soft connect glow — local or remote 1:1 conversation. */
@@ -120,10 +124,12 @@ const ON_SCREEN_SPAWN_MAX = 85;
 export default function NPC({
   characterId,
   index,
+  name,
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality, stageAnchor, stageCrowd, wanderAttractWorldX, easelWalkTargetWorldX, easelStationOnLoad,
   onEaselStationed,
+  easelPaintingLabel,
   paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false, greetingChat,
   spaceFloat = false,
 }: NPCProps) {
@@ -586,6 +592,14 @@ export default function NPC({
     if (justDisconnected && easelWalkTargetWorldX == null) fleeFromPlayer();
   }, [greeting, easelWalkTargetWorldX]);
 
+  const paintingMessages = useMemo((): ChatLine[] => {
+    if (!easelPaintingLabel) return [];
+    return [createChatLine(easelPaintingLabel)];
+  }, [easelPaintingLabel]);
+
+  const showPaintingBubble = paintingMessages.length > 0;
+  const bubbleSide = screenXToBubbleSide(screenX);
+
   if (!active) return null;
 
   return (
@@ -596,7 +610,7 @@ export default function NPC({
         position: 'absolute',
         bottom: CHAR_BOTTOM,
         transform: `translateY(${crowdDepthOffsetPx(characterId)}px)`,
-        zIndex: greeting ? Z_CHAT_CHARACTER : 18,
+        zIndex: greeting ? Z_CHAT_CHARACTER : showPaintingBubble ? 19 : 18,
         opacity: dimmed ? 0.6 : 1,
         filter: dimmed ? 'brightness(0.85)' : undefined,
         transition: 'opacity 0.4s ease, filter 0.4s ease',
@@ -615,8 +629,19 @@ export default function NPC({
           accessory={accessory}
           outfit={outfit}
           scale={scale}
-          bubbleSide={screenXToBubbleSide(screenX)}
-          chatConnected={chatConnected || greeting || easelStationed}
+          bubbleSide={bubbleSide}
+          chatConnected={chatConnected || greeting || easelStationed || showPaintingBubble}
+          chatOverlay={
+            showPaintingBubble ? (
+              <NpcChatOverlay
+                name={name}
+                npcTyping={false}
+                messages={paintingMessages}
+                side={bubbleSide}
+                glowColor={balloonColor}
+              />
+            ) : undefined
+          }
         />
       </div>
     </div>

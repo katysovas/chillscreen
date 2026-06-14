@@ -2,6 +2,7 @@ import { fetchBitcoinUsdSnapshot } from '@/lib/bitcoinPrice';
 import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
 import { handleFestieNpcChat } from '@/lib/festie/chatHandler';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
+import { internalDebugFromRequest, ierror, iwarn, runWithInternalDebug } from '@/lib/internalDebug';
 import { sanitizeNpcLine } from '@/lib/messageFilter';
 import {
   buildChatMessages,
@@ -26,84 +27,40 @@ type RequestBody = {
 };
 
 export async function POST(req: Request) {
-  let body: RequestBody;
-  try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
+  return runWithInternalDebug(internalDebugFromRequest(req), async () => {
+    let body: RequestBody;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
 
-  const { characterId, history = [], isGreeting = false, cinemaNowPlaying, concertNowPlaying, easelPainting } = body;
-  const playerName = body.playerName?.trim() || 'friend';
+    const { characterId, history = [], isGreeting = false, cinemaNowPlaying, concertNowPlaying, easelPainting } = body;
+    const playerName = body.playerName?.trim() || 'friend';
 
-  if (!characterId) {
-    return Response.json({ error: 'characterId is required' }, { status: 400 });
-  }
+    if (!characterId) {
+      return Response.json({ error: 'characterId is required' }, { status: 400 });
+    }
 
-  if (!isGreeting && !body.message?.trim()) {
-    return Response.json({ error: 'message is required' }, { status: 400 });
-  }
+    if (!isGreeting && !body.message?.trim()) {
+      return Response.json({ error: 'message is required' }, { status: 400 });
+    }
 
-  if (isFestieNpcId(characterId)) {
-    return handleFestieNpcChat(req, body);
-  }
+    if (isFestieNpcId(characterId)) {
+      return handleFestieNpcChat(req, body);
+    }
 
-  const character = getCharacterById(characterId);
-  if (!character) {
-    return Response.json({ error: 'Unknown character' }, { status: 404 });
-  }
+    const character = getCharacterById(characterId);
+    if (!character) {
+      return Response.json({ error: 'Unknown character' }, { status: 404 });
+    }
 
-  const bitcoinSnapshot =
-    character.id === 'satosh' ? await fetchBitcoinUsdSnapshot() : null;
+    const bitcoinSnapshot =
+      character.id === 'satosh' ? await fetchBitcoinUsdSnapshot() : null;
 
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) {
-    console.warn('[openai] OPENAI_API_KEY missing — NPC chat using fallback text', characterId);
-    return Response.json({
-      reply: isGreeting
-        ? pickFallbackGreeting(character, bitcoinSnapshot)
-        : pickFallbackReply(character, bitcoinSnapshot),
-    });
-  }
-
-  const messages = isGreeting
-    ? buildGreetingMessages(
-        character,
-        playerName,
-        cinemaNowPlaying,
-        concertNowPlaying,
-        bitcoinSnapshot,
-        easelPainting,
-      )
-    : buildChatMessages(
-        character,
-        playerName,
-        body.message!.trim(),
-        history,
-        cinemaNowPlaying,
-        concertNowPlaying,
-        bitcoinSnapshot,
-        easelPainting,
-      );
-
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: NPC_CHAT_MODEL,
-        messages,
-        max_tokens: 55,
-        temperature: 0.9,
-      }),
-    });
-
-    if (!res.ok) {
-      const detail = await res.text();
-      console.error('[openai] NPC chat request failed', res.status, characterId, detail.slice(0, 400));
+    const key = process.env.OPENAI_API_KEY;
+    if (!key) {
+      iwarn('[openai] OPENAI_API_KEY missing — NPC chat using fallback text', characterId);
       return Response.json({
         reply: isGreeting
           ? pickFallbackGreeting(character, bitcoinSnapshot)
@@ -111,26 +68,72 @@ export async function POST(req: Request) {
       });
     }
 
-    const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content?.trim();
-    const reply = raw ? sanitizeNpcLine(raw) : null;
+    const messages = isGreeting
+      ? buildGreetingMessages(
+          character,
+          playerName,
+          cinemaNowPlaying,
+          concertNowPlaying,
+          bitcoinSnapshot,
+          easelPainting,
+        )
+      : buildChatMessages(
+          character,
+          playerName,
+          body.message!.trim(),
+          history,
+          cinemaNowPlaying,
+          concertNowPlaying,
+          bitcoinSnapshot,
+          easelPainting,
+        );
 
-    if (!reply) {
-      console.warn('[openai] empty NPC chat completion — using fallback', characterId, { raw: raw?.slice(0, 120) });
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: NPC_CHAT_MODEL,
+          messages,
+          max_tokens: 55,
+          temperature: 0.9,
+        }),
+      });
+
+      if (!res.ok) {
+        const detail = await res.text();
+        ierror('[openai] NPC chat request failed', res.status, characterId, detail.slice(0, 400));
+        return Response.json({
+          reply: isGreeting
+            ? pickFallbackGreeting(character, bitcoinSnapshot)
+            : pickFallbackReply(character, bitcoinSnapshot),
+        });
+      }
+
+      const data = await res.json();
+      const raw = data.choices?.[0]?.message?.content?.trim();
+      const reply = raw ? sanitizeNpcLine(raw) : null;
+
+      if (!reply) {
+        iwarn('[openai] empty NPC chat completion — using fallback', characterId, { raw: raw?.slice(0, 120) });
+        return Response.json({
+          reply: isGreeting
+            ? pickFallbackGreeting(character, bitcoinSnapshot)
+            : pickFallbackReply(character, bitcoinSnapshot),
+        });
+      }
+
+      return Response.json({ reply });
+    } catch (err) {
+      ierror('[openai] NPC chat failed', characterId, err);
       return Response.json({
         reply: isGreeting
           ? pickFallbackGreeting(character, bitcoinSnapshot)
           : pickFallbackReply(character, bitcoinSnapshot),
       });
     }
-
-    return Response.json({ reply });
-  } catch (err) {
-    console.error('[openai] NPC chat failed', characterId, err);
-    return Response.json({
-      reply: isGreeting
-        ? pickFallbackGreeting(character, bitcoinSnapshot)
-        : pickFallbackReply(character, bitcoinSnapshot),
-    });
-  }
+  });
 }

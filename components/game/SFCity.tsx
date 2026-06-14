@@ -70,6 +70,7 @@ import {
 } from '@/lib/npcChatterAnalytics';
 import { installGameInputAnalytics, trackMobileControl } from '@/lib/gameInputAnalytics';
 import { isChatterMuted } from '@/lib/chatterMuted';
+import { ierror } from '@/lib/internalDebug';
 import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
@@ -121,6 +122,7 @@ import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
 import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
 import { easelWalkTargetWorldXForNpc } from '@/lib/easel/stationed';
+import { easelPaintingLabelForNpc } from '@/lib/easel/paintingLabel';
 import { setActiveEaselCanvasBlockZone } from '@/lib/easel/canvasBlocking';
 import { easelSlotWorldX } from '@/lib/easel/layout';
 import { mergeEaselOwnersIntoCast, preloadEaselOwners, isEaselPainterForChannel } from '@/lib/easel/cast';
@@ -1075,7 +1077,7 @@ export default function SFCity({
       },
     ).catch(err => {
       if (err instanceof DOMException && err.name === 'AbortError') return;
-      console.error('[npc-chat] reply failed in UI', {
+      ierror('[npc-chat] reply failed in UI', {
         npcId: character.id,
         message: message.slice(0, 80),
         err,
@@ -1756,6 +1758,9 @@ export default function SFCity({
           const chatConnected = isNpcChatConnected(i, cfg.id);
           const npcLabel = npcChatLabel(cfg.id, cfg.name);
           const isPainting = activePainterNpcIds(activeEaselSession).has(cfg.id);
+          const easelPaintingLabel = isPainting
+            ? easelPaintingLabelForNpc(cfg.id, activeEaselSession)
+            : null;
           const baseLoadout = TEST_NPC_MASK_ON_LOAD && cfg.id === TEST_NPC_MASK_ID
             ? { ...(cfg.loadout ?? {}), mask: TEST_NPC_MASK_ITEM }
             : cfg.loadout;
@@ -1770,6 +1775,7 @@ export default function SFCity({
             easelWalkTargetWorldX={easelWalkTargetWorldXForNpc(cfg.id, activeEaselSession, easelStageSlug)}
             easelStationOnLoad={TEST_EASEL_ON_LOAD && isEaselPainterForChannel(cfg.id, easelChannel) && activePainterNpcIds(activeEaselSession).has(cfg.id)}
             onEaselStationed={isPainting ? () => mpRef.current?.sendEaselPainterReady(cfg.id) : undefined}
+            easelPaintingLabel={easelPaintingLabel}
             startX={testing ? 55 : cfg.startX}
             entryDelay={testing ? 0 : cfg.entryDelay}
             paused={chatConnected}

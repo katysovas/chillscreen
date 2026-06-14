@@ -33,6 +33,7 @@ import { getNpcRosterEntry } from '../lib/npcRoster.server';
 import type { RoomChatLine } from '../lib/npcChatter/prompts';
 import { stageSlugForRoom, streamContextForRoom } from '../lib/npcChatter/roomContext';
 import type { StageSync } from '../lib/stageVideos';
+import { ierror, ilog, INTERNAL_DEBUG_HEADER, runWithInternalDebug } from '../lib/internalDebug';
 
 type NpcChatterLine = { npc: string; text: string };
 
@@ -42,6 +43,8 @@ export type ChatterSchedulerDeps = {
   playerCount: () => number;
   getActivePlayerViews: () => PlayerViewSnapshot[];
   getStageSync: () => StageSync | null;
+  /** True when a player joined with ?mute=true — enables internal debug logs. */
+  internalDebug: () => boolean;
 };
 
 export class NpcChatterScheduler {
@@ -71,17 +74,19 @@ export class NpcChatterScheduler {
   private logConfigOnce() {
     if (this.configLogged) return;
     this.configLogged = true;
-    const hasOpenRouter = Boolean(this.env.OPENROUTER_API_KEY?.trim());
-    console.log('[npc-chatter] party env', {
-      hasOpenRouterKey: hasOpenRouter,
-      hasChatterSecret: Boolean(this.env.NPC_CHATTER_SECRET?.trim()),
-      chatterApiUrl: this.apiUrl(),
+    runWithInternalDebug(this.deps.internalDebug(), () => {
+      const hasOpenRouter = Boolean(this.env.OPENROUTER_API_KEY?.trim());
+      ilog('[npc-chatter] party env', {
+        hasOpenRouterKey: hasOpenRouter,
+        hasChatterSecret: Boolean(this.env.NPC_CHATTER_SECRET?.trim()),
+        chatterApiUrl: this.apiUrl(),
+      });
+      if (!hasOpenRouter) {
+        ierror(
+          '[npc-chatter] OPENROUTER_API_KEY missing on PartyKit — run: npm run party:deploy (loads .env.local)',
+        );
+      }
     });
-    if (!hasOpenRouter) {
-      console.error(
-        '[npc-chatter] OPENROUTER_API_KEY missing on PartyKit — run: npm run party:deploy (loads .env.local)',
-      );
-    }
   }
 
   setChatterDisabled(disabled: boolean) {
@@ -252,26 +257,32 @@ export class NpcChatterScheduler {
   }
 
   private async fetchChatter(body: object): Promise<NpcChatterLine[] | null> {
+    return runWithInternalDebug(this.deps.internalDebug(), async () => {
     try {
+      const debugHeaders: Record<string, string> = this.deps.internalDebug()
+        ? { [INTERNAL_DEBUG_HEADER]: 'true' }
+        : {};
       const res = await fetch(this.apiUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...chatterAuthHeader(this.env.NPC_CHATTER_SECRET),
+          ...debugHeaders,
         },
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const body = await res.text();
-        console.error('[npc-chatter] party → API failed', res.status, this.apiUrl(), body.slice(0, 400));
+        const bodyText = await res.text();
+        ierror('[npc-chatter] party → API failed', res.status, this.apiUrl(), bodyText.slice(0, 400));
         return null;
       }
       const data = await res.json() as { lines?: NpcChatterLine[] };
       return data.lines ?? null;
     } catch (err) {
-      console.error('[npc-chatter] fetch failed', err);
+      ierror('[npc-chatter] fetch failed', err);
       return null;
     }
+    });
   }
 
   private streamCtx() {
@@ -283,6 +294,7 @@ export class NpcChatterScheduler {
   }
 
   private async runSingleReply(npcId: string, triggerText: string) {
+    return runWithInternalDebug(this.deps.internalDebug(), async () => {
     if (this.chatterDisabled || this.deps.playerCount() === 0) return;
     const { streamTitle, channelName } = this.streamCtx();
     const lines = await this.fetchChatter({
@@ -296,14 +308,16 @@ export class NpcChatterScheduler {
     });
     const line = lines?.[0];
     if (!line) {
-      console.error('[npc-chatter] party single reply empty', { npcId, triggerText: triggerText.slice(0, 80) });
+      ierror('[npc-chatter] party single reply empty', { npcId, triggerText: triggerText.slice(0, 80) });
       return;
     }
     this.deps.broadcast({ t: 'room-chat', sender: `npc:${line.npc}`, text: line.text });
     this.appendBuffer(`npc:${line.npc}`, line.text);
+    });
   }
 
   private async runPairConvo() {
+    return runWithInternalDebug(this.deps.internalDebug(), async () => {
     if (this.chatterDisabled || this.deps.playerCount() === 0) return;
     if (this.activeConvo) return;
 
@@ -360,7 +374,7 @@ export class NpcChatterScheduler {
     });
 
     if (!lines || lines.length < 2) {
-      console.error('[npc-chatter] pair generation failed', {
+      ierror('[npc-chatter] pair generation failed', {
         npcA,
         npcB,
         lineCount: lines?.length ?? 0,
@@ -391,6 +405,7 @@ export class NpcChatterScheduler {
 
     this.deps.broadcast({ t: 'npc-convo-end', convoId });
     this.activeConvo = false;
+    });
   }
 
   async onAlarm() {

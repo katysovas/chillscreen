@@ -1,3 +1,4 @@
+import { ierror, iwarn } from '@/lib/internalDebug';
 import { NPC_LINE_MAX_TOKENS, NPC_LINE_TEMPERATURE, NPC_LINE_TIMEOUT_MS } from './constants';
 import { openRouterComplete, sanitizeLine, type ChatMessage } from './openrouter';
 
@@ -33,18 +34,18 @@ async function openAiDirectComplete(
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
-      console.error('[openai] request failed', res.status, model, detail.slice(0, 300));
+      ierror('[openai] request failed', res.status, model, detail.slice(0, 300));
       return null;
     }
     const data = await res.json();
     const raw = data.choices?.[0]?.message?.content?.trim();
     if (!raw) {
-      console.warn('[openai] empty NPC line completion', model);
+      iwarn('[openai] empty NPC line completion', model);
       return null;
     }
     return sanitizeLine(raw);
   } catch (err) {
-    console.error('[openai] failed', err);
+    ierror('[openai] failed', err);
     return null;
   } finally {
     clearTimeout(timer);
@@ -62,17 +63,17 @@ export async function completeNpcLine(
     const text = await openRouterComplete(model, messages, openRouterKey, fallbackModel);
     if (text) return text;
   } else {
-    console.warn('[npc-chatter] OPENROUTER_API_KEY missing — trying OpenAI direct', model);
+    iwarn('[npc-chatter] OPENROUTER_API_KEY missing — trying OpenAI direct', model);
   }
 
   const openAiKey = process.env.OPENAI_API_KEY?.trim();
   if (!openAiKey) {
-    console.error('[npc-chatter] no LLM keys configured (OPENROUTER_API_KEY / OPENAI_API_KEY)');
+    ierror('[npc-chatter] no LLM keys configured (OPENROUTER_API_KEY / OPENAI_API_KEY)');
     return null;
   }
 
   if (openRouterKey) {
-    console.warn('[npc-chatter] OpenRouter failed — falling back to OpenAI direct', model);
+    iwarn('[npc-chatter] OpenRouter failed — falling back to OpenAI direct', model);
   }
 
   const direct = openAiDirectModel(model);
@@ -84,7 +85,7 @@ export async function completeNpcLine(
     if (fallbackText) return fallbackText;
   }
 
-  console.error('[npc-chatter] all LLM providers failed for line', { model, fallbackModel });
+  ierror('[npc-chatter] all LLM providers failed for line', { model, fallbackModel });
   return null;
 }
 

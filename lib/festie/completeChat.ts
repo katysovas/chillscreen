@@ -1,3 +1,4 @@
+import { ierror, iwarn } from '@/lib/internalDebug';
 import { sanitizeNpcLine } from '@/lib/messageFilter';
 import {
   HOUSE_MODEL_DEFAULT,
@@ -30,12 +31,12 @@ export async function completeFestieChat(
     const model = resolveModel(modelId, house);
     const text = await openRouterComplete(model, messages, openRouterKey, house);
     if (text) return text;
-    console.warn('[festie chat] OpenRouter empty — trying OpenAI direct', { provider, model });
+    iwarn('[festie chat] OpenRouter empty — trying OpenAI direct', { provider, model });
   }
 
   const openAiKey = process.env.OPENAI_API_KEY?.trim();
   if (!openAiKey) {
-    console.error('[festie chat] no OPENAI_API_KEY for direct fallback', { provider });
+    ierror('[festie chat] no OPENAI_API_KEY for direct fallback', { provider });
     return null;
   }
 
@@ -56,7 +57,7 @@ export async function completeFestieChat(
     });
 
     if (!res.ok) {
-      console.error('[festie chat] OpenAI error', res.status, await res.text());
+      ierror('[festie chat] OpenAI error', res.status, await res.text());
       return null;
     }
 
@@ -64,7 +65,7 @@ export async function completeFestieChat(
     const raw = data.choices?.[0]?.message?.content?.trim();
     return raw ? sanitizeNpcLine(raw) : null;
   } catch (err) {
-    console.error('[festie chat] OpenAI failed', err);
+    ierror('[festie chat] OpenAI failed', err);
     return null;
   }
 }

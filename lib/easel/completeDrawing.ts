@@ -1,3 +1,4 @@
+import { ierror, iwarn } from '@/lib/internalDebug';
 import { NPC_LINE_TIMEOUT_MS } from '@/lib/npcChatter/constants';
 import type { ChatMessage } from '@/lib/npcChatter/openrouter';
 
@@ -33,19 +34,19 @@ async function llmComplete(model: string, messages: ChatMessage[]): Promise<stri
         const data = await res.json();
         const text = data.choices?.[0]?.message?.content?.trim() ?? null;
         if (!text) {
-          console.warn('[openrouter] easel drawing empty completion', model);
+          iwarn('[openrouter] easel drawing empty completion', model);
         }
         return text;
       }
       const orDetail = await res.text().catch(() => '');
-      console.error('[openrouter] easel drawing failed', res.status, model, orDetail.slice(0, 300));
+      ierror('[openrouter] easel drawing failed', res.status, model, orDetail.slice(0, 300));
     } else {
-      console.warn('[openrouter] OPENROUTER_API_KEY missing — easel drawing trying OpenAI');
+      iwarn('[openrouter] OPENROUTER_API_KEY missing — easel drawing trying OpenAI');
     }
 
     const openAiKey = process.env.OPENAI_API_KEY?.trim();
     if (!openAiKey) {
-      console.error('[openai] OPENAI_API_KEY missing — easel drawing failed');
+      ierror('[openai] OPENAI_API_KEY missing — easel drawing failed');
       return null;
     }
 
@@ -67,17 +68,17 @@ async function llmComplete(model: string, messages: ChatMessage[]): Promise<stri
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
-      console.error('[openai] easel drawing failed', res.status, directModel, detail.slice(0, 300));
+      ierror('[openai] easel drawing failed', res.status, directModel, detail.slice(0, 300));
       return null;
     }
     const data = await res.json();
     const text = data.choices?.[0]?.message?.content?.trim() ?? null;
     if (!text) {
-      console.warn('[openai] easel drawing empty completion', directModel);
+      iwarn('[openai] easel drawing empty completion', directModel);
     }
     return text;
   } catch (err) {
-    console.error('[easel drawing] LLM request failed', err);
+    ierror('[easel drawing] LLM request failed', err);
     return null;
   } finally {
     clearTimeout(timer);

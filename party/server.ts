@@ -50,11 +50,13 @@ export default class WhichStageServer implements Party.Server {
       playerCount: () => this.players.size,
       getActivePlayerViews: () => this.activePlayerViews(),
       getStageSync: () => this.stageSync,
+      internalDebug: () => this.chatterMutedPlayers.size > 0,
     });
     this.easels = new EaselScheduler({
       room: this.room,
       broadcast: msg => this.room.broadcast(encode(msg)),
       playerCount: () => this.players.size,
+      internalDebug: () => this.chatterMutedPlayers.size > 0,
     });
   }
 

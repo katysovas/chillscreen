@@ -1,3 +1,4 @@
+import { ierror, ilog, iwarn } from '@/lib/internalDebug';
 import { sanitizeNpcLine } from '@/lib/messageFilter';
 import { resolveNpcRosterEntry } from '@/lib/npcRoster.server';
 import type { RoomChatLine } from './prompts';
@@ -73,13 +74,13 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
 
     const model = resolveModel(speaker.modelId, req.houseModel);
     if (isA && isOpener) {
-      console.log(`[npc-chatter] opener stance: ${openingStance}`);
+      ilog(`[npc-chatter] opener stance: ${openingStance}`);
     }
-    console.log(`[npc-chatter] line ${i + 1}/${req.lineBudget} ${speaker.id} → ${model}`);
+    ilog(`[npc-chatter] line ${i + 1}/${req.lineBudget} ${speaker.id} → ${model}`);
     const raw = await completeNpcLine(model, messages, req.houseModel);
     const text = raw ? sanitizeNpcLine(raw) : null;
     if (!text) {
-      console.error('[npc-chatter] pair line failed', {
+      ierror('[npc-chatter] pair line failed', {
         speaker: speaker.id,
         model,
         line: i + 1,
@@ -118,7 +119,7 @@ export async function generateSingleReply(req: SingleReplyRequest): Promise<NpcC
   );
   const cleaned = text ? sanitizeNpcLine(text) : null;
   if (!cleaned) {
-    console.error('[npc-chatter] single reply generation failed', { npc: req.npc, model });
+    ierror('[npc-chatter] single reply generation failed', { npc: req.npc, model });
     return null;
   }
   return { npc: npc.id, text: cleaned };

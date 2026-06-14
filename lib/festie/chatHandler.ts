@@ -1,3 +1,4 @@
+import { ierror, iwarn } from '@/lib/internalDebug';
 import { completeFestieChat } from '@/lib/festie/completeChat';
 import { evaluateFestieChatGate } from '@/lib/festie/chatGate';
 import {
@@ -101,7 +102,7 @@ export async function handleFestieNpcChat(
     process.env.OPENROUTER_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim(),
   );
   if (!hasLlmKey) {
-    console.warn('[festie chat] no OPENROUTER_API_KEY or OPENAI_API_KEY — fallback reply', festieId);
+    iwarn('[festie chat] no OPENROUTER_API_KEY or OPENAI_API_KEY — fallback reply', festieId);
     const reply = isGreeting
       ? pickFestieFallbackGreeting(festie)
       : pickFestieFallbackReply(festie);
@@ -148,7 +149,7 @@ export async function handleFestieNpcChat(
   try {
     const llmReply = await completeFestieChat(festieRow.llm_provider, messages);
     if (!llmReply) {
-      console.warn('[festie chat] LLM returned empty — fallback reply', {
+      iwarn('[festie chat] LLM returned empty — fallback reply', {
         festieId,
         provider: festieRow.llm_provider,
         isGreeting,
@@ -179,7 +180,7 @@ export async function handleFestieNpcChat(
 
     return Response.json({ reply, conversationId });
   } catch (err) {
-    console.error('[festie chat] failed', err);
+    ierror('[festie chat] failed', err);
     const reply = isGreeting
       ? pickFestieFallbackGreeting(festie)
       : pickFestieFallbackReply(festie);

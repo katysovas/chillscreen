@@ -1,5 +1,6 @@
 import { isChatterMuted } from '@/lib/chatterMuted';
 import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
+import { ilog, iwarn, ierror, internalDebugFetchHeaders } from '@/lib/internalDebug';
 import { NPC_TYPING_MS } from '@/lib/npcChat';
 
 export type NpcChatRequest = {
@@ -21,7 +22,7 @@ export async function fetchNpcReply(
   signal: AbortSignal,
 ): Promise<{ reply?: string; conversationId?: string; error?: string } | undefined> {
   if (isChatterMuted()) {
-    console.log('[npc-chat] skipped — chatter muted (?mute=true)');
+    ilog('[npc-chat] skipped — chatter muted (?mute=true)');
     return undefined;
   }
 
@@ -29,13 +30,16 @@ export async function fetchNpcReply(
   try {
     res = await fetch('/api/chat/npc', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...internalDebugFetchHeaders(),
+      },
       body: JSON.stringify(body),
       signal,
     });
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return undefined;
-    console.error('[npc-chat] fetch failed', { characterId: body.characterId, err });
+    ierror('[npc-chat] fetch failed', { characterId: body.characterId, err });
     return undefined;
   }
 
@@ -43,12 +47,12 @@ export async function fetchNpcReply(
   try {
     data = await res.json() as Record<string, unknown>;
   } catch (err) {
-    console.error('[npc-chat] invalid JSON response', res.status, err);
+    ierror('[npc-chat] invalid JSON response', res.status, err);
     return undefined;
   }
 
   if (!res.ok) {
-    console.error('[npc-chat] API error', {
+    ierror('[npc-chat] API error', {
       status: res.status,
       characterId: body.characterId,
       error: data.error ?? data,
@@ -58,7 +62,7 @@ export async function fetchNpcReply(
 
   const reply = typeof data.reply === 'string' ? data.reply : undefined;
   if (!reply?.trim()) {
-    console.warn('[npc-chat] API ok but empty reply — check OpenAI / festie LLM logs', {
+    iwarn('[npc-chat] API ok but empty reply — check OpenAI / festie LLM logs', {
       characterId: body.characterId,
       isGreeting: body.isGreeting,
       data,
@@ -109,7 +113,7 @@ export async function fetchNpcReplyWithTyping(
     if (signal.aborted) return;
 
     if (!result?.reply?.trim()) {
-      console.warn('[npc-chat] no reply to show', {
+      iwarn('[npc-chat] no reply to show', {
         characterId: body.characterId,
         message: body.message?.slice(0, 80),
         apiError: result?.error,
@@ -123,7 +127,7 @@ export async function fetchNpcReplyWithTyping(
     });
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return;
-    console.error('[npc-chat] client failed', { characterId: body.characterId, err });
+    ierror('[npc-chat] client failed', { characterId: body.characterId, err });
     throw err;
   }
 }

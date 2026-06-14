@@ -1,4 +1,4 @@
-/** `?mute=true` on page load — disable AI/NPC chatter for this session (no cookies). */
+/** `?mute=true` on page load — disable AI/NPC chatter and enable internal debug logs. */
 
 let cached: boolean | null = null;
 

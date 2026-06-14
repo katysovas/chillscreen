@@ -7,11 +7,14 @@ import { easelHoldExpired } from '../lib/easel/lifecycle';
 import { liveSegmentsDone } from '../lib/easel/segments';
 import type { EaselSessionSync, EaselSlotSync } from '../lib/easel/types';
 import { EASEL_HOLD_MS } from '../lib/easel/types';
+import { ierror, ilog, INTERNAL_DEBUG_HEADER, runWithInternalDebug } from '../lib/internalDebug';
 
 export type EaselSchedulerDeps = {
   room: Party.Room;
   broadcast: (msg: ServerMessage) => void;
   playerCount: () => number;
+  /** True when a player joined with ?mute=true — enables internal debug logs. */
+  internalDebug: () => boolean;
 };
 
 type SlotApiPayload = EaselSlotSync & { ok?: boolean; waiting?: boolean };
@@ -41,32 +44,41 @@ export class EaselScheduler {
     return chatterAuthHeader(secret);
   }
 
+  private debugHeaders(): Record<string, string> {
+    return this.deps.internalDebug() ? { [INTERNAL_DEBUG_HEADER]: 'true' } : {};
+  }
+
   private async fetchEasels(): Promise<EaselSlotSync[]> {
+    return runWithInternalDebug(this.deps.internalDebug(), async () => {
     const stage = this.stageSlug();
     const res = await fetch(
       `${this.apiBase()}/api/easel?stage=${encodeURIComponent(stage)}&sync=1`,
+      { headers: this.debugHeaders() },
     );
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
-      console.error('[easel:party] fetch easels failed', res.status, stage, detail.slice(0, 300));
+      ierror('[easel:party] fetch easels failed', res.status, stage, detail.slice(0, 300));
       return [];
     }
     const data = await res.json() as { slots: EaselSlotSync[] };
     return data.slots ?? [];
+    });
   }
 
   private async postEasel(body: Record<string, unknown>): Promise<SlotApiPayload | null> {
+    return runWithInternalDebug(this.deps.internalDebug(), async () => {
     const res = await fetch(`${this.apiBase()}/api/easel`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
+      headers: { 'Content-Type': 'application/json', ...this.authHeaders(), ...this.debugHeaders() },
       body: JSON.stringify(body),
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
-      console.error('[easel:party] POST failed', res.status, body.action, detail.slice(0, 300));
+      ierror('[easel:party] POST failed', res.status, body.action, detail.slice(0, 300));
       return null;
     }
     return res.json() as Promise<SlotApiPayload>;
+    });
   }
 
   private broadcastSession() {
@@ -85,7 +97,9 @@ export class EaselScheduler {
     const painting = this.slots.some(s => s.status === 'painting' && s.npc === npcId);
     if (!painting) return;
     this.sessionStart = Date.now();
-    console.log(`[easel:party] painter ready — ${npcId}, clock started`);
+    runWithInternalDebug(this.deps.internalDebug(), () => {
+      ilog(`[easel:party] painter ready — ${npcId}, clock started`);
+    });
     this.broadcastSession();
   }
 
@@ -123,6 +137,7 @@ export class EaselScheduler {
   }
 
   private async checkSession() {
+    return runWithInternalDebug(this.deps.internalDebug(), async () => {
     if (this.sessionStart == null || this.sessionStart <= 0 || this.deps.playerCount() === 0) return;
     const now = Date.now();
     const stage = this.stageSlug();
@@ -139,7 +154,7 @@ export class EaselScheduler {
           slot: slot.slot,
         });
         if (this.applySlotFromApi(slot.slot, result)) {
-          console.log(
+          ilog(
             `[easel:party] completed slot ${slot.slot} — hold ${EASEL_HOLD_MS / 1000}s before next painter`,
           );
           changed = true;
@@ -158,7 +173,7 @@ export class EaselScheduler {
         if (result && result.status === 'painting') {
           this.slots = [result];
           this.sessionStart = 0;
-          console.log(`[easel:party] next painter ${result.npc} @ slot ${slot.slot} — waiting at easel`);
+          ilog(`[easel:party] next painter ${result.npc} @ slot ${slot.slot} — waiting at easel`);
           changed = true;
           continue;
         }
@@ -176,6 +191,7 @@ export class EaselScheduler {
     }
 
     if (changed) this.broadcastSession();
+    });
   }
 
   async onFirstPlayer() {

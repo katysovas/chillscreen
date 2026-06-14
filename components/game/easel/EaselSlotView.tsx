@@ -3,8 +3,10 @@
 import { memo, useEffect, useRef } from 'react';
 import { createEaselController } from '@/lib/easel/easelController';
 import { checkpointEaselProgress, completeEaselDrawing } from '@/lib/easel/checkpointClient';
+import { easelPaintingLabelForSlot } from '@/lib/easel/paintingLabel';
 import { modelLabelForNpc, npcPoolKey, paletteForNpc } from '@/lib/easel/drawingsPool';
 import { notifyEaselUpdated } from '@/lib/easel/notifyUpdated';
+import { iwarn } from '@/lib/internalDebug';
 import { logEaselDrawing } from '@/lib/easel/logDrawing';
 import { programForSlot } from '@/lib/easel/resolveProgram';
 import { clampLiveDone, liveSegmentsDone } from '@/lib/easel/segments';
@@ -70,15 +72,13 @@ export const EaselSlotView = memo(function EaselSlotView({
   const frameTop = 80 * artScale;
   const canvasDisplay = (272 / 460) * unit;
   const npcKey = npcPoolKey(slot.npc);
-  const model = modelLabelForNpc(npcKey);
-  const name = slot.npc.split('-').pop() ?? slot.npc;
-  const label = slot.topic?.trim() || programForSlot(slot)?.topic || `${model} ${name}`;
+  const label = easelPaintingLabelForSlot(slot);
   const loggedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const program = programForSlot(slot);
     if (!program) {
-      console.warn('[easel:client] no AI program on slot — waiting for server', slot.drawing_id);
+      iwarn('[easel:client] no AI program on slot — waiting for server', slot.drawing_id);
       return;
     }
     const key = `${slot.drawing_id}:${slot.status}:${slot.segments_done}`;
@@ -114,7 +114,7 @@ export const EaselSlotView = memo(function EaselSlotView({
     if (!canvas) return;
     const program = programForSlot(slot);
     if (!program) {
-      console.warn('[easel:client] no AI program to render', slot.drawing_id);
+      iwarn('[easel:client] no AI program to render', slot.drawing_id);
       return;
     }
 
@@ -207,21 +207,6 @@ export const EaselSlotView = memo(function EaselSlotView({
 
   return (
     <div style={{ position: 'relative', width: unit, height: unit }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: -18,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          fontSize: 10,
-          color: '#4a4a4a',
-          whiteSpace: 'nowrap',
-          fontFamily: 'system-ui, sans-serif',
-          letterSpacing: '0.02em',
-        }}
-      >
-        {label}
-      </div>
       <svg
         viewBox="-9 0 64 64"
         xmlns="http://www.w3.org/2000/svg"

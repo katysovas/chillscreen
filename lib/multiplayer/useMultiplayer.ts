@@ -15,6 +15,7 @@ import {
 } from './protocol';
 import { applyServerStageSync } from '@/lib/stageClock';
 import { isChatterMuted } from '@/lib/chatterMuted';
+import { ierror, iwarn } from '@/lib/internalDebug';
 
 /** What a remote avatar needs to render — kept in a ref, mutated without rerenders. */
 export type RemotePlayerState = {
@@ -253,12 +254,12 @@ export function useMultiplayer(opts: Options): Multiplayer {
     const onClose = (e: CloseEvent) => {
       setConnected(false);
       if (e.code !== 1000 && e.code !== 1001) {
-        console.warn('[partykit] disconnected', opts.roomId, { code: e.code, reason: e.reason || '(none)' });
+        iwarn('[partykit] disconnected', opts.roomId, { code: e.code, reason: e.reason || '(none)' });
       }
     };
 
     const onError = () => {
-      console.error('[partykit] websocket error', opts.roomId);
+      ierror('[partykit] websocket error', opts.roomId);
     };
 
     const onMessage = (e: MessageEvent) => {
@@ -266,7 +267,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
       const msg = decodeServer(raw);
       if (!msg) {
         if (raw.length > 0) {
-          console.warn('[partykit] unparseable message', opts.roomId, raw.slice(0, 120));
+          iwarn('[partykit] unparseable message', opts.roomId, raw.slice(0, 120));
         }
         return;
       }

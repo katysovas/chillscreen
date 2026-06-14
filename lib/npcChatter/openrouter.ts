@@ -1,3 +1,4 @@
+import { ierror, iwarn } from '@/lib/internalDebug';
 import { NPC_LINE_MAX_TOKENS, NPC_LINE_MAX_WORDS, NPC_LINE_TEMPERATURE, NPC_LINE_TIMEOUT_MS } from './constants';
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
@@ -26,13 +27,13 @@ async function openRouterRequest(
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    console.error('[openrouter] request failed', res.status, model, detail.slice(0, 300));
+    ierror('[openrouter] request failed', res.status, model, detail.slice(0, 300));
     return null;
   }
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content?.trim();
   if (!text) {
-    console.warn('[openrouter] empty completion', model, JSON.stringify(data).slice(0, 300));
+    iwarn('[openrouter] empty completion', model, JSON.stringify(data).slice(0, 300));
     return null;
   }
   return sanitizeLine(text);
@@ -49,10 +50,10 @@ export async function openRouterComplete(
   try {
     const text = await openRouterRequest(model, messages, apiKey, controller.signal);
     if (text || !fallbackModel || fallbackModel === model) return text;
-    console.warn('[openrouter] retrying with fallback', model, '→', fallbackModel);
+    iwarn('[openrouter] retrying with fallback', model, '→', fallbackModel);
     return openRouterRequest(fallbackModel, messages, apiKey, controller.signal);
   } catch (err) {
-    console.error('[openrouter] failed', err);
+    ierror('[openrouter] failed', err);
     return null;
   } finally {
     clearTimeout(timer);
