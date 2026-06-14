@@ -14,17 +14,44 @@ export function playerBubbleSide(npcScreenX: number): BubbleSide {
   return npcScreenX >= 50 ? 'left' : 'right';
 }
 
-function bubbleTailStyle(bubbleSide: BubbleSide): CSSProperties {
-  return {
+function bubbleTailStyle(
+  bubbleSide: BubbleSide,
+  tailAlign: 'edge' | 'center' | 'speaker' = 'edge',
+): CSSProperties {
+  const triangle: CSSProperties = {
     position: 'absolute',
-    bottom: -7,
-    ...(bubbleSide === 'left' ? { right: 10 } : { left: 18 }),
     width: 0,
     height: 0,
     borderLeft: '7px solid transparent',
     borderRight: '7px solid transparent',
     borderTop: '7px solid #fff',
     filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.07))',
+  };
+
+  if (tailAlign === 'center') {
+    return {
+      ...triangle,
+      bottom: -7,
+      left: '50%',
+      marginLeft: -7,
+    };
+  }
+
+  if (tailAlign === 'speaker') {
+    // Side-anchored bubble — tail aims at the festie head below.
+    return {
+      ...triangle,
+      bottom: -9,
+      ...(bubbleSide === 'left'
+        ? { right: 18 }
+        : { left: 26 }),
+    };
+  }
+
+  return {
+    ...triangle,
+    bottom: -7,
+    ...(bubbleSide === 'left' ? { right: 10 } : { left: 18 }),
   };
 }
 
@@ -54,6 +81,8 @@ export function AttachedChatBubble({
   stackSize = 1,
   variant = 'default',
   glowColor,
+  tailAlign = 'edge',
+  opacityScale = 1,
 }: {
   name?: string;
   message: string;
@@ -67,8 +96,12 @@ export function AttachedChatBubble({
   variant?: 'default' | 'self' | 'partner';
   /** Balloon color — matches character connect glow. */
   glowColor?: string;
+  /** Tail points at speaker — `speaker` for side-anchored NPC bubbles. */
+  tailAlign?: 'edge' | 'center' | 'speaker';
+  /** Extra fade multiplier (e.g. painting chatter). */
+  opacityScale?: number;
 }) {
-  const opacity = chatBubbleOpacity(ageFromBottom, stackSize);
+  const opacity = chatBubbleOpacity(ageFromBottom, stackSize) * opacityScale;
   const bg = variant === 'self' ? '#eef6ff' : variant === 'partner' ? '#fff' : '#fff';
   const glow = Boolean(glowColor);
   return (
@@ -111,7 +144,7 @@ export function AttachedChatBubble({
       >
         {message}
       </div>
-      {showTail && <div style={bubbleTailStyle(side)} />}
+      {showTail && <div style={bubbleTailStyle(side, tailAlign)} />}
     </div>
   );
 }
@@ -396,6 +429,8 @@ export function ChatBubbleStack({
   showTailOnNewest = true,
   glowColor,
   nameOnEveryBubble = false,
+  tailAlign = 'edge',
+  opacityScale = 1,
 }: {
   messages: ChatLine[];
   name?: string;
@@ -403,6 +438,8 @@ export function ChatBubbleStack({
   showTailOnNewest?: boolean;
   glowColor?: string;
   nameOnEveryBubble?: boolean;
+  tailAlign?: 'edge' | 'center' | 'speaker';
+  opacityScale?: number;
 }) {
   if (messages.length === 0) return null;
   const total = messages.length;
@@ -422,6 +459,8 @@ export function ChatBubbleStack({
             stackSize={total}
             showTail={showTailOnNewest && isNewest && total === 1}
             animate={isNewest}
+            tailAlign={tailAlign}
+            opacityScale={opacityScale}
           />
         );
       })}

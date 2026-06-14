@@ -582,7 +582,7 @@ export default function NPC({
   }, [easelPaintingLabel]);
 
   const showPaintingBubble = easelStationed && Boolean(easelPaintingLabel);
-  const bubbleSide = screenXToBubbleSide(screenX);
+  const bubbleSide = showPaintingBubble ? 'left' : screenXToBubbleSide(screenX);
 
   if (!active) return null;
 
@@ -614,6 +614,7 @@ export default function NPC({
           outfit={outfit}
           scale={scale}
           bubbleSide={bubbleSide}
+          easelChatAnchor={showPaintingBubble}
           chatConnected={chatConnected || greeting || showPaintingBubble}
           chatOverlay={
             showPaintingBubble ? (
@@ -623,6 +624,9 @@ export default function NPC({
                 messages={paintingMessages}
                 side={bubbleSide}
                 glowColor={balloonColor}
+                showTail
+                tailAlign="speaker"
+                faded
               />
             ) : undefined
           }

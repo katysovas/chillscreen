@@ -53,6 +53,8 @@ export type CharacterProps = {
   chatOverlay?: ReactNode;
   /** Soft glow while in a 1:1 connected conversation. */
   chatConnected?: boolean;
+  /** Easel painter — bubble sits left of the festie, away from the canvas. */
+  easelChatAnchor?: boolean;
   /** Deep Space — zero-G float visuals (bob + drift legs) instead of walk cycle. */
   spaceFloat?: boolean;
 };
@@ -74,6 +76,13 @@ const CHAT_ANCHOR = {
   top: -68,
 };
 
+/** Painter at easel — bubble left of festie, clear of canvas on the right. */
+const EASEL_CHAT_ANCHOR = {
+  left: 196,
+  top: -58,
+  shiftX: '-118%',
+};
+
 const CHAT_BUBBLE_OVERFLOW: CSSProperties = {
   overflow: 'visible',
   overflowWrap: 'break-word',
@@ -81,11 +90,15 @@ const CHAT_BUBBLE_OVERFLOW: CSSProperties = {
   whiteSpace: 'normal',
 };
 
-function chatAnchorStyle(side: BubbleSide, scale: number, mirrored: boolean) {
+function chatAnchorStyle(
+  side: BubbleSide,
+  scale: number,
+  mirrored: boolean,
+  easelChatAnchor = false,
+) {
   const counterScale = `scale(${1 / scale}) scaleX(${mirrored ? -1 : 1})`;
   const shared = {
     position: 'absolute' as const,
-    top: CHAT_ANCHOR.top,
     zIndex: 40,
     display: 'flex',
     flexDirection: 'column' as const,
@@ -95,9 +108,23 @@ function chatAnchorStyle(side: BubbleSide, scale: number, mirrored: boolean) {
     ...CHAT_BUBBLE_OVERFLOW,
   };
 
-  if (side === 'center') {
+  if (easelChatAnchor) {
     return {
       ...shared,
+      left: EASEL_CHAT_ANCHOR.left,
+      top: EASEL_CHAT_ANCHOR.top,
+      transform: `translate(${EASEL_CHAT_ANCHOR.shiftX}, -100%) ${counterScale}`,
+      transformOrigin: 'bottom right',
+      alignItems: 'flex-end' as const,
+    };
+  }
+
+  const top = CHAT_ANCHOR.top;
+  const sharedWithTop = { ...shared, top };
+
+  if (side === 'center') {
+    return {
+      ...sharedWithTop,
       left: '50%',
       transform: `translate(-50%, -100%) ${counterScale}`,
       transformOrigin: 'bottom center',
@@ -107,7 +134,7 @@ function chatAnchorStyle(side: BubbleSide, scale: number, mirrored: boolean) {
 
   if (side === 'right') {
     return {
-      ...shared,
+      ...sharedWithTop,
       right: CHAT_ANCHOR.right,
       transform: `translate(0, -100%) ${counterScale}`,
       transformOrigin: 'bottom left',
@@ -116,7 +143,7 @@ function chatAnchorStyle(side: BubbleSide, scale: number, mirrored: boolean) {
   }
 
   return {
-    ...shared,
+    ...sharedWithTop,
     left: CHAT_ANCHOR.left,
     transform: `translate(-100%, -100%) ${counterScale}`,
     transformOrigin: 'bottom right',
@@ -136,6 +163,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   bubbleSide = 'left',
   chatOverlay,
   chatConnected = false,
+  easelChatAnchor = false,
   spaceFloat = false,
 }, ref) {
   const outerRef       = useRef<HTMLDivElement>(null);
@@ -145,8 +173,27 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   spaceFloatRef.current = spaceFloat;
   const bubbleSideRef  = useRef(bubbleSide);
   bubbleSideRef.current = bubbleSide;
+  const easelChatAnchorRef = useRef(easelChatAnchor);
+  easelChatAnchorRef.current = easelChatAnchor;
   const scaleRef       = useRef(scale);
   scaleRef.current     = scale;
+
+  function syncChatAnchorTransform(mirrored: boolean) {
+    if (!chatAnchorRef.current) return;
+    const sc = scaleRef.current;
+    const s = bubbleSideRef.current ?? 'left';
+    const counterScale = `scale(${1 / sc}) scaleX(${mirrored ? -1 : 1})`;
+    if (easelChatAnchorRef.current) {
+      chatAnchorRef.current.style.transform =
+        `translate(${EASEL_CHAT_ANCHOR.shiftX}, -100%) ${counterScale}`;
+      return;
+    }
+    chatAnchorRef.current.style.transform = s === 'center'
+      ? `translate(-50%, -100%) ${counterScale}`
+      : s === 'right'
+        ? `translate(0, -100%) ${counterScale}`
+        : `translate(-100%, -100%) ${counterScale}`;
+  }
 
   useSyncExternalStore(
     subscribeLoadoutRegistry,
@@ -192,16 +239,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
       const m = f === 'left';
       outerRef.current.style.transform = `translateX(-50%) scaleX(${m ? -1 : 1})`;
       outerRef.current.style.setProperty('--ch-mirror', m ? '-1' : '1');
-      if (chatAnchorRef.current) {
-        const sc = scaleRef.current;
-        const s  = bubbleSideRef.current ?? 'left';
-        const counterScale = `scale(${1 / sc}) scaleX(${m ? -1 : 1})`;
-        chatAnchorRef.current.style.transform = s === 'center'
-          ? `translate(-50%, -100%) ${counterScale}`
-          : s === 'right'
-            ? `translate(0, -100%) ${counterScale}`
-            : `translate(-100%, -100%) ${counterScale}`;
-      }
+      syncChatAnchorTransform(m);
     },
     setWalking(w) {
       if (!wrapperRef.current) return;
@@ -296,7 +334,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
             ref={chatAnchorRef}
             data-paraloid-ui
             className="game-chat-anchor"
-            style={chatAnchorStyle(bubbleSide, scale, mirrored)}
+            style={chatAnchorStyle(bubbleSide, scale, mirrored, easelChatAnchor)}
           >
             {chatOverlay}
           </div>

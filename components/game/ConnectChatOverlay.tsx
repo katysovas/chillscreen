@@ -30,12 +30,20 @@ export function NpcChatOverlay({
   messages,
   side,
   glowColor,
+  showTail = false,
+  tailAlign = 'edge',
+  faded = false,
 }: {
   name: string;
   npcTyping: boolean;
   messages: ChatLine[];
   side: BubbleSide;
   glowColor?: string;
+  /** Speech tail pointing at the NPC. */
+  showTail?: boolean;
+  tailAlign?: 'edge' | 'center' | 'speaker';
+  /** Softer ambient bubble (e.g. easel painting). */
+  faded?: boolean;
 }) {
   if (!npcTyping && messages.length === 0) return null;
 
@@ -55,7 +63,9 @@ export function NpcChatOverlay({
         side={side}
         glowColor={glowColor}
         nameOnEveryBubble
-        showTailOnNewest={false}
+        showTailOnNewest={showTail}
+        tailAlign={tailAlign}
+        opacityScale={faded ? 0.52 : 1}
       />
     </div>
   );
