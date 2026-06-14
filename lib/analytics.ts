@@ -7,6 +7,20 @@ export function identifyPlayer(name: string) {
   posthog.identify(getOrCreatePlayerId(), { name });
 }
 
+/** SPA / App Router pageview — includes landing at `/`. */
+export function trackPageView(pathname: string, search = '') {
+  if (typeof window === 'undefined') return;
+  const url = `${window.location.origin}${pathname}${search}`;
+  if (pathname === '/') {
+    posthog.identify(getOrCreatePlayerId());
+  }
+  posthog.capture('$pageview', {
+    $current_url: url,
+    page_type: pathname === '/' ? 'landing' : 'app',
+    path: pathname,
+  });
+}
+
 /** First-time character creation — welcome flow submit. */
 export function trackCharacterCreated(name: string) {
   if (typeof window === 'undefined') return;

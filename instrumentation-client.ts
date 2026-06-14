@@ -6,6 +6,7 @@ function initPosthog() {
     api_host: POSTHOG_HOST,
     defaults: POSTHOG_DEFAULTS,
     autocapture: false,
+    capture_pageview: false,
     opt_in_site_apps: false,
   });
 }

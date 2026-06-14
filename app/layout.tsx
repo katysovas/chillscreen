@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import { JsonLd } from '@/components/JsonLd';
+import { PostHogPageView } from '@/components/PostHogPageView';
 import { defaultSiteGraphJsonLd } from '@/lib/jsonLd';
 import { rootMetadata } from '@/lib/siteMetadata';
 import { CHARACTER_STYLES } from '@/components/game/characterStyles';
@@ -27,6 +29,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <JsonLd data={defaultSiteGraphJsonLd()} />
         <style dangerouslySetInnerHTML={{ __html: CHARACTER_STYLES }} />
+        <Suspense fallback={null}>
+          <PostHogPageView />
+        </Suspense>
         {children}
       </body>
     </html>
