@@ -21,11 +21,6 @@ import {
   shouldNpcAvoidEaselCanvas,
   worldXBlocksEaselCanvas,
 } from '@/lib/easel/canvasBlocking';
-import {
-  isInDesktopBottomControlsBand,
-  nudgeWorldXAwayFromDesktopControls,
-  rndScreenPctAvoidDesktopControls,
-} from '@/lib/desktopControlsZone';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
@@ -285,11 +280,9 @@ export default function NPC({
         curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
       );
     } else {
-      const width = vw();
-      const targetPct = rndScreenPctAvoidDesktopControls(
+      const targetPct = rndBetween(
         Math.max(SCREEN_MIN, prefLo),
         Math.min(SCREEN_MAX, prefHi),
-        width,
       );
       targetWorldX = pctToWorld(
         curPct + (targetPct - curPct) * NPC_WANDER_DISTANCE_SCALE,
@@ -324,11 +317,9 @@ export default function NPC({
   };
 
   const spawnInPlace = (worldX: number) => {
-    const width = vw();
-    const off = gameWorldOffRef.current;
-    worldXRef.current = nudgeWorldXAwayFromDesktopControls(worldX, off, width);
-    targetWorldRef.current = worldXRef.current;
-    const pct = worldXToScreenPct(worldXRef.current, off, width);
+    worldXRef.current = worldX;
+    targetWorldRef.current = worldX;
+    const pct = worldXToScreenPct(worldX, gameWorldOffRef.current, vw());
     screenXRef.current = pct;
     onScreenRef.current = true;
     if (divRef.current) {
@@ -361,8 +352,7 @@ export default function NPC({
       }
 
       worldXRef.current = pctToWorld(startX);
-      const width = vw();
-      const entryTargetPct = rndScreenPctAvoidDesktopControls(25, 75, width);
+      const entryTargetPct = rndBetween(25, 75);
       targetWorldRef.current = pctToWorld(entryTargetPct);
       facingRef.current = entryTargetPct > startX ? 'right' : 'left';
       walkingRef.current = true;
@@ -542,29 +532,14 @@ export default function NPC({
         const spd    = (personality.speed / 100) * width;
 
         if (Math.abs(diff) < spd) {
-          worldXRef.current = nudgeWorldXAwayFromDesktopControls(target, off, width);
-          targetWorldRef.current = worldXRef.current;
+          worldXRef.current = target;
+          targetWorldRef.current = target;
           stateRef.current = 'idle';
           applyWalking(false);
         } else {
           worldXRef.current += diff > 0 ? spd : -spd;
           applyFacing(diff > 0 ? 'right' : 'left');
           applyWalking(true);
-        }
-      }
-
-      if (
-        !heldForConvo
-        && !pausedRef.current
-        && stateRef.current === 'idle'
-        && easelStationWorldX == null
-        && !stageAnchor
-        && isInDesktopBottomControlsBand(pct, width)
-      ) {
-        const nudged = nudgeWorldXAwayFromDesktopControls(worldXRef.current, off, width);
-        if (nudged !== worldXRef.current) {
-          worldXRef.current = nudged;
-          targetWorldRef.current = nudged;
         }
       }
 

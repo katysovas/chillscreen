@@ -1920,12 +1920,12 @@ export default function SFCity({
         ) : (
           /* Player — world scrolls, character stays centred */
           <div
-            className="game-character"
+            className="game-character game-player-character"
             style={{
             position: 'absolute',
             left: '50%',
-            bottom: CHAR_BOTTOM,
-            transform: `translate(${inConversation ? chatConnectSpreadPlayerPx(greetNpcX) : 0}px, ${playerDepthY}px)`,
+            bottom: mobileDevice ? CHAR_BOTTOM : `calc(${CHAR_BOTTOM})`,
+            transform: `translateX(${inConversation ? chatConnectSpreadPlayerPx(greetNpcX) : 0}px)`,
             transition: 'transform 0.25s ease',
             zIndex: inConversation ? Z_CHAT_CHARACTER : Z_PLAYER_CHARACTER,
           }}>

@@ -1,5 +1,5 @@
-/** Local player — always above crowd depth rows (max {@link CROWD_Z_MAX}). */
-export const Z_PLAYER_CHARACTER = 25;
+/** Local player — always above crowd depth rows and the desktop bottom control panel (z-index 38). */
+export const Z_PLAYER_CHARACTER = 45;
 
 /** In-world chat overlays and conversation character lifts — below modals. */
 export const Z_CHAT_CHARACTER = 200;

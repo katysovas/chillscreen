@@ -250,6 +250,7 @@ html:has(.game-surface) body {
   overflow: visible;
 }
 
+
 .game-surface .game-chat-anchor {
   overflow: visible;
 }
