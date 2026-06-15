@@ -20,6 +20,7 @@ export const ROOM_ID = 'whichstage-global';
 export type PlayerLoadoutSync = {
   hat?: string | null;
   sunglasses?: string | null;
+  mask?: string | null;
   necklace?: string | null;
   top?: string | null;
   bottom?: string | null;

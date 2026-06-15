@@ -7,6 +7,7 @@ export function serializeLoadout(loadout: CharacterLoadout): PlayerLoadoutSync {
   const sync: PlayerLoadoutSync = {
     hat: loadout.hat ?? null,
     sunglasses: loadout.sunglasses ?? null,
+    mask: loadout.mask ?? null,
     necklace: loadout.necklace ?? null,
     top: loadout.top ?? null,
     bottom: loadout.bottom ?? null,

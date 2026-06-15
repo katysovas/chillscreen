@@ -57,7 +57,7 @@ import {
   subscribePlayerSession,
 } from '@/lib/player/session';
 import { preloadPurchaseSound, unlockPurchaseSound } from '@/lib/playPurchaseSound';
-import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
+import { loadoutSyncKey, serializeLoadout } from '@/lib/multiplayer/loadoutSync';
 import { isBuzNpc } from '@/lib/vendorShop';
 import {
   getOrCreatePlayerId,
@@ -399,6 +399,7 @@ export default function SFCity({
   const [sessionRecap, setSessionRecap] = useState<FestieSessionRecap | null>(null);
   const lifeRefillFromRef = useRef<number | null>(null);
   const recapNeedsAckRef = useRef(false);
+  const broadcastProfileRef = useRef<(loadout: CharacterLoadout) => void>(() => {});
 
   const handleVendorPurchase = useCallback(async (itemId: string): Promise<boolean> => {
     const coinsBefore = getPlayerCoins();
@@ -407,14 +408,19 @@ export default function SFCity({
       if (result.reason === 'not_signed_in') setShowWelcome(true);
       return false;
     }
-    setPlayerLoadout({ ...result.loadout, ...TEST_PLAYER_LOADOUT });
+    const nextLoadout = { ...result.loadout, ...TEST_PLAYER_LOADOUT };
+    setPlayerLoadout(nextLoadout);
     setPlayerCoins(result.coins);
+    broadcastProfileRef.current(nextLoadout);
     return result.charged || result.coins < coinsBefore;
   }, [myColor]);
 
   const handleVendorUnequip = useCallback(async (itemId: string) => {
     const next = await unequipLoadoutItem(itemId, myColor);
-    if (next) setPlayerLoadout({ ...next, ...TEST_PLAYER_LOADOUT });
+    if (!next) return;
+    const nextLoadout = { ...next, ...TEST_PLAYER_LOADOUT };
+    setPlayerLoadout(nextLoadout);
+    broadcastProfileRef.current(nextLoadout);
   }, [myColor]);
 
   const openSettings = useCallback((tab: FestieSettingsTab = 'customize') => {
@@ -481,8 +487,17 @@ export default function SFCity({
     return subscribePlayerSession(() => {
       const festie = getPlayerSession().festie;
       if (festie) setOwnerFestie(festie);
+      if (!getPlayerSession().authenticated) return;
+      const nextLoadout = { ...getPlayerLoadout(myColor), ...TEST_PLAYER_LOADOUT };
+      setPlayerLoadout(prev => {
+        const prevKey = loadoutSyncKey(serializeLoadout(prev));
+        const nextKey = loadoutSyncKey(serializeLoadout(nextLoadout));
+        if (prevKey === nextKey) return prev;
+        broadcastProfileRef.current(nextLoadout);
+        return nextLoadout;
+      });
     });
-  }, []);
+  }, [myColor]);
 
   const handleFestieCreated = useCallback(async () => {
     const festie = await fetchFestie();
@@ -888,6 +903,18 @@ export default function SFCity({
   };
   const { sendProfile, sendPeerTyping } = mp;
 
+  useEffect(() => {
+    broadcastProfileRef.current = (loadout: CharacterLoadout) => {
+      const profile = {
+        name: playerName,
+        balloonColor: myColor,
+        loadout: serializeLoadout(loadout),
+      };
+      profileRef.current = profile;
+      sendProfile(profile);
+    };
+  }, [playerName, myColor, sendProfile]);
+
   const beginPeerChat = useCallback((peerId: string, announce: boolean) => {
     // One conversation at a time — ignore if already talking to an NPC or peer.
     if (greetingRef.current !== null || peerChatRef.current !== null) return;
@@ -929,13 +956,19 @@ export default function SFCity({
   endPeerChatRef.current = endPeerChat;
 
   // Broadcast identity (name, color, loadout) whenever it changes.
+  const networkedLoadout = useMemo(
+    () => serializeLoadout(playerLoadout),
+    [playerLoadout],
+  );
+  const networkedLoadoutKey = loadoutSyncKey(networkedLoadout);
+
   useEffect(() => {
     sendProfile({
       name: playerName,
       balloonColor: myColor,
-      loadout: serializeLoadout(playerLoadout),
+      loadout: networkedLoadout,
     });
-  }, [playerName, myColor, playerLoadout, sendProfile]);
+  }, [playerName, myColor, networkedLoadoutKey, networkedLoadout, sendProfile]);
 
   // Relay "typing…" to the peer while the local player composes a message.
   useEffect(() => {
