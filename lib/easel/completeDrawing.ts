@@ -1,18 +1,36 @@
 import { ierror, iwarn } from '@/lib/internalDebug';
-import { NPC_LINE_TIMEOUT_MS } from '@/lib/npcChatter/constants';
 import type { ChatMessage } from '@/lib/npcChatter/openrouter';
 
 const DRAWING_MAX_TOKENS = 4096;
 const DRAWING_TEMPERATURE = 0.95;
-const DRAWING_TIMEOUT_MS = Math.max(NPC_LINE_TIMEOUT_MS, 20_000);
+/** Grid format — lower temp reduces garbage characters in GRID rows. */
+const GRID_DRAWING_TEMPERATURE = 0.8;
+/** Slower mid-tier models (Pro, etc.) need more headroom than chat lines. */
+const DRAWING_TIMEOUT_MS = 45_000;
 
-async function llmComplete(model: string, messages: ChatMessage[]): Promise<string | null> {
+async function llmComplete(
+  model: string,
+  messages: ChatMessage[],
+  opts?: { json?: boolean; temperature?: number },
+): Promise<string | null> {
   const openRouterKey = process.env.OPENROUTER_API_KEY?.trim();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), DRAWING_TIMEOUT_MS);
+  const useJson = opts?.json !== false;
+  const temperature = opts?.temperature ?? DRAWING_TEMPERATURE;
 
   try {
     if (openRouterKey) {
+      const body: Record<string, unknown> = {
+        model,
+        messages,
+        max_tokens: DRAWING_MAX_TOKENS,
+        temperature,
+      };
+      if (useJson) {
+        body.response_format = { type: 'json_object' };
+      }
+
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -21,13 +39,7 @@ async function llmComplete(model: string, messages: ChatMessage[]): Promise<stri
           'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL ?? 'https://whichstage.com',
           'X-Title': 'WhichStage',
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          max_tokens: DRAWING_MAX_TOKENS,
-          temperature: DRAWING_TEMPERATURE,
-          response_format: { type: 'json_object' },
-        }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       });
       if (res.ok) {
@@ -51,19 +63,23 @@ async function llmComplete(model: string, messages: ChatMessage[]): Promise<stri
     }
 
     const directModel = model.startsWith('openai/') ? model.slice('openai/'.length) : 'gpt-4.1-mini';
+    const openAiBody: Record<string, unknown> = {
+      model: directModel,
+      messages,
+      max_tokens: DRAWING_MAX_TOKENS,
+      temperature,
+    };
+    if (useJson) {
+      openAiBody.response_format = { type: 'json_object' };
+    }
+
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${openAiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: directModel,
-        messages,
-        max_tokens: DRAWING_MAX_TOKENS,
-        temperature: DRAWING_TEMPERATURE,
-        response_format: { type: 'json_object' },
-      }),
+      body: JSON.stringify(openAiBody),
       signal: controller.signal,
     });
     if (!res.ok) {
@@ -86,3 +102,11 @@ async function llmComplete(model: string, messages: ChatMessage[]): Promise<stri
 }
 
 export { llmComplete as completeDrawingJson };
+
+/** Plain-text completion (pixel-llm GRID format — no JSON response_format). */
+export async function completeDrawingText(
+  model: string,
+  messages: ChatMessage[],
+): Promise<string | null> {
+  return llmComplete(model, messages, { json: false, temperature: GRID_DRAWING_TEMPERATURE });
+}

@@ -1,4 +1,5 @@
-import { getChatterCharacter, resolveNpcModelId } from '@/lib/chatterCast';
+import { getChatterCharacter } from '@/lib/chatterCast';
+import { resolveDrawingModelId } from './drawingModel';
 import type { GeneratedNpc } from '@/lib/npcGenerator';
 import { stageChannelForRoute } from '@/lib/isolatedCity';
 import { pickConversationSeed } from '@/lib/npcChatter/seeds';
@@ -62,7 +63,7 @@ export async function buildEaselDrawingContext(
 ): Promise<EaselDrawingContext> {
   const ch = getChatterCharacter(npcId);
   const npcName = ch?.name ?? npcId.split('-').pop() ?? npcId;
-  const modelId = ch ? resolveNpcModelId(ch) : 'openai/gpt-4.1-nano';
+  const modelId = resolveDrawingModelId(npcId);
 
   const route = parseVenueSlug(stageSlug);
   const channel = route ? stageChannelForRoute(route) : 'cinema';

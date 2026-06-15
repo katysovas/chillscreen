@@ -11,7 +11,7 @@ export type EaselCanvasBlockZone = {
   maxX: number;
 };
 
-let activeZone: EaselCanvasBlockZone | null = null;
+let activeZones: EaselCanvasBlockZone[] = [];
 
 /** Ground-x band where idle NPCs must not stand in front of an active canvas. */
 export function easelCanvasBlockBand(canvasWorldX: number): { minX: number; maxX: number } {
@@ -23,37 +23,42 @@ export function easelCanvasBlockBand(canvasWorldX: number): { minX: number; maxX
   };
 }
 
+export function setActiveEaselCanvasBlockZones(
+  zones: { canvasWorldX: number; painterNpcId: string }[],
+): void {
+  activeZones = zones.map(zone => {
+    const band = easelCanvasBlockBand(zone.canvasWorldX);
+    return { ...zone, ...band };
+  });
+}
+
+/** @deprecated Use setActiveEaselCanvasBlockZones. */
 export function setActiveEaselCanvasBlockZone(
   zone: { canvasWorldX: number; painterNpcId: string } | null,
 ): void {
-  if (!zone) {
-    activeZone = null;
-    return;
-  }
-  const band = easelCanvasBlockBand(zone.canvasWorldX);
-  activeZone = { ...zone, ...band };
+  setActiveEaselCanvasBlockZones(zone ? [zone] : []);
 }
 
-export function getActiveEaselCanvasBlockZone(): EaselCanvasBlockZone | null {
-  return activeZone;
+export function getActiveEaselCanvasBlockZones(): EaselCanvasBlockZone[] {
+  return activeZones;
 }
 
 export function worldXBlocksEaselCanvas(worldX: number): boolean {
-  if (!activeZone) return false;
-  return worldX >= activeZone.minX && worldX <= activeZone.maxX;
+  return activeZones.some(z => worldX >= z.minX && worldX <= z.maxX);
 }
 
-/** Step outside the block band — prefers the nearer side. */
+/** Step outside the nearest overlapping block band. */
 export function pickWorldXOutsideEaselBlock(curWorldX: number): number {
-  if (!activeZone) return curWorldX;
-  const { minX, maxX } = activeZone;
-  const distLeft = curWorldX - minX;
-  const distRight = maxX - curWorldX;
+  const overlapping = activeZones.filter(z => curWorldX >= z.minX && curWorldX <= z.maxX);
+  if (overlapping.length === 0) return curWorldX;
+
+  const zone = overlapping[0]!;
+  const distLeft = curWorldX - zone.minX;
+  const distRight = zone.maxX - curWorldX;
   const margin = 48 + Math.random() * 36;
-  return distLeft <= distRight ? minX - margin : maxX + margin;
+  return distLeft <= distRight ? zone.minX - margin : zone.maxX + margin;
 }
 
 export function shouldNpcAvoidEaselCanvas(npcId: string): boolean {
-  if (!activeZone) return false;
-  return activeZone.painterNpcId !== npcId;
+  return activeZones.some(z => z.painterNpcId !== npcId);
 }

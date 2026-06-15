@@ -1,7 +1,7 @@
 import { requireDb } from '@/lib/db';
 import { buildEaselDrawingContext } from './drawingContext';
 import { generateDrawingProgram } from './generateDrawing';
-import { easelHoldExpired } from './lifecycle';
+import { easelHoldExpired, easelMaxVisibleExpired } from './lifecycle';
 import { logEaselDrawing } from './logDrawing';
 import { pickNextEaselNpc } from './npcRotation';
 import { nextEaselSlot } from './stageAnchor';
@@ -71,7 +71,7 @@ export async function getEaselsForStage(stage: string): Promise<EaselRow[]> {
   return pickVisibleEaselSlots(await fetchVisibleEaselRows(stage));
 }
 
-/** Hide stale visible rows so only one canvas shows per room (self-heals prod DB). */
+/** Hide extra ambient easels so only one unprompted canvas shows per room. */
 async function pruneExtraVisibleEasels(stage: string): Promise<void> {
   const rows = await fetchVisibleEaselRows(stage);
   const keep = pickVisibleEaselSlot(rows);
@@ -161,8 +161,12 @@ export async function syncEaselSessionForPlayers(stage: string): Promise<EaselRo
   const stageKey = normalizeEaselStage(stage);
   await getVisibleEasels(stageKey);
   await pruneExtraVisibleEasels(stageKey);
-  const rows = await getEaselsForStage(stageKey);
+  const rows = await fetchVisibleEaselRows(stageKey);
   for (const row of rows) {
+    if (easelMaxVisibleExpired(row.started_at)) {
+      await hideEasel(stageKey, row.slot);
+      continue;
+    }
     if (row.status === 'done' && easelHoldExpired(row.completed_at)) {
       await advanceEaselAfterHold(stageKey, row.slot);
     }

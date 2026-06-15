@@ -3,7 +3,7 @@ import { encode, type ServerMessage } from '../lib/multiplayer/protocol';
 import { chatterAuthHeader } from '../lib/npcChatter/auth';
 import { chatterApiBase } from '../lib/npcChatter/apiBase';
 import { stageSlugForRoom } from '../lib/npcChatter/roomContext';
-import { easelHoldExpired } from '../lib/easel/lifecycle';
+import { easelHoldExpired, easelMaxVisibleExpired } from '../lib/easel/lifecycle';
 import { liveSegmentsDone } from '../lib/easel/segments';
 import { pickVisibleEaselSlots } from '../lib/easel/visibleSlots';
 import type { EaselSessionSync, EaselSlotSync } from '../lib/easel/types';
@@ -23,6 +23,8 @@ type SlotApiPayload = EaselSlotSync & { ok?: boolean; waiting?: boolean };
 export class EaselScheduler {
   private sessionStart: number | null = null;
   private slots: EaselSlotSync[] = [];
+  /** Per-slot watched-clock anchor — each painter starts independently. */
+  private slotClockStarts = new Map<number, number>();
   private checkTimer: ReturnType<typeof setInterval> | null = null;
   private readonly roomId: string;
   private readonly env: Record<string, string | undefined>;
@@ -97,14 +99,17 @@ export class EaselScheduler {
     this.deps.broadcast(msg);
   }
 
-  /** Client reports the painting NPC is at the easel — begin the watched clock. */
+  /** Client reports the painting NPC is at the easel — begin that slot's watched clock. */
   onPainterReady(npcId: string) {
-    if (this.sessionStart == null || this.sessionStart > 0) return;
-    const painting = this.slots.some(s => s.status === 'painting' && s.npc === npcId);
-    if (!painting) return;
-    this.sessionStart = Date.now();
+    if (this.sessionStart == null) return;
+    const slot = this.slots.find(s => s.status === 'painting' && s.npc === npcId);
+    if (!slot || this.slotClockStarts.has(slot.slot)) return;
+    this.slotClockStarts.set(slot.slot, Date.now());
+    if (this.sessionStart <= 0) {
+      this.sessionStart = Date.now();
+    }
     runWithInternalDebug(this.deps.internalDebug(), () => {
-      ilog(`[easel:party] painter ready — ${npcId}, clock started`);
+      ilog(`[easel:party] painter ready — ${npcId} @ slot ${slot.slot}, clock started`);
     });
     this.broadcastSession();
   }
@@ -121,8 +126,8 @@ export class EaselScheduler {
     }
   }
 
-  private normalizeSlots() {
-    this.slots = pickVisibleEaselSlots(this.slots);
+  private clockStartForSlot(slot: EaselSlotSync): number {
+    return this.slotClockStarts.get(slot.slot) ?? this.sessionStart ?? 0;
   }
 
   private applySlotFromApi(slot: number, payload: SlotApiPayload | null) {
@@ -143,21 +148,40 @@ export class EaselScheduler {
     };
     if (idx >= 0) this.slots[idx] = next;
     else this.slots.push(next);
-    this.normalizeSlots();
+    if (next.status !== 'painting') {
+      this.slotClockStarts.delete(next.slot);
+    }
     return true;
   }
 
   private async checkSession() {
     return runWithInternalDebug(this.deps.internalDebug(), async () => {
-    if (this.sessionStart == null || this.sessionStart <= 0 || this.deps.playerCount() === 0) return;
-    this.normalizeSlots();
+    if (this.sessionStart == null || this.deps.playerCount() === 0) return;
     const now = Date.now();
     const stage = this.stageSlug();
     let changed = false;
 
     for (const slot of [...this.slots]) {
+      if (easelMaxVisibleExpired(slot.started_at, now)) {
+        const result = await this.postEasel({
+          action: 'hide',
+          stage,
+          slot: slot.slot,
+        });
+        if (result?.ok !== false) {
+          this.slots = this.slots.filter(s => s.slot !== slot.slot);
+          this.slotClockStarts.delete(slot.slot);
+          ilog(`[easel:party] max visible expired — hiding slot ${slot.slot}`);
+          changed = true;
+        }
+        continue;
+      }
+
       if (slot.status === 'painting') {
-        const live = liveSegmentsDone(slot.segments_done, slot.rate, this.sessionStart, now);
+        const clockStart = this.clockStartForSlot(slot);
+        if (clockStart <= 0) continue;
+
+        const live = liveSegmentsDone(slot.segments_done, slot.rate, clockStart, now);
         if (live < slot.total_segments) continue;
 
         const result = await this.postEasel({
@@ -183,9 +207,13 @@ export class EaselScheduler {
         if (result?.waiting) continue;
 
         if (result && result.status === 'painting') {
-          this.slots = [result];
-          this.sessionStart = 0;
-          ilog(`[easel:party] next painter ${result.npc} @ slot ${slot.slot} — waiting at easel`);
+          this.slots = this.slots.filter(s => s.slot !== slot.slot);
+          this.slots.push(result);
+          this.slotClockStarts.delete(slot.slot);
+          if (this.slots.every(s => this.clockStartForSlot(s) <= 0)) {
+            this.sessionStart = 0;
+          }
+          ilog(`[easel:party] next painter ${result.npc} @ slot ${result.slot} — waiting at easel`);
           changed = true;
           continue;
         }
@@ -193,10 +221,13 @@ export class EaselScheduler {
         const refreshed = pickVisibleEaselSlots(await this.fetchEasels());
         if (refreshed.length === 0) {
           this.slots = [];
+          this.slotClockStarts.clear();
           changed = true;
         } else {
           this.slots = refreshed;
-          this.sessionStart = 0;
+          if (this.slots.every(s => this.clockStartForSlot(s) <= 0)) {
+            this.sessionStart = 0;
+          }
           changed = true;
         }
       }
@@ -226,7 +257,9 @@ export class EaselScheduler {
 
     for (const slot of this.slots) {
       if (slot.status !== 'painting') continue;
-      const live = liveSegmentsDone(slot.segments_done, slot.rate, this.sessionStart, now);
+      const clockStart = this.clockStartForSlot(slot);
+      if (clockStart <= 0) continue;
+      const live = liveSegmentsDone(slot.segments_done, slot.rate, clockStart, now);
       await this.postEasel({
         action: 'checkpoint',
         stage,

@@ -18,29 +18,31 @@ export function useEaselHoldAdvance(
   useEffect(() => {
     if (!enabled || !session?.slots.length) return;
 
-    const doneSlot = session.slots.find(s => s.status === 'done');
-    if (!doneSlot) return;
+    const doneSlots = session.slots.filter(s => s.status === 'done');
+    if (doneSlots.length === 0) return;
 
     let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
-    const runAdvance = () => {
+    const runAdvance = (slot: number) => {
       if (cancelled) return;
-      void advanceEaselIfReady(stageSlug, doneSlot.slot).then(result => {
+      void advanceEaselIfReady(stageSlug, slot).then(result => {
         if (result && !cancelled) notifyEaselUpdated();
       });
     };
 
-    const remaining = easelHoldRemainingMs(doneSlot.completed_at);
-    if (remaining <= 0) {
-      runAdvance();
-    } else {
-      timer = setTimeout(runAdvance, remaining + 50);
+    for (const doneSlot of doneSlots) {
+      const remaining = easelHoldRemainingMs(doneSlot.completed_at);
+      if (remaining <= 0) {
+        runAdvance(doneSlot.slot);
+      } else {
+        timers.push(setTimeout(() => runAdvance(doneSlot.slot), remaining + 50));
+      }
     }
 
     return () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
+      for (const timer of timers) clearTimeout(timer);
     };
   }, [stageSlug, session, enabled]);
 }

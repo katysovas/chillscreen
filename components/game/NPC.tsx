@@ -14,7 +14,7 @@ import {
   type StageAnchorKind,
 } from '@/lib/stageAnchor';
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
-import { easelNpcStandWorldX } from '@/lib/easel/layout';
+import { easelNpcStandWorldX, easelNpcStandWorldXForCanvas } from '@/lib/easel/layout';
 import { setEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import { easelPaintingChatter } from '@/lib/easel/paintingLabel';
 import {
@@ -78,6 +78,10 @@ type NPCProps = NPCConfig & {
   onEaselStationed?: () => void;
   /** Drawing subject — shown in chat bubble while status is painting. */
   easelPaintingLabel?: string | null;
+  /** Chat-triggered drawing subject — canvas appears next to NPC. */
+  chatPromptDrawingLabel?: string | null;
+  /** Canvas center world-x — NPC stands to its left while drawing. */
+  chatPromptCanvasWorldX?: number | null;
   paused: boolean;
   greeting: boolean;
   /** Soft connect glow — local or remote 1:1 conversation. */
@@ -132,6 +136,8 @@ export default function NPC({
   easelPaintingSlot, easelStageSlug,
   onEaselStationed,
   easelPaintingLabel,
+  chatPromptDrawingLabel,
+  chatPromptCanvasWorldX,
   paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false,   greetingChat,
   spaceFloat = false,
 }: NPCProps) {
@@ -161,14 +167,22 @@ export default function NPC({
   const easelStationedRef   = useRef(false);
   const easelPaintingSlotRef = useRef<number | undefined>(easelPaintingSlot);
   const easelStageSlugRef    = useRef<string | undefined>(easelStageSlug);
+  const chatPromptCanvasWorldXRef = useRef<number | null | undefined>(chatPromptCanvasWorldX);
   easelPaintingSlotRef.current = easelPaintingSlot;
   easelStageSlugRef.current = easelStageSlug;
+  chatPromptCanvasWorldXRef.current = chatPromptCanvasWorldX;
 
   const resolveEaselStandWorldX = (width: number): number | undefined => {
     const slot = easelPaintingSlotRef.current;
     const slug = easelStageSlugRef.current;
     if (slot == null || !slug) return undefined;
     return easelNpcStandWorldX(slot, slug, width);
+  };
+
+  const resolvePromptStandWorldX = (): number | undefined => {
+    const canvasX = chatPromptCanvasWorldXRef.current;
+    if (canvasX == null) return undefined;
+    return easelNpcStandWorldXForCanvas(canvasX);
   };
   const jumpingRef          = useRef(false);
   const avoidPlayerUntil    = useRef(0);
@@ -386,13 +400,19 @@ export default function NPC({
   }, [active, easelPaintingSlot, easelStageSlug]);
 
   useEffect(() => {
-    if (easelPaintingSlot != null || !easelStationedRef.current) return;
+    if (!active || chatPromptCanvasWorldX == null) return;
+    stationAtEasel(easelNpcStandWorldXForCanvas(chatPromptCanvasWorldX));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, chatPromptCanvasWorldX]);
+
+  useEffect(() => {
+    if (easelPaintingSlot != null || chatPromptCanvasWorldX != null || !easelStationedRef.current) return;
     easelStationedRef.current = false;
     setEaselStationed(false);
     setEaselPainterReady(characterId, false);
     stateRef.current = 'idle';
     applyWalking(false);
-  }, [easelPaintingSlot, characterId]);
+  }, [easelPaintingSlot, chatPromptCanvasWorldX, characterId]);
 
   useEffect(() => () => setEaselPainterReady(characterId, false), [characterId]);
 
@@ -400,7 +420,7 @@ export default function NPC({
 
   // ── Decision loop ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!active || (easelPaintingSlot != null && easelStationedRef.current)) return;
+    if (!active || ((easelPaintingSlot != null || chatPromptCanvasWorldX != null) && easelStationedRef.current)) return;
     let timer: ReturnType<typeof setTimeout>;
 
     const decide = () => {
@@ -474,7 +494,7 @@ export default function NPC({
       if (jumpTimerRef.current) { clearTimeout(jumpTimerRef.current); jumpTimerRef.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, personality, spaceFloat, easelPaintingSlot]);
+  }, [active, personality, spaceFloat, easelPaintingSlot, chatPromptCanvasWorldX]);
 
   // ── Movement — registered with SFCity's single game-frame RAF ───────────────
   useEffect(() => {
@@ -498,7 +518,7 @@ export default function NPC({
 
       const standX = easelPaintingSlotRef.current != null
         ? resolveEaselStandWorldX(width)
-        : undefined;
+        : resolvePromptStandWorldX();
       if (standX != null && !heldForConvo) {
         worldXRef.current = standX;
         targetWorldRef.current = standX;
@@ -584,6 +604,7 @@ export default function NPC({
         && !heldForConvo
         && !pausedRef.current
         && easelPaintingSlotRef.current == null
+        && chatPromptCanvasWorldXRef.current == null
         && shouldNpcAvoidEaselCanvas(characterId)
         && stateRef.current === 'idle'
         && worldXBlocksEaselCanvas(worldXRef.current)
@@ -613,17 +634,23 @@ export default function NPC({
   useEffect(() => {
     const justDisconnected = wasGreetingRef.current && !greeting;
     wasGreetingRef.current = greeting;
-    if (justDisconnected && !easelStationedRef.current) fleeFromPlayer();
+    if (justDisconnected && !easelStationedRef.current && chatPromptCanvasWorldXRef.current == null) {
+      fleeFromPlayer();
+    }
   }, [greeting]);
 
   const paintingMessages = useMemo((): ChatLine[] => {
-    if (!easelPaintingLabel) return [];
-    return [createChatLine(easelPaintingChatter(easelPaintingLabel))];
-  }, [easelPaintingLabel]);
+    const label = chatPromptDrawingLabel ?? easelPaintingLabel;
+    if (!label) return [];
+    return [createChatLine(easelPaintingChatter(label))];
+  }, [chatPromptDrawingLabel, easelPaintingLabel]);
 
-  const showPaintingBubble = easelStationed && Boolean(easelPaintingLabel);
+  const promptDrawing = Boolean(chatPromptDrawingLabel);
+  const showPaintingBubble = promptDrawing
+    ? Boolean(chatPromptDrawingLabel)
+    : easelStationed && Boolean(easelPaintingLabel);
   /** Easel canvas anchors at CHAR_BOTTOM — painters must match, not use crowd depth. */
-  const effectiveDepthY = showPaintingBubble || easelStationed || easelPaintingSlot != null ? 0 : depthY;
+  const effectiveDepthY = showPaintingBubble || easelStationed || easelPaintingSlot != null || chatPromptCanvasWorldX != null ? 0 : depthY;
   const bubbleSide = showPaintingBubble
     ? 'left'
     : screenXToBubbleSide(screenX);
@@ -659,7 +686,7 @@ export default function NPC({
           scale={scale}
           bubbleSide={bubbleSide}
           easelChatAnchor={showPaintingBubble}
-          chatConnected={chatConnected || greeting || showPaintingBubble}
+          chatConnected={promptDrawing ? false : chatConnected || greeting || showPaintingBubble}
           chatOverlay={
             showPaintingBubble ? (
               <NpcChatOverlay

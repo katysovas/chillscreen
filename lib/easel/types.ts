@@ -91,4 +91,25 @@ export const EASEL_SLOTS_PER_STAGE = 4;
 export const EASEL_STEP_MS = 600;
 export const EASEL_SEGMENTS_PER_STEP = 2;
 export const EASEL_HOLD_MS = 120_000;
+/** Hard cap — every canvas disappears within 5 minutes of appearing. */
+export const EASEL_MAX_VISIBLE_MS = 300_000;
 export const EASEL_DEFAULT_RATE = 0.5;
+
+/** Client-side chat-triggered drawing next to an NPC. */
+export type ChatNpcDrawingSession = {
+  id: string;
+  npcId: string;
+  topic: string;
+  program: DrawingProgram;
+  totalSegments: number;
+  /** Ground world-x anchor for the canvas center. */
+  canvasWorldX: number;
+  sessionStart: number;
+  expiresAt: number;
+  status: EaselStatus;
+  /** Drawing LLM — shown in compare test mode. */
+  modelId?: string;
+  modelLabel?: string;
+  /** Compare test — canvas clock runs without easel painter-ready gate. */
+  isCompareTest?: boolean;
+};

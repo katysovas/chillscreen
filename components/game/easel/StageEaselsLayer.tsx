@@ -81,7 +81,7 @@ function EaselSlotLayer({
   );
 }
 
-/** One canvas per room — hidden during hold and until the painter is stationed. */
+/** Ambient stage easels — one unprompted painter; user prompts are unlimited via chat. */
 export const StageEaselsLayer = memo(function StageEaselsLayer({ active, stageSlug, session }: Props) {
   const visibleSlots = session ? pickVisibleEaselSlots(session.slots) : [];
   const sessionStart = session?.sessionStart ?? 0;

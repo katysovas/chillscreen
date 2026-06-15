@@ -3,6 +3,7 @@ import { completeDrawingJson } from './completeDrawing';
 import type { EaselDrawingContext } from './drawingContext';
 import { isDuplicateDrawingId, isDuplicateTopic } from './drawingHistory';
 import { buildRichFallbackProgram } from './fallbackSketches';
+import { generateAmbientPixelGridDrawingProgram, isPixelLlmGridModel } from './generatePixelGridDrawing';
 import { logEaselContext, logEaselDrawing } from './logDrawing';
 import { totalSegments, validateProgram } from './segments';
 import type { DrawingProgram, DrawingStroke } from './types';
@@ -198,6 +199,10 @@ async function generateOnce(
 }
 
 export async function generateDrawingProgram(ctx: EaselDrawingContext): Promise<GeneratedDrawing> {
+  if (isPixelLlmGridModel(ctx.modelId)) {
+    return generateAmbientPixelGridDrawingProgram(ctx);
+  }
+
   logEaselContext(ctx);
 
   for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {

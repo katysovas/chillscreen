@@ -13,8 +13,11 @@ function parseTimeMs(value: string | null | undefined): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
-/** One visible canvas per room — only while an NPC is actively painting. */
-export function pickVisibleEaselSlots<T extends EaselSlotLike>(slots: T[]): T[] {
+/**
+ * Ambient (unprompted) stage easels — one active painter per room.
+ * User-prompted chat drawings are tracked separately and are not capped here.
+ */
+export function pickAmbientEaselSlots<T extends EaselSlotLike>(slots: T[]): T[] {
   if (slots.length <= 1) {
     return slots.filter(s => s.status === 'painting');
   }
@@ -29,6 +32,11 @@ export function pickVisibleEaselSlots<T extends EaselSlotLike>(slots: T[]): T[] 
   }
 
   return [];
+}
+
+/** @deprecated Alias for pickAmbientEaselSlots — stage easel session visibility. */
+export function pickVisibleEaselSlots<T extends EaselSlotLike>(slots: T[]): T[] {
+  return pickAmbientEaselSlots(slots);
 }
 
 export function pickVisibleEaselSlot<T extends EaselSlotLike>(slots: T[]): T | null {

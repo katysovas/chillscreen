@@ -72,8 +72,9 @@ import {
 import { installGameInputAnalytics, trackMobileControl } from '@/lib/gameInputAnalytics';
 import { isChatterMuted } from '@/lib/chatterMuted';
 import { isChatterDebugMode } from '@/lib/chatterDebug';
-import { ierror } from '@/lib/internalDebug';
-import { pickFallbackReply, type ChatTurn } from '@/lib/npcChat';
+import { ierror, iwarn } from '@/lib/internalDebug';
+import { pickFallbackReply, NPC_TYPING_MS, type ChatTurn } from '@/lib/npcChat';
+import { pickPromptDrawAck, PROMPT_DRAW_ACK_HOLD_MS } from '@/lib/easel/promptDrawAck';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
 import { getConcertNowPlaying, subscribeConcertNowPlaying } from '@/lib/concertNowPlaying';
@@ -130,7 +131,7 @@ import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
 import { isEaselPainterReady, subscribeEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import { easelPaintingLabelForNpc } from '@/lib/easel/paintingLabel';
-import { setActiveEaselCanvasBlockZone } from '@/lib/easel/canvasBlocking';
+import { setActiveEaselCanvasBlockZones } from '@/lib/easel/canvasBlocking';
 import { easelSlotWorldX } from '@/lib/easel/layout';
 import { mergeEaselOwnersIntoCast, preloadEaselOwners } from '@/lib/easel/cast';
 import { easelHandLoadout } from '@/lib/easel/brushLoadout';
@@ -140,7 +141,18 @@ import { notifyEaselUpdated } from '@/lib/easel/notifyUpdated';
 import { activePainterNpcIds } from '@/lib/easel/session';
 import { useEaselSession } from '@/lib/easel/useEaselSession';
 import { useEaselHoldAdvance } from '@/lib/easel/useEaselHoldAdvance';
-import { TEST_EASEL_ON_LOAD } from '@/lib/easel/test';
+import { useEaselMaxVisible } from '@/lib/easel/useEaselMaxVisible';
+import { TEST_EASEL_ON_LOAD, TEST_DRAW_MODEL_COMPARE } from '@/lib/easel/test';
+import { drawModelCompareCast, runDrawModelCompare, buildCompareDrawPins, type CompareDrawPin } from '@/lib/easel/runDrawModelCompare';
+import { drawModelCompareConfigKey, TEST_DRAW_MODEL_COMPARE_CONFIG } from '@/lib/easel/drawingModel';
+import { parseDrawPrompt } from '@/lib/easel/parseDrawPrompt';
+import {
+  activeChatDrawingForNpc,
+  fetchPromptDraw,
+  pruneExpiredChatDrawings,
+} from '@/lib/easel/chatNpcDrawings';
+import type { ChatNpcDrawingSession } from '@/lib/easel/types';
+import { NpcPromptCanvasLayer } from './easel/NpcPromptCanvasLayer';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { Z_CHAT_CHARACTER, Z_PLAYER_CHARACTER } from '@/lib/zLayers';
 import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
@@ -361,6 +373,8 @@ export default function SFCity({
   const [convoHoldTick, setConvoHoldTick] = useState(0);
   const [chatHistory,   setChatHistory]   = useState<ChatTurn[]>([]);
   const [chatSendTick,  setChatSendTick]  = useState(0);
+  const [chatNpcDrawings, setChatNpcDrawings] = useState<ChatNpcDrawingSession[]>([]);
+  const [compareDrawPins, setCompareDrawPins] = useState<CompareDrawPin[]>([]);
   const [cinemaNowPlaying, setCinemaNowPlaying]   = useState<string | null>(null);
   const [concertNowPlaying, setConcertNowPlaying] = useState<string | null>(null);
   const chatInputRef = useRef<HTMLInputElement | null>(null);
@@ -371,7 +385,9 @@ export default function SFCity({
   const cinemaNowRef  = useRef<string | null>(null);
   const concertNowRef = useRef<string | null>(null);
   const greetingSessionRef = useRef<number | null>(null);
+  const testDrawCompareKeyRef = useRef('');
   const festieConvoIdRef = useRef<string | null>(null);
+  const promptDrawTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showWelcomeRef = useRef(false);
 
   // ── Multiplayer (PartyKit) ──────────────────────────────────────────────────
@@ -749,10 +765,47 @@ export default function SFCity({
     activeEaselSession,
     easelSessionEnabled && easelUserActive && !partyDrivesEasel,
   );
+  useEaselMaxVisible(
+    easelStageSlug,
+    activeEaselSession,
+    easelSessionEnabled && easelUserActive && !partyDrivesEasel,
+  );
   const [easelCastReady, setEaselCastReady] = useState(false);
 
   useEffect(() => {
-    if (!easelSessionEnabled || partyDrivesEasel) return;
+    const id = setInterval(() => {
+      setChatNpcDrawings(prev => pruneExpiredChatDrawings(prev));
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!TEST_DRAW_MODEL_COMPARE || homePreview) return;
+    if (!crowdVisualsReady) return;
+
+    const configKey = drawModelCompareConfigKey();
+    if (testDrawCompareKeyRef.current === configKey) return;
+    testDrawCompareKeyRef.current = configKey;
+
+    const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const worldOff = worldRef.current;
+    setCompareDrawPins(buildCompareDrawPins(worldOff, width));
+    setChatNpcDrawings([]);
+
+    void runDrawModelCompare(worldOff, width, session => {
+      setChatNpcDrawings(prev => [
+        ...prev.filter(s => s.npcId !== session.npcId),
+        session,
+      ]);
+    }).then(sessions => {
+      if (sessions.length === 0) {
+        iwarn('[draw-compare] no sessions returned — check OPENROUTER_API_KEY');
+      }
+    });
+  }, [homePreview, crowdVisualsReady]);
+
+  useEffect(() => {
+    if (!easelSessionEnabled || partyDrivesEasel || TEST_DRAW_MODEL_COMPARE) return;
     if (!mp.connected && !TEST_EASEL_ON_LOAD) return;
     void ensureEaselSession(easelStageSlug).then(slots => {
       if (slots.length > 0) notifyEaselUpdated();
@@ -773,30 +826,41 @@ export default function SFCity({
 
   const easelsActive =
     easelSessionEnabled
+    && !TEST_DRAW_MODEL_COMPARE
     && (TEST_EASEL_ON_LOAD || (!showWelcome && !showCityPicker))
     && Boolean(activeEaselSession?.slots.length);
 
   useEffect(() => {
-    const syncBlockZone = () => {
-      const painting = activeEaselSession?.slots.find(s => s.status === 'painting');
-      if (!painting || !isEaselPainterReady(painting.npc)) {
-        setActiveEaselCanvasBlockZone(null);
-        return;
+    const syncBlockZones = () => {
+      const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const zones: { canvasWorldX: number; painterNpcId: string }[] = [];
+
+      for (const slot of activeEaselSession?.slots ?? []) {
+        if (slot.status !== 'painting' || !isEaselPainterReady(slot.npc)) continue;
+        zones.push({
+          canvasWorldX: easelSlotWorldX(slot.slot, easelStageSlug, width),
+          painterNpcId: slot.npc,
+        });
       }
-      setActiveEaselCanvasBlockZone({
-        canvasWorldX: easelSlotWorldX(
-          painting.slot,
-          easelStageSlug,
-          typeof window !== 'undefined' ? window.innerWidth : 1200,
-        ),
-        painterNpcId: painting.npc,
-      });
+
+      for (const drawing of chatNpcDrawings) {
+        if (drawing.status !== 'painting') continue;
+        zones.push({
+          canvasWorldX: drawing.canvasWorldX,
+          painterNpcId: drawing.npcId,
+        });
+      }
+
+      setActiveEaselCanvasBlockZones(zones);
     };
-    syncBlockZone();
-    return subscribeEaselPainterReady(syncBlockZone);
-  }, [activeEaselSession, easelStageSlug]);
+    syncBlockZones();
+    return subscribeEaselPainterReady(syncBlockZones);
+  }, [activeEaselSession, easelStageSlug, chatNpcDrawings]);
 
   const effectiveNpcCast = useMemo(() => {
+    const compareCast = drawModelCompareCast();
+    if (compareCast) return compareCast;
+
     const base = [
       ...npcCast,
       ...festiesToCharacterDefs(mp.festies, effectiveVenueRoute),
@@ -977,6 +1041,34 @@ export default function SFCity({
   }, []);
   endPeerChatRef.current = endPeerChat;
 
+  const disconnectFromNpcChatRef = useRef<() => void>(() => {});
+  const disconnectFromNpcChat = useCallback(() => {
+    if (promptDrawTimerRef.current) {
+      clearTimeout(promptDrawTimerRef.current);
+      promptDrawTimerRef.current = null;
+    }
+    if (peerChatRef.current !== null) {
+      endPeerChatRef.current?.(true);
+      return;
+    }
+    const npcIndex = greetingRef.current;
+    const npcId = npcIndex !== null ? effectiveNpcCastRef.current[npcIndex]?.id : null;
+    chatAbortRef.current?.abort();
+    greetingRef.current = null;
+    setGreetingNpc(null);
+    if (npcId) mpRef.current?.sendNpcChat(npcId, false);
+    disconnectUntil.current = Date.now() + 2000;
+    setChatMode(null);
+    setChatDraft('');
+    setPlayerMessages([]);
+    setNpcMessages([]);
+    setNpcTyping(false);
+    setChatHistory([]);
+    setChatSendTick(0);
+    sentMessageRef.current = '';
+  }, []);
+  disconnectFromNpcChatRef.current = disconnectFromNpcChat;
+
   // Broadcast identity (name, color, loadout) whenever it changes.
   const networkedLoadout = useMemo(
     () => serializeLoadout(playerLoadout),
@@ -1044,8 +1136,11 @@ export default function SFCity({
           { timeout: 4_000 },
         );
       }
+      if (TEST_DRAW_MODEL_COMPARE) return;
       return;
     }
+
+    if (TEST_DRAW_MODEL_COMPARE) return;
 
     if (welcomeFromUrl) {
       setShowWelcome(true);
@@ -1265,6 +1360,10 @@ export default function SFCity({
     }, PLAYER_AMBIENT_VISIBLE_MS);
   }, [clearAmbientHide]);
 
+  useEffect(() => () => {
+    if (promptDrawTimerRef.current) clearTimeout(promptDrawTimerRef.current);
+  }, []);
+
   useEffect(() => () => { clearAmbientHide(); }, [clearAmbientHide]);
 
   // ── Ground Score — sidewalk coin pickups ───────────────────────────────────
@@ -1298,13 +1397,50 @@ export default function SFCity({
       return;
     }
     const safe = filtered.text;
-    setPlayerMessages(prev => appendChatLine(prev, safe));
     setChatDraft('');
     if (peerChatRef.current !== null) {
+      setPlayerMessages(prev => appendChatLine(prev, safe));
       mpRef.current?.sendPeerMessage(peerChatRef.current, safe);
       mpRef.current?.sendPeerTyping(peerChatRef.current, false);
       return;
     }
+
+    const drawSubject = greetingNpc !== null ? parseDrawPrompt(safe) : null;
+    if (drawSubject && greetingNpc !== null) {
+      const idx = greetingNpc;
+      const npc = effectiveNpcCastRef.current[idx];
+      const wx = npcWorldXRefs.current[idx];
+      setPlayerMessages(prev => appendChatLine(prev, safe));
+
+      if (promptDrawTimerRef.current) clearTimeout(promptDrawTimerRef.current);
+      setNpcTyping(true);
+      promptDrawTimerRef.current = setTimeout(() => {
+        promptDrawTimerRef.current = null;
+        setNpcTyping(false);
+        if (!npc) return;
+        setNpcMessages(prev => appendChatLine(prev, pickPromptDrawAck(npc, drawSubject)));
+        promptDrawTimerRef.current = setTimeout(() => {
+          promptDrawTimerRef.current = null;
+          disconnectFromNpcChatRef.current();
+          if (Number.isFinite(wx)) {
+            void fetchPromptDraw({
+              npcId: npc.id,
+              prompt: drawSubject,
+              npcWorldX: wx,
+            }).then(hit => {
+              if (!hit) return;
+              setChatNpcDrawings(prev => [
+                ...prev.filter(s => s.npcId !== hit.npcId),
+                { ...hit, status: 'painting' },
+              ]);
+            });
+          }
+        }, PROMPT_DRAW_ACK_HOLD_MS);
+      }, NPC_TYPING_MS);
+      return;
+    }
+
+    setPlayerMessages(prev => appendChatLine(prev, safe));
     sentMessageRef.current = safe;
     setChatSendTick(t => t + 1);
   };
@@ -1825,13 +1961,14 @@ export default function SFCity({
   }, [mp.selfId, mp.chatPairs, mp.remoteNpcChats, inConversation, peerChatId]);
 
   const isNpcChatConnected = useCallback((npcIndex: number, npcId: string) => {
+    if (activeChatDrawingForNpc(chatNpcDrawings, npcId)) return false;
     if (greetingNpc === npcIndex) return true;
     if (mp.remoteNpcChats.some(c => c.npcId === npcId)) return true;
     if (mp.npcConvoPairs.some(p => p.participants.includes(npcId))) return true;
     if (roomChatter.isNpcInConvo(npcId)) return true;
     if (hasNpcConvoHold(npcId)) return true;
     return false;
-  }, [greetingNpc, mp.remoteNpcChats, mp.npcConvoPairs, roomChatter, convoHoldTick]);
+  }, [chatNpcDrawings, greetingNpc, mp.remoteNpcChats, mp.npcConvoPairs, roomChatter, convoHoldTick]);
   const showMobileChatBar = mobileDevice
     && !showWelcome
     && !showCityPicker
@@ -1942,6 +2079,10 @@ export default function SFCity({
           />
         )}
 
+        {!homePreview && (
+          <NpcPromptCanvasLayer sessions={chatNpcDrawings} />
+        )}
+
         {/* Autonomous NPCs */}
         {!homePreview && crowdVisualsReady && effectiveNpcCast.map((cfg, i) => {
           if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
@@ -1949,6 +2090,12 @@ export default function SFCity({
           const chatConnected = isNpcChatConnected(i, cfg.id);
           const npcLabel = npcChatLabel(cfg.id, cfg.name);
           const isPainting = activePainterNpcIds(activeEaselSession).has(cfg.id);
+          const chatPromptDrawing = activeChatDrawingForNpc(chatNpcDrawings, cfg.id);
+          const comparePin = compareDrawPins.find(p => p.npcId === cfg.id);
+          const chatPromptDrawingLabel = chatPromptDrawing?.topic ?? comparePin?.topic ?? null;
+          const chatPromptCanvasWorldX = chatPromptDrawing?.canvasWorldX
+            ?? comparePin?.canvasWorldX
+            ?? null;
           const easelPaintingLabel = isPainting
             ? easelPaintingLabelForNpc(cfg.id, activeEaselSession)
             : null;
@@ -1958,18 +2105,21 @@ export default function SFCity({
           const easelPaintingSlot = isPainting
             ? activeEaselSession?.slots.find(s => s.npc === cfg.id && s.status === 'painting')?.slot
             : undefined;
+          const isDrawing = isPainting || Boolean(chatPromptDrawing) || Boolean(comparePin);
           return (
           <NPC
             key={cfg.id}
             characterId={cfg.id}
             index={i}
             {...cfg}
-            loadout={easelHandLoadout(baseLoadout, isPainting)}
+            loadout={easelHandLoadout(baseLoadout, isDrawing)}
             stageAnchor={cfg.stageAnchor}
             easelPaintingSlot={easelPaintingSlot}
             easelStageSlug={isPainting ? easelStageSlug : undefined}
             onEaselStationed={isPainting ? () => mpRef.current?.sendEaselPainterReady(cfg.id) : undefined}
             easelPaintingLabel={easelPaintingLabel}
+            chatPromptDrawingLabel={chatPromptDrawingLabel}
+            chatPromptCanvasWorldX={chatPromptCanvasWorldX}
             startX={testing ? 55 : cfg.startX}
             entryDelay={testing ? 0 : cfg.entryDelay}
             paused={chatConnected}

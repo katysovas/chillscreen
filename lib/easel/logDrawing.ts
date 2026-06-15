@@ -1,3 +1,4 @@
+import { isChatterDebugActive } from '@/lib/chatterDebug';
 import type { EaselDrawingContext } from './drawingContext';
 
 export function logEaselDrawing(
@@ -6,6 +7,8 @@ export function logEaselDrawing(
   topic: string,
   extra: Record<string, string | number | boolean | null | undefined> = {},
 ): void {
+  if (!isChatterDebugActive()) return;
+
   const name = npcId.split('-').pop() ?? npcId;
   const bits = Object.entries(extra)
     .filter(([, v]) => v != null && v !== '')
@@ -17,6 +20,8 @@ export function logEaselDrawing(
 }
 
 export function logEaselContext(ctx: EaselDrawingContext): void {
+  if (!isChatterDebugActive()) return;
+
   console.log('[easel:server] drawing context', {
     npc: ctx.npcName,
     npcId: ctx.npcId,
