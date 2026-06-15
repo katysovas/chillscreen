@@ -2080,10 +2080,10 @@ export default function SFCity({
         <FestieLifeCorner
           festie={ownerFestie}
           ownerOnline={ownerOnline}
-          lifeOpen={lifeModalOpen}
+          settingsOpen={settingsOpen}
           hidden={showWelcome || showCityPicker}
           isMobile={mobileDevice}
-          onToggle={toggleLife}
+          onOpenSettings={toggleSettings}
         />
       )}
 
@@ -2116,8 +2116,6 @@ export default function SFCity({
         vendorShopOpen={vendorShopManualOpen}
         onToggleVendorShop={toggleVendorShop}
         onVendorShopWarm={warmVendorShop}
-        settingsOpen={settingsOpen}
-        onToggleSettings={festieSignedIn ? toggleSettings : undefined}
         isMobile={mobileDevice}
       />
 
@@ -2140,13 +2138,11 @@ export default function SFCity({
         <FestieLifeModal
           festie={ownerFestie}
           ownerOnline={ownerOnline}
-          sessionRecap={sessionRecap}
           refillFrom={lifeRefillFromRef.current}
           onClose={() => {
             setLifeModalOpen(false);
             lifeRefillFromRef.current = null;
           }}
-          onOpenSettings={() => openSettings('customize')}
           onUpdated={festie => setOwnerFestie(festie)}
         />
       )}
@@ -2157,6 +2153,7 @@ export default function SFCity({
           ownerOnline={ownerOnline}
           refillFrom={lifeRefillFromRef.current}
           initialTab={settingsInitialTab}
+          sessionRecap={sessionRecap}
           onUpdated={festie => setOwnerFestie(festie)}
         />
       )}
@@ -2300,8 +2297,8 @@ export default function SFCity({
           vendorShopOpen={vendorShopManualOpen}
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
-          settingsOpen={settingsOpen}
-          onToggleSettings={festieSignedIn ? toggleSettings : undefined}
+          lifeOpen={lifeModalOpen}
+          onToggleLife={festieSignedIn ? toggleLife : undefined}
           onOpenStageSwap={() => setShowCityPicker(true)}
           onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}
           ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}

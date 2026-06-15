@@ -20,7 +20,7 @@ type Props = {
   refillFrom?: number | null;
   titleId?: string;
   settingsAction?: ReactNode;
-  /** History modal — red 24h life bar instead of caption text. */
+  /** Settings modal header — red 24h life bar instead of caption text. */
   showLifeBar?: boolean;
 };
 
@@ -96,7 +96,7 @@ function FestieLifeBar({
 
   return (
     <div
-      style={{ display: 'flex', flexDirection: 'column', gap: 5, width: 'min(100%, 240px)' }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 5, width: '100%' }}
       role="meter"
       aria-valuenow={asleep ? Math.round(sleepFill * 100) : Math.round(elapsed * 100)}
       aria-valuemin={0}

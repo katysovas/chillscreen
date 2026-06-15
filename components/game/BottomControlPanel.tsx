@@ -20,8 +20,6 @@ type BottomControlPanelProps = {
   vendorShopOpen?: boolean;
   onToggleVendorShop?: () => void;
   onVendorShopWarm?: () => void;
-  settingsOpen?: boolean;
-  onToggleSettings?: () => void;
   /** Opens the city / stage picker (desktop + in-game). */
   onOpenCityPicker?: () => void;
   /** Hides invite + cart — those move to MobileGameControls on phone. */
@@ -148,6 +146,26 @@ export function SignOutIcon({ size = 18 }: { size?: number }) {
   );
 }
 
+export function HeartIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      style={{ display: 'block' }}
+    >
+      <path
+        d="M12 20.5s-6.5-4.2-8.8-7.4C1.4 10.2 2.2 6.5 5.4 5.2c2.1-.9 4.3.2 5.4 2 1.1-1.8 3.3-2.9 5.4-2 3.2 1.3 4 5 2.2 8.1C18.5 16.3 12 20.5 12 20.5Z"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function SettingsIcon({ size = 18 }: { size?: number }) {
   return (
     <svg
@@ -208,8 +226,6 @@ export function BottomControlPanel({
   vendorShopOpen = false,
   onToggleVendorShop,
   onVendorShopWarm,
-  settingsOpen = false,
-  onToggleSettings,
   onOpenCityPicker,
   isMobile = false,
 }: BottomControlPanelProps) {
@@ -231,7 +247,6 @@ export function BottomControlPanel({
   const showConnect = Boolean(connectName?.trim()) && !isMobile;
   const showInviteBtn = !isMobile && showInvite && !showConnect;
   const hasMessages = showConnect || showInviteBtn;
-  const showSettings = Boolean(onToggleSettings) && !isMobile;
   const showCart = Boolean(onToggleVendorShop) && !isMobile;
   const showCityPicker = Boolean(onOpenCityPicker) && !isMobile;
 
@@ -260,7 +275,7 @@ export function BottomControlPanel({
     setInviteOpen(false);
   }, [hidden, showConnect, route]);
 
-  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showSettings && !showCart && !hasMessages)) {
+  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showCart && !hasMessages)) {
     return null;
   }
 
@@ -290,31 +305,6 @@ export function BottomControlPanel({
           overflow: 'hidden',
         }}
       >
-        {showSettings && (
-          <button
-            type="button"
-            onClick={onToggleSettings}
-            aria-label={settingsOpen ? 'Close festie settings' : 'Open festie settings'}
-            aria-pressed={settingsOpen}
-            title="Festie settings"
-            style={{
-              ...ghostBtn,
-              padding: '8px 14px',
-              background: settingsOpen ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.06)',
-              color: settingsOpen ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.78)',
-              cursor: 'pointer',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <SettingsIcon />
-          </button>
-        )}
-
-        {showSettings && showCart && <div style={panelDivider} aria-hidden />}
-
         {showCart && (
           <button
             type="button"
@@ -343,7 +333,7 @@ export function BottomControlPanel({
           </button>
         )}
 
-        {(showSettings || showCart) && showCityPicker && (
+        {showCart && showCityPicker && (
           <div style={panelDivider} aria-hidden />
         )}
 
@@ -369,7 +359,7 @@ export function BottomControlPanel({
           </button>
         )}
 
-        {(showSettings || showCart || showCityPicker) && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
+        {(showCart || showCityPicker) && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
           <div style={panelDivider} aria-hidden />
         )}
 

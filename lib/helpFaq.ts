@@ -20,7 +20,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: 'What happens when I leave the stage?',
-    a: `Your AI festie keeps partying on their own — chatting, painting, and living it up. After ${FESTIE_LIVE_DURATION_LABEL} of fun they drift into sleep mode until you come back. Tap {heartIcon} in the corner for their timeline and recap.`,
+    a: `Your AI festie keeps partying on their own — chatting, painting, and living it up. After ${FESTIE_LIVE_DURATION_LABEL} of fun they drift into sleep mode until you come back. Open Settings in the corner and check History for their timeline and recap.`,
   },
 ];
 

@@ -1,22 +1,17 @@
 'use client';
 
 import { Z_MODAL } from '@/lib/zLayers';
-import { SettingsIcon } from './BottomControlPanel';
 import { FestieLifeHeader } from './FestieLifeHeader';
-import { FestieHistoryPanel } from './FestieHistoryPanel';
 import {
   FestieNotifyEmailSignup,
   festieNeedsNotifyEmail,
 } from './FestieNotifyEmailSignup';
 import type { FestieOwner } from '@/lib/festie/types';
-import type { FestieSessionRecap } from '@/lib/festie/sessionRecap';
 
 type Props = {
   festie: FestieOwner;
   ownerOnline: boolean;
-  sessionRecap?: FestieSessionRecap | null;
   onClose: () => void;
-  onOpenSettings: () => void;
   onUpdated?: (festie: FestieOwner) => void;
   refillFrom?: number | null;
 };
@@ -24,9 +19,7 @@ type Props = {
 export function FestieLifeModal({
   festie,
   ownerOnline,
-  sessionRecap = null,
   onClose,
-  onOpenSettings,
   onUpdated,
   refillFrom = null,
 }: Props) {
@@ -64,40 +57,12 @@ export function FestieLifeModal({
           fontFamily: 'system-ui,sans-serif',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: showEmailSignup ? 16 : 0 }}>
           <FestieLifeHeader
             festie={festie}
             ownerOnline={ownerOnline}
             refillFrom={refillFrom}
             titleId="festie-life-title"
-            showLifeBar
-            settingsAction={
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenSettings();
-                }}
-                aria-label={`Open ${festie.name} settings`}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 30,
-                  height: 30,
-                  marginTop: 1,
-                  padding: 0,
-                  border: 'none',
-                  borderRadius: 8,
-                  background: 'rgba(255,255,255,0.08)',
-                  color: 'rgba(255,255,255,0.72)',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              >
-                <SettingsIcon size={16} />
-              </button>
-            }
           />
           <button
             type="button"
@@ -117,8 +82,6 @@ export function FestieLifeModal({
             ×
           </button>
         </div>
-
-        <FestieHistoryPanel festie={festie} sessionRecap={sessionRecap} />
 
         {showEmailSignup && (
           <div style={{ marginTop: 16 }}>

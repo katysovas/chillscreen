@@ -23,8 +23,10 @@ import {
 } from '@/lib/festie/validation';
 import { getPlayerName } from '@/lib/playerStorage';
 import { HelpFaqContent } from './HelpFaqContent';
+import { FestieHistoryPanel } from './FestieHistoryPanel';
+import type { FestieSessionRecap } from '@/lib/festie/sessionRecap';
 
-export type FestieSettingsTab = 'customize' | 'access' | 'help' | 'contact';
+export type FestieSettingsTab = 'customize' | 'history' | 'access' | 'help' | 'contact';
 
 function TabIconCustomize({ size = 16 }: { size?: number }) {
   return (
@@ -88,6 +90,21 @@ function TabIconContact({ size = 16 }: { size?: number }) {
   );
 }
 
+function TabIconHistory({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ display: 'block' }}>
+      <circle cx={12} cy={12} r={9} stroke="currentColor" strokeWidth={1.5} />
+      <path
+        d="M12 7v5l3 2"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function TabIconHelp({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ display: 'block' }}>
@@ -105,6 +122,7 @@ function TabIconHelp({ size = 16 }: { size?: number }) {
 
 const TAB_ICONS: Record<FestieSettingsTab, typeof TabIconCustomize> = {
   customize: TabIconCustomize,
+  history: TabIconHistory,
   access: TabIconAccess,
   help: TabIconHelp,
   contact: TabIconContact,
@@ -116,10 +134,12 @@ type Props = {
   ownerOnline?: boolean;
   refillFrom?: number | null;
   initialTab?: FestieSettingsTab;
+  sessionRecap?: FestieSessionRecap | null;
 };
 
 const TABS: { id: FestieSettingsTab; label: string }[] = [
   { id: 'customize', label: 'Customize' },
+  { id: 'history', label: 'History' },
   { id: 'access', label: 'Access' },
   { id: 'help', label: 'Help' },
   { id: 'contact', label: 'Contact' },
@@ -222,13 +242,14 @@ function PersonalityPicker({
   );
 }
 
-/** Festie settings — tabbed: customize, access, contact. */
+/** Festie settings — tabbed: customize, history, access, help, contact. */
 export function FestieSettingsModal({
   onClose,
   onUpdated,
   ownerOnline = true,
   refillFrom = null,
   initialTab = 'customize',
+  sessionRecap = null,
 }: Props) {
   const [tab, setTab] = useState<FestieSettingsTab>(initialTab);
   const [loading, setLoading] = useState(true);
@@ -376,7 +397,7 @@ export function FestieSettingsModal({
     && newPassword === confirmPassword
     && currentPassword.length > 0;
 
-  const needsFestie = tab === 'customize' || tab === 'access';
+  const needsFestie = tab === 'customize' || tab === 'access' || tab === 'history';
 
   const handleFestieUpdated = (updated: FestieOwner) => {
     setFestie(updated);
@@ -430,6 +451,7 @@ export function FestieSettingsModal({
               ownerOnline={ownerOnline}
               refillFrom={refillFrom}
               titleId="festie-settings-title"
+              showLifeBar
             />
           ) : (
             <h2
@@ -464,38 +486,53 @@ export function FestieSettingsModal({
           </button>
         </div>
 
-        <div style={{
-          display: 'flex',
-          gap: 4,
-          padding: '0 16px 12px',
-          flexShrink: 0,
-          overflowX: 'auto',
-        }}>
+        <div
+          role="tablist"
+          aria-label="Settings sections"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+            gap: 3,
+            margin: '0 16px 12px',
+            padding: 3,
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.06)',
+            flexShrink: 0,
+          }}
+        >
           {TABS.map(t => {
             const Icon = TAB_ICONS[t.id];
-            const label = t.id === 'customize' ? 'Customize Your Festie' : t.label;
+            const active = tab === t.id;
             return (
               <button
                 key={t.id}
                 type="button"
+                role="tab"
+                aria-selected={active}
+                aria-label={t.label}
+                title={t.label}
                 onClick={() => setTab(t.id)}
                 style={{
-                  ...BTN,
-                  flex: '1 0 auto',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 6,
-                  padding: '8px 10px',
-                  fontSize: 12,
-                  background: tab === t.id ? 'rgba(230,126,34,0.2)' : 'rgba(255,255,255,0.06)',
-                  border: tab === t.id ? '1px solid rgba(230,126,34,0.5)' : '1px solid transparent',
-                  color: tab === t.id ? '#fff' : 'rgba(255,255,255,0.55)',
-                  whiteSpace: 'nowrap',
+                  gap: 4,
+                  padding: '8px 2px',
+                  minWidth: 0,
+                  borderRadius: 9,
+                  border: 'none',
+                  fontSize: 10,
+                  fontWeight: active ? 600 : 500,
+                  letterSpacing: 0.15,
+                  fontFamily: 'system-ui,sans-serif',
+                  background: active ? 'rgba(230,126,34,0.25)' : 'transparent',
+                  color: active ? '#fff' : 'rgba(255,255,255,0.5)',
+                  cursor: 'pointer',
                 }}
               >
-                <Icon size={14} />
-                {label}
+                <Icon size={15} />
+                <span style={{ lineHeight: 1.1, textAlign: 'center' }}>{t.label}</span>
               </button>
             );
           })}
@@ -671,6 +708,16 @@ export function FestieSettingsModal({
                 {savingPassword ? 'Updating…' : 'Update password'}
               </button>
             </>
+          )}
+
+          {tab === 'history' && festie && (
+            <FestieHistoryPanel festie={festie} sessionRecap={sessionRecap} />
+          )}
+
+          {tab === 'history' && !loading && !festie && (
+            <p style={{ color: '#ff9d9d', fontFamily: 'system-ui,sans-serif', fontSize: 14 }}>
+              {loadError ?? 'Sign in to view history.'}
+            </p>
           )}
 
           {tab === 'help' && (

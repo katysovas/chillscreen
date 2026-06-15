@@ -1,7 +1,7 @@
 'use client';
 
 import { trackMobileControl } from '@/lib/gameInputAnalytics';
-import { SettingsIcon, ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
+import { HeartIcon, ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
 
 type Props = {
   muted: boolean;
@@ -9,8 +9,8 @@ type Props = {
   vendorShopOpen?: boolean;
   onToggleVendorShop?: () => void;
   onVendorShopWarm?: () => void;
-  settingsOpen?: boolean;
-  onToggleSettings?: () => void;
+  lifeOpen?: boolean;
+  onToggleLife?: () => void;
   onOpenStageSwap?: () => void;
   onOpenAmbientChat?: () => void;
   ambientChatOpen?: boolean;
@@ -59,13 +59,13 @@ export function MobileGameControls({
   vendorShopOpen = false,
   onToggleVendorShop,
   onVendorShopWarm,
-  settingsOpen = false,
-  onToggleSettings,
+  lifeOpen = false,
+  onToggleLife,
   onOpenStageSwap,
   onOpenAmbientChat,
   ambientChatOpen = false,
 }: Props) {
-  const showSettings = Boolean(onToggleSettings);
+  const showLife = Boolean(onToggleLife);
   const showCart = Boolean(onToggleVendorShop);
   const showStageSwap = Boolean(onOpenStageSwap);
   const showChat = Boolean(onOpenAmbientChat);
@@ -135,25 +135,25 @@ export function MobileGameControls({
           </button>
         )}
 
-        {showSettings && (
+        {showLife && (
           <button
             type="button"
-            className="mobile-controls-settings mobile-controls-action-btn"
-            aria-label={settingsOpen ? 'Close festie settings' : 'Open festie settings'}
-            aria-pressed={settingsOpen}
-            title="Festie settings"
+            className="mobile-controls-life mobile-controls-action-btn"
+            aria-label={lifeOpen ? 'Close festie life' : 'Open festie life'}
+            aria-pressed={lifeOpen}
+            title="Festie life"
             onPointerDown={e => e.preventDefault()}
             onClick={() => {
-              trackMobileControl(settingsOpen ? 'settings_close' : 'settings_open');
-              onToggleSettings?.();
+              trackMobileControl(lifeOpen ? 'life_close' : 'life_open');
+              onToggleLife?.();
             }}
             style={{
               ...mobileActionBtn,
-              background: settingsOpen ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.42)',
-              color: settingsOpen ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.78)',
+              background: lifeOpen ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.42)',
+              color: lifeOpen ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.78)',
             }}
           >
-            <SettingsIcon size={22} />
+            <HeartIcon size={22} />
           </button>
         )}
 
