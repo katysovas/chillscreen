@@ -88,22 +88,22 @@ export function validateGridPixels(pixels: GridPixel[], canvasSize: CanvasSize):
 
   const rowSpan = maxY - minY + 1;
   const colSpan = maxX - minX + 1;
-  const minSpan = Math.max(16, Math.floor(canvasSize.height * 0.6));
+  const minSpan = 3;
 
   if (rowSpan < minSpan || colSpan < minSpan) {
     return {
       ok: false,
-      critique: `Too small — only ${rowSpan} rows × ${colSpan} columns. Redraw BIGGER: fill at least ${minSpan} rows and ${minSpan} columns, edge-to-edge. Not a tiny centered icon.`,
+      critique: `Too tiny — only ${rowSpan}×${colSpan}. Add a clear K outline so the subject reads.`,
       rowSpan,
       colSpan,
       pixelCount: pixels.length,
     };
   }
 
-  if (pixels.length < 48) {
+  if (pixels.length < 12) {
     return {
       ok: false,
-      critique: `Too sparse — only ${pixels.length} filled pixels. Add a bold K outline and more fill color. One subject, iconic angle, silhouette first.`,
+      critique: `Too sparse — only ${pixels.length} filled pixels. Add a bold K outline and a bit more fill.`,
       rowSpan,
       colSpan,
       pixelCount: pixels.length,

@@ -6,18 +6,15 @@ import type { GridPixel } from './types';
 
 export const PIXEL_GRID_LOGICAL_SIZE = 32;
 const SCALE = EASEL_LOGICAL_SIZE / PIXEL_GRID_LOGICAL_SIZE;
-/** Target fraction of grid filled after auto-fit (e.g. 0.9 → ~2px margin on 32px grid). */
-const TARGET_FILL = 0.9;
 
 function scaleCoord(v: number): number {
   return Math.max(0, Math.min(EASEL_LOGICAL_SIZE, Math.round(v * SCALE + SCALE / 2)));
 }
 
-/** Upscale + center parsed pixels so small model output fills the canvas. */
-export function fitPixelsToCanvas(
+/** Center parsed pixels on the grid — no upscaling. */
+export function layoutPixelsOnGrid(
   pixels: GridPixel[],
   gridSize: number = PIXEL_GRID_LOGICAL_SIZE,
-  targetFill: number = TARGET_FILL,
 ): GridPixel[] {
   if (pixels.length === 0) return pixels;
 
@@ -34,35 +31,16 @@ export function fitPixelsToCanvas(
 
   const bw = maxX - minX + 1;
   const bh = maxY - minY + 1;
-  const margin = Math.max(1, Math.floor(gridSize * (1 - targetFill) / 2));
-  const avail = gridSize - margin * 2;
-  const intScale = Math.max(1, Math.floor(Math.min(avail / bw, avail / bh)));
+  const shiftX = Math.floor((gridSize - bw) / 2) - minX;
+  const shiftY = Math.floor((gridSize - bh) / 2) - minY;
 
-  const scaledW = bw * intScale;
-  const scaledH = bh * intScale;
-  const offsetX = Math.floor((gridSize - scaledW) / 2);
-  const offsetY = Math.floor((gridSize - scaledH) / 2);
+  if (shiftX === 0 && shiftY === 0) return pixels;
 
-  const seen = new Set<string>();
-  const out: GridPixel[] = [];
-
-  for (const p of pixels) {
-    const rx = p.x - minX;
-    const ry = p.y - minY;
-    for (let dy = 0; dy < intScale; dy++) {
-      for (let dx = 0; dx < intScale; dx++) {
-        const nx = offsetX + rx * intScale + dx;
-        const ny = offsetY + ry * intScale + dy;
-        if (nx < 0 || nx >= gridSize || ny < 0 || ny >= gridSize) continue;
-        const key = `${nx},${ny}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push({ x: nx, y: ny, pi: p.pi });
-      }
-    }
-  }
-
-  return out;
+  return pixels.map(p => ({
+    ...p,
+    x: Math.max(0, Math.min(gridSize - 1, p.x + shiftX)),
+    y: Math.max(0, Math.min(gridSize - 1, p.y + shiftY)),
+  }));
 }
 
 /** Merge same-row, same-color pixels into horizontal polyline strokes. */
@@ -117,8 +95,8 @@ export function gridToDrawingProgram(
   topic: string,
   modelLabel: string,
 ): DrawingProgram | null {
-  const fitted = fitPixelsToCanvas(pixels);
-  const strokes = gridPixelsToStrokes(fitted);
+  const laidOut = layoutPixelsOnGrid(pixels);
+  const strokes = gridPixelsToStrokes(laidOut);
   if (strokes.length < 4) return null;
 
   return {

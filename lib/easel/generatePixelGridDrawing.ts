@@ -80,7 +80,7 @@ async function attemptGridDrawing(
   if (!raw) {
     return {
       ok: false,
-      critique: 'Empty response. Return ONLY OFFSET + GRID — big subject, K outline first, edge-to-edge.',
+      critique: 'Empty response. Return ONLY OFFSET + GRID — clear subject, K outline first.',
       raw: null,
     };
   }
