@@ -79,6 +79,7 @@ export default class WhichStageServer implements Party.Server {
     const playlists = await resolveStagePlaylists(this.room.env.YOUTUBE_API_KEY as string | undefined);
     this.stageSync = { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists };
     const festies = await this.fetchFesties();
+    this.ensureNpcLeader();
     const welcome: ServerMessage = {
       t: 'welcome',
       selfId: conn.id,
@@ -243,7 +244,11 @@ export default class WhichStageServer implements Party.Server {
         break;
       }
       case 'npc-positions': {
-        if (sender.id !== this.npcLeaderId) break;
+        if (sender.id !== this.npcLeaderId) {
+          if (this.npcLeaderId != null) break;
+          this.npcLeaderId = sender.id;
+          this.broadcastNpcLeader();
+        }
         this.chatter.updateNpcPositions(msg.positions, msg.viewportWidth, sender.id);
         const syncMsg = {
           t: 'npc-positions-sync' as const,

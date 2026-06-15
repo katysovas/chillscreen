@@ -722,10 +722,16 @@ export default function SFCity({
   isNpcLeaderRef.current = mp.isNpcLeader;
 
   useEffect(() => {
-    const follow = mp.connected && !mp.isNpcLeader;
+    const follow = mp.connected && mp.selfId != null && !mp.isNpcLeader;
     setNpcNetworkFollowMode(follow);
     if (!follow) clearNpcSyncedScreenPcts();
-  }, [mp.connected, mp.isNpcLeader]);
+  }, [mp.connected, mp.selfId, mp.isNpcLeader]);
+
+  useEffect(() => {
+    if (mp.isNpcLeader && mp.connected && mp.selfId) {
+      lastNpcPosSendRef.current = 0;
+    }
+  }, [mp.isNpcLeader, mp.connected, mp.selfId]);
 
   const easelChannel = stageChannelForRoute(effectiveVenueRoute);
   const easelStageSlug = stageSlugFromVenueRoute(effectiveVenueRoute);
@@ -1538,7 +1544,7 @@ export default function SFCity({
       frameCountRef.current % moveBroadcastFrameInterval() === 0;
 
     const broadcastNpcPositions = () => {
-      if (!isNpcLeaderRef.current) return;
+      if (!isNpcLeaderRef.current || !mpRef.current?.connected || !mpRef.current?.selfId) return;
       const now = Date.now();
       if (now - lastNpcPosSendRef.current <= 500) return;
       lastNpcPosSendRef.current = now;
