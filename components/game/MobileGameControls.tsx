@@ -1,7 +1,7 @@
 'use client';
 
 import { trackMobileControl } from '@/lib/gameInputAnalytics';
-import { HeartIcon, ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
+import { ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
 
 type Props = {
   muted: boolean;
@@ -9,8 +9,6 @@ type Props = {
   vendorShopOpen?: boolean;
   onToggleVendorShop?: () => void;
   onVendorShopWarm?: () => void;
-  lifeOpen?: boolean;
-  onToggleLife?: () => void;
   onOpenStageSwap?: () => void;
   onOpenAmbientChat?: () => void;
   ambientChatOpen?: boolean;
@@ -59,13 +57,10 @@ export function MobileGameControls({
   vendorShopOpen = false,
   onToggleVendorShop,
   onVendorShopWarm,
-  lifeOpen = false,
-  onToggleLife,
   onOpenStageSwap,
   onOpenAmbientChat,
   ambientChatOpen = false,
 }: Props) {
-  const showLife = Boolean(onToggleLife);
   const showCart = Boolean(onToggleVendorShop);
   const showStageSwap = Boolean(onOpenStageSwap);
   const showChat = Boolean(onOpenAmbientChat);
@@ -132,28 +127,6 @@ export function MobileGameControls({
             }}
           >
             <StageSwapIcon size={24} />
-          </button>
-        )}
-
-        {showLife && (
-          <button
-            type="button"
-            className="mobile-controls-life mobile-controls-action-btn"
-            aria-label={lifeOpen ? 'Close festie life' : 'Open festie life'}
-            aria-pressed={lifeOpen}
-            title="Festie life"
-            onPointerDown={e => e.preventDefault()}
-            onClick={() => {
-              trackMobileControl(lifeOpen ? 'life_close' : 'life_open');
-              onToggleLife?.();
-            }}
-            style={{
-              ...mobileActionBtn,
-              background: lifeOpen ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.42)',
-              color: lifeOpen ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.78)',
-            }}
-          >
-            <HeartIcon size={22} />
           </button>
         )}
 

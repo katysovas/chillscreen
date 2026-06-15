@@ -2297,8 +2297,6 @@ export default function SFCity({
           vendorShopOpen={vendorShopManualOpen}
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
-          lifeOpen={lifeModalOpen}
-          onToggleLife={festieSignedIn ? toggleLife : undefined}
           onOpenStageSwap={() => setShowCityPicker(true)}
           onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}
           ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}

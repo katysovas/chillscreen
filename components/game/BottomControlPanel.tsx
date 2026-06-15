@@ -146,26 +146,6 @@ export function SignOutIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-export function HeartIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-      style={{ display: 'block' }}
-    >
-      <path
-        d="M12 20.5s-6.5-4.2-8.8-7.4C1.4 10.2 2.2 6.5 5.4 5.2c2.1-.9 4.3.2 5.4 2 1.1-1.8 3.3-2.9 5.4-2 3.2 1.3 4 5 2.2 8.1C18.5 16.3 12 20.5 12 20.5Z"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export function SettingsIcon({ size = 18 }: { size?: number }) {
   return (
     <svg

@@ -1,6 +1,6 @@
 'use client';
 
-import { FestieHeart } from './FestieHeart';
+import { SettingsIcon } from './BottomControlPanel';
 import { festieLifeFill } from '@/lib/festie/config';
 import { festiePresetById } from '@/lib/festie/presets';
 import type { FestieOwner } from '@/lib/festie/types';
@@ -64,6 +64,7 @@ export function FestieLifeCorner({
             background: settingsOpen ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.42)',
             backdropFilter: 'blur(6px)',
             WebkitBackdropFilter: 'blur(6px)',
+            color: 'rgba(255,255,255,.78)',
             cursor: 'pointer',
             padding: 0,
             userSelect: 'none',
@@ -71,7 +72,7 @@ export function FestieLifeCorner({
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          <FestieHeart fill={fill} glowColor={glow} size={22} />
+          <SettingsIcon size={22} />
         </button>
       </div>
     );
@@ -110,9 +111,10 @@ export function FestieLifeCorner({
           cursor: 'pointer',
           width: '100%',
           boxSizing: 'border-box',
+          color: 'rgba(255,255,255,.78)',
         }}
       >
-        <FestieHeart fill={fill} glowColor={glow} size={18} />
+        <SettingsIcon size={18} />
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div
             style={{
