@@ -121,10 +121,14 @@ import { FestieLifeModal } from './FestieLifeModal';
 import { FestieSessionRecapOverlay } from './FestieSessionRecapOverlay';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
-import { runAllNpcMovementTicks } from '@/lib/npcMovementRegistry';
+import {
+  clearNpcSyncedWorldXs,
+  runAllNpcMovementTicks,
+  setNpcNetworkFollowMode,
+  setNpcSyncedWorldX,
+} from '@/lib/npcMovementRegistry';
 import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
-import { easelStationWorldXForNpc } from '@/lib/easel/stationed';
 import { isEaselPainterReady, subscribeEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import { easelPaintingLabelForNpc } from '@/lib/easel/paintingLabel';
 import { setActiveEaselCanvasBlockZone } from '@/lib/easel/canvasBlocking';
@@ -714,6 +718,14 @@ export default function SFCity({
   });
   const mpRef = useRef(mp);
   mpRef.current = mp;
+  const isNpcLeaderRef = useRef(mp.isNpcLeader);
+  isNpcLeaderRef.current = mp.isNpcLeader;
+
+  useEffect(() => {
+    const follow = mp.connected && !mp.isNpcLeader;
+    setNpcNetworkFollowMode(follow);
+    if (!follow) clearNpcSyncedWorldXs();
+  }, [mp.connected, mp.isNpcLeader]);
 
   const easelChannel = stageChannelForRoute(effectiveVenueRoute);
   const easelStageSlug = stageSlugFromVenueRoute(effectiveVenueRoute);
@@ -1520,6 +1532,7 @@ export default function SFCity({
       frameCountRef.current % moveBroadcastFrameInterval() === 0;
 
     const broadcastNpcPositions = () => {
+      if (!isNpcLeaderRef.current) return;
       const now = Date.now();
       if (now - lastNpcPosSendRef.current <= 500) return;
       lastNpcPosSendRef.current = now;
@@ -1533,7 +1546,19 @@ export default function SFCity({
       mpRef.current?.sendNpcPositions(positions, width);
     };
 
+    const applyNetworkNpcPositions = () => {
+      if (isNpcLeaderRef.current) return;
+      const sync = mpRef.current?.npcSyncRef.current;
+      if (!sync || sync.size === 0) return;
+      const cast = effectiveNpcCastRef.current;
+      for (let i = 0; i < cast.length; i++) {
+        const wx = sync.get(cast[i]!.id);
+        setNpcSyncedWorldX(i, wx != null && Number.isFinite(wx) ? wx : null);
+      }
+    };
+
     const tickNpcs = () => {
+      applyNetworkNpcPositions();
       runAllNpcMovementTicks(
         worldRef.current,
         window.innerWidth,
@@ -1904,6 +1929,9 @@ export default function SFCity({
           const baseLoadout = TEST_NPC_MASK_ON_LOAD && cfg.id === TEST_NPC_MASK_ID
             ? { ...(cfg.loadout ?? {}), mask: TEST_NPC_MASK_ITEM }
             : cfg.loadout;
+          const easelPaintingSlot = isPainting
+            ? activeEaselSession?.slots.find(s => s.npc === cfg.id && s.status === 'painting')?.slot
+            : undefined;
           return (
           <NPC
             key={cfg.id}
@@ -1912,9 +1940,8 @@ export default function SFCity({
             {...cfg}
             loadout={easelHandLoadout(baseLoadout, isPainting)}
             stageAnchor={cfg.stageAnchor}
-            easelStationWorldX={isPainting
-              ? easelStationWorldXForNpc(cfg.id, activeEaselSession, easelStageSlug)
-              : undefined}
+            easelPaintingSlot={easelPaintingSlot}
+            easelStageSlug={isPainting ? easelStageSlug : undefined}
             onEaselStationed={isPainting ? () => mpRef.current?.sendEaselPainterReady(cfg.id) : undefined}
             easelPaintingLabel={easelPaintingLabel}
             startX={testing ? 55 : cfg.startX}

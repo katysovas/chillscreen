@@ -95,6 +95,8 @@ export type ServerMessage =
       serverNow: number;
       stage: StageSync;
       festies?: FestiePublic[];
+      /** Connection id running local NPC sim — positions relay from this client. */
+      npcLeaderId?: string | null;
     }
   | { t: 'festies-sync'; festies: FestiePublic[] }
   | { t: 'joined'; player: PlayerState }
@@ -120,6 +122,13 @@ export type ServerMessage =
     }
   | { t: 'npc-line'; convoId: string; npc: string; text: string }
   | { t: 'npc-convo-end'; convoId: string }
+  | {
+      t: 'npc-positions-sync';
+      leaderId: string;
+      serverNow: number;
+      positions: { id: string; worldX: number }[];
+    }
+  | { t: 'npc-leader'; leaderId: string | null }
   | { t: 'easel-session'; sessionStart: number; slots: EaselSlotSync[] }
   | { t: 'easel-update'; sessionStart: number; slots: EaselSlotSync[] };
 

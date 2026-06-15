@@ -131,6 +131,10 @@ export type Multiplayer = {
   festies: FestiePublic[];
   /** Ambient NPC easel session — null until first watcher in room. */
   easelSession: EaselSessionSync | null;
+  /** True when this client runs local NPC AI and relays positions. */
+  isNpcLeader: boolean;
+  /** Latest NPC world-x from the room leader (id → worldX). */
+  npcSyncRef: React.RefObject<Map<string, number>>;
   sendMove: (worldX: number, facing: Facing, walking: boolean) => void;
   sendProfile: (profile: PlayerProfile) => void;
   openPeerChat: (to: string) => void;
@@ -157,6 +161,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const socketRef = useRef<PartySocket | null>(null);
   const remoteStateRef = useRef<Map<string, RemotePlayerState>>(new Map());
   const ambientRef = useRef<Map<string, RemoteAmbientMessage>>(new Map());
+  const npcSyncRef = useRef<Map<string, number>>(new Map());
   /** Latest position — used for join when the socket opens mid-movement. */
   const lastMoveRef = useRef<{ worldX: number; facing: Facing; walking: boolean } | null>(null);
   /** Profile updates that arrive before the socket is open. */
@@ -165,6 +170,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const pendingSendRef = useRef<object[]>([]);
 
   const [selfId, setSelfId] = useState<string | null>(null);
+  const selfIdRef = useRef<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [shouldConnect, setShouldConnect] = useState(false);
   const [remoteIds, setRemoteIds] = useState<string[]>([]);
@@ -173,6 +179,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const [npcConvoPairs, setNpcConvoPairs] = useState<NpcConvoPair[]>([]);
   const [festies, setFesties] = useState<FestiePublic[]>([]);
   const [easelSession, setEaselSession] = useState<EaselSessionSync | null>(null);
+  const [isNpcLeader, setIsNpcLeader] = useState(true);
 
   const connectRequestedRef = useRef(false);
 
@@ -293,7 +300,9 @@ export function useMultiplayer(opts: Options): Multiplayer {
       switch (msg.t) {
         case 'welcome': {
           setSelfId(msg.selfId);
+          selfIdRef.current = msg.selfId;
           if (msg.festies) setFesties(msg.festies);
+          setIsNpcLeader(!msg.npcLeaderId || msg.npcLeaderId === msg.selfId);
           // Align our clock + adopt the pinned playlists so every venue plays
           // the same synchronized video for everyone in the room.
           if (msg.serverNow != null && msg.stage) {
@@ -410,6 +419,17 @@ export function useMultiplayer(opts: Options): Multiplayer {
             setEaselSession({ sessionStart: msg.sessionStart, slots: msg.slots });
           }
           break;
+        case 'npc-positions-sync': {
+          const sync = npcSyncRef.current;
+          for (const p of msg.positions) {
+            if (p.id && Number.isFinite(p.worldX)) sync.set(p.id, p.worldX);
+          }
+          break;
+        }
+        case 'npc-leader':
+          setIsNpcLeader(!msg.leaderId || msg.leaderId === selfIdRef.current);
+          if (!msg.leaderId) npcSyncRef.current.clear();
+          break;
       }
     };
 
@@ -469,6 +489,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
     chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,
+    isNpcLeader, npcSyncRef,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
     sendAmbientMessage, sendRoomChat, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
   };

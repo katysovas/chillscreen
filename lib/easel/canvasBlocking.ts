@@ -1,4 +1,8 @@
-import { EASEL_DISPLAY_WIDTH } from './layout';
+import {
+  EASEL_DISPLAY_WIDTH,
+  EASEL_NPC_BODY_PX,
+  easelNpcStandWorldXForCanvas,
+} from './layout';
 
 export type EaselCanvasBlockZone = {
   canvasWorldX: number;
@@ -12,8 +16,9 @@ let activeZone: EaselCanvasBlockZone | null = null;
 /** Ground-x band where idle NPCs must not stand in front of an active canvas. */
 export function easelCanvasBlockBand(canvasWorldX: number): { minX: number; maxX: number } {
   const halfCanvas = EASEL_DISPLAY_WIDTH / 2;
+  const standX = easelNpcStandWorldXForCanvas(canvasWorldX);
   return {
-    minX: canvasWorldX - 55 - 72,
+    minX: standX - EASEL_NPC_BODY_PX * 0.35,
     maxX: canvasWorldX + halfCanvas + 52,
   };
 }

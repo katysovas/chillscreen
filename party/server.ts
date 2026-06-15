@@ -41,6 +41,8 @@ export default class WhichStageServer implements Party.Server {
   private connUserIds = new Map<string, string>();
   /** Debounced last_seen_at when owner disconnects (userId → timer). */
   private festieSeenTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /** Connection id whose local NPC sim is authoritative for the room. */
+  private npcLeaderId: string | null = null;
   private stageSync: StageSync | null = null;
   private chatter: NpcChatterScheduler;
   private easels: EaselScheduler;
@@ -82,6 +84,7 @@ export default class WhichStageServer implements Party.Server {
       serverNow: Date.now(),
       stage: this.stageSync,
       festies,
+      npcLeaderId: this.npcLeaderId,
     };
     conn.send(encode(welcome));
     this.easels.syncToClient(msg => conn.send(encode(msg)));
@@ -131,7 +134,14 @@ export default class WhichStageServer implements Party.Server {
         if (msg.chatterDebug) {
           this.chatterDebugPlayers.add(sender.id);
         }
+        const leaderBefore = this.npcLeaderId;
+        this.ensureNpcLeader();
         this.broadcastExcept(sender.id, { t: 'joined', player });
+        if (this.npcLeaderId !== leaderBefore) {
+          this.broadcastNpcLeader();
+        } else {
+          this.sendTo(sender.id, { t: 'npc-leader', leaderId: this.npcLeaderId });
+        }
         void this.broadcastFestiesSync();
         break;
       }
@@ -227,9 +237,20 @@ export default class WhichStageServer implements Party.Server {
         );
         break;
       }
-      case 'npc-positions':
+      case 'npc-positions': {
+        if (sender.id !== this.npcLeaderId) break;
         this.chatter.updateNpcPositions(msg.positions, msg.viewportWidth, sender.id);
+        this.room.broadcast(
+          encode({
+            t: 'npc-positions-sync',
+            leaderId: sender.id,
+            serverNow: Date.now(),
+            positions: msg.positions,
+          }),
+          [sender.id],
+        );
         break;
+      }
       case 'easel-painter-ready':
         this.easels.onPainterReady(msg.npcId);
         break;
@@ -258,6 +279,7 @@ export default class WhichStageServer implements Party.Server {
     }
     const wasMuted = this.chatterMutedPlayers.delete(conn.id);
     this.chatterDebugPlayers.delete(conn.id);
+    const wasLeader = conn.id === this.npcLeaderId;
     const userId = this.connUserIds.get(conn.id);
     this.connUserIds.delete(conn.id);
     if (this.players.delete(conn.id)) {
@@ -272,8 +294,13 @@ export default class WhichStageServer implements Party.Server {
       this.chatter.setChatterDisabled(this.chatterMutedPlayers.size > 0);
     }
     if (this.players.size === 0) {
+      this.npcLeaderId = null;
       this.chatter.onLastPlayer();
       void this.easels.onLastPlayer();
+    } else if (wasLeader) {
+      this.npcLeaderId = null;
+      this.ensureNpcLeader();
+      this.broadcastNpcLeader();
     }
   }
 
@@ -287,6 +314,19 @@ export default class WhichStageServer implements Party.Server {
 
   private broadcastExcept(exceptId: string, msg: ServerMessage) {
     this.room.broadcast(encode(msg), [exceptId]);
+  }
+
+  private ensureNpcLeader(): string | null {
+    if (this.npcLeaderId && this.players.has(this.npcLeaderId)) {
+      return this.npcLeaderId;
+    }
+    const next = this.players.keys().next().value as string | undefined;
+    this.npcLeaderId = next ?? null;
+    return this.npcLeaderId;
+  }
+
+  private broadcastNpcLeader() {
+    this.room.broadcast(encode({ t: 'npc-leader', leaderId: this.npcLeaderId }));
   }
 
   private sendTo(connId: string, msg: ServerMessage) {

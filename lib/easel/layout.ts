@@ -17,10 +17,25 @@ export function easelSlotWorldX(
   return easelSlotAnchorWorldX(slot, stageSlug, viewportWidth);
 }
 
-/** NPC stand position — slightly left of easel, facing the canvas. */
+/** Gap between festie body and easel frame (screen px = world units). */
+export const EASEL_NPC_STAND_GAP = 10;
+/** Festie body width at default scale — stand uses left edge of sprite. */
+export const EASEL_NPC_BODY_PX = 88;
+
+/** Left edge of the easel art unit (frame), centered on canvasWorldX. */
+export function easelFrameLeftWorldX(canvasWorldX: number): number {
+  return canvasWorldX - EASEL_DISPLAY_WIDTH / 2;
+}
+
+/** Ground world-x for the painter's left edge — just left of the canvas frame. */
+export function easelNpcStandWorldXForCanvas(canvasWorldX: number): number {
+  return easelFrameLeftWorldX(canvasWorldX) - EASEL_NPC_STAND_GAP - EASEL_NPC_BODY_PX;
+}
+
+/** NPC stand position — left of canvas, close, facing right toward the easel. */
 export function easelNpcStandWorldX(slot: number, stageSlug?: string, width?: number): number {
   const slug = stageSlug ?? venueSlugForRoute('cinema');
-  return easelSlotWorldX(slot, slug, width) - 55;
+  return easelNpcStandWorldXForCanvas(easelSlotWorldX(slot, slug, width));
 }
 
 export function easelSlotsForStage(stageSlug: string): number[] {

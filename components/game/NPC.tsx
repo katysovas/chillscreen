@@ -14,6 +14,7 @@ import {
   type StageAnchorKind,
 } from '@/lib/stageAnchor';
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
+import { easelNpcStandWorldX } from '@/lib/easel/layout';
 import { setEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import { easelPaintingChatter } from '@/lib/easel/paintingLabel';
 import {
@@ -22,7 +23,7 @@ import {
   worldXBlocksEaselCanvas,
 } from '@/lib/easel/canvasBlocking';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
-import { setNpcMovementTick } from '@/lib/npcMovementRegistry';
+import { setNpcMovementTick, getNpcSyncedWorldX, isNpcNetworkFollowMode } from '@/lib/npcMovementRegistry';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
 import {
   NPC_FAR_WANDER_CHANCE,
@@ -70,8 +71,9 @@ type NPCProps = NPCConfig & {
   stageCrowd?: StageAnchorKind;
   /** World-x that attracts idle wander targets — e.g. the cinema easel. */
   wanderAttractWorldX?: number;
-  /** Teleport to easel stand when assigned as painter — no walk. */
-  easelStationWorldX?: number;
+  /** Easel slot while painting — stand position derived each frame from viewport width. */
+  easelPaintingSlot?: number;
+  easelStageSlug?: string;
   /** Fired when NPC pins at the easel stand (starts drawing clock). */
   onEaselStationed?: () => void;
   /** Drawing subject — shown in chat bubble while status is painting. */
@@ -126,7 +128,8 @@ export default function NPC({
   name,
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
-  personality, stageAnchor, stageCrowd, wanderAttractWorldX, easelStationWorldX,
+  personality, stageAnchor, stageCrowd, wanderAttractWorldX,
+  easelPaintingSlot, easelStageSlug,
   onEaselStationed,
   easelPaintingLabel,
   paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false,   greetingChat,
@@ -156,6 +159,17 @@ export default function NPC({
   const stateRef            = useRef<State>('idle');
   const pausedRef           = useRef(paused);
   const easelStationedRef   = useRef(false);
+  const easelPaintingSlotRef = useRef<number | undefined>(easelPaintingSlot);
+  const easelStageSlugRef    = useRef<string | undefined>(easelStageSlug);
+  easelPaintingSlotRef.current = easelPaintingSlot;
+  easelStageSlugRef.current = easelStageSlug;
+
+  const resolveEaselStandWorldX = (width: number): number | undefined => {
+    const slot = easelPaintingSlotRef.current;
+    const slug = easelStageSlugRef.current;
+    if (slot == null || !slug) return undefined;
+    return easelNpcStandWorldX(slot, slug, width);
+  };
   const jumpingRef          = useRef(false);
   const avoidPlayerUntil    = useRef(0);
   const jumpTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -365,19 +379,20 @@ export default function NPC({
   }, [entryDelay, startX, stageAnchor, stageCrowd, characterId]);
 
   useEffect(() => {
-    if (!active || easelStationWorldX == null) return;
-    stationAtEasel(easelStationWorldX);
+    if (!active || easelPaintingSlot == null || !easelStageSlug) return;
+    const standX = easelNpcStandWorldX(easelPaintingSlot, easelStageSlug, vw());
+    stationAtEasel(standX);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, easelStationWorldX]);
+  }, [active, easelPaintingSlot, easelStageSlug]);
 
   useEffect(() => {
-    if (easelStationWorldX != null || !easelStationedRef.current) return;
+    if (easelPaintingSlot != null || !easelStationedRef.current) return;
     easelStationedRef.current = false;
     setEaselStationed(false);
     setEaselPainterReady(characterId, false);
     stateRef.current = 'idle';
     applyWalking(false);
-  }, [easelStationWorldX, characterId]);
+  }, [easelPaintingSlot, characterId]);
 
   useEffect(() => () => setEaselPainterReady(characterId, false), [characterId]);
 
@@ -385,10 +400,15 @@ export default function NPC({
 
   // ── Decision loop ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!active || (easelStationWorldX != null && easelStationedRef.current)) return;
+    if (!active || (easelPaintingSlot != null && easelStationedRef.current)) return;
     let timer: ReturnType<typeof setTimeout>;
 
     const decide = () => {
+      if (isNpcNetworkFollowMode()) {
+        timer = setTimeout(decide, 500);
+        return;
+      }
+
       if (!offlineFestieNpc && !onScreenRef.current) {
         timer = setTimeout(decide, 800);
         return;
@@ -454,7 +474,7 @@ export default function NPC({
       if (jumpTimerRef.current) { clearTimeout(jumpTimerRef.current); jumpTimerRef.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, personality, spaceFloat, easelStationWorldX]);
+  }, [active, personality, spaceFloat, easelPaintingSlot]);
 
   // ── Movement — registered with SFCity's single game-frame RAF ───────────────
   useEffect(() => {
@@ -476,9 +496,10 @@ export default function NPC({
         stateRef.current = 'idle';
       }
 
-      if (easelStationWorldX != null && easelStationedRef.current && !heldForConvo) {
-        worldXRef.current = easelStationWorldX;
-        targetWorldRef.current = easelStationWorldX;
+      const standX = easelStationedRef.current ? resolveEaselStandWorldX(width) : undefined;
+      if (standX != null && !heldForConvo) {
+        worldXRef.current = standX;
+        targetWorldRef.current = standX;
         stateRef.current = 'idle';
         if (!pausedRef.current) {
           applyFacing('right');
@@ -507,6 +528,41 @@ export default function NPC({
         }
       }
 
+      const syncedWorldX = isNpcNetworkFollowMode() ? getNpcSyncedWorldX(index) : undefined;
+      if (
+        syncedWorldX != null
+        && Number.isFinite(syncedWorldX)
+        && !heldForConvo
+        && !pausedRef.current
+        && easelPaintingSlotRef.current == null
+      ) {
+        const diff = syncedWorldX - worldXRef.current;
+        if (Math.abs(diff) > 600) {
+          worldXRef.current = syncedWorldX;
+        } else if (Math.abs(diff) > 0.5) {
+          worldXRef.current += diff * 0.38;
+        }
+        stateRef.current = 'idle';
+        applyFacing(diff > 2 ? 'right' : diff < -2 ? 'left' : facingRef.current);
+        applyWalking(Math.abs(diff) > 3);
+      } else if (!heldForConvo && !pausedRef.current && stateRef.current === 'wandering') {
+        const target = targetWorldRef.current;
+        const cur    = worldXRef.current;
+        const diff   = target - cur;
+        const spd    = (personality.speed / 100) * width;
+
+        if (Math.abs(diff) < spd) {
+          worldXRef.current = target;
+          targetWorldRef.current = target;
+          stateRef.current = 'idle';
+          applyWalking(false);
+        } else {
+          worldXRef.current += diff > 0 ? spd : -spd;
+          applyFacing(diff > 0 ? 'right' : 'left');
+          applyWalking(true);
+        }
+      }
+
       const pct = worldXToScreenPct(worldXRef.current, off, width);
       const onScreen = pausedRef.current
         || (pct >= NPC_OFFSCREEN_LEFT && pct <= NPC_OFFSCREEN_RIGHT);
@@ -526,29 +582,11 @@ export default function NPC({
         return worldXRef.current;
       }
 
-      if (!heldForConvo && !pausedRef.current && stateRef.current === 'wandering') {
-        const target = targetWorldRef.current;
-        const cur    = worldXRef.current;
-        const diff   = target - cur;
-        const spd    = (personality.speed / 100) * width;
-
-        if (Math.abs(diff) < spd) {
-          worldXRef.current = target;
-          targetWorldRef.current = target;
-          stateRef.current = 'idle';
-          applyWalking(false);
-        } else {
-          worldXRef.current += diff > 0 ? spd : -spd;
-          applyFacing(diff > 0 ? 'right' : 'left');
-          applyWalking(true);
-        }
-      }
-
-      // Idle in front of an active canvas — step aside (walking through is fine).
       if (
-        !heldForConvo
+        !syncedWorldX
+        && !heldForConvo
         && !pausedRef.current
-        && easelStationWorldX == null
+        && !easelStationedRef.current
         && shouldNpcAvoidEaselCanvas(characterId)
         && stateRef.current === 'idle'
         && worldXBlocksEaselCanvas(worldXRef.current)
@@ -578,8 +616,8 @@ export default function NPC({
   useEffect(() => {
     const justDisconnected = wasGreetingRef.current && !greeting;
     wasGreetingRef.current = greeting;
-    if (justDisconnected && easelStationWorldX == null) fleeFromPlayer();
-  }, [greeting, easelStationWorldX]);
+    if (justDisconnected && !easelStationedRef.current) fleeFromPlayer();
+  }, [greeting]);
 
   const paintingMessages = useMemo((): ChatLine[] => {
     if (!easelPaintingLabel) return [];
@@ -588,7 +626,7 @@ export default function NPC({
 
   const showPaintingBubble = easelStationed && Boolean(easelPaintingLabel);
   /** Easel canvas anchors at CHAR_BOTTOM — painters must match, not use crowd depth. */
-  const effectiveDepthY = showPaintingBubble || easelStationed || easelStationWorldX != null ? 0 : depthY;
+  const effectiveDepthY = showPaintingBubble || easelStationed || easelPaintingSlot != null ? 0 : depthY;
   const bubbleSide = showPaintingBubble
     ? 'left'
     : screenXToBubbleSide(screenX);
