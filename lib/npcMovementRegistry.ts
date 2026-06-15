@@ -5,7 +5,8 @@ export type NpcMovementTick = (
 ) => number;
 
 const ticks = new Map<number, NpcMovementTick>();
-const syncedWorldX = new Map<number, number>();
+/** Leader screen-% per cast index — followers convert with local off + width. */
+const syncedScreenPct = new Map<number, number>();
 let networkFollowMode = false;
 
 export function setNpcMovementTick(index: number, tick: NpcMovementTick | null) {
@@ -21,17 +22,17 @@ export function isNpcNetworkFollowMode(): boolean {
   return networkFollowMode;
 }
 
-export function setNpcSyncedWorldX(index: number, worldX: number | null) {
-  if (worldX == null || !Number.isFinite(worldX)) syncedWorldX.delete(index);
-  else syncedWorldX.set(index, worldX);
+export function setNpcSyncedScreenPct(index: number, pct: number | null) {
+  if (pct == null || !Number.isFinite(pct)) syncedScreenPct.delete(index);
+  else syncedScreenPct.set(index, pct);
 }
 
-export function getNpcSyncedWorldX(index: number): number | undefined {
-  return syncedWorldX.get(index);
+export function getNpcSyncedScreenPct(index: number): number | undefined {
+  return syncedScreenPct.get(index);
 }
 
-export function clearNpcSyncedWorldXs() {
-  syncedWorldX.clear();
+export function clearNpcSyncedScreenPcts() {
+  syncedScreenPct.clear();
 }
 
 /** Run every registered NPC movement step (called once per game frame). */

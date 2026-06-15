@@ -91,7 +91,6 @@ import {
   stageWorldOffForRoute,
 } from '@/lib/isolatedCity';
 import { setVenueDressCode } from '@/lib/dressCode';
-import { LovingCarLayer } from './LovingCar';
 import { WelcomePopup } from './WelcomePopup';
 import { CityNavSigns } from './CityNavSigns';
 import { StagePicker } from './StagePicker';
@@ -122,10 +121,10 @@ import { FestieSessionRecapOverlay } from './FestieSessionRecapOverlay';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import {
-  clearNpcSyncedWorldXs,
+  clearNpcSyncedScreenPcts,
   runAllNpcMovementTicks,
   setNpcNetworkFollowMode,
-  setNpcSyncedWorldX,
+  setNpcSyncedScreenPct,
 } from '@/lib/npcMovementRegistry';
 import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
@@ -327,6 +326,7 @@ export default function SFCity({
   // Infinity until each NPC's RAF loop reports a live position — avoids
   // connecting to off-screen entry coords while the sprite is still hidden.
   const npcWorldXRefs     = useRef<number[]>(npcCast.map(() => Infinity));
+  const npcWorldXByIdRef  = useRef<Map<string, number>>(new Map());
   const greetingRef       = useRef<number | null>(null);
   const nearNpcRef        = useRef<number | null>(null);
   const disconnectUntil   = useRef(0);
@@ -724,7 +724,7 @@ export default function SFCity({
   useEffect(() => {
     const follow = mp.connected && !mp.isNpcLeader;
     setNpcNetworkFollowMode(follow);
-    if (!follow) clearNpcSyncedWorldXs();
+    if (!follow) clearNpcSyncedScreenPcts();
   }, [mp.connected, mp.isNpcLeader]);
 
   const easelChannel = stageChannelForRoute(effectiveVenueRoute);
@@ -778,7 +778,11 @@ export default function SFCity({
         return;
       }
       setActiveEaselCanvasBlockZone({
-        canvasWorldX: easelSlotWorldX(painting.slot, easelStageSlug),
+        canvasWorldX: easelSlotWorldX(
+          painting.slot,
+          easelStageSlug,
+          typeof window !== 'undefined' ? window.innerWidth : 1200,
+        ),
         painterNpcId: painting.npc,
       });
     };
@@ -996,7 +1000,9 @@ export default function SFCity({
     setGndScrollWorldOff(spawnWorldOff);
     gameWorldOffRef.current = spawnWorldOff;
     updateViewBoxes(spawnWorldOff);
-    npcWorldXRefs.current = effectiveNpcCast.map((_, i) => npcWorldXRefs.current[i] ?? Infinity);
+    npcWorldXRefs.current = effectiveNpcCast.map(cfg =>
+      npcWorldXByIdRef.current.get(cfg.id) ?? Infinity,
+    );
     npcDancingRef.current = effectiveNpcCast.map((_, i) => npcDancingRef.current[i] ?? false);
     setNpcDancing(prev => {
       const next = effectiveNpcCast.map((_, i) => prev[i] ?? false);
@@ -1537,12 +1543,18 @@ export default function SFCity({
       if (now - lastNpcPosSendRef.current <= 500) return;
       lastNpcPosSendRef.current = now;
       const width = window.innerWidth;
+      const off = worldRef.current;
       const positions = effectiveNpcCastRef.current
-        .map((cfg, i) => ({
-          id: cfg.id,
-          worldX: npcWorldXRefs.current[i]!,
-        }))
-        .filter(p => Number.isFinite(p.worldX));
+        .map((cfg, i) => {
+          const worldX = npcWorldXRefs.current[i]!;
+          if (!Number.isFinite(worldX)) return null;
+          return {
+            id: cfg.id,
+            worldX,
+            pct: worldXToScreenPct(worldX, off, width),
+          };
+        })
+        .filter((p): p is { id: string; worldX: number; pct: number } => p != null);
       mpRef.current?.sendNpcPositions(positions, width);
     };
 
@@ -1552,8 +1564,16 @@ export default function SFCity({
       if (!sync || sync.size === 0) return;
       const cast = effectiveNpcCastRef.current;
       for (let i = 0; i < cast.length; i++) {
-        const wx = sync.get(cast[i]!.id);
-        setNpcSyncedWorldX(i, wx != null && Number.isFinite(wx) ? wx : null);
+        const pct = sync.get(cast[i]!.id);
+        setNpcSyncedScreenPct(i, pct != null && Number.isFinite(pct) ? pct : null);
+      }
+    };
+
+    const persistNpcWorldXById = () => {
+      const cast = effectiveNpcCastRef.current;
+      for (let i = 0; i < cast.length; i++) {
+        const wx = npcWorldXRefs.current[i];
+        if (Number.isFinite(wx)) npcWorldXByIdRef.current.set(cast[i]!.id, wx!);
       }
     };
 
@@ -1564,6 +1584,7 @@ export default function SFCity({
         window.innerWidth,
         npcWorldXRefs.current,
       );
+      persistNpcWorldXById();
       runAllWorldPositionTicks(worldRef.current, window.innerWidth);
     };
 
@@ -1890,7 +1911,6 @@ export default function SFCity({
           isolatedTileIndex={isolatedTile}
         />
         {!isDeepSpace && <CabanaForegroundLayer ref={cabanaRef} worldOff={gndScrollWorldOff} />}
-        {effectiveVenueRoute !== 'silent-disco' && !isDeepSpace && <LovingCarLayer />}
 
         {!homePreview && (
           <GroundScoreLayer

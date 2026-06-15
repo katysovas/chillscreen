@@ -134,6 +134,7 @@ export type Multiplayer = {
   /** True when this client runs local NPC AI and relays positions. */
   isNpcLeader: boolean;
   /** Latest NPC world-x from the room leader (id → worldX). */
+  /** Leader screen-% per NPC id — followers convert with local scroll + width. */
   npcSyncRef: React.RefObject<Map<string, number>>;
   sendMove: (worldX: number, facing: Facing, walking: boolean) => void;
   sendProfile: (profile: PlayerProfile) => void;
@@ -144,7 +145,7 @@ export type Multiplayer = {
   sendAmbientMessage: (text: string) => void;
   sendRoomChat: (text: string) => void;
   sendNpcChat: (npcId: string, open: boolean) => void;
-  sendNpcPositions: (positions: { id: string; worldX: number }[], viewportWidth: number) => void;
+  sendNpcPositions: (positions: { id: string; worldX: number; pct: number }[], viewportWidth: number) => void;
   sendEaselPainterReady: (npcId: string) => void;
 };
 
@@ -162,7 +163,6 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const remoteStateRef = useRef<Map<string, RemotePlayerState>>(new Map());
   const ambientRef = useRef<Map<string, RemoteAmbientMessage>>(new Map());
   const npcSyncRef = useRef<Map<string, number>>(new Map());
-  /** Latest position — used for join when the socket opens mid-movement. */
   const lastMoveRef = useRef<{ worldX: number; facing: Facing; walking: boolean } | null>(null);
   /** Profile updates that arrive before the socket is open. */
   const pendingProfileRef = useRef<PlayerProfile | null>(null);
@@ -179,7 +179,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const [npcConvoPairs, setNpcConvoPairs] = useState<NpcConvoPair[]>([]);
   const [festies, setFesties] = useState<FestiePublic[]>([]);
   const [easelSession, setEaselSession] = useState<EaselSessionSync | null>(null);
-  const [isNpcLeader, setIsNpcLeader] = useState(true);
+  const [isNpcLeader, setIsNpcLeader] = useState(false);
 
   const connectRequestedRef = useRef(false);
 
@@ -421,8 +421,9 @@ export function useMultiplayer(opts: Options): Multiplayer {
           break;
         case 'npc-positions-sync': {
           const sync = npcSyncRef.current;
+          sync.clear();
           for (const p of msg.positions) {
-            if (p.id && Number.isFinite(p.worldX)) sync.set(p.id, p.worldX);
+            if (p.id && Number.isFinite(p.pct)) sync.set(p.id, p.pct);
           }
           break;
         }
@@ -478,7 +479,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
     [connectAndSend],
   );
   const sendNpcPositions = useCallback(
-    (positions: { id: string; worldX: number }[], viewportWidth: number) =>
+    (positions: { id: string; worldX: number; pct: number }[], viewportWidth: number) =>
       connectAndSend({ t: 'npc-positions', positions, viewportWidth }),
     [connectAndSend],
   );

@@ -18,9 +18,9 @@ export function easelSlotWorldX(
 }
 
 /** Gap between festie body and easel frame (screen px = world units). */
-export const EASEL_NPC_STAND_GAP = 10;
+export const EASEL_NPC_STAND_GAP = 4;
 /** Festie body width at default scale — stand uses left edge of sprite. */
-export const EASEL_NPC_BODY_PX = 88;
+export const EASEL_NPC_BODY_PX = 48;
 
 /** Left edge of the easel art unit (frame), centered on canvasWorldX. */
 export function easelFrameLeftWorldX(canvasWorldX: number): number {

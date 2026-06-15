@@ -71,8 +71,12 @@ export type ClientMessage =
   | { t: 'room-chat'; text: string }
   // NPC 1:1 chat — broadcast so everyone sees the connect glow.
   | { t: 'npc-chat'; npcId: string; open: boolean }
-  /** Throttled NPC world-x snapshot for proximity-gated pair chatter. */
-  | { t: 'npc-positions'; positions: { id: string; worldX: number }[]; viewportWidth: number }
+  /** Throttled NPC snapshot for proximity chatter + follower sync. */
+  | {
+      t: 'npc-positions';
+      positions: { id: string; worldX: number; pct: number }[];
+      viewportWidth: number;
+    }
   /** Painting NPC reached the easel — starts the watched drawing clock. */
   | { t: 'easel-painter-ready'; npcId: string };
 
@@ -126,7 +130,7 @@ export type ServerMessage =
       t: 'npc-positions-sync';
       leaderId: string;
       serverNow: number;
-      positions: { id: string; worldX: number }[];
+      positions: { id: string; worldX: number; pct: number }[];
     }
   | { t: 'npc-leader'; leaderId: string | null }
   | { t: 'easel-session'; sessionStart: number; slots: EaselSlotSync[] }

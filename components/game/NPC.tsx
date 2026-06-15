@@ -23,7 +23,7 @@ import {
   worldXBlocksEaselCanvas,
 } from '@/lib/easel/canvasBlocking';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
-import { setNpcMovementTick, getNpcSyncedWorldX, isNpcNetworkFollowMode } from '@/lib/npcMovementRegistry';
+import { setNpcMovementTick, getNpcSyncedScreenPct, isNpcNetworkFollowMode } from '@/lib/npcMovementRegistry';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
 import {
   NPC_FAR_WANDER_CHANCE,
@@ -496,7 +496,9 @@ export default function NPC({
         stateRef.current = 'idle';
       }
 
-      const standX = easelStationedRef.current ? resolveEaselStandWorldX(width) : undefined;
+      const standX = easelPaintingSlotRef.current != null
+        ? resolveEaselStandWorldX(width)
+        : undefined;
       if (standX != null && !heldForConvo) {
         worldXRef.current = standX;
         targetWorldRef.current = standX;
@@ -528,23 +530,18 @@ export default function NPC({
         }
       }
 
-      const syncedWorldX = isNpcNetworkFollowMode() ? getNpcSyncedWorldX(index) : undefined;
+      const syncedPct = isNpcNetworkFollowMode() ? getNpcSyncedScreenPct(index) : undefined;
       if (
-        syncedWorldX != null
-        && Number.isFinite(syncedWorldX)
+        syncedPct != null
+        && Number.isFinite(syncedPct)
         && !heldForConvo
         && !pausedRef.current
         && easelPaintingSlotRef.current == null
       ) {
-        const diff = syncedWorldX - worldXRef.current;
-        if (Math.abs(diff) > 600) {
-          worldXRef.current = syncedWorldX;
-        } else if (Math.abs(diff) > 0.5) {
-          worldXRef.current += diff * 0.38;
-        }
+        worldXRef.current = screenPctToWorldX(syncedPct, off, width);
+        targetWorldRef.current = worldXRef.current;
         stateRef.current = 'idle';
-        applyFacing(diff > 2 ? 'right' : diff < -2 ? 'left' : facingRef.current);
-        applyWalking(Math.abs(diff) > 3);
+        applyWalking(false);
       } else if (!heldForConvo && !pausedRef.current && stateRef.current === 'wandering') {
         const target = targetWorldRef.current;
         const cur    = worldXRef.current;
@@ -583,10 +580,10 @@ export default function NPC({
       }
 
       if (
-        !syncedWorldX
+        syncedPct == null
         && !heldForConvo
         && !pausedRef.current
-        && !easelStationedRef.current
+        && easelPaintingSlotRef.current == null
         && shouldNpcAvoidEaselCanvas(characterId)
         && stateRef.current === 'idle'
         && worldXBlocksEaselCanvas(worldXRef.current)

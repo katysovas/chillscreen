@@ -30,23 +30,18 @@ function EaselSlotLayer({
   stageSlug: string;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
-  const worldXRef = useRef<number | null>(null);
   const onScreenRef = useRef(false);
   const [onScreenPaused, setOnScreenPaused] = useState(true);
   const painting = slot.status === 'painting';
   const painterReady = useEaselPainterReady(slot.npc, painting);
 
   useEffect(() => {
-    worldXRef.current = easelSlotWorldX(slot.slot, stageSlug);
-  }, [slot.slot, stageSlug]);
-
-  useEffect(() => {
     if (!painterReady) return;
     return setWorldPositionTick((off, width) => {
       const el = outerRef.current;
-      const worldX = worldXRef.current;
-      if (!el || worldX == null) return;
+      if (!el) return;
 
+      const worldX = easelSlotWorldX(slot.slot, stageSlug, width);
       const pct = worldXToScreenPct(worldX, off, width);
       const px = Math.round((pct / 100) * width);
       el.style.transform = `translateX(${px}px) translateX(-50%)`;

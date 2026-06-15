@@ -43,6 +43,8 @@ export default class WhichStageServer implements Party.Server {
   private festieSeenTimers = new Map<string, ReturnType<typeof setTimeout>>();
   /** Connection id whose local NPC sim is authoritative for the room. */
   private npcLeaderId: string | null = null;
+  /** Latest leader snapshot — replayed to late joiners. */
+  private lastNpcPositionsSync: Extract<ServerMessage, { t: 'npc-positions-sync' }> | null = null;
   private stageSync: StageSync | null = null;
   private chatter: NpcChatterScheduler;
   private easels: EaselScheduler;
@@ -142,6 +144,9 @@ export default class WhichStageServer implements Party.Server {
         } else {
           this.sendTo(sender.id, { t: 'npc-leader', leaderId: this.npcLeaderId });
         }
+        if (this.lastNpcPositionsSync && sender.id !== this.npcLeaderId) {
+          this.sendTo(sender.id, this.lastNpcPositionsSync);
+        }
         void this.broadcastFestiesSync();
         break;
       }
@@ -240,15 +245,14 @@ export default class WhichStageServer implements Party.Server {
       case 'npc-positions': {
         if (sender.id !== this.npcLeaderId) break;
         this.chatter.updateNpcPositions(msg.positions, msg.viewportWidth, sender.id);
-        this.room.broadcast(
-          encode({
-            t: 'npc-positions-sync',
-            leaderId: sender.id,
-            serverNow: Date.now(),
-            positions: msg.positions,
-          }),
-          [sender.id],
-        );
+        const syncMsg = {
+          t: 'npc-positions-sync' as const,
+          leaderId: sender.id,
+          serverNow: Date.now(),
+          positions: msg.positions,
+        };
+        this.lastNpcPositionsSync = syncMsg;
+        this.room.broadcast(encode(syncMsg), [sender.id]);
         break;
       }
       case 'easel-painter-ready':
