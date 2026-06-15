@@ -2,7 +2,7 @@
 
 import type { ChatNpcDrawingSession, DrawingProgram } from './types';
 import { EASEL_DEFAULT_RATE } from './types';
-import { chatDrawingExpiresAt } from './lifecycle';
+import { chatDrawingExpiresAt, chatDrawingHoldExpiresAt } from './lifecycle';
 import { npcPromptCanvasWorldX } from './npcPromptLayout';
 import { iwarn } from '@/lib/internalDebug';
 
@@ -70,6 +70,18 @@ export function pruneExpiredChatDrawings(
   now = Date.now(),
 ): ChatNpcDrawingSession[] {
   return sessions.filter(s => s.expiresAt > now);
+}
+
+export function markChatDrawingComplete(
+  session: ChatNpcDrawingSession,
+  completedAt = Date.now(),
+): ChatNpcDrawingSession {
+  return {
+    ...session,
+    status: 'done',
+    completedAt,
+    expiresAt: chatDrawingHoldExpiresAt(completedAt),
+  };
 }
 
 export function activeChatDrawingForNpc(

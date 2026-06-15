@@ -1,3 +1,4 @@
+import { easelHoldExpired } from './lifecycle';
 import type { EaselSessionSync, EaselStatus } from './types';
 
 type EaselSlotLike = {
@@ -13,25 +14,26 @@ function parseTimeMs(value: string | null | undefined): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
+function isHeldDoneSlot(slot: EaselSlotLike): boolean {
+  return slot.status === 'done' && !easelHoldExpired(slot.completed_at);
+}
+
 /**
  * Ambient (unprompted) stage easels — one active painter per room.
- * User-prompted chat drawings are tracked separately and are not capped here.
+ * Finished canvases stay visible until the post-completion hold expires.
  */
 export function pickAmbientEaselSlots<T extends EaselSlotLike>(slots: T[]): T[] {
-  if (slots.length <= 1) {
-    return slots.filter(s => s.status === 'painting');
-  }
-
   const painting = slots.filter(s => s.status === 'painting');
   if (painting.length > 0) {
-    return [
-      painting.reduce((best, cur) =>
-        parseTimeMs(cur.started_at) >= parseTimeMs(best.started_at) ? cur : best,
-      ),
-    ];
+    const pick = painting.length === 1
+      ? painting[0]!
+      : painting.reduce((best, cur) =>
+          parseTimeMs(cur.started_at) >= parseTimeMs(best.started_at) ? cur : best,
+        );
+    return [pick];
   }
 
-  return [];
+  return slots.filter(isHeldDoneSlot);
 }
 
 /** @deprecated Alias for pickAmbientEaselSlots — stage easel session visibility. */

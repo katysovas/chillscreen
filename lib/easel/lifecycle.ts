@@ -42,3 +42,8 @@ export function easelMaxVisibleExpired(
 export function chatDrawingExpiresAt(sessionStart: number): number {
   return sessionStart + EASEL_MAX_VISIBLE_MS;
 }
+
+/** Gallery expiry for finished chat-triggered canvases. */
+export function chatDrawingHoldExpiresAt(completedAt: number): number {
+  return completedAt + EASEL_HOLD_MS;
+}

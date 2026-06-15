@@ -39,6 +39,8 @@ export type AmbientCanvasDrawingProps = {
   /** When set, checkpoints/completes via `/api/easel`. Omit for local-only chat drawings. */
   persistence?: AmbientCanvasPersistence;
   logContext?: Record<string, unknown>;
+  /** Local-only sessions (chat prompt) — fired when stroke animation finishes. */
+  onPaintingComplete?: () => void;
 };
 
 type ProgressBaseline = {
@@ -73,6 +75,7 @@ export const AmbientCanvasDrawing = memo(function AmbientCanvasDrawing({
   painterReady = true,
   persistence,
   logContext,
+  onPaintingComplete,
 }: AmbientCanvasDrawingProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const controllerRef = useRef(createEaselController());
@@ -165,6 +168,7 @@ export const AmbientCanvasDrawing = memo(function AmbientCanvasDrawing({
         status: 'done',
       });
       logEaselDrawing('client', npcId, label, { status: 'done', finished: true, ...logContext });
+      onPaintingComplete?.();
     };
 
     const applyCheckpoint = (result: {
@@ -222,7 +226,7 @@ export const AmbientCanvasDrawing = memo(function AmbientCanvasDrawing({
       document.removeEventListener('visibilitychange', onHide);
       persist();
     };
-  }, [npcId, npcKey, program, totalSegments, rate, status, painterReady, persistence, label, logContext]);
+  }, [npcId, npcKey, program, totalSegments, rate, status, painterReady, persistence, label, logContext, onPaintingComplete]);
 
   return (
     <div style={{ position: 'relative', width: EASEL_DISPLAY_WIDTH, height: EASEL_DISPLAY_WIDTH }}>

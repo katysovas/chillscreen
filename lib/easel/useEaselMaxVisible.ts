@@ -28,7 +28,7 @@ export function useEaselMaxVisible(
     };
 
     for (const slot of session.slots) {
-      if (!slot.started_at) continue;
+      if (slot.status !== 'painting' || !slot.started_at) continue;
       if (easelMaxVisibleExpired(slot.started_at)) {
         refresh();
       } else {

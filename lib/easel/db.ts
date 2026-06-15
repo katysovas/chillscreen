@@ -163,7 +163,7 @@ export async function syncEaselSessionForPlayers(stage: string): Promise<EaselRo
   await pruneExtraVisibleEasels(stageKey);
   const rows = await fetchVisibleEaselRows(stageKey);
   for (const row of rows) {
-    if (easelMaxVisibleExpired(row.started_at)) {
+    if (row.status === 'painting' && easelMaxVisibleExpired(row.started_at)) {
       await hideEasel(stageKey, row.slot);
       continue;
     }

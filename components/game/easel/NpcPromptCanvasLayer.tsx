@@ -14,15 +14,22 @@ const OFFSCREEN_RIGHT = 122;
 
 type Props = {
   sessions: ChatNpcDrawingSession[];
+  onSessionComplete?: (sessionId: string) => void;
 };
 
-function PromptCanvasSlot({ session }: { session: ChatNpcDrawingSession }) {
+function PromptCanvasSlot({
+  session,
+  onSessionComplete,
+}: {
+  session: ChatNpcDrawingSession;
+  onSessionComplete?: (sessionId: string) => void;
+}) {
   const outerRef = useRef<HTMLDivElement>(null);
   const onScreenRef = useRef(false);
   const [onScreenPaused, setOnScreenPaused] = useState(true);
   const painting = session.status === 'painting';
   const registryReady = useEaselPainterReady(session.npcId, painting);
-  const painterReady = session.isCompareTest || registryReady;
+  const painterReady = session.isCompareTest || registryReady || session.status === 'done';
 
   useEffect(() => {
     if (!painterReady) return;
@@ -69,19 +76,31 @@ function PromptCanvasSlot({ session }: { session: ChatNpcDrawingSession }) {
         paused={onScreenPaused}
         painterReady={painterReady}
         logContext={{ source: 'chat-prompt', model: session.modelId }}
+        onPaintingComplete={
+          onSessionComplete && session.status === 'painting'
+            ? () => onSessionComplete(session.id)
+            : undefined
+        }
       />
     </div>
   );
 }
 
 /** Chat-triggered NPC canvases — anchored next to the NPC that was asked. */
-export const NpcPromptCanvasLayer = memo(function NpcPromptCanvasLayer({ sessions }: Props) {
+export const NpcPromptCanvasLayer = memo(function NpcPromptCanvasLayer({
+  sessions,
+  onSessionComplete,
+}: Props) {
   if (sessions.length === 0) return null;
 
   return (
     <>
       {sessions.map(session => (
-        <PromptCanvasSlot key={session.id} session={session} />
+        <PromptCanvasSlot
+          key={session.id}
+          session={session}
+          onSessionComplete={onSessionComplete}
+        />
       ))}
     </>
   );

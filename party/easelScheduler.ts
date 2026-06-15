@@ -162,7 +162,7 @@ export class EaselScheduler {
     let changed = false;
 
     for (const slot of [...this.slots]) {
-      if (easelMaxVisibleExpired(slot.started_at, now)) {
+      if (slot.status === 'painting' && easelMaxVisibleExpired(slot.started_at, now)) {
         const result = await this.postEasel({
           action: 'hide',
           stage,

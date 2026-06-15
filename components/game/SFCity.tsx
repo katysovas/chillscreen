@@ -149,6 +149,7 @@ import { parseDrawPrompt } from '@/lib/easel/parseDrawPrompt';
 import {
   activeChatDrawingForNpc,
   fetchPromptDraw,
+  markChatDrawingComplete,
   pruneExpiredChatDrawings,
 } from '@/lib/easel/chatNpcDrawings';
 import type { ChatNpcDrawingSession } from '@/lib/easel/types';
@@ -777,6 +778,12 @@ export default function SFCity({
       setChatNpcDrawings(prev => pruneExpiredChatDrawings(prev));
     }, 5000);
     return () => clearInterval(id);
+  }, []);
+
+  const handleChatDrawingComplete = useCallback((sessionId: string) => {
+    setChatNpcDrawings(prev => prev.map(session =>
+      session.id === sessionId ? markChatDrawingComplete(session) : session,
+    ));
   }, []);
 
   useEffect(() => {
@@ -2080,7 +2087,10 @@ export default function SFCity({
         )}
 
         {!homePreview && (
-          <NpcPromptCanvasLayer sessions={chatNpcDrawings} />
+          <NpcPromptCanvasLayer
+            sessions={chatNpcDrawings}
+            onSessionComplete={handleChatDrawingComplete}
+          />
         )}
 
         {/* Autonomous NPCs */}
@@ -2091,11 +2101,14 @@ export default function SFCity({
           const npcLabel = npcChatLabel(cfg.id, cfg.name);
           const isPainting = activePainterNpcIds(activeEaselSession).has(cfg.id);
           const chatPromptDrawing = activeChatDrawingForNpc(chatNpcDrawings, cfg.id);
+          const chatPromptPainting = chatPromptDrawing?.status === 'painting';
           const comparePin = compareDrawPins.find(p => p.npcId === cfg.id);
-          const chatPromptDrawingLabel = chatPromptDrawing?.topic ?? comparePin?.topic ?? null;
-          const chatPromptCanvasWorldX = chatPromptDrawing?.canvasWorldX
-            ?? comparePin?.canvasWorldX
-            ?? null;
+          const chatPromptDrawingLabel = chatPromptPainting
+            ? chatPromptDrawing?.topic ?? null
+            : comparePin?.topic ?? null;
+          const chatPromptCanvasWorldX = chatPromptPainting
+            ? chatPromptDrawing?.canvasWorldX ?? null
+            : comparePin?.canvasWorldX ?? null;
           const easelPaintingLabel = isPainting
             ? easelPaintingLabelForNpc(cfg.id, activeEaselSession)
             : null;
@@ -2105,7 +2118,7 @@ export default function SFCity({
           const easelPaintingSlot = isPainting
             ? activeEaselSession?.slots.find(s => s.npc === cfg.id && s.status === 'painting')?.slot
             : undefined;
-          const isDrawing = isPainting || Boolean(chatPromptDrawing) || Boolean(comparePin);
+          const isDrawing = isPainting || chatPromptPainting || Boolean(comparePin);
           return (
           <NPC
             key={cfg.id}

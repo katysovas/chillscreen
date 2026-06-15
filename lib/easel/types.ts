@@ -90,8 +90,8 @@ export const EASEL_LOGICAL_SIZE = 96;
 export const EASEL_SLOTS_PER_STAGE = 4;
 export const EASEL_STEP_MS = 600;
 export const EASEL_SEGMENTS_PER_STEP = 2;
-export const EASEL_HOLD_MS = 120_000;
-/** Hard cap — every canvas disappears within 5 minutes of appearing. */
+export const EASEL_HOLD_MS = 180_000;
+/** Hard cap while still painting — force completion/hide if generation runs long. */
 export const EASEL_MAX_VISIBLE_MS = 300_000;
 export const EASEL_DEFAULT_RATE = 0.5;
 
@@ -107,6 +107,8 @@ export type ChatNpcDrawingSession = {
   sessionStart: number;
   expiresAt: number;
   status: EaselStatus;
+  /** When status flipped to done — hold gallery timer starts here. */
+  completedAt?: number;
   /** Drawing LLM — shown in compare test mode. */
   modelId?: string;
   modelLabel?: string;
