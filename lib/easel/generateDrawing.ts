@@ -17,6 +17,25 @@ const MIN_STROKES = 12;
 const MIN_SEGMENTS = 22;
 const MIN_PALETTE_INDICES = 3;
 
+/** Final override — one clear subject, applied after personality/stream/seed rules. */
+const EASEL_SINGLE_SUBJECT_RULES = [
+  'Before drawing, lock ONE subject in a single word (cat, sun, tree, house, face). Draw only that.',
+  'No scenes, no clutter, no background unless the stream or seed explicitly asks for one.',
+  'Use plenty of strokes and all palette colors if they help — but every line must clarify the subject.',
+  'Never drift into abstract squiggles, symbols, or patterns that do not read as the noun.',
+  '',
+  'Rules for recognizability:',
+  '- Strong silhouette first. If the outline alone reads as the thing, it works.',
+  '- Iconic view only — the angle a 5-year-old would pick: face front-on, car side-on,',
+  '  sun as a circle with rays, tree as trunk + round top.',
+  '- Exaggerate the one feature that defines it (long ears = rabbit, mane = lion, dome + windows = car).',
+  '- Flat palette colors, high contrast. No gradients, no shading — color blocks shape, not mood.',
+  '- Center it. Fill the frame. No tiny drawings floating in a corner.',
+  '',
+  'If the subject does not read instantly, switch to a simpler noun — not a simpler style.',
+  'A recognizable sun beats an abstract dragon every time.',
+].join('\n');
+
 function extractJsonObject(raw: string): unknown {
   const trimmed = raw.trim();
   try {
@@ -93,31 +112,28 @@ function buildSystemPrompt(ctx: EaselDrawingContext, attempt: number): string {
     `You are ${ctx.npcName}, sketching on a small 96×96 easel at an outdoor cinema lawn.`,
     `Personality: ${ctx.personalityNotes}`,
     vibeLine,
-    `Time of day: ${ctx.skyPeriod}. Let lighting shape the mood (stars at night, long shadows at sunset, soft haze in fog).`,
+    `Time of day: ${ctx.skyPeriod}. Let mood nudge which single thing you pick (moon at night, sunflower by day).`,
     streamLine,
     seedLine,
     priorLine,
     `Unique moment id: ${ctx.uniqueNonce}-a${attempt} — new subject required; different from all prior paintings.`,
     '',
-    'Think like a quick but thoughtful observational doodle — what would THIS character notice right now?',
-    'Good subjects: projector beam, blanket grid from above, wine in a coffee cup, fog rolling in,',
-    'marquee lights, lawn chair silhouette, snack tray, couple arguing quietly, jacket someone forgot,',
-    'film reel, popcorn bucket detail, string lights, thermos on grass, screen glow on faces.',
-    'Never reuse generic defaults (cats, hearts, smiley faces) unless the stream or seed explicitly calls for them.',
+    'First, use personality + time + stream/seed to choose WHAT one-word subject fits this moment',
+    '(e.g. stream about space → moon; seed mentions popcorn → popcorn; foggy evening → cloud).',
+    'Pick a concrete noun — not a scene, not a sentence. Must differ from every item in the already-painted list.',
     '',
     'Return ONLY valid JSON:',
-    '{ "topic": "2-5 word label", "strokes": [ { "pi": 0, "w": 3, "p": [[x,y], ...] }, ... ] }',
+    '{ "topic": "one word", "strokes": [ { "pi": 0, "w": 3, "p": [[x,y], ...] }, ... ] }',
     '',
-    'Composition rules:',
-    '- 18–32 strokes total — lean detailed, not minimal.',
-    '- Layer the drawing: background hint → main subject → small telling details (3+ layers).',
-    '- Each stroke is a connected polyline with 2–18 integer points (curves need more points).',
-    '- Coordinates integers 0–96; fill most of the canvas — avoid tiny centered icons.',
-    '- Use ALL palette indices: pi 0 main fill lines, 1 outlines/shadows, 2 accents, 3 highlights/sparkles.',
-    '- Mix stroke widths: w=2 fine detail, w=3 body, w=4–5 bold silhouettes.',
-    '- Simple line art only — no fills, no text, no emoji — but rich contour and cross-hatching is welcome.',
-    '- Subject must reflect personality + time + stream/seed; include at least one small "crowd-watcher" detail.',
-    '- Must differ from every item in the already-painted list.',
+    'Stroke format:',
+    '- 18–32 strokes — rich detail is welcome when it makes the subject more identifiable.',
+    '- Each stroke is a connected polyline with 2–18 integer points.',
+    '- Coordinates integers 0–96; fill most of the canvas. Simple line art — no fills, no text, no emoji.',
+    '- Use ALL palette indices (pi 0–3): outlines, body, accents, highlights — flat color, high contrast.',
+    '- Mix stroke widths: w=2 fine defining details, w=3 body, w=4–5 bold silhouettes.',
+    '',
+    '--- Final drawing rules (override everything above if they conflict) ---',
+    EASEL_SINGLE_SUBJECT_RULES,
   ].join('\n');
 }
 
@@ -127,10 +143,10 @@ function buildUserPrompt(ctx: EaselDrawingContext): string {
       : ctx.skyPeriod === 'morning' ? 'soft morning light'
         : 'clear open-air mood';
   return [
-    `Sketch one cohesive scene or object for the easel now.`,
+    `Lock one single-word subject, then draw only that — centered, filling the frame.`,
     `Mood: ${mood}.`,
-    ctx.streamTitle ? `Echo something from "${ctx.streamTitle}" without copying it literally.` : '',
-    `Be specific to ${ctx.npcName}'s point of view — not a generic clipart doodle.`,
+    ctx.streamTitle ? `Let "${ctx.streamTitle}" suggest the word, not a full scene.` : '',
+    `${ctx.npcName}'s personality picks WHICH noun — draw it clearly with as much stroke and color as needed.`,
   ].filter(Boolean).join(' ');
 }
 
