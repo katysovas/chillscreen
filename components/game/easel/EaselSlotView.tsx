@@ -26,8 +26,7 @@ export const EaselSlotView = memo(function EaselSlotView({
   const program = programForSlot(slot);
   if (!program) return null;
 
-  const clockSessionStart = painterReady && sessionStart > 0 ? sessionStart : 0;
-  const clockStart = easelClockStart(slot, clockSessionStart);
+  const clockStart = easelClockStart(slot, sessionStart);
 
   return (
     <AmbientCanvasDrawing

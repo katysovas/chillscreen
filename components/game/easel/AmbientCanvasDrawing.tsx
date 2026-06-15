@@ -8,7 +8,7 @@ import { notifyEaselUpdated } from '@/lib/easel/notifyUpdated';
 import { iwarn } from '@/lib/internalDebug';
 import { logEaselDrawing } from '@/lib/easel/logDrawing';
 import { clampLiveDone, liveSegmentsDone } from '@/lib/easel/segments';
-import { parseStartedAtMs } from '@/lib/easel/sessionClock';
+import { parseStartedAtMs, resolveEaselClockStart } from '@/lib/easel/sessionClock';
 import type { DrawingProgram, EaselStatus } from '@/lib/easel/types';
 import { EASEL_DEFAULT_RATE } from '@/lib/easel/types';
 import { EASEL_DISPLAY_WIDTH } from '@/lib/easel/layout';
@@ -78,7 +78,7 @@ export const AmbientCanvasDrawing = memo(function AmbientCanvasDrawing({
   const controllerRef = useRef(createEaselController());
   const progressRef = useRef<ProgressBaseline>({
     segmentsDone,
-    clockStart: painterReady && sessionStart > 0 ? sessionStart : 0,
+    clockStart: 0,
     status,
   });
   const completingRef = useRef(false);
@@ -101,22 +101,14 @@ export const AmbientCanvasDrawing = memo(function AmbientCanvasDrawing({
   useEffect(() => {
     progressRef.current = {
       segmentsDone,
-      clockStart: painterReady && sessionStart > 0 ? sessionStart : 0,
+      clockStart: resolveEaselClockStart(
+        painterReady,
+        sessionStart,
+        progressRef.current.clockStart,
+      ),
       status,
     };
   }, [segmentsDone, sessionStart, status, painterReady]);
-
-  const wasPainterReadyRef = useRef(painterReady);
-  useEffect(() => {
-    const justReady = painterReady && !wasPainterReadyRef.current;
-    wasPainterReadyRef.current = painterReady;
-    if (!justReady) return;
-    const partyJustStarted = sessionStart > 0 && Date.now() - sessionStart < 3000;
-    progressRef.current = {
-      ...progressRef.current,
-      clockStart: partyJustStarted ? sessionStart : Date.now(),
-    };
-  }, [painterReady, sessionStart]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
