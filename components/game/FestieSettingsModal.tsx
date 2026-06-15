@@ -22,8 +22,9 @@ import {
   validateFestiePassword,
 } from '@/lib/festie/validation';
 import { getPlayerName } from '@/lib/playerStorage';
+import { HelpFaqContent } from './HelpFaqContent';
 
-export type FestieSettingsTab = 'customize' | 'access' | 'contact';
+export type FestieSettingsTab = 'customize' | 'access' | 'help' | 'contact';
 
 function TabIconCustomize({ size = 16 }: { size?: number }) {
   return (
@@ -87,9 +88,25 @@ function TabIconContact({ size = 16 }: { size?: number }) {
   );
 }
 
+function TabIconHelp({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ display: 'block' }}>
+      <circle cx={12} cy={12} r={9} stroke="currentColor" strokeWidth={1.5} />
+      <path
+        d="M9.5 9.25a2.75 2.75 0 0 1 5.1 1.35c0 1.65-1.35 2.15-2.1 2.65-.55.38-.9.72-.9 1.35v.1"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+      <circle cx={12} cy={17.25} r={1} fill="currentColor" />
+    </svg>
+  );
+}
+
 const TAB_ICONS: Record<FestieSettingsTab, typeof TabIconCustomize> = {
   customize: TabIconCustomize,
   access: TabIconAccess,
+  help: TabIconHelp,
   contact: TabIconContact,
 };
 
@@ -104,6 +121,7 @@ type Props = {
 const TABS: { id: FestieSettingsTab; label: string }[] = [
   { id: 'customize', label: 'Customize' },
   { id: 'access', label: 'Access' },
+  { id: 'help', label: 'Help' },
   { id: 'contact', label: 'Contact' },
 ];
 
@@ -652,6 +670,12 @@ export function FestieSettingsModal({
               >
                 {savingPassword ? 'Updating…' : 'Update password'}
               </button>
+            </>
+          )}
+
+          {tab === 'help' && (
+            <>
+              <HelpFaqContent />
             </>
           )}
 

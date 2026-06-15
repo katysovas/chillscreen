@@ -23,6 +23,7 @@ export type FestieRow = {
   owner_online: boolean;
   notify_email: string | null;
   email_opted_in: boolean;
+  help_dismissed_at: string | null;
   created_at: string;
 };
 
@@ -43,6 +44,7 @@ export type FestiePublic = {
 export type FestieOwner = FestiePublic & {
   notify_email: string | null;
   email_opted_in: boolean;
+  help_dismissed_at: string | null;
 };
 
 export type FestieCache = {

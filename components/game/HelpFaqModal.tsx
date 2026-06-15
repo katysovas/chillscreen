@@ -1,6 +1,6 @@
 'use client';
 
-import { FAQ_ITEMS } from '@/lib/helpFaq';
+import { HelpFaqContent } from './HelpFaqContent';
 import { Z_MODAL } from '@/lib/zLayers';
 
 type Props = {
@@ -29,8 +29,8 @@ export function HelpFaqModal({ onClose }: Props) {
         aria-labelledby="help-faq-title"
         onClick={e => e.stopPropagation()}
         style={{
-          width: 'min(100%, 400px)',
-          maxHeight: 'min(88vh, 560px)',
+          width: 'min(100%, 560px)',
+          maxHeight: 'min(90vh, 660px)',
           overflow: 'auto',
           borderRadius: 18,
           border: '1px solid rgba(255,255,255,0.14)',
@@ -45,8 +45,9 @@ export function HelpFaqModal({ onClose }: Props) {
             id="help-faq-title"
             style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}
           >
-            Quick guide
+            Real human? Start here.
           </h2>
+
           <button
             type="button"
             onClick={onClose}
@@ -65,28 +66,7 @@ export function HelpFaqModal({ onClose }: Props) {
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {FAQ_ITEMS.map(({ q, a }) => (
-            <div key={q}>
-              <div style={{
-                color: 'rgba(255,255,255,0.88)',
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 4,
-              }}>
-                {q}
-              </div>
-              <p style={{
-                margin: 0,
-                color: 'rgba(255,255,255,0.55)',
-                fontSize: 14,
-                lineHeight: 1.5,
-              }}>
-                {a}
-              </p>
-            </div>
-          ))}
-        </div>
+        <HelpFaqContent />
       </div>
     </div>
   );

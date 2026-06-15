@@ -11,8 +11,6 @@ type Props = {
   onVendorShopWarm?: () => void;
   settingsOpen?: boolean;
   onToggleSettings?: () => void;
-  helpOpen?: boolean;
-  onToggleHelp?: () => void;
   onOpenStageSwap?: () => void;
   onOpenAmbientChat?: () => void;
   ambientChatOpen?: boolean;
@@ -63,14 +61,11 @@ export function MobileGameControls({
   onVendorShopWarm,
   settingsOpen = false,
   onToggleSettings,
-  helpOpen = false,
-  onToggleHelp,
   onOpenStageSwap,
   onOpenAmbientChat,
   ambientChatOpen = false,
 }: Props) {
   const showSettings = Boolean(onToggleSettings);
-  const showHelp = Boolean(onToggleHelp);
   const showCart = Boolean(onToggleVendorShop);
   const showStageSwap = Boolean(onOpenStageSwap);
   const showChat = Boolean(onOpenAmbientChat);
@@ -137,31 +132,6 @@ export function MobileGameControls({
             }}
           >
             <StageSwapIcon size={24} />
-          </button>
-        )}
-
-        {showHelp && (
-          <button
-            type="button"
-            className="mobile-controls-help mobile-controls-action-btn"
-            aria-label={helpOpen ? 'Close help' : 'Open help'}
-            aria-pressed={helpOpen}
-            title="Help"
-            onPointerDown={e => e.preventDefault()}
-            onClick={() => {
-              trackMobileControl(helpOpen ? 'help_close' : 'help_open');
-              onToggleHelp?.();
-            }}
-            style={{
-              ...mobileActionBtn,
-              background: helpOpen ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.42)',
-              color: helpOpen ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.78)',
-              fontSize: 20,
-              fontWeight: 700,
-              fontFamily: 'system-ui,sans-serif',
-            }}
-          >
-            ?
           </button>
         )}
 

@@ -71,6 +71,18 @@ export async function acknowledgeFestieReturn(): Promise<void> {
   await fetch('/api/festie/seen', { ...fetchOpts, method: 'POST' });
 }
 
+/** Mark the one-time post-signup help popup as dismissed. */
+export async function dismissFestieHelp(): Promise<FestieOwner | null> {
+  const res = await fetch('/api/festie/help', { ...fetchOpts, method: 'POST' });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+  const festie = (data.festie as FestieOwner | null) ?? null;
+  if (festie) {
+    setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+  }
+  return festie;
+}
+
 export async function fetchSessionRecapSince(
   since: string,
   festieName?: string,

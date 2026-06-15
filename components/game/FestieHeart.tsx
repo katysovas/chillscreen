@@ -9,6 +9,9 @@ type Props = {
   hero?: boolean;
   animateRefillFrom?: number | null;
   className?: string;
+  clipId?: string;
+  /** Use span wrapper — safe inside inline/phrasing content (FAQ answers). */
+  inline?: boolean;
 };
 
 const HEART_PATH =
@@ -42,6 +45,8 @@ export function FestieHeart({
   hero = false,
   animateRefillFrom = null,
   className,
+  clipId = 'festie-heart-level-clip',
+  inline = false,
 }: Props) {
   const clamped = Math.max(0, Math.min(1, fill));
   const [displayFill, setDisplayFill] = useState(
@@ -67,6 +72,8 @@ export function FestieHeart({
   const pulseClass = hero ? 'festie-heart-pulse-hero' : 'festie-heart-pulse';
   const clipY = 24 - 24 * displayFill;
 
+  const Wrapper = inline ? 'span' : 'div';
+
   return (
     <>
       <style>{`
@@ -81,14 +88,15 @@ export function FestieHeart({
         .festie-heart-pulse { animation: festie-heart-pulse 2.8s ease-in-out infinite; }
         .festie-heart-pulse-hero { animation: festie-heart-pulse-hero 2.4s ease-in-out infinite; }
       `}</style>
-      <div
+      <Wrapper
         className={className}
         style={{
           width: dim,
           height: dim,
-          display: 'flex',
+          display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
+          verticalAlign: inline ? 'middle' : undefined,
         }}
       >
         <svg
@@ -106,7 +114,7 @@ export function FestieHeart({
             strokeWidth={1.2}
             strokeLinejoin="round"
           />
-          <clipPath id="festie-heart-level-clip">
+          <clipPath id={clipId}>
             <rect
               x={0}
               y={clipY}
@@ -118,7 +126,7 @@ export function FestieHeart({
           <path
             d={HEART_PATH}
             fill={glowColor}
-            clipPath="url(#festie-heart-level-clip)"
+            clipPath={`url(#${clipId})`}
             style={{ transition: 'opacity 0.3s ease' }}
           />
           <path
@@ -130,7 +138,7 @@ export function FestieHeart({
             opacity={0.85}
           />
         </svg>
-      </div>
+      </Wrapper>
     </>
   );
 }

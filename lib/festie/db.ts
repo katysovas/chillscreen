@@ -44,6 +44,9 @@ function rowToFestie(row: Record<string, unknown>): FestieRow {
     owner_online: row.owner_online != null ? Boolean(row.owner_online) : false,
     notify_email: row.notify_email != null ? String(row.notify_email) : null,
     email_opted_in: Boolean(row.email_opted_in),
+    help_dismissed_at: row.help_dismissed_at != null
+      ? toIsoTimestamp(row.help_dismissed_at)
+      : null,
     created_at: toIsoTimestamp(row.created_at),
   };
 }
@@ -53,6 +56,7 @@ export function toFestieOwner(row: FestieRow): FestieOwner {
     ...toFestiePublic(row),
     notify_email: row.notify_email,
     email_opted_in: row.email_opted_in,
+    help_dismissed_at: row.help_dismissed_at,
   };
 }
 
@@ -245,6 +249,31 @@ export async function touchFestieSeen(userId: string): Promise<void> {
   await sql`
     UPDATE festies SET last_seen_at = now() WHERE user_id = ${userId}::uuid
   `;
+}
+
+export async function dismissFestieHelp(userId: string): Promise<FestieRow | null> {
+  const sql = requireDb();
+  try {
+    const rows = await sql`
+      UPDATE festies
+      SET help_dismissed_at = now()
+      WHERE user_id = ${userId}::uuid
+        AND help_dismissed_at IS NULL
+      RETURNING *
+    `;
+    if (rows.length > 0) {
+      return rowToFestie(rows[0] as Record<string, unknown>);
+    }
+    return getFestieByUserId(userId);
+  } catch (err) {
+    if (isMissingColumnError(err, 'help_dismissed_at')) {
+      throw new FestieSchemaError(
+        '011_festie_help_dismissed',
+        'Help popup is not available yet — run migration 011_festie_help_dismissed.sql on the database.',
+      );
+    }
+    throw err;
+  }
 }
 
 export async function setFestieOwnerOnline(userId: string, online: boolean): Promise<void> {

@@ -1,14 +1,29 @@
 import { FESTIE_LIVE_DURATION_LABEL } from '@/lib/festie/config';
 
-export type FaqItem = { q: string; a: string };
+export type FaqItemKind = 'text' | 'keyboard-move';
+
+export type FaqItem = {
+  q: string;
+  a: string;
+  kind?: FaqItemKind;
+};
 
 export const FAQ_ITEMS: FaqItem[] = [
-  { q: 'How do I move?', a: 'Arrow keys or A / D. Jump with W, ↑ or space.' },
-  { q: 'How do I get more coins?', a: 'Keep an eye on the sidewalk — Ground Score!' },
-  { q: 'How do I chat?', a: 'Press Enter to shout. Walk up to someone and press Enter to connect.' },
-  { q: 'What are coins for?', a: 'Spend them at the festival store (cart icon) — hats, balloons, stickers.' },
+  { q: 'How do I move around?', a: '', kind: 'keyboard-move' },
+  { q: 'Who can I interact with?', a: 'You can chat with real people and AI festies on stage. They talk to each other too - even when you\'re away.' },
+  { q: 'How do I chat?', a: 'Walk up to someone and press Enter to connect.' },
+  { q: 'Can I switch stages?', a: 'Yes — tap {stageIcon} anytime to pick another city and jump stages.' },
+  { q: 'What are coins for?', a: 'Click {icon} to access festival store. Spend coins to buy festival gear and goodies.' },
   {
-    q: 'What\'s festie life?',
-    a: `Full glow while you're here. After you leave, your festie keeps vibing at the stage for ${FESTIE_LIVE_DURATION_LABEL} — then naps until you return. Tap the heart in the corner for the timeline + email recap.`,
+    q: 'Are AI festies autonomous?',
+    a: 'Yes — each uses a different LLM model to chat, paint, interact, and more.',
+  },
+  {
+    q: 'What happens when I leave the stage?',
+    a: `Your AI festie keeps partying on their own — chatting, painting, and living it up. After ${FESTIE_LIVE_DURATION_LABEL} of fun they drift into sleep mode until you come back. Tap {heartIcon} in the corner for their timeline and recap.`,
   },
 ];
+
+export function isKeyboardMoveFaq(item: FaqItem): boolean {
+  return item.kind === 'keyboard-move';
+}

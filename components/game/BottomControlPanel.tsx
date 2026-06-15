@@ -22,8 +22,6 @@ type BottomControlPanelProps = {
   onVendorShopWarm?: () => void;
   settingsOpen?: boolean;
   onToggleSettings?: () => void;
-  helpOpen?: boolean;
-  onToggleHelp?: () => void;
   /** Opens the city / stage picker (desktop + in-game). */
   onOpenCityPicker?: () => void;
   /** Hides invite + cart — those move to MobileGameControls on phone. */
@@ -212,8 +210,6 @@ export function BottomControlPanel({
   onVendorShopWarm,
   settingsOpen = false,
   onToggleSettings,
-  helpOpen = false,
-  onToggleHelp,
   onOpenCityPicker,
   isMobile = false,
 }: BottomControlPanelProps) {
@@ -237,7 +233,6 @@ export function BottomControlPanel({
   const hasMessages = showConnect || showInviteBtn;
   const showSettings = Boolean(onToggleSettings) && !isMobile;
   const showCart = Boolean(onToggleVendorShop) && !isMobile;
-  const showHelp = Boolean(onToggleHelp) && !isMobile;
   const showCityPicker = Boolean(onOpenCityPicker) && !isMobile;
 
   const copyLink = useCallback(async () => {
@@ -265,7 +260,7 @@ export function BottomControlPanel({
     setInviteOpen(false);
   }, [hidden, showConnect, route]);
 
-  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showSettings && !showCart && !showHelp && !hasMessages)) {
+  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showSettings && !showCart && !hasMessages)) {
     return null;
   }
 
@@ -374,38 +369,7 @@ export function BottomControlPanel({
           </button>
         )}
 
-        {(showSettings || showCart || showCityPicker) && showHelp && (
-          <div style={panelDivider} aria-hidden />
-        )}
-
-        {showHelp && (
-          <button
-            type="button"
-            onClick={onToggleHelp}
-            aria-label={helpOpen ? 'Close help' : 'Open help'}
-            aria-pressed={helpOpen}
-            title="Help"
-            style={{
-              ...ghostBtn,
-              padding: '8px 14px',
-              background: helpOpen ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.06)',
-              color: helpOpen ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.78)',
-              cursor: 'pointer',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 16,
-              fontWeight: 600,
-              fontFamily: 'system-ui,sans-serif',
-              lineHeight: 1,
-            }}
-          >
-            ?
-          </button>
-        )}
-
-        {showHelp && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
+        {(showSettings || showCart || showCityPicker) && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
           <div style={panelDivider} aria-hidden />
         )}
 

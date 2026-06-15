@@ -29,6 +29,7 @@ import { purchaseVendorItemAsync } from '@/lib/vendorPurchase';
 import { festieLifeFill } from '@/lib/festie/config';
 import {
   acknowledgeFestieReturn,
+  dismissFestieHelp,
   fetchFestie,
   fetchSessionRecapSince,
   logoutFestie,
@@ -113,6 +114,7 @@ import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { BottomControlPanel, SignOutIcon } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
 import { HelpFaqModal } from './HelpFaqModal';
+import { KeyboardMoveHint } from './KeyboardMoveHint';
 import { SignOutConfirmModal } from './SignOutConfirmModal';
 import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
@@ -386,7 +388,6 @@ export default function SFCity({
   const [vendorShopManualOpen, setVendorShopManualOpen] = useState(false);
   const [vendorShopDismissed, setVendorShopDismissed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<FestieSettingsTab>('customize');
   const [lifeModalOpen, setLifeModalOpen] = useState(false);
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
@@ -420,7 +421,6 @@ export default function SFCity({
     setSettingsInitialTab(tab);
     setSettingsOpen(true);
     setLifeModalOpen(false);
-    setHelpOpen(false);
     setVendorShopManualOpen(false);
   }, []);
 
@@ -429,7 +429,6 @@ export default function SFCity({
       if (open) return false;
       setSettingsInitialTab('customize');
       setLifeModalOpen(false);
-      setHelpOpen(false);
       setVendorShopManualOpen(false);
       return true;
     });
@@ -440,19 +439,6 @@ export default function SFCity({
       const next = !open;
       if (next) {
         setSettingsOpen(false);
-        setHelpOpen(false);
-        setVendorShopManualOpen(false);
-      }
-      return next;
-    });
-  }, []);
-
-  const toggleHelp = useCallback(() => {
-    setHelpOpen(open => {
-      const next = !open;
-      if (next) {
-        setSettingsOpen(false);
-        setLifeModalOpen(false);
         setVendorShopManualOpen(false);
       }
       return next;
@@ -462,7 +448,6 @@ export default function SFCity({
   const openSignOutConfirm = useCallback(() => {
     setSettingsOpen(false);
     setLifeModalOpen(false);
-    setHelpOpen(false);
     setVendorShopManualOpen(false);
     setSignOutConfirmOpen(true);
   }, []);
@@ -503,6 +488,32 @@ export default function SFCity({
     const festie = await fetchFestie();
     if (festie) setOwnerFestie(festie);
   }, []);
+
+  const dismissHelpPopup = useCallback(() => {
+    if (!ownerFestie || ownerFestie.help_dismissed_at) return;
+    const dismissedAt = new Date().toISOString();
+    setOwnerFestie({ ...ownerFestie, help_dismissed_at: dismissedAt });
+    void dismissFestieHelp()
+      .then(festie => {
+        if (festie) setOwnerFestie(festie);
+      })
+      .catch(() => {
+        /* optimistic dismiss — settings tab still has help */
+      });
+  }, [ownerFestie]);
+
+  const showHelpPopup = Boolean(
+    profileReady
+    && festieSignedIn
+    && ownerFestie
+    && !ownerFestie.help_dismissed_at
+    && !homePreview
+    && !showWelcome
+    && !showCityPicker
+    && !sessionRecapOpen
+    && !settingsOpen
+    && !lifeModalOpen,
+  );
 
   const openSessionRecap = useCallback((recap: FestieSessionRecap | null, needsAck: boolean, festieName?: string) => {
     if (!shouldShowSessionRecap(recap, festieName)) return;
@@ -2021,12 +2032,12 @@ export default function SFCity({
         onVendorShopWarm={warmVendorShop}
         settingsOpen={settingsOpen}
         onToggleSettings={festieSignedIn ? toggleSettings : undefined}
-        helpOpen={helpOpen}
-        onToggleHelp={toggleHelp}
         isMobile={mobileDevice}
       />
 
-      {helpOpen && <HelpFaqModal onClose={() => setHelpOpen(false)} />}
+      {showHelpPopup && (
+        <HelpFaqModal onClose={dismissHelpPopup} />
+      )}
 
       {signOutConfirmOpen && (
         <SignOutConfirmModal
@@ -2106,6 +2117,7 @@ export default function SFCity({
             openSessionRecap(sessionRecap ?? null, false, name);
             void hydratePlayerSession().then(profile => {
               setFestieSignedIn(profile.authenticated);
+              if (profile.festie) setOwnerFestie(profile.festie);
               if (profile.name) setPlayerName(profile.name);
               else setPlayerName(name);
               setPlayerLoadout({ ...getPlayerLoadout(myColor), ...TEST_PLAYER_LOADOUT });
@@ -2133,19 +2145,7 @@ export default function SFCity({
         position: 'absolute', bottom: 22, right: 22,
         gap: 10, alignItems: 'center', zIndex: 40,
       }}>
-        {['←', '→', '↑'].map((k, i) => (
-          <div key={i} style={{
-            width: 30, height: 30, borderRadius: 7,
-            border: '1px solid rgba(255,255,255,.2)',
-            background: 'rgba(0,0,0,.3)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'rgba(255,255,255,.45)', fontSize: 14,
-            pointerEvents: 'none',
-          }}>{k}</div>
-        ))}
-        <div style={{ color: 'rgba(255,255,255,.2)', fontSize: 9, letterSpacing: 3, fontFamily: 'Georgia,serif', pointerEvents: 'none' }}>
-          A · D · W · walk & jump
-        </div>
+        <KeyboardMoveHint />
         {!showWelcome && !showCityPicker && (
           <button
             type="button"
@@ -2216,8 +2216,6 @@ export default function SFCity({
           onVendorShopWarm={warmVendorShop}
           settingsOpen={settingsOpen}
           onToggleSettings={festieSignedIn ? toggleSettings : undefined}
-          helpOpen={helpOpen}
-          onToggleHelp={toggleHelp}
           onOpenStageSwap={() => setShowCityPicker(true)}
           onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}
           ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}
