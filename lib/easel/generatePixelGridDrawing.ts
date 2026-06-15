@@ -19,6 +19,7 @@ import {
 } from './pixelLlm/prompt';
 import { parsePixelGridResponse, validateGridPixels } from './pixelLlm/parseGrid';
 import { gridToDrawingProgram, PIXEL_GRID_LOGICAL_SIZE } from './pixelLlm/gridToProgram';
+import { resolveDrawSubject } from './resolveDrawSubject';
 
 /** Sentinel — routes to pixel-llm GRID with default backend. */
 export const PIXEL_LLM_GRID_MODEL = 'pixel-llm/grid';
@@ -191,21 +192,21 @@ export async function generatePixelGridDrawingProgram(
   const npcKey = npcPoolKey(npcId);
   const backendModel = opts?.backendModel ?? PIXEL_LLM_BACKEND_MODEL;
   const label = `${backendModelLabel(backendModel)} grid`;
-  const topic = userPrompt.slice(0, 48);
+  const drawSubject = await resolveDrawSubject(backendModel, { userPrompt });
 
   const hit = await runGridGeneration({
     npcId,
     npcKey,
     backendModel,
     label,
-    topic,
-    userPrompt: buildGridUserPrompt(userPrompt),
+    topic: drawSubject,
+    userPrompt: buildGridUserPrompt(drawSubject),
     logSource: 'pixel-llm-grid',
-    logExtra: { prompt: userPrompt.slice(0, 80) },
+    logExtra: { prompt: userPrompt.slice(0, 80), subject: drawSubject },
   });
   if (hit) return hit;
 
-  const program = fallbackProgram(npcId, userPrompt, backendModel);
+  const program = fallbackProgram(npcId, drawSubject, backendModel);
   void paletteForNpc(npcKey);
   const total = totalSegments(program);
   logEaselDrawing('server', npcId, program.topic, {
@@ -226,17 +227,25 @@ export async function generateAmbientPixelGridDrawingProgram(
   const npcKey = npcPoolKey(ctx.npcId);
   const backendModel = resolvePixelLlmBackendModel(ctx.modelId);
   const label = `${backendModelLabel(backendModel)} grid`;
-  const topic = ctx.seedPrompt?.slice(0, 48) || ctx.streamTitle?.slice(0, 48) || 'sketch';
-  const userPrompt = buildAmbientGridUserPromptParts(ctx);
+  const drawSubject = await resolveDrawSubject(backendModel, {
+    seedPrompt: ctx.seedPrompt,
+    streamTitle: ctx.streamTitle,
+    channelName: ctx.channelName,
+    skyPeriod: ctx.skyPeriod,
+    npcName: ctx.npcName,
+    priorTopics: ctx.priorTopics,
+  });
+  const userPrompt = buildAmbientGridUserPromptParts(ctx, drawSubject);
 
   const hit = await runGridGeneration({
     npcId: ctx.npcId,
     npcKey,
     backendModel,
     label,
-    topic,
+    topic: drawSubject,
     userPrompt,
     logSource: 'pixel-llm-ambient',
+    logExtra: { subject: drawSubject, seed: ctx.seedPrompt?.slice(0, 80) },
   });
   if (hit) return hit;
 

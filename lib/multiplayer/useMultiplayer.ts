@@ -78,16 +78,13 @@ type Options = PeerEvents & {
 // Host of the deployed PartyKit room (whichstage.katysovas.partykit.dev).
 // PartySocket wants bare host[:port] — no protocol.
 //
-// Localhost:
-//   • `?debug=true` → always 127.0.0.1:1999 (local PartyKit + demo seed JSON)
+// Localhost page:
+//   • `?debug=true` on localhost → 127.0.0.1:1999 (local PartyKit + demo seed)
 //   • `npm run dev:local` sets NEXT_PUBLIC_PARTYKIT_LOCAL=true → 127.0.0.1:1999
 //   • plain `npm run dev` uses NEXT_PUBLIC_PARTYKIT_HOST (deployed PartyKit)
-//     so NPC chatter works without a local PartyKit process.
+// Prod / deployed site:
+//   • `?debug=true` keeps deployed PartyKit — extra logs + demo seed only
 function partyKitHost(): string {
-  if (typeof window !== 'undefined' && isChatterDebugMode()) {
-    return '127.0.0.1:1999';
-  }
-
   const configured = (
     process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? '127.0.0.1:1999'
   )
@@ -97,7 +94,11 @@ function partyKitHost(): string {
 
   if (typeof window !== 'undefined') {
     const { hostname } = window.location;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    const isLocalPage = hostname === 'localhost' || hostname === '127.0.0.1';
+    if (isLocalPage) {
+      if (isChatterDebugMode()) {
+        return '127.0.0.1:1999';
+      }
       if (process.env.NEXT_PUBLIC_PARTYKIT_LOCAL === 'true') {
         return '127.0.0.1:1999';
       }
@@ -280,8 +281,11 @@ export function useMultiplayer(opts: Options): Multiplayer {
 
     const onError = () => {
       ierror('[partykit] websocket error', opts.roomId, 'host', host);
-      if (isChatterDebugMode()) {
-        ierror('[partykit] debug mode needs local PartyKit — run: npm run party:dev');
+      if (isChatterDebugMode() && typeof window !== 'undefined') {
+        const h = window.location.hostname;
+        if (h === 'localhost' || h === '127.0.0.1') {
+          ierror('[partykit] debug on localhost needs local PartyKit — run: npm run party:dev');
+        }
       }
     };
 

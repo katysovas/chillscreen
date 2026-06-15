@@ -1,4 +1,4 @@
-/** `?debug=true` — internal QA: demo seed only, hide bottom controls, extra logs. */
+/** `?debug=true` — internal QA: demo seed, extra logs, hide some UI. Local PartyKit only on localhost. */
 
 export const CHATTER_DEBUG_HEADER = 'x-chatter-debug';
 

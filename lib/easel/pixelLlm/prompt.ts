@@ -35,6 +35,8 @@ export const FIXED_PALETTE: Record<string, string> = {
 };
 
 const SUBJECT_RULES = [
+  'SUBJECT: ONE short label only — cat, dog, person, tree, pizza, rocket (1–3 words max).',
+  'NEVER draw a sentence, chat line, quote, or seed text. Convert vibes to a single noun first.',
   'ICON TEST: Would a child recognize this in 1 second? If not, simplify.',
   'ONE subject, ONE iconic angle only (side-view car, front-facing face, top-down pizza).',
   'No scenes, no backgrounds, no multiple objects, no text, no emoji.',
@@ -70,6 +72,7 @@ CRITICAL — SIZE:
 
 NEGATIVE (never do these):
 - No words, letters as text, numbers, or captions in the grid.
+- No sentences from chat seeds or stream titles — draw the THING, not the phrase.
 - No full scenes (sky + ground + sun + trees) — one object only.
 - No abstract squiggles or random patterns.
 
@@ -105,28 +108,34 @@ GRID:
 ....KKKKKKK.....`;
 }
 
-export function buildGridUserPrompt(userPrompt: string): string {
+export function buildGridUserPrompt(drawSubject: string): string {
   return [
-    `Draw ONE subject as BIG pixel art: ${userPrompt}.`,
+    `Draw BIG pixel art of exactly: ${drawSubject}.`,
+    'One noun only — not a sentence, not a chat line.',
     'Pick the most recognizable angle (side car, front face, top-down food).',
     'K outline first, then fill — fill almost the entire 32×32 grid edge-to-edge.',
     'Icon test: a child must recognize it instantly.',
   ].join(' ');
 }
 
-export function buildAmbientGridUserPromptParts(ctx: {
-  npcName: string;
-  personalityNotes: string;
-  skyPeriod: string;
-  streamTitle: string | null;
-  channelName: string;
-  seedPrompt: string | null;
-  priorTopics: string[];
-}): string {
+export function buildAmbientGridUserPromptParts(
+  ctx: {
+    npcName: string;
+    personalityNotes: string;
+    skyPeriod: string;
+    streamTitle: string | null;
+    channelName: string;
+    seedPrompt: string | null;
+    priorTopics: string[];
+  },
+  drawSubject: string,
+): string {
   const streamLine = ctx.streamTitle
-    ? `The screen shows "${ctx.streamTitle}".`
+    ? `Stream playing "${ctx.streamTitle}" — mood only, do not draw the title.`
     : `${ctx.channelName} ambient stream.`;
-  const seedLine = ctx.seedPrompt ? `Conversation vibe: ${ctx.seedPrompt}.` : '';
+  const seedLine = ctx.seedPrompt
+    ? `Nearby chat: "${ctx.seedPrompt}" — inspiration only; do NOT draw those words.`
+    : '';
   const priorLine = ctx.priorTopics.length > 0
     ? `Never draw these (already painted): ${ctx.priorTopics.join(', ')}.`
     : '';
@@ -134,8 +143,9 @@ export function buildAmbientGridUserPromptParts(ctx: {
     `You are ${ctx.npcName}. ${ctx.personalityNotes}.`,
     `Time: ${ctx.skyPeriod}. ${streamLine} ${seedLine}`,
     priorLine,
-    'Pick ONE concrete noun and its iconic angle, then draw BIG pixel art of it.',
-    'K silhouette first, then fill. Icon test: instant recognition. No scenes or text.',
+    `Subject to draw (exactly this short label): ${drawSubject}`,
+    `Draw BIG pixel art of: ${drawSubject}.`,
+    'K silhouette first, then fill. One noun, iconic angle. No scenes or text.',
     'Fill almost the entire 32×32 grid — large, edge-to-edge.',
   ].filter(Boolean).join(' ');
 }
