@@ -23,19 +23,37 @@ const CreatorStageContext = createContext<CreatorStageContextValue | null>(null)
 
 type ProviderProps = {
   initialStage: UserStagePublic;
+  /** Stage row owner — compared to the signed-in viewer. */
   ownerUserId?: string | null;
   currentUserId?: string | null;
+  /** Viewer is signed in (festie session). */
+  authenticated?: boolean;
+  /** Player session finished hydrating from /api/player. */
+  sessionReady?: boolean;
   children: ReactNode;
 };
+
+function viewerIsStageOwner(
+  ownerUserId: string | null | undefined,
+  currentUserId: string | null | undefined,
+  authenticated: boolean,
+  sessionReady: boolean,
+): boolean {
+  if (!sessionReady || !authenticated) return false;
+  if (!ownerUserId || !currentUserId) return false;
+  return ownerUserId === currentUserId;
+}
 
 export function CreatorStageProvider({
   initialStage,
   ownerUserId,
   currentUserId,
+  authenticated = false,
+  sessionReady = false,
   children,
 }: ProviderProps) {
   const [stage, setStage] = useState(initialStage);
-  const isOwner = Boolean(ownerUserId && currentUserId && ownerUserId === currentUserId);
+  const isOwner = viewerIsStageOwner(ownerUserId, currentUserId, authenticated, sessionReady);
 
   const swapNowPlaying = useCallback(async (index: number) => {
     if (!isOwner) return;
@@ -78,6 +96,11 @@ export function useOptionalCreatorStage(): UserStagePublic | null {
 
 export function useCreatorStageControls(): CreatorStageContextValue | null {
   return useContext(CreatorStageContext);
+}
+
+/** True only for the signed-in stage owner on /watch/{slug}. */
+export function useIsCreatorStageOwner(): boolean {
+  return useContext(CreatorStageContext)?.isOwner ?? false;
 }
 
 /** Touch presence on mount and periodically while on a creator stage. */

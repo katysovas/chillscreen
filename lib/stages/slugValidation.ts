@@ -62,6 +62,7 @@ export function isValidStageSlugFormat(slug: string): boolean {
 
 export function validateStageSlugFormat(slug: string): SlugRejectReason | null {
   const norm = normalizeStageSlug(slug);
+  if (!norm) return 'length';
   if (
     norm.length < STAGE_CONFIG.SLUG_MIN_LENGTH
     || norm.length > STAGE_CONFIG.SLUG_MAX_LENGTH
@@ -76,6 +77,12 @@ export function validateStageSlugFormat(slug: string): SlugRejectReason | null {
     if (block.reason === 'blocked_term') return 'blocked_term';
   }
   return null;
+}
+
+/** Client/server — first validation error for a slug string. */
+export function validateStageSlugMessage(slug: string): string | null {
+  const formatErr = validateStageSlugFormat(slug);
+  return formatErr ? slugRejectMessage(formatErr) : null;
 }
 
 export function slugRejectMessage(reason: SlugRejectReason): string {

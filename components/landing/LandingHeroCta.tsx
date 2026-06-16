@@ -1,8 +1,8 @@
 'use client';
 
-import { VENUE_SLUGS } from '@/lib/venueSlugs';
 import { LANDING_HERO } from './landingHeroCopy';
 import { useLandingFestieTotal } from './useLandingFestieTotal';
+import { useLandingStageCount } from './useLandingStageCount';
 
 type Props = {
   onScrollToStages: () => void;
@@ -25,7 +25,7 @@ function ArrowIcon() {
 export function LandingHeroCta({ onScrollToStages }: Props) {
   const festieTotal = useLandingFestieTotal();
   const festieDisplay = festieTotal.toLocaleString();
-  const stageCount = VENUE_SLUGS.length;
+  const stageCount = useLandingStageCount();
 
   return (
     <button type="button" className="hero-cta-bar" onClick={onScrollToStages}>

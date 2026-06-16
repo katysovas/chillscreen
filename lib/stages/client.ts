@@ -1,4 +1,4 @@
-import type { UserStagePublic, StageStream, StagePresetId } from '@/lib/stages/types';
+import type { UserStagePublic, StageStream, StagePresetId, FeaturedStageSummary } from '@/lib/stages/types';
 import type { StageStreamPasteMode } from '@/lib/stages/parseStream';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
 import type { FestieOwner } from '@/lib/festie/types';
@@ -67,6 +67,7 @@ export type CreateStagePayload = {
   preset: StagePresetId;
   sky?: SkyPeriod;
   streams: StageStream[];
+  backdropUrl?: string | null;
   festie?: {
     name: string;
     password: string;
@@ -111,6 +112,19 @@ export async function fetchMyStage(): Promise<UserStagePublic | null> {
   return data.stage ?? null;
 }
 
+export async function uploadStageBackdrop(slug: string, file: File): Promise<UserStagePublic> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`/api/stages/${encodeURIComponent(slug)}/backdrop`, {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  });
+  const data = await res.json() as { stage?: UserStagePublic; error?: string };
+  if (!res.ok) throw new Error(data.error ?? 'Upload failed');
+  return data.stage!;
+}
+
 export async function updateUserStage(
   slug: string,
   patch: {
@@ -118,10 +132,13 @@ export async function updateUserStage(
     nowPlayingIndex?: number;
     preset?: StagePresetId;
     sky?: SkyPeriod | null;
+    backdropUrl?: string | null;
+    shuffleOnStart?: boolean;
   },
 ): Promise<UserStagePublic> {
   const res = await fetch(`/api/stages/${encodeURIComponent(slug)}`, {
     method: 'PATCH',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(patch),
   });
@@ -131,7 +148,10 @@ export async function updateUserStage(
 }
 
 export async function takedownUserStage(slug: string): Promise<void> {
-  const res = await fetch(`/api/stages/${encodeURIComponent(slug)}`, { method: 'DELETE' });
+  const res = await fetch(`/api/stages/${encodeURIComponent(slug)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
   if (!res.ok) {
     const data = await res.json() as { error?: string };
     throw new Error(data.error ?? 'Takedown failed');
@@ -140,4 +160,26 @@ export async function takedownUserStage(slug: string): Promise<void> {
 
 export async function touchStagePresence(slug: string): Promise<void> {
   await fetch(`/api/stages/${encodeURIComponent(slug)}/presence`, { method: 'POST' });
+}
+
+export type ShuffleStartResult = {
+  shuffled: boolean;
+  stage: UserStagePublic;
+};
+
+export async function tryShuffleOnStageStart(slug: string): Promise<ShuffleStartResult | null> {
+  const res = await fetch(`/api/stages/${encodeURIComponent(slug)}/shuffle-start`, {
+    method: 'POST',
+  });
+  if (res.status === 404) return null;
+  const data = await res.json() as ShuffleStartResult & { error?: string };
+  if (!res.ok) throw new Error(data.error ?? 'Shuffle failed');
+  return data;
+}
+
+export async function fetchFeaturedStages(): Promise<FeaturedStageSummary[]> {
+  const res = await fetch('/api/stages/featured');
+  const data = await res.json() as { stages?: FeaturedStageSummary[]; error?: string };
+  if (!res.ok) throw new Error(data.error ?? 'Failed to load featured stages');
+  return data.stages ?? [];
 }

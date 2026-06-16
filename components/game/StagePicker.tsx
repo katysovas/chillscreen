@@ -1,7 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchFeaturedStages } from '@/lib/stages/client';
+import {
+  buildStagePickerOptions,
+  currentStagePickerTarget,
+  stagePickerTargetId,
+  type StagePickerTarget,
+} from '@/lib/stagePickerOptions';
 import { MobileStageCard } from './MobileStageCard';
 import {
   isValidPlayerName,
@@ -13,12 +19,14 @@ import type { VenueRoute } from '@/lib/venueRoutes';
 type Props = {
   balloonColor?: string;
   initialRoute?: VenueRoute | null;
+  /** When viewing a creator stage — used to highlight the current pick. */
+  creatorSlug?: string | null;
   requireName?: boolean;
   /** Home page copy — slightly different from in-game swap. */
   variant?: 'home' | 'swap';
   muted?: boolean;
   onToggleMute?: () => void;
-  onEnter: (name: string, route: VenueRoute) => void;
+  onEnter: (name: string, target: StagePickerTarget) => void;
   onClose?: () => void;
   initialName?: string;
 };
@@ -28,6 +36,7 @@ type Props = {
  */
 export function StagePicker({
   initialRoute,
+  creatorSlug = null,
   requireName = true,
   variant = 'home',
   muted,
@@ -37,7 +46,30 @@ export function StagePicker({
   initialName,
 }: Props) {
   const [draft, setDraft] = useState(initialName ?? '');
-  const [picked, setPicked] = useState<VenueRoute | null>(initialRoute ?? null);
+  const currentTarget = useMemo(
+    () => currentStagePickerTarget(initialRoute, creatorSlug),
+    [initialRoute, creatorSlug],
+  );
+  const [pickedId, setPickedId] = useState<string | null>(
+    currentTarget ? stagePickerTargetId(currentTarget) : null,
+  );
+  const [featuredStages, setFeaturedStages] = useState<Awaited<ReturnType<typeof fetchFeaturedStages>>>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchFeaturedStages()
+      .then(stages => {
+        if (!cancelled) setFeaturedStages(stages);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const options = useMemo(
+    () => buildStagePickerOptions(featuredStages),
+    [featuredStages],
+  );
+
   const validName = !requireName || isValidPlayerName(draft);
   const isSwap = variant === 'swap';
 
@@ -45,11 +77,15 @@ export function StagePicker({
     if (initialName) setDraft(initialName);
   }, [initialName]);
 
+  const picked = options.find(o => o.id === pickedId) ?? null;
+  const sameAsCurrent = picked != null && currentTarget != null
+    && stagePickerTargetId(picked.target) === stagePickerTargetId(currentTarget);
+
   const submit = () => {
     const name = draft.trim();
     if (requireName && !isValidPlayerName(name)) return;
     if (!picked) return;
-    onEnter(name, picked);
+    onEnter(name, picked.target);
   };
 
   return (
@@ -167,12 +203,13 @@ export function StagePicker({
             marginBottom: requireName ? 18 : 20,
           }}
         >
-          {MOBILE_LOUNGE_STAGES.map(stage => (
+          {options.map(option => (
             <MobileStageCard
-              key={stage.route}
-              stage={stage}
-              selected={picked === stage.route}
-              onSelect={() => setPicked(stage.route)}
+              key={option.id}
+              title={option.title}
+              tagline={option.tagline}
+              selected={pickedId === option.id}
+              onSelect={() => setPickedId(option.id)}
             />
           ))}
         </div>
@@ -219,23 +256,23 @@ export function StagePicker({
 
         <button
           type="button"
-          disabled={!validName || !picked || (isSwap && picked === initialRoute)}
+          disabled={!validName || !picked || (isSwap && sameAsCurrent)}
           onClick={submit}
           style={{
             width: '100%',
             padding: '14px 16px',
             borderRadius: 14,
             border: 'none',
-            background: validName && picked && !(isSwap && picked === initialRoute)
+            background: validName && picked && !(isSwap && sameAsCurrent)
               ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
               : 'rgba(255,255,255,0.08)',
-            color: validName && picked && !(isSwap && picked === initialRoute)
+            color: validName && picked && !(isSwap && sameAsCurrent)
               ? '#fff'
               : 'rgba(255,255,255,0.35)',
             fontSize: 15,
             fontWeight: 700,
             fontFamily: 'system-ui,sans-serif',
-            cursor: validName && picked && !(isSwap && picked === initialRoute) ? 'pointer' : 'not-allowed',
+            cursor: validName && picked && !(isSwap && sameAsCurrent) ? 'pointer' : 'not-allowed',
           }}
         >
           {isSwap ? 'Go' : 'Enter the show'}

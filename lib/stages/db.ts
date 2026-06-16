@@ -3,6 +3,7 @@ import { STAGE_CONFIG, stageLifecycleTier } from '@/lib/stages/config';
 import { parseStreamsJson, enrichStreamsChannelTitles } from '@/lib/stages/parseStream';
 import { stagePresetById, normalizeStagePresetId, DEFAULT_STAGE_PRESET } from '@/lib/stages/presets';
 import type {
+  FeaturedStageSummary,
   StagePresetId,
   StageStream,
   UserStagePublic,
@@ -30,10 +31,13 @@ function rowToPublic(row: UserStageRow, now = Date.now()): UserStagePublic {
     sky: parseSky(row.sky) ?? undefined,
     streams: parseStreamsJson(row.streams),
     nowPlayingIndex: Number(row.now_playing_index) || 0,
+    shuffleOnStart: Boolean(row.shuffle_on_start),
+    backdropUrl: row.backdrop_url?.trim() || null,
     createdAt: new Date(row.created_at).getTime(),
     lastActiveAt,
     tier,
     takenDown,
+    featured: row.featured,
   };
 }
 
@@ -47,6 +51,9 @@ function parseRow(raw: Record<string, unknown>): UserStageRow {
     sky: raw.sky != null ? parseSky(raw.sky) : null,
     streams: parseStreamsJson(raw.streams),
     now_playing_index: Number(raw.now_playing_index) || 0,
+    shuffle_on_start: Boolean(raw.shuffle_on_start),
+    backdrop_url: raw.backdrop_url != null ? String(raw.backdrop_url) : null,
+    featured: Boolean(raw.featured),
     created_at: raw.created_at instanceof Date ? raw.created_at : new Date(String(raw.created_at)),
     last_active_at: raw.last_active_at instanceof Date
       ? raw.last_active_at
@@ -75,7 +82,7 @@ export async function getUserStageBySlug(slug: string): Promise<UserStageRow | n
   const sql = requireDb();
   const rows = await sql`
     SELECT slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
-           created_at, last_active_at, taken_down_at
+           backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE slug = ${slug}
     LIMIT 1
@@ -105,7 +112,7 @@ export async function getUserStageByOwnerId(ownerId: string): Promise<UserStageR
   const sql = requireDb();
   const rows = await sql`
     SELECT slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
-           created_at, last_active_at, taken_down_at
+           backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE owner_id = ${ownerId}::uuid AND taken_down_at IS NULL
     LIMIT 1
@@ -133,6 +140,7 @@ export type CreateUserStageInput = {
   sky?: SkyPeriod | null;
   streams: StageStream[];
   nowPlayingIndex?: number;
+  backdropUrl?: string | null;
 };
 
 export async function insertUserStage(input: CreateUserStageInput): Promise<UserStageRow> {
@@ -151,7 +159,7 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
   const streamsJson = JSON.stringify(input.streams);
   const rows = await sql`
     INSERT INTO user_stages (
-      slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index
+      slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index, backdrop_url
     ) VALUES (
       ${input.slug},
       ${input.ownerId}::uuid,
@@ -160,10 +168,11 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
       ${input.preset},
       ${input.sky ?? null},
       ${streamsJson}::jsonb,
-      ${input.nowPlayingIndex ?? 0}
+      ${input.nowPlayingIndex ?? 0},
+      ${input.backdropUrl ?? null}
     )
     RETURNING slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
-              created_at, last_active_at, taken_down_at
+              backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
   `;
   return parseRow(rows[0] as Record<string, unknown>);
 }
@@ -173,6 +182,8 @@ export type UpdateUserStagePatch = {
   nowPlayingIndex?: number;
   preset?: StagePresetId;
   sky?: SkyPeriod | null;
+  backdropUrl?: string | null;
+  shuffleOnStart?: boolean;
 };
 
 export async function updateUserStage(
@@ -190,6 +201,10 @@ export async function updateUserStage(
   const nowPlayingIndex = patch.nowPlayingIndex ?? existing.now_playing_index;
   const preset = patch.preset ?? existing.preset;
   const sky = patch.sky !== undefined ? patch.sky : existing.sky;
+  const backdropUrl = patch.backdropUrl !== undefined
+    ? patch.backdropUrl
+    : existing.backdrop_url;
+  const shuffleOnStart = patch.shuffleOnStart ?? existing.shuffle_on_start;
 
   const rows = await sql`
     UPDATE user_stages SET
@@ -197,10 +212,12 @@ export async function updateUserStage(
       now_playing_index = ${nowPlayingIndex},
       preset = ${preset},
       sky = ${sky},
+      backdrop_url = ${backdropUrl},
+      shuffle_on_start = ${shuffleOnStart},
       last_active_at = now()
     WHERE slug = ${slug} AND owner_id = ${ownerId}::uuid AND taken_down_at IS NULL
     RETURNING slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
-              created_at, last_active_at, taken_down_at
+              backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
   `;
   if (!rows.length) return null;
   return parseRow(rows[0] as Record<string, unknown>);
@@ -236,4 +253,74 @@ export async function isValidActiveStageSlug(slug: string): Promise<boolean> {
   if (!row || row.taken_down_at) return false;
   const pub = rowToPublic(row);
   return pub.tier !== 'reclaimable';
+}
+
+/** Active creator stages — not taken down. */
+export async function countActiveUserStages(): Promise<number> {
+  const sql = requireDb();
+  const rows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM user_stages
+    WHERE taken_down_at IS NULL
+  `;
+  return Number((rows[0] as { count: number }).count ?? 0);
+}
+
+/** Featured creator stages for the Switch Stages picker — active only. */
+export async function listFeaturedUserStages(now = Date.now()): Promise<FeaturedStageSummary[]> {
+  const sql = requireDb();
+  const rows = await sql`
+    SELECT slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
+           backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+    FROM user_stages
+    WHERE featured = true AND taken_down_at IS NULL
+    ORDER BY display_name ASC
+  `;
+  return rows
+    .map(r => rowToPublic(parseRow(r as Record<string, unknown>), now))
+    .filter(stage => stage.tier !== 'reclaimable')
+    .map(stage => ({
+      slug: stage.slug,
+      displayName: stage.displayName,
+      preset: stage.preset,
+    }));
+}
+
+/** When shuffle is on and the room is empty, pick a random track for the first viewer. */
+export async function maybeShuffleStageOnStart(
+  slug: string,
+): Promise<{ stage: UserStagePublic; shuffled: boolean } | null> {
+  const row = await getUserStageBySlug(slug);
+  if (!row || row.taken_down_at) return null;
+
+  const streams = parseStreamsJson(row.streams);
+  const pub = rowToPublic(row);
+  if (!row.shuffle_on_start || streams.length <= 1) {
+    return { stage: pub, shuffled: false };
+  }
+
+  const { fetchPartyRoomPlayerCount } = await import('@/lib/festie/stagePresenceCounts');
+  const playerCount = await fetchPartyRoomPlayerCount(slug).catch(() => 1);
+  if (playerCount > 1) {
+    return { stage: pub, shuffled: false };
+  }
+
+  let newIndex = Math.floor(Math.random() * streams.length);
+  if (newIndex === row.now_playing_index) {
+    newIndex = (newIndex + 1) % streams.length;
+  }
+
+  const sql = requireDb();
+  const rows = await sql`
+    UPDATE user_stages SET
+      now_playing_index = ${newIndex},
+      last_active_at = now()
+    WHERE slug = ${slug}
+      AND taken_down_at IS NULL
+      AND shuffle_on_start = true
+    RETURNING slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
+              backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+  `;
+  if (!rows.length) return { stage: pub, shuffled: false };
+  return { stage: rowToPublic(parseRow(rows[0] as Record<string, unknown>)), shuffled: true };
 }

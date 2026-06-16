@@ -4,6 +4,7 @@
 import { formatNpcBrandedName } from '@/lib/npcBrandedName';
 import {
   chatterNpcIds,
+  chatterNpcIdsForChannel,
   chatterNpcIdsForRoute,
   getNpcRosterEntry as getStaticNpcRosterEntry,
   isChatterNpc as isStaticChatterNpc,
@@ -62,7 +63,9 @@ export async function isChatterNpcAllowed(id: string): Promise<boolean> {
 export function chatterNpcIdsForRoom(roomId: string): string[] {
   const slug = venueSlugFromRoomId(roomId);
   const route = slug ? parseVenueSlug(slug) : null;
-  const staticIds = route ? chatterNpcIdsForRoute(route) : chatterNpcIds();
+  const staticIds = route
+    ? chatterNpcIdsForRoute(route)
+    : chatterNpcIdsForChannel('which-stage');
   const festieIds = festieChatterNpcIds();
   if (festieIds.length === 0) return staticIds;
   return [...new Set([...staticIds, ...festieIds])];

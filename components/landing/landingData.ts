@@ -1,10 +1,14 @@
 import type { VenueRoute } from '@/lib/venueRoutes';
 
+import type { StagePresetId } from '@/lib/stages/types';
+import { stagePresetById } from '@/lib/stages/presets';
+
 export type LandingStage = {
   route: VenueRoute;
   name: string;
   desc?: string;
-  featured?: boolean;
+  /** Layout emphasis on the landing grid (not the DB featured flag). */
+  highlight?: boolean;
   live?: boolean;
   layout: 'featured' | 'right' | 'small';
   background: string;
@@ -17,12 +21,12 @@ export const LANDING_STAGES: LandingStage[] = [
     route: 'deep-space',
     name: 'Deep Space',
     desc: 'Drift through the cosmos when the night goes deep and slow.',
-    featured: true,
+    highlight: true,
     live: true,
     layout: 'featured',
     background: 'radial-gradient(ellipse at 40% 60%,#0d1a2e 0%,#090a0f 100%)',
     accent: '#8ed4ff',
-    bgImage: '/images/stages/space.webp',
+    bgImage: '/images/homepage/space.webp',
   },
   {
     route: 'coachella',
@@ -31,7 +35,7 @@ export const LANDING_STAGES: LandingStage[] = [
     layout: 'right',
     background: 'radial-gradient(ellipse at 40% 80%,#2e1408 0%,#0e0806 100%)',
     accent: '#f07c2a',
-    bgImage: '/images/stages/thedesert.webp',
+    bgImage: '/images/homepage/thedesert.webp',
   },
   {
     route: 'forest',
@@ -40,7 +44,7 @@ export const LANDING_STAGES: LandingStage[] = [
     layout: 'right',
     background: '#060e07',
     accent: '#6eedc0',
-    bgImage: '/images/stages/forest.webp',
+    bgImage: '/images/homepage/forest.webp',
   },
   {
     route: 'silent-disco',
@@ -49,7 +53,7 @@ export const LANDING_STAGES: LandingStage[] = [
     layout: 'small',
     background: '#06080e',
     accent: '#94a8ff',
-    bgImage: '/images/stages/silentdisco.webp',
+    bgImage: '/images/homepage/silentdisco.webp',
   },
   {
     route: 'cinema',
@@ -58,7 +62,7 @@ export const LANDING_STAGES: LandingStage[] = [
     layout: 'small',
     background: 'radial-gradient(ellipse at 50% 80%,#1c1508 0%,#0e0c06 100%)',
     accent: '#e8c040',
-    bgImage: '/images/stages/cinema.webp',
+    bgImage: '/images/homepage/cinema.webp',
   },
   {
     route: 'edc',
@@ -67,7 +71,7 @@ export const LANDING_STAGES: LandingStage[] = [
     layout: 'small',
     background: 'radial-gradient(ellipse at 50% 80%,#1e0808 0%,#0c0606 100%)',
     accent: '#ff3a1a',
-    bgImage: '/images/stages/edc.webp',
+    bgImage: '/images/homepage/edc.webp',
   },
   {
     route: 'outside-hands',
@@ -76,7 +80,7 @@ export const LANDING_STAGES: LandingStage[] = [
     layout: 'small',
     background: 'radial-gradient(ellipse at 50% 80%,#0e1a08 0%,#090e06 100%)',
     accent: '#a8d840',
-    bgImage: '/images/stages/sf.webp',
+    bgImage: '/images/homepage/sf.webp',
   },
   {
     route: 'tentaroo',
@@ -85,7 +89,7 @@ export const LANDING_STAGES: LandingStage[] = [
     layout: 'small',
     background: '#0e0c08',
     accent: '#ffb885',
-    bgImage: '/images/stages/thefarm.webp',
+    bgImage: '/images/homepage/thefarm.webp',
   },
   {
     route: 'seattle-concerts',
@@ -94,9 +98,27 @@ export const LANDING_STAGES: LandingStage[] = [
     layout: 'small',
     background: 'radial-gradient(ellipse at 50% 80%,#0a1408 0%,#070e06 100%)',
     accent: '#8fd49a',
-    bgImage: '/images/stages/seatlle.webp',
+    bgImage: '/images/homepage/seatlle.webp',
   },
 ];
+
+/** Thumbnail for a featured creator stage card on the landing page. */
+export function landingImageForCreatorPreset(preset: StagePresetId): string {
+  const def = stagePresetById(preset);
+  const route = def?.venueRoute;
+  const match = route ? LANDING_STAGES.find(s => s.route === route) : null;
+  if (match?.bgImage) return match.bgImage;
+  switch (preset) {
+    case 'live':
+      return '/images/homepage/space.webp';
+    case 'cinema':
+      return '/images/homepage/cinema.webp';
+    case 'chill':
+      return '/images/homepage/forest.webp';
+    default:
+      return '/images/homepage/edc.webp';
+  }
+}
 
 export const LANDING_FAQ = [
   {

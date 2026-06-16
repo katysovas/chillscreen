@@ -28,6 +28,9 @@ yarn-error.log*
 .env
 
 # vercel
+
+# Creator-uploaded stage backdrops (local dev storage)
+/public/uploads/stages/*
 .vercel
 
 # typescript

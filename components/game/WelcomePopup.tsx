@@ -1,18 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Character from './Character';
 import { MobileStageCard } from './MobileStageCard';
 import { createFestie, loginFestie } from '@/lib/festie/client';
 import type { FestieSessionRecap } from '@/lib/festie/sessionRecap';
-import { venueRouteForStageSlug } from '@/lib/festie/stage';
+import { resolveSignInDestination, type SignInFrom } from '@/lib/lastUsedStage';
+import {
+  buildStagePickerOptions,
+  stagePickerTargetId,
+  type StagePickerTarget,
+} from '@/lib/stagePickerOptions';
+import { fetchFeaturedStages } from '@/lib/stages/client';
 import { getLocalFestieName, hasLocalFestieAccount } from '@/lib/festie/localAccount';
 import {
   isValidFestieName,
   isValidFestiePassword,
   sanitizeFestieNameInput,
 } from '@/lib/festie/validation';
-import { isMobileLoungeDevice, MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
+import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { LOGO_PATH, SITE_TAGLINE } from '@/lib/site';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
@@ -21,10 +27,14 @@ import { ForgotPasswordPanel } from '@/components/auth/ForgotPasswordPanel';
 type Props = {
   balloonColor: string;
   initialRoute?: VenueRoute;
+  /** When on a creator stage — used for festie home slug on create. */
+  initialCreatorSlug?: string | null;
   initialAuthIntent?: AuthIntent;
-  onEnter: (name: string, route: VenueRoute) => void;
+  onEnter: (name: string, target: StagePickerTarget) => void;
   requireAuth?: boolean;
   pickStageOnly?: boolean;
+  /** Sign-in redirect — stay on current stage, or last used from home. */
+  signInFrom?: SignInFrom;
   onAuthSuccess?: (name: string, sessionRecap?: FestieSessionRecap | null) => void;
   onFestieCreated?: () => void;
   initialName?: string;
@@ -177,10 +187,12 @@ function AuthTabs({
 export function WelcomePopup({
   balloonColor,
   initialRoute,
+  initialCreatorSlug = null,
   initialAuthIntent,
   onEnter,
   requireAuth = true,
   pickStageOnly = false,
+  signInFrom = { source: 'home' },
   onAuthSuccess,
   onFestieCreated,
   initialName,
@@ -196,6 +208,8 @@ export function WelcomePopup({
   });
   const [password, setPassword] = useState('');
   const [picked, setPicked] = useState<VenueRoute | null>(initialRoute ?? null);
+  const [pickedTargetId, setPickedTargetId] = useState<string | null>(null);
+  const [featuredStages, setFeaturedStages] = useState<Awaited<ReturnType<typeof fetchFeaturedStages>>>([]);
   const [mobile, setMobile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -204,8 +218,15 @@ export function WelcomePopup({
   const nameValid = isValidFestieName(draft);
   const passwordValid = isValidFestiePassword(password);
   const canSubmitAuth = nameValid && passwordValid;
-  const canSubmitStagePick = Boolean(draft.trim()) && picked !== null;
+  const stageOptions = useMemo(
+    () => buildStagePickerOptions(featuredStages),
+    [featuredStages],
+  );
+  const pickedTarget = stageOptions.find(o => o.id === pickedTargetId) ?? null;
+  const canSubmitStagePick = Boolean(draft.trim()) && pickedTarget != null;
   const isCreate = authIntent === 'create';
+  const showAuth = requireAuth && !pickStageOnly;
+  const showStagePick = pickStageOnly;
 
   useEffect(() => {
     if (initialName?.trim()) setDraft(initialName.trim());
@@ -214,6 +235,27 @@ export function WelcomePopup({
   useEffect(() => {
     if (initialRoute) setPicked(initialRoute);
   }, [initialRoute]);
+
+  useEffect(() => {
+    if (!showStagePick) return;
+    let cancelled = false;
+    void fetchFeaturedStages()
+      .then(stages => {
+        if (!cancelled) setFeaturedStages(stages);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [showStagePick]);
+
+  useEffect(() => {
+    if (!showStagePick || pickedTargetId || stageOptions.length === 0) return;
+    const current = initialCreatorSlug?.trim()
+      ? stageOptions.find(o => o.target.kind === 'creator' && o.target.slug === initialCreatorSlug.trim().toLowerCase())
+      : initialRoute
+        ? stageOptions.find(o => o.target.kind === 'venue' && o.target.route === initialRoute)
+        : null;
+    if (current) setPickedTargetId(current.id);
+  }, [showStagePick, pickedTargetId, stageOptions, initialCreatorSlug, initialRoute]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -232,13 +274,29 @@ export function WelcomePopup({
       if (authIntent === 'signin') {
         const { festie, sessionRecap } = await loginFestie(draft.trim(), password);
         onAuthSuccess?.(festie.name, sessionRecap);
-        const savedRoute = venueRouteForStageSlug(festie.stage_slug);
-        const route = savedRoute ?? initialRoute;
-        if (!route) {
-          setError('No home stage found — pick a stage from the homepage first.');
+        const target = resolveSignInDestination(signInFrom, festie.stage_slug);
+        if (!target) {
+          setError('No stage found — pick a stage from the homepage first.');
           return;
         }
-        onEnter(festie.name, route);
+        onEnter(festie.name, target);
+        return;
+      }
+
+      const creatorSlug = initialCreatorSlug?.trim().toLowerCase();
+      if (creatorSlug) {
+        await createFestie({
+          name: draft.trim(),
+          password,
+          preset: 'ember',
+          attributes: { energy: 5, friendliness: 5, chattiness: 5 },
+          topics: [],
+          personality_notes: null,
+          stage_slug: creatorSlug,
+        });
+        onFestieCreated?.();
+        onAuthSuccess?.(draft.trim());
+        onEnter(draft.trim(), { kind: 'creator', slug: creatorSlug });
         return;
       }
 
@@ -259,7 +317,7 @@ export function WelcomePopup({
       });
       onFestieCreated?.();
       onAuthSuccess?.(draft.trim());
-      onEnter(draft.trim(), route);
+      onEnter(draft.trim(), { kind: 'venue', route });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -269,8 +327,8 @@ export function WelcomePopup({
 
   const submitStagePick = () => {
     const name = draft.trim();
-    if (!canSubmitStagePick) return;
-    onEnter(name, picked!);
+    if (!canSubmitStagePick || !pickedTarget) return;
+    onEnter(name, pickedTarget.target);
   };
 
   const setAuthMode = (mode: AuthIntent) => {
@@ -293,8 +351,6 @@ export function WelcomePopup({
       : '0 2px 10px rgba(74, 143, 212, 0.35)';
   };
 
-  const showAuth = requireAuth && !pickStageOnly;
-  const showStagePick = pickStageOnly;
   const modalWidth = showStagePick ? 680 : 520;
 
   return (
@@ -491,12 +547,13 @@ export function WelcomePopup({
                 width: '100%',
                 marginBottom: 18,
               }}>
-                {MOBILE_LOUNGE_STAGES.map(stage => (
+                {stageOptions.map(option => (
                   <MobileStageCard
-                    key={stage.route}
-                    stage={stage}
-                    selected={picked === stage.route}
-                    onSelect={() => setPicked(stage.route)}
+                    key={option.id}
+                    title={option.title}
+                    tagline={option.tagline}
+                    selected={pickedTargetId === option.id}
+                    onSelect={() => setPickedTargetId(option.id)}
                   />
                 ))}
               </div>

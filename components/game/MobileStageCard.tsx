@@ -1,14 +1,13 @@
 'use client';
 
-import type { MobileLoungeStageOption } from '@/lib/mobileLounge';
-
 type Props = {
-  stage: MobileLoungeStageOption;
+  title: string;
+  tagline: string;
   selected: boolean;
   onSelect: () => void;
 };
 
-export function MobileStageCard({ stage, selected, onSelect }: Props) {
+export function MobileStageCard({ title, tagline, selected, onSelect }: Props) {
   return (
     <button
       type="button"
@@ -24,10 +23,10 @@ export function MobileStageCard({ stage, selected, onSelect }: Props) {
       }}
     >
       <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.25 }}>
-        {stage.title}
+        {title}
       </div>
       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4, lineHeight: 1.3 }}>
-        {stage.tagline}
+        {tagline}
       </div>
     </button>
   );

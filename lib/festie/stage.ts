@@ -8,13 +8,18 @@ export function venueRouteForStageSlug(slug: string): VenueRoute | null {
   return parseVenueSlug(slug);
 }
 
-/** Save festie's home stage in DB (best-effort). */
-export function persistFestieStage(route: VenueRoute): void {
+/** Save festie's home stage slug in DB (best-effort). */
+export function persistFestieStageSlug(slug: string): void {
   const session = getPlayerSession();
   if (!session.authenticated) return;
-  const slug = venueSlugForRoute(route);
-  if (session.festie?.stage_slug === slug) return;
-  void updateFestie({ stage_slug: slug }).catch(() => {
+  const normalized = slug.trim().toLowerCase();
+  if (!normalized || session.festie?.stage_slug === normalized) return;
+  void updateFestie({ stage_slug: normalized }).catch(() => {
     /* non-blocking */
   });
+}
+
+/** Save festie's home stage from a built-in venue route. */
+export function persistFestieStage(route: VenueRoute): void {
+  persistFestieStageSlug(venueSlugForRoute(route));
 }

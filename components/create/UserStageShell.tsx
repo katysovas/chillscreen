@@ -16,12 +16,17 @@ type Props = {
 export function UserStageShell({ stage }: Props) {
   const venueRoute = venueRouteForUserStage(stage);
   const spawnWorldOff = worldOffForVenueRoute(venueRoute);
-  const [ownerUserId, setOwnerUserId] = useState<string | null>(() => getPlayerSession().userId);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => getPlayerSession().userId);
+  const [authenticated, setAuthenticated] = useState(() => getPlayerSession().authenticated);
+  const [sessionReady, setSessionReady] = useState(() => getPlayerSession().hydrated);
 
   useEffect(() => {
     void hydratePlayerSession();
     return subscribePlayerSession(() => {
-      setOwnerUserId(getPlayerSession().userId);
+      const session = getPlayerSession();
+      setCurrentUserId(session.userId);
+      setAuthenticated(session.authenticated);
+      setSessionReady(session.hydrated);
     });
   }, []);
 
@@ -29,7 +34,9 @@ export function UserStageShell({ stage }: Props) {
     <CreatorStageProvider
       initialStage={stage}
       ownerUserId={stage.ownerId}
-      currentUserId={ownerUserId}
+      currentUserId={currentUserId}
+      authenticated={authenticated}
+      sessionReady={sessionReady}
     >
       <VenueBootOverlay />
       <SFCityLoader

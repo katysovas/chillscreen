@@ -10,6 +10,7 @@ import {
   updateUserStage,
 } from '@/lib/stages/db';
 import { stagePresetById } from '@/lib/stages/presets';
+import { parsePresetBackdropUrl } from '@/lib/stages/wallpapers';
 import { parseStreamsJson } from '@/lib/stages/parseStream';
 import type { StagePresetId } from '@/lib/stages/types';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
@@ -66,6 +67,11 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     const body = await req.json() as Record<string, unknown>;
     const patch: Parameters<typeof updateUserStage>[2] = {};
 
+    const existing = await getUserStageBySlug(slug);
+    if (!existing || existing.owner_id !== userId || existing.taken_down_at) {
+      return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
+    }
+
     if (body.streams !== undefined) {
       const streams = parseStreamsJson(body.streams);
       if (!streams.length) {
@@ -94,6 +100,25 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 
     const sky = parseSky(body.sky);
     if (sky !== undefined) patch.sky = sky;
+
+    if (body.shuffleOnStart !== undefined) {
+      patch.shuffleOnStart = Boolean(body.shuffleOnStart);
+    }
+
+    if (body.backdropUrl !== undefined) {
+      const targetPreset = (patch.preset ?? existing.preset) as StagePresetId;
+      if (targetPreset !== 'cinema') {
+        return NextResponse.json(
+          { error: 'Backdrop is only for City stages.' },
+          { status: 400 },
+        );
+      }
+      const parsed = parsePresetBackdropUrl(body.backdropUrl);
+      if (parsed === 'invalid') {
+        return NextResponse.json({ error: 'Invalid backdrop.' }, { status: 400 });
+      }
+      patch.backdropUrl = parsed ?? null;
+    }
 
     const row = await updateUserStage(slug, userId, patch);
     if (!row) {

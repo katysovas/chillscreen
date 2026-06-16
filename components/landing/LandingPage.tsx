@@ -1,13 +1,16 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Syne, Space_Mono } from 'next/font/google';
 import { SITE_NAME, TWITTER_HANDLE, TWITTER_URL } from '@/lib/site';
 
 const TRANSPARENT_LOGO_PATH = '/images/logos/logo_transparent.png';
-import type { VenueRoute } from '@/lib/venueRoutes';
-import { LANDING_FAQ, LANDING_STAGES } from './landingData';
+import type { StagePickerTarget } from '@/lib/stagePickerOptions';
+import { LANDING_FAQ, LANDING_STAGES, landingImageForCreatorPreset } from './landingData';
+import { fetchFeaturedStages } from '@/lib/stages/client';
+import type { FeaturedStageSummary } from '@/lib/stages/types';
 import { LANDING_HERO } from './landingHeroCopy';
 import { LandingHeroCanvas } from './LandingHeroCanvas';
 import { LandingHeroCta } from './LandingHeroCta';
@@ -25,7 +28,7 @@ const spaceMono = Space_Mono({
 
 type Props = {
   onScrollToStages: () => void;
-  onStageEnter: (route: VenueRoute) => void;
+  onStageEnter: (target: StagePickerTarget) => void;
   onSignIn: () => void;
 };
 
@@ -104,6 +107,17 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
   const navRef = useRef<HTMLElement>(null);
   const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [contactError, setContactError] = useState('');
+  const [featuredCreators, setFeaturedCreators] = useState<FeaturedStageSummary[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchFeaturedStages()
+      .then(stages => {
+        if (!cancelled) setFeaturedCreators(stages);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const container = starsRef.current;
@@ -273,7 +287,15 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
 
       <section className="stages-section" id="stages">
         <div className="stages-inner">
-          <p className="stages-eyebrow">9 stages · always on</p>
+          <header className="stages-header">
+            <h2 className="stages-title">Join our featured stages:</h2>
+            <div className="stages-subrow">
+              <p className="stages-subtitle">Or create your own stage</p>
+              <Link href="/create" className="stages-create-btn">
+                Create stage
+              </Link>
+            </div>
+          </header>
           <div className="stages-grid">
             {LANDING_STAGES.map(stage => (
               <button
@@ -281,7 +303,7 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
                 type="button"
                 className={layoutClass(stage.layout)}
                 style={{ background: stage.background }}
-                onClick={() => onStageEnter(stage.route)}
+                onClick={() => onStageEnter({ kind: 'venue', route: stage.route })}
               >
                 {stage.bgImage && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -305,8 +327,33 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
                   <h3 className="stage-name">{stage.name}</h3>
                   {stage.desc && <p className="stage-desc">{stage.desc}</p>}
                   <span className="stage-cta-btn">
-                    {stage.featured ? 'Enter stage →' : 'Enter →'}
+                    {stage.highlight ? 'Enter stage →' : 'Enter →'}
                   </span>
+                </div>
+              </button>
+            ))}
+            {featuredCreators.map(stage => (
+              <button
+                key={`creator-${stage.slug}`}
+                type="button"
+                className="stage-card stage-small"
+                style={{ background: 'radial-gradient(ellipse at 50% 80%,#1a1508 0%,#0e0c06 100%)' }}
+                onClick={() => onStageEnter({ kind: 'creator', slug: stage.slug })}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className="stage-bg-img stage-bg-photo"
+                  src={landingImageForCreatorPreset(stage.preset)}
+                  alt=""
+                  onError={e => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <div className="stage-accent" style={{ ['--sa' as string]: '#e8c040' }} />
+                <div className="stage-content">
+                  <h3 className="stage-name">{stage.displayName}</h3>
+                  <p className="stage-desc">Creator stage</p>
+                  <span className="stage-cta-btn">Enter →</span>
                 </div>
               </button>
             ))}

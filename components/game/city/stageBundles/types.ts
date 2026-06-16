@@ -21,6 +21,8 @@ export type MidTileRenderProps = {
   concertFoW: number;
   concertFoH: number;
   concertFoY: number;
+  /** Creator city template — custom skyline photo (cinema preset only). */
+  creatorBackdropUrl?: string | null;
 };
 
 export type StageMidBundle = {

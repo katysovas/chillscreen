@@ -176,24 +176,7 @@ export function filterOwnerCentricRecapEvents(
   });
 }
 
-export function recapLinesFromEvents(
-  events: FestieEventRow[],
-  festieName: string,
-): RecapLine[] {
-  const who = festieName.trim() || 'Your festie';
-  return filterOwnerCentricRecapEvents(events, who).map(event => {
-    if (event.type === FESTIE_EVENT_TYPES.COIN_PICKUP) {
-      const p = event.payload as FestieCoinPickupPayload;
-      return {
-        id: event.id,
-        kind: 'coin',
-        emoji: '🪙',
-        time: event.created_at,
-        title: `+${p.amount} coin${p.amount === 1 ? '' : 's'} picked up`,
-        detail: `Balance: ${p.balance}`,
-      };
-    }
-
+function eventToRecapLine(event: FestieEventRow, who: string): RecapLine | null {
     if (event.type === FESTIE_EVENT_TYPES.LIFE_LOG) {
       const p = event.payload as FestieLifeLogPayload;
       return {
@@ -257,7 +240,44 @@ export function recapLinesFromEvents(
         ? `${player}: ${userLine}\n${who}: ${p.reply}`
         : `${who}: ${p.reply}`,
     };
-  });
+}
+
+export function recapLinesFromEvents(
+  events: FestieEventRow[],
+  festieName: string,
+): RecapLine[] {
+  const who = festieName.trim() || 'Your festie';
+  const filtered = filterOwnerCentricRecapEvents(events, who);
+
+  let totalCoins = 0;
+  let coinLineId = 0;
+  let coinTime = '';
+  const lines: RecapLine[] = [];
+
+  for (const event of filtered) {
+    if (event.type === FESTIE_EVENT_TYPES.COIN_PICKUP) {
+      const p = event.payload as FestieCoinPickupPayload;
+      totalCoins += p.amount;
+      coinLineId = event.id;
+      coinTime = event.created_at;
+      continue;
+    }
+    const line = eventToRecapLine(event, who);
+    if (line) lines.push(line);
+  }
+
+  if (totalCoins > 0) {
+    lines.push({
+      id: coinLineId,
+      kind: 'coin',
+      emoji: '🪙',
+      time: coinTime,
+      title: `${totalCoins} coin${totalCoins === 1 ? '' : 's'} collected`,
+    });
+  }
+
+  lines.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  return lines;
 }
 
 export function shouldShowSessionRecap(

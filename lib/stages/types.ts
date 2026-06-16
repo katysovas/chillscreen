@@ -31,6 +31,9 @@ export type UserStageRow = {
   sky: SkyPeriod | null;
   streams: StageStream[];
   now_playing_index: number;
+  shuffle_on_start: boolean;
+  backdrop_url: string | null;
+  featured: boolean;
   created_at: Date;
   last_active_at: Date;
   taken_down_at: Date | null;
@@ -45,10 +48,22 @@ export type UserStagePublic = {
   sky?: SkyPeriod;
   streams: StageStream[];
   nowPlayingIndex: number;
+  /** Pick a random lineup track when the first viewer opens an empty room. */
+  shuffleOnStart: boolean;
+  /** Custom City template skyline — public URL path. */
+  backdropUrl?: string | null;
   createdAt: number;
   lastActiveAt: number;
   tier: StageLifecycleTier;
   takenDown: boolean;
+  featured?: boolean;
+};
+
+/** Lightweight row for the Switch Stages picker. */
+export type FeaturedStageSummary = {
+  slug: string;
+  displayName: string;
+  preset: StagePresetId;
 };
 
 export type StagePresetDef = {

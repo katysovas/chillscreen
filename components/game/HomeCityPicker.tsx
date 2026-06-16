@@ -12,8 +12,8 @@ import {
   getServerBalloonColor,
   subscribeBalloonColor,
 } from '@/lib/identity';
-import { venueSlugForRoute } from '@/lib/venueRoutes';
-import type { VenueRoute } from '@/lib/venueRoutes';
+import { pathForStageTarget, type StagePickerTarget } from '@/lib/stagePickerOptions';
+import { setLastUsedStage } from '@/lib/lastUsedStage';
 
 /** Home `/` — landing page; stage tiles route into the game with welcome modal. */
 export function HomeCityPicker() {
@@ -48,14 +48,17 @@ export function HomeCityPicker() {
     setShowWelcome(true);
   };
 
-  const handleStageEnter = (route: VenueRoute) => {
-    router.push(`/${venueSlugForRoute(route)}?welcome=1`);
+  const handleStageEnter = (target: StagePickerTarget) => {
+    setLastUsedStage(target);
+    const path = pathForStageTarget(target);
+    router.push(target.kind === 'venue' ? `${path}?welcome=1` : path);
   };
 
-  const handleEnter = (name: string, route: VenueRoute) => {
+  const handleEnter = (name: string, target: StagePickerTarget) => {
     identifyPlayer(name);
     setShowWelcome(false);
-    router.push(`/${venueSlugForRoute(route)}`);
+    setLastUsedStage(target);
+    router.push(pathForStageTarget(target));
   };
 
   return (
@@ -71,6 +74,7 @@ export function HomeCityPicker() {
           balloonColor={balloonColor}
           requireAuth
           initialAuthIntent={welcomeAuthIntent}
+          signInFrom={{ source: 'home' }}
           initialName={festieName ?? undefined}
           onAuthSuccess={name => {
             void hydratePlayerSession().then(profile => {

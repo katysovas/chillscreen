@@ -3,50 +3,63 @@
   overflow: hidden;
   width: 100%;
   height: 100%;
-  background: var(--city-backdrop-fill);
+  background: #0a0610;
   pointer-events: none;
   isolation: isolate;
 }
 
-.city-backdrop__blend,
-.city-backdrop__city {
-  position: absolute;
-  top: 0;
-  background-repeat: no-repeat;
-}
-
-.city-backdrop__city {
-  z-index: 2;
-  left: calc(-1 * var(--city-skyline-bleed-x));
-  width: calc(100% + 2 * var(--city-skyline-bleed-x));
-  height: 100%;
-  background-color: var(--city-backdrop-fill);
-  background-image: var(--city-skyline-image);
-  background-size: cover;
-  background-position: calc(50% + var(--city-skyline-offset-x)) center;
-  mix-blend-mode: hard-light;
-}
-
-.city-backdrop__city::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  box-shadow: inset 0 0 300px #000;
-}
-
+/* ── Blend wash (z-index 1) — twirl + 128 BPM hue pulse ── */
 .city-backdrop__blend {
+  position: absolute;
   z-index: 1;
-  left: -250%;
   top: -250%;
+  left: -250%;
   width: 500%;
   height: 500%;
-  background-image: var(--city-blend-image);
-  background-size: cover;
-  background-position: center;
   transform-origin: 60% 60%;
   animation:
     city-backdrop-twirl 50s infinite linear,
     city-backdrop-glow 0.46875s infinite ease-in-out;
+}
+
+.city-backdrop__blend img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* ── Skyline / upload (z-index 2) — hard-light + vignette ── */
+.city-backdrop__city {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  mix-blend-mode: hard-light;
+}
+
+.city-backdrop__city img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* User uploads — lift so photo bottom meets the road (y=660), not tile bottom. */
+.city-backdrop__city--upload img {
+  height: calc(100% + var(--city-upload-lift, 240px));
+  transform: translateY(calc(-1 * var(--city-upload-lift, 240px)));
+}
+
+.city-backdrop__vignette {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 300px #000;
+  pointer-events: none;
 }
 
 @keyframes city-backdrop-twirl {

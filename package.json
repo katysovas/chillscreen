@@ -17,21 +17,26 @@
     "party:deploy:cf": "bash scripts/deploy-partykit.sh",
     "fetch-durations": "npx tsx scripts/fetch-durations.ts",
     "db:migrate": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; node scripts/db-migrate.mjs'",
-    "db:import-seeds": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; node scripts/import-chat-seeds.mjs'"
+    "db:import-seeds": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; node scripts/import-chat-seeds.mjs'",
+    "optimize:stage-images": "npx tsx scripts/optimize-stage-images.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1069.0",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/blob": "^2.4.0",
     "html2canvas": "^1.4.1",
+    "image-size": "^2.0.2",
     "next": "^16.2.7",
     "partysocket": "^1.1.19",
     "posthog-js": "^1.382.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "resend": "^6.12.4",
+    "sharp": "^0.34.5",
     "three": "^0.184.0"
   },
   "devDependencies": {
+    "@types/image-size": "^0.7.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

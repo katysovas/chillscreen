@@ -9,6 +9,7 @@ import { useStagePlayer } from '../../../useStagePlayer';
 import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../../StageVideoFrame';
 import { stageChannelForVenueKind } from '@/lib/venues';
 import type { CreatorStageConstants } from './types';
+import { CreatorSpeakerTower } from './CreatorSpeakerTower';
 
 type StageShellProps = {
   idleScreen?: boolean;
@@ -55,6 +56,8 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
   const beamId = `${C.idPrefix}-beam`;
   const trussGradId = `${C.idPrefix}-truss`;
   const glowId = `${C.idPrefix}-glow`;
+  const spkCabId = `${C.idPrefix}-spk-cab`;
+  const spkConeId = `${C.idPrefix}-spk-cone`;
 
   function CreatorStageShell({ idleScreen = true }: StageShellProps) {
     const deck = GND;
@@ -93,6 +96,16 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
                   <feMergeNode in="SourceGraphic" />
                 </feMerge>
               </filter>
+              <linearGradient id={spkCabId} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#0a120f" />
+                <stop offset="45%" stopColor={isChill ? '#1e3028' : '#172820'} />
+                <stop offset="100%" stopColor="#090e0c" />
+              </linearGradient>
+              <radialGradient id={spkConeId} cx="38%" cy="32%" r="68%">
+                <stop offset="0%" stopColor="#344a40" />
+                <stop offset="50%" stopColor="#141f1a" />
+                <stop offset="100%" stopColor="#060a08" />
+              </radialGradient>
             </defs>
 
             <ellipse cx={cx} cy={deck - 120} rx={rigW * 0.55} ry={140} fill={`url(#${hazeId})`} opacity={0.85}>
@@ -100,22 +113,14 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
             </ellipse>
 
             {[cx - 210, cx + 210].map((tx, i) => (
-              <g key={`spk-${i}`} transform={`translate(${tx - 27},${speakerY})`}>
-                {Array.from({ length: 5 }, (_, j) => (
-                  <rect
-                    key={j}
-                    x={0}
-                    y={j * 38}
-                    width={54}
-                    height={34}
-                    rx={5}
-                    fill="#10201a"
-                    stroke="rgba(56,245,176,.14)"
-                    strokeWidth={1}
-                  />
-                ))}
-                <ellipse cx={27} cy={188} rx={20} ry={6} fill="#1a2f26" opacity={0.7} />
-              </g>
+              <CreatorSpeakerTower
+                key={`spk-${i}`}
+                transform={`translate(${tx - 27},${speakerY})`}
+                cabGradId={spkCabId}
+                coneGradId={spkConeId}
+                strokeColor={isChill ? 'rgba(46,61,69,0.55)' : 'rgba(56,245,176,.22)'}
+                accentColor={C.WHICH_NEON.green}
+              />
             ))}
 
             {BEAMS.map((b, i) => (

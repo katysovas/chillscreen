@@ -43,7 +43,7 @@ import {
   markSessionRecapAcked,
   wasSessionRecapAcked,
 } from '@/lib/festie/sessionRecapStorage';
-import { persistFestieStage } from '@/lib/festie/stage';
+import { persistFestieStageSlug } from '@/lib/festie/stage';
 import {
   markFestieLifeIntroSeen,
   markFestieLifeTabExitShown,
@@ -91,12 +91,21 @@ import {
   stageChannelForRoute,
   stageWorldOffForRoute,
 } from '@/lib/isolatedCity';
-import { partyRoomIdForStageSlug } from '@/lib/stages/runtime';
+import { partyRoomIdForStageSlug, stagePathForSlug, venueRouteForUserStage } from '@/lib/stages/runtime';
+import {
+  currentStagePickerTarget,
+  pathForStageTarget,
+  stageTargetsEqual,
+  type StagePickerTarget,
+} from '@/lib/stagePickerOptions';
+import { setLastUsedStage } from '@/lib/lastUsedStage';
+import { stageBackdropDisplayUrl } from '@/lib/stages/wallpapers';
+import { useCreatorStageShuffleOnStart } from '@/lib/stages/useCreatorStageShuffleOnStart';
 import {
   useOptionalCreatorStage,
+  useIsCreatorStageOwner,
   useCreatorStagePresence,
 } from '@/lib/stages/CreatorStageContext';
-import { useStaggeredCreatorNpcCast } from '@/lib/stages/useStaggeredCreatorNpcCast';
 import { setVenueDressCode } from '@/lib/dressCode';
 import { WelcomePopup } from './WelcomePopup';
 import { CityNavSigns } from './CityNavSigns';
@@ -126,6 +135,7 @@ import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
 import { FestieSessionRecapOverlay } from './FestieSessionRecapOverlay';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
+import { CreatorStageSettingsModal } from '@/components/create/CreatorStageSettingsModal';
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import {
   clearNpcSyncedScreenPcts,
@@ -225,6 +235,7 @@ export default function SFCity({
   const searchParams = useSearchParams();
   const autoSkyPeriod = useSkyPeriod();
   const creatorStage = useOptionalCreatorStage();
+  const isCreatorStageOwner = useIsCreatorStageOwner();
   const skyPeriod = creatorStage?.sky ?? autoSkyPeriod;
   useCreatorStagePresence(creatorStage?.slug ?? null);
 
@@ -232,10 +243,13 @@ export default function SFCity({
     () => typeof window !== 'undefined' && isMobileLoungeDevice(),
   );
   const [showCityPicker, setShowCityPicker] = useState(false);
+  const [stageSettingsOpen, setStageSettingsOpen] = useState(false);
   const showCityPickerRef = useRef(false);
   const connectNearRef = useRef<(() => void) | null>(null);
 
-  const effectiveVenueRoute = venueRoute;
+  const effectiveVenueRoute = creatorStage
+    ? venueRouteForUserStage(creatorStage)
+    : venueRoute;
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
   const isCreatorChill = effectiveVenueRoute === 'creator-chill';
   const isCreatorLive = effectiveVenueRoute === 'creator-live';
@@ -247,17 +261,10 @@ export default function SFCity({
   );
   // Generated crowd for this stage (+ local Buz). Falls back to legacy cast when
   // no generated NPCs are saved for the channel yet.
-  const fullAmbientCast = useMemo(
+  const npcCast = useMemo(
     () => npcCastForVenue(effectiveVenueRoute, ambientSeed),
     [effectiveVenueRoute, ambientSeed],
   );
-  const staggeredAmbientCast = useStaggeredCreatorNpcCast(
-    fullAmbientCast,
-    Boolean(creatorStage),
-    ambientSeed,
-    creatorStage?.slug ?? null,
-  );
-  const npcCast = creatorStage ? staggeredAmbientCast : fullAmbientCast;
   /** Wait for equipped prop chunks before showing player/NPCs (avoids balloon-then-props flicker). */
   const [crowdVisualsReady, setCrowdVisualsReady] = useState(false);
   const isolatedTile = cityTileForRoute(effectiveVenueRoute);
@@ -775,9 +782,15 @@ export default function SFCity({
     }
   }, [mp.isNpcLeader, mp.connected, mp.selfId]);
 
+  useCreatorStageShuffleOnStart(
+    creatorStage?.slug,
+    creatorStage?.shuffleOnStart ?? false,
+    mp.connected,
+  );
+
   const easelChannel = stageChannelForRoute(effectiveVenueRoute);
   const easelStageSlug = stageSlugFromVenueRoute(effectiveVenueRoute);
-  const easelSessionEnabled = !homePreview && !creatorStage;
+  const easelSessionEnabled = !homePreview;
   const easelUserActive = TEST_EASEL_ON_LOAD || mp.connected || (!showWelcome && !showCityPicker);
   const activeEaselSession = useEaselSession(
     easelStageSlug,
@@ -1148,11 +1161,22 @@ export default function SFCity({
     });
   }, [effectiveNpcCastKey]);
 
-  const navigateToCity = useCallback((route: VenueRoute) => {
+  const navigateToStageTarget = useCallback((target: StagePickerTarget) => {
     setShowCityPicker(false);
-    if (route === effectiveVenueRoute) return;
-    router.push(`/${venueSlugForRoute(route)}`);
-  }, [effectiveVenueRoute, router]);
+    setLastUsedStage(target);
+    if (target.kind === 'creator') {
+      const slug = target.slug.toLowerCase();
+      if (creatorStage?.slug === slug) return;
+      router.push(stagePathForSlug(slug));
+      return;
+    }
+    if (!creatorStage && target.route === effectiveVenueRoute) return;
+    router.push(`/${venueSlugForRoute(target.route)}`);
+  }, [creatorStage, effectiveVenueRoute, router]);
+
+  const navigateToCity = useCallback((route: VenueRoute) => {
+    navigateToStageTarget({ kind: 'venue', route });
+  }, [navigateToStageTarget]);
 
   useEffect(() => {
     setMobileDevice(isMobileLoungeDevice());
@@ -1236,9 +1260,22 @@ export default function SFCity({
   }, [homePreview, profileReady, effectiveVenueRoute, playerLoadout, effectiveNpcCast]);
 
   useEffect(() => {
+    if (homePreview) return;
+    if (creatorStage) {
+      setLastUsedStage({ kind: 'creator', slug: creatorStage.slug });
+      return;
+    }
+    setLastUsedStage({ kind: 'venue', route: effectiveVenueRoute });
+  }, [homePreview, creatorStage, effectiveVenueRoute]);
+
+  useEffect(() => {
     if (homePreview || !festieSignedIn) return;
-    persistFestieStage(effectiveVenueRoute);
-  }, [homePreview, festieSignedIn, effectiveVenueRoute]);
+    if (creatorStage) {
+      persistFestieStageSlug(creatorStage.slug);
+      return;
+    }
+    persistFestieStageSlug(venueSlugForRoute(effectiveVenueRoute));
+  }, [homePreview, festieSignedIn, creatorStage, effectiveVenueRoute]);
 
   useEffect(() => { showWelcomeRef.current = showWelcome; }, [showWelcome]);
   useEffect(() => { showCityPickerRef.current = showCityPicker; }, [showCityPicker]);
@@ -1490,7 +1527,7 @@ export default function SFCity({
     mpRef.current?.sendAmbientMessage(filtered.text);
   };
 
-  const handleWelcomeName = (name: string, route: VenueRoute) => {
+  const handleWelcomeEnter = (name: string, target: StagePickerTarget) => {
     saveSessionPlayerName(name);
     const profile = {
       name,
@@ -1506,20 +1543,29 @@ export default function SFCity({
     trackCharacterCreated(name);
     mpRef.current?.sendProfile(profile);
     mpRef.current?.requestConnect();
-    if (route !== effectiveVenueRoute) {
-      navigateToCity(route);
+
+    const current = currentStagePickerTarget(
+      effectiveVenueRoute,
+      creatorStage?.slug ?? null,
+    );
+    if (current && stageTargetsEqual(current, target)) return;
+
+    if (target.kind === 'creator') {
+      router.push(pathForStageTarget(target));
+      return;
     }
+    navigateToCity(target.route);
   };
 
-  const handleCityPickerEnter = useCallback((name: string, route: VenueRoute) => {
+  const handleCityPickerEnter = useCallback((name: string, target: StagePickerTarget) => {
     if (!getPlayerName() && name) {
       saveSessionPlayerName(name);
       identifyPlayer(name);
       setPlayerName(name);
     }
     closeVendorShop();
-    navigateToCity(route);
-  }, [closeVendorShop, navigateToCity]);
+    navigateToStageTarget(target);
+  }, [closeVendorShop, navigateToStageTarget]);
 
   const handleOpenAmbientChat = useCallback(() => {
     if (!AMBIENT_CHAT_ENABLED) return;
@@ -2101,6 +2147,7 @@ export default function SFCity({
           deepLinkRoute={effectiveVenueRoute}
           hideTrees={mobileDevice || isDeepSpace}
           isolatedTileIndex={isolatedTile}
+          creatorBackdropUrl={stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null}
         />
         <GroundLayer
           ref={groundRef}
@@ -2330,14 +2377,23 @@ export default function SFCity({
               ? nearPeerName
               : null
         }
-        hidden={showWelcome || showCityPicker || isChatterDebugMode()}
+        hidden={showWelcome || showCityPicker || stageSettingsOpen || isChatterDebugMode()}
         onConnectTap={mobileDevice ? () => connectNearRef.current?.() : undefined}
         onOpenCityPicker={() => setShowCityPicker(true)}
+        onOpenStageSettings={
+          isCreatorStageOwner ? () => setStageSettingsOpen(true) : undefined
+        }
+        showStageSettings={isCreatorStageOwner}
+        creatorStageSlug={creatorStage?.slug ?? null}
         vendorShopOpen={vendorShopManualOpen}
         onToggleVendorShop={toggleVendorShop}
         onVendorShopWarm={warmVendorShop}
         isMobile={mobileDevice}
       />
+
+      {stageSettingsOpen && isCreatorStageOwner && (
+        <CreatorStageSettingsModal onClose={() => setStageSettingsOpen(false)} />
+      )}
 
       {showHelpPopup && (
         <HelpFaqModal onClose={dismissHelpPopup} />
@@ -2413,9 +2469,17 @@ export default function SFCity({
         <WelcomePopup
           balloonColor={myColor}
           initialRoute={effectiveVenueRoute}
+          initialCreatorSlug={creatorStage?.slug ?? null}
           initialName={playerName ?? getPlayerName() ?? undefined}
           requireAuth={!festieSignedIn}
           pickStageOnly={festieSignedIn}
+          signInFrom={{
+            source: 'stage',
+            stage: currentStagePickerTarget(
+              effectiveVenueRoute,
+              creatorStage?.slug ?? null,
+            ) ?? { kind: 'venue', route: effectiveVenueRoute },
+          }}
           onAuthSuccess={(name, sessionRecap) => {
             openSessionRecap(sessionRecap ?? null, false, name);
             void hydratePlayerSession().then(profile => {
@@ -2427,7 +2491,7 @@ export default function SFCity({
               setPlayerCoins(getPlayerCoins());
             });
           }}
-          onEnter={handleWelcomeName}
+          onEnter={handleWelcomeEnter}
           onFestieCreated={() => void handleFestieCreated()}
         />
       )}
@@ -2437,6 +2501,7 @@ export default function SFCity({
           variant="swap"
           requireName={false}
           initialRoute={effectiveVenueRoute}
+          creatorSlug={creatorStage?.slug ?? null}
           initialName={playerName ?? undefined}
           onEnter={handleCityPickerEnter}
           onClose={() => setShowCityPicker(false)}
@@ -2511,13 +2576,17 @@ export default function SFCity({
         />
       )}
 
-      {!showWelcome && !showCityPicker && !isChatterDebugMode() && (
+      {!showWelcome && !showCityPicker && !stageSettingsOpen && !isChatterDebugMode() && (
         <MobileGameControls
           muted={muted}
           vendorShopOpen={vendorShopManualOpen}
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
           onOpenStageSwap={() => setShowCityPicker(true)}
+          onOpenStageSettings={
+            isCreatorStageOwner ? () => setStageSettingsOpen(true) : undefined
+          }
+          showStageSettings={isCreatorStageOwner}
           onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}
           ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}
           onToggleMute={() => setMuted(m => !m)}

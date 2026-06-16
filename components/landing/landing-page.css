@@ -629,6 +629,60 @@
 
 .landing-page .stages-section { background: var(--lp-bg); scroll-margin-top: 84px; }
 .landing-page .stages-inner { max-width: 1200px; margin: 0 auto; padding: 52px 44px 8px; }
+
+.landing-page .stages-header {
+  margin-bottom: 28px;
+}
+
+.landing-page .stages-title {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--lp-text);
+  margin: 0 0 12px;
+}
+
+.landing-page .stages-subrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.landing-page .stages-subtitle {
+  margin: 0;
+  font-family: var(--ff-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--lp-muted);
+}
+
+.landing-page .stages-create-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(230, 126, 34, 0.45);
+  background: rgba(230, 126, 34, 0.14);
+  color: #ffb347;
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.landing-page .stages-create-btn:hover {
+  background: rgba(230, 126, 34, 0.24);
+  border-color: rgba(230, 126, 34, 0.65);
+  color: #ffc876;
+}
+
 .landing-page .stages-eyebrow {
   font-family: var(--ff-mono);
   font-size: 10px;
@@ -1145,4 +1199,6 @@
     letter-spacing: 0.03em;
   }
   .landing-page .stages-inner { padding: 40px 22px 8px; }
+  .landing-page .stages-header { margin-bottom: 22px; }
+  .landing-page .stages-subrow { gap: 10px 12px; }
 }

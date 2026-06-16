@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Character from '@/components/game/Character';
 import { festiePresetById } from '@/lib/festie/presets';
@@ -20,21 +20,35 @@ import {
   fetchMyStage,
   parseStageStreams,
   takedownUserStage,
+  uploadStageBackdrop,
 } from '@/lib/stages/client';
+import {
+  stageBackdropUploadHint,
+  validateBackdropFileForUpload,
+} from '@/lib/stages/backdropValidation';
 import type { StageStreamPasteMode } from '@/lib/stages/parseStream';
 import { stagePathForSlug } from '@/lib/stages/runtime';
+import {
+  limitStageDisplayNameInput,
+  stageDisplayNameHint,
+  validateStageDisplayName,
+} from '@/lib/stages/stageDisplayName';
 import {
   slugRejectMessage,
   stageNameToSlug,
   validateStageSlugFormat,
+  validateStageSlugMessage,
 } from '@/lib/stages/slugValidation';
 import type { StagePresetId, StageStream } from '@/lib/stages/types';
-import { CREATOR_STAGE_TEMPLATES } from '@/lib/stages/presets';
+import { DEFAULT_STAGE_WALLPAPER_URL } from '@/lib/stages/wallpapers';
+import { StageSceneGallery, type StageGallerySelection } from '@/components/create/StageSceneGallery';
 import { LOGO_PATH, SITE_TAGLINE, SITE_URL } from '@/lib/site';
 import { ForgotPasswordPanel } from '@/components/auth/ForgotPasswordPanel';
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 const STAGE_EXISTS_MSG = 'You already have a stage.';
+const MODAL_WIDTH_AUTH = 520;
+const MODAL_WIDTH_SETUP = 720;
 
 const INPUT: React.CSSProperties = {
   width: '100%',
@@ -126,6 +140,7 @@ type Draft = {
   festieName: string;
   festiePassword: string;
   preset: StagePresetId;
+  backdropUrl: string | null;
   streams: StageStream[];
 };
 
@@ -134,7 +149,8 @@ const DEFAULT_DRAFT: Draft = {
   slug: '',
   festieName: '',
   festiePassword: '',
-  preset: 'chill',
+  preset: 'cinema',
+  backdropUrl: DEFAULT_STAGE_WALLPAPER_URL,
   streams: [],
 };
 
@@ -162,83 +178,6 @@ function parseInviteEmails(raw: string): string[] {
 
 function hasValidInviteEmail(raw: string): boolean {
   return parseInviteEmails(raw).some(isValidNotifyEmail);
-}
-
-const TEMPLATE_THUMB_PLACEHOLDER = '/images/city.jpg';
-
-function TemplatePicker({
-  preset,
-  onChange,
-}: {
-  preset: StagePresetId;
-  onChange: (preset: StagePresetId) => void;
-}) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Stage template"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 8,
-        marginBottom: 4,
-        fontFamily: 'system-ui,sans-serif',
-      }}
-    >
-      {CREATOR_STAGE_TEMPLATES.map(template => {
-        const active = preset === template.id;
-        return (
-          <button
-            key={template.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(template.id)}
-            style={{
-              borderRadius: 12,
-              padding: 0,
-              overflow: 'hidden',
-              border: active
-                ? '1px solid rgba(111,207,151,0.65)'
-                : '1px solid rgba(255,255,255,0.14)',
-              background: active
-                ? 'rgba(111,207,151,0.14)'
-                : 'rgba(255,255,255,0.05)',
-              color: active ? '#eafff6' : 'rgba(255,255,255,0.82)',
-              cursor: 'pointer',
-              textAlign: 'center',
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={TEMPLATE_THUMB_PLACEHOLDER}
-              alt=""
-              draggable={false}
-              style={{
-                display: 'block',
-                width: '100%',
-                height: 64,
-                objectFit: 'cover',
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
-              }}
-            />
-            <div style={{ padding: '10px 8px' }}>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>{template.label}</div>
-              <div style={{
-                marginTop: 4,
-                fontSize: 11,
-                lineHeight: 1.35,
-                color: active ? 'rgba(234,255,246,0.72)' : 'rgba(255,255,255,0.45)',
-              }}
-              >
-                {template.tagline}
-              </div>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 function StreamPasteTabs({
@@ -442,7 +381,33 @@ export function CreateStageWizard() {
   const [mobile, setMobile] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [stageNameTouched, setStageNameTouched] = useState(false);
+  const [pendingBackdropFile, setPendingBackdropFile] = useState<File | null>(null);
   const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const backdropFileRef = useRef<HTMLInputElement>(null);
+  const backdropBlobUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (backdropBlobUrlRef.current) {
+        URL.revokeObjectURL(backdropBlobUrlRef.current);
+      }
+    };
+  }, []);
+
+  const stageNameError = useMemo(() => {
+    if (!stageNameTouched && !draft.stageName) return null;
+    return validateStageDisplayName(draft.stageName);
+  }, [stageNameTouched, draft.stageName]);
+
+  const slugFormatError = useMemo(
+    () => validateStageSlugMessage(draft.slug),
+    [draft.slug],
+  );
+
+  const stageFieldHint = stageNameError
+    ?? ((slugFormatError && (stageNameTouched || draft.stageName)) ? slugFormatError : null)
+    ?? stageDisplayNameHint;
 
   useEffect(() => {
     if (hasLocalFestieAccount()) setAuthIntent('signin');
@@ -606,14 +571,17 @@ export function CreateStageWizard() {
       case 1:
         return signedInFestie != null || canSubmitAuth;
       case 2:
-        return slugStatus === 'ok'
-          && draft.stageName.trim().length > 0
-          && draft.slug.trim().length > 0
-          && draft.streams.length > 0;
+        return validateStageDisplayName(draft.stageName) == null
+          && validateStageSlugFormat(draft.slug) == null
+          && slugStatus === 'ok';
+      case 3:
+        return draft.streams.length > 0;
       default:
         return false;
     }
   };
+
+  const stageDisplayLabel = draft.stageName.trim() || 'your stage';
 
   const addStream = async () => {
     const url = streamInput.trim();
@@ -682,6 +650,9 @@ export function CreateStageWizard() {
         preset: draft.preset,
         streams: draft.streams,
       };
+      if (draft.preset === 'cinema' && draft.backdropUrl && !pendingBackdropFile) {
+        payload.backdropUrl = draft.backdropUrl;
+      }
       if (!signedInFestie) {
         payload.festie = {
           name: draft.festieName.trim(),
@@ -693,6 +664,9 @@ export function CreateStageWizard() {
         };
       }
       await createUserStage(payload);
+      if (pendingBackdropFile) {
+        await uploadStageBackdrop(draft.slug.trim().toLowerCase(), pendingBackdropFile);
+      }
       router.push(stagePathForSlug(draft.slug.trim().toLowerCase()));
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not create stage';
@@ -726,10 +700,37 @@ export function CreateStageWizard() {
   };
 
   const handleStageNameChange = (raw: string) => {
-    const stageName = raw.slice(0, 48);
+    const stageName = limitStageDisplayNameInput(raw);
     const slug = stageNameToSlug(stageName);
     setDraft(d => ({ ...d, stageName, slug }));
     checkSlugDebounced(slug);
+  };
+
+  const handleGalleryChange = ({ preset, backdropUrl }: StageGallerySelection) => {
+    if (backdropBlobUrlRef.current) {
+      URL.revokeObjectURL(backdropBlobUrlRef.current);
+      backdropBlobUrlRef.current = null;
+    }
+    setPendingBackdropFile(null);
+    setDraft(d => ({ ...d, preset, backdropUrl }));
+  };
+
+  const handleBackdropPick = async (file: File | undefined) => {
+    if (!file || loading) return;
+    const validationErr = await validateBackdropFileForUpload(file);
+    if (validationErr) {
+      setError(validationErr);
+      return;
+    }
+    if (backdropBlobUrlRef.current) {
+      URL.revokeObjectURL(backdropBlobUrlRef.current);
+    }
+    const previewUrl = URL.createObjectURL(file);
+    backdropBlobUrlRef.current = previewUrl;
+    setPendingBackdropFile(file);
+    setDraft(d => ({ ...d, preset: 'cinema', backdropUrl: previewUrl }));
+    setError(null);
+    if (backdropFileRef.current) backdropFileRef.current.value = '';
   };
 
   const handleInvite = () => {
@@ -738,6 +739,7 @@ export function CreateStageWizard() {
   };
 
   const canInvite = hasValidInviteEmail(inviteEmails);
+  const modalWidth = displayStep === 1 ? MODAL_WIDTH_AUTH : MODAL_WIDTH_SETUP;
 
   return (
     <div style={{
@@ -758,8 +760,8 @@ export function CreateStageWizard() {
         background: '#131415',
         border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 20,
-        maxWidth: displayStep === 1 ? 520 : 560,
-        width: `min(94vw, ${displayStep === 1 ? 520 : 560}px)`,
+        maxWidth: modalWidth,
+        width: `min(94vw, ${modalWidth}px)`,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -770,6 +772,11 @@ export function CreateStageWizard() {
         <div style={{
           padding: displayStep === 1 ? (mobile ? '28px 22px 24px' : '32px 36px 28px') : '28px 28px 24px',
           color: 'rgba(255,255,255,0.9)',
+          ...(displayStep === 2 || displayStep === 3 ? {
+            maxHeight: 'min(82vh, 920px)',
+            overflowY: 'auto' as const,
+            scrollbarWidth: 'thin' as const,
+          } : {}),
         }}>
           {displayStep === 1 ? <ModalHero /> : <StepHeader />}
 
@@ -979,32 +986,104 @@ export function CreateStageWizard() {
               
               <label style={LABEL}>Stage name</label>
               <input
-                style={INPUT}
+                style={{
+                  ...INPUT,
+                  border: stageNameError || slugFormatError
+                    ? '1px solid rgba(255,107,107,0.55)'
+                    : INPUT.border,
+                }}
                 value={draft.stageName}
                 onChange={e => handleStageNameChange(e.target.value)}
-                placeholder="My Sunset Set"
+                onBlur={() => setStageNameTouched(true)}
+                placeholder="Sunset Rooftop"
                 autoFocus
                 spellCheck={false}
+                maxLength={STAGE_CONFIG.DISPLAY_NAME_MAX_LENGTH}
               />
-              {slugMessage && (
+              <p style={{
+                margin: '6px 0 0',
+                fontSize: 11,
+                color: stageNameError || slugFormatError ? '#ff6b6b' : 'rgba(255,255,255,0.45)',
+                fontFamily: 'system-ui,sans-serif',
+              }}
+              >
+                {stageFieldHint}
+              </p>
+              {slugStatus === 'checking' && (
                 <p style={{
                   margin: '10px 0 0',
                   fontSize: 12,
                   fontFamily: 'system-ui,sans-serif',
-                  color: slugStatus === 'ok' ? '#6fcf97' : '#ff6b6b',
+                  color: 'rgba(255,255,255,0.55)',
                 }}
                 >
-                  {slugStatus === 'checking' ? 'Checking…' : slugMessage}
+                  Checking…
+                </p>
+              )}
+              {slugMessage && slugStatus === 'bad' && !slugFormatError && (
+                <p style={{
+                  margin: '10px 0 0',
+                  fontSize: 12,
+                  fontFamily: 'system-ui,sans-serif',
+                  color: '#ff6b6b',
+                }}
+                >
+                  {slugMessage}
+                </p>
+              )}
+              {slugMessage && slugStatus === 'ok' && (
+                <p style={{
+                  margin: '10px 0 0',
+                  fontSize: 12,
+                  fontFamily: 'system-ui,sans-serif',
+                  color: '#6fcf97',
+                }}
+                >
+                  {slugMessage}
                 </p>
               )}
 
-              <label style={{ ...LABEL, marginTop: 24 }}>Choose theme</label>
-              <TemplatePicker
+              <label style={{ ...LABEL, marginTop: 24 }}>Choose your scene</label>
+              
+              <StageSceneGallery
+                compact
+                columns={mobile ? 2 : 4}
                 preset={draft.preset}
-                onChange={next => setDraft(d => ({ ...d, preset: next }))}
+                backdropUrl={draft.backdropUrl}
+                disabled={loading}
+                onChange={handleGalleryChange}
+                onUploadClick={() => backdropFileRef.current?.click()}
+                uploadLabel="Upload image"
               />
+              <input
+                ref={backdropFileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                onChange={e => void handleBackdropPick(e.target.files?.[0])}
+              />
+              <p style={{
+                margin: '8px 0 0',
+                fontSize: 11,
+                lineHeight: 1.4,
+                color: 'rgba(255,255,255,0.45)',
+                fontFamily: 'system-ui,sans-serif',
+              }}
+              >
+                {stageBackdropUploadHint()}
+              </p>
+            </>
+          )}
 
-              <label style={{ ...LABEL, marginTop: 24 }}>Streams</label>
+          {displayStep === 3 && (
+            <>
+              <h1 style={STEP_TITLE}>
+                Who&apos;s playing at {stageDisplayLabel}?
+              </h1>
+              <p style={STEP_SUB}>
+                Add YouTube videos, playlists, or channels.
+              </p>
+
               <StreamPasteTabs
                 mode={streamPasteMode}
                 onChange={mode => {
@@ -1135,7 +1214,7 @@ export function CreateStageWizard() {
             </>
           )}
 
-          {displayStep === 3 && (
+          {displayStep === 4 && (
             <>
               <h1 style={STEP_TITLE}>
                 Invite friends
@@ -1266,6 +1345,28 @@ export function CreateStageWizard() {
           )}
 
           {displayStep === 3 && (
+            <button
+              type="button"
+              disabled={!canAdvance() || loading}
+              onClick={() => {
+                setError(null);
+                setStep(4);
+              }}
+              style={{
+                ...PRIMARY_BTN,
+                marginTop: 24,
+                cursor: canAdvance() && !loading ? 'pointer' : 'default',
+                background: canAdvance() && !loading
+                  ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
+                  : 'rgba(255,255,255,0.1)',
+                color: canAdvance() ? '#fff' : 'rgba(255,255,255,0.35)',
+              }}
+            >
+              Continue →
+            </button>
+          )}
+
+          {displayStep === 4 && (
             <div style={{ marginTop: 24 }}>
               <button
                 type="button"

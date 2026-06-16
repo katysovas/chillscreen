@@ -26,6 +26,8 @@ import {
   toUserStagePublic,
 } from '@/lib/stages/db';
 import { stagePresetById } from '@/lib/stages/presets';
+import { parsePresetBackdropUrl } from '@/lib/stages/wallpapers';
+import { validateStageDisplayName } from '@/lib/stages/stageDisplayName';
 import { parseStreamsJson } from '@/lib/stages/parseStream';
 import {
   normalizeStageSlug,
@@ -71,9 +73,10 @@ export async function POST(req: Request) {
     const preset = presetDef.id as StagePresetId;
     const sky = parseSky(body.sky);
 
-    const displayName = String(body.displayName ?? body.display_name ?? '').trim().slice(0, 48);
-    if (!displayName) {
-      return NextResponse.json({ error: 'Stage name is required.' }, { status: 400 });
+    const displayName = String(body.displayName ?? body.display_name ?? '').trim();
+    const displayNameErr = validateStageDisplayName(displayName);
+    if (displayNameErr) {
+      return NextResponse.json({ error: displayNameErr }, { status: 400 });
     }
 
     const streams = parseStreamsJson(body.streams);
@@ -91,6 +94,21 @@ export async function POST(req: Request) {
         { error: 'All streams must have a verified video length.' },
         { status: 400 },
       );
+    }
+
+    let backdropUrl: string | null = null;
+    if (body.backdropUrl !== undefined) {
+      if (preset !== 'cinema') {
+        return NextResponse.json(
+          { error: 'Backdrop is only for City stages.' },
+          { status: 400 },
+        );
+      }
+      const parsed = parsePresetBackdropUrl(body.backdropUrl);
+      if (parsed === 'invalid') {
+        return NextResponse.json({ error: 'Invalid backdrop.' }, { status: 400 });
+      }
+      backdropUrl = parsed ?? null;
     }
 
     const sessionUserId = userIdFromRequest(req);
@@ -133,6 +151,7 @@ export async function POST(req: Request) {
         sky: sky ?? null,
         streams,
         nowPlayingIndex: 0,
+        backdropUrl,
       });
 
       return NextResponse.json({
@@ -206,6 +225,7 @@ export async function POST(req: Request) {
       sky: sky ?? null,
       streams,
       nowPlayingIndex: 0,
+      backdropUrl,
     });
 
     const res = NextResponse.json({

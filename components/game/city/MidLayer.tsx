@@ -39,6 +39,8 @@ type MidLayerProps = {
   hideTrees?: boolean;
   /** When set, only this city tile is rendered (isolated city mode). */
   isolatedTileIndex?: number;
+  /** Custom city skyline for creator-cinema stages. */
+  creatorBackdropUrl?: string | null;
 };
 
 function tileContentScale(tileIndex: number) {
@@ -47,7 +49,15 @@ function tileContentScale(tileIndex: number) {
 
 /** Mid parallax: SF → town → Vegas → town → SoCal → town → Tentaroo → town → Forest → town → Seattle → town. */
 export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
-  function MidLayer({ worldOff, deepLinkRoute, foregroundRef, skyLabelsRef, hideTrees = false, isolatedTileIndex }, ref) {
+  function MidLayer({
+    worldOff,
+    deepLinkRoute,
+    foregroundRef,
+    skyLabelsRef,
+    hideTrees = false,
+    isolatedTileIndex,
+    creatorBackdropUrl = null,
+  }, ref) {
     const vx = worldOff * MID_F;
     const nearTiles = isolatedTileIndex != null
       ? nearIsolatedMidTiles(isolatedTileIndex, deepLinkRoute)
@@ -93,10 +103,12 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
       concertFoW,
       concertFoH,
       concertFoY,
+      creatorBackdropUrl,
     }), [
       vx, hideTrees, deepLinkRoute, cinemaLive, concertLive, coachellaLive,
       edcLive, whichStageLive, forestLive, silentDiscoLive, focus,
       cinemaFoW, cinemaFoH, cinemaFoY, concertFoW, concertFoH, concertFoY,
+      creatorBackdropUrl,
     ]);
 
     const renderTile = useCallback((t: number) => {

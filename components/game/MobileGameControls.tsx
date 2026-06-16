@@ -1,7 +1,7 @@
 'use client';
 
 import { trackMobileControl } from '@/lib/gameInputAnalytics';
-import { ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
+import { LineupIcon, ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
 
 type Props = {
   muted: boolean;
@@ -10,6 +10,9 @@ type Props = {
   onToggleVendorShop?: () => void;
   onVendorShopWarm?: () => void;
   onOpenStageSwap?: () => void;
+  /** Stage owner only — opens tabbed stage settings modal. */
+  showStageSettings?: boolean;
+  onOpenStageSettings?: () => void;
   onOpenAmbientChat?: () => void;
   ambientChatOpen?: boolean;
 };
@@ -58,11 +61,14 @@ export function MobileGameControls({
   onToggleVendorShop,
   onVendorShopWarm,
   onOpenStageSwap,
+  showStageSettings = false,
+  onOpenStageSettings,
   onOpenAmbientChat,
   ambientChatOpen = false,
 }: Props) {
   const showCart = Boolean(onToggleVendorShop);
   const showStageSwap = Boolean(onOpenStageSwap);
+  const showStageSettingsBtn = showStageSettings && Boolean(onOpenStageSettings);
   const showChat = Boolean(onOpenAmbientChat);
 
   return (
@@ -127,6 +133,26 @@ export function MobileGameControls({
             }}
           >
             <StageSwapIcon size={24} />
+          </button>
+        )}
+
+        {showStageSettingsBtn && (
+          <button
+            type="button"
+            className="mobile-controls-stage-settings mobile-controls-action-btn"
+            aria-label="Stage settings"
+            title="Stage settings"
+            onPointerDown={e => e.preventDefault()}
+            onClick={() => {
+              trackMobileControl('stage_settings');
+              onOpenStageSettings?.();
+            }}
+            style={{
+              ...mobileActionBtn,
+              color: 'rgba(255,255,255,.78)',
+            }}
+          >
+            <LineupIcon size={22} />
           </button>
         )}
 

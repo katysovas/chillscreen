@@ -51,6 +51,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/images/') ||
+    pathname.startsWith('/uploads/') ||
     pathname.startsWith('/audio/') ||
     pathname === '/favicon.ico' ||
     pathname === '/robots.txt' ||

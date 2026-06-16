@@ -1,4 +1,4 @@
-import { chatterNpcIds, chatterNpcIdsForRoute } from '@/lib/chatterCast';
+import { chatterNpcIdsForChannel, chatterNpcIdsForRoute } from '@/lib/chatterCast';
 import { FESTIE_CONFIG } from '@/lib/festie/config';
 import { touchFestieLastChat } from '@/lib/festie/db';
 import { countFestieNpcChatterSince } from '@/lib/festie/events';
@@ -24,7 +24,9 @@ function mulberry32(seed: number): () => number {
 
 function pickPartnerNpcId(festie: FestieRow, slot: number): string | null {
   const route = parseVenueSlug(festie.stage_slug);
-  const pool = route ? chatterNpcIdsForRoute(route) : chatterNpcIds();
+  const pool = route
+    ? chatterNpcIdsForRoute(route)
+    : chatterNpcIdsForChannel('which-stage');
   if (pool.length === 0) return null;
 
   const rng = mulberry32(lifeLogSeed(festie.id, festie.last_seen_at, slot + 2000));

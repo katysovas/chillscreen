@@ -1,24 +1,63 @@
 'use client';
 
-import { useState } from 'react';
-import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
-import type { VenueRoute } from '@/lib/venueRoutes';
+import { useEffect, useMemo, useState } from 'react';
 import { MobileStageCard } from './MobileStageCard';
+import {
+  buildStagePickerOptions,
+  currentStagePickerTarget,
+  stagePickerTargetId,
+  stageTargetsEqual,
+  type StagePickerTarget,
+} from '@/lib/stagePickerOptions';
+import { fetchFeaturedStages } from '@/lib/stages/client';
+import type { VenueRoute } from '@/lib/venueRoutes';
 
 type Props = {
   currentRoute: VenueRoute | null;
-  onSwap: (route: VenueRoute) => void;
+  currentCreatorSlug?: string | null;
+  onSwap: (target: StagePickerTarget) => void;
   onClose: () => void;
 };
 
-/** Mobile-only — pick another lounge stage without re-entering name. */
-export function MobileStageSwapModal({ currentRoute, onSwap, onClose }: Props) {
-  const [picked, setPicked] = useState<VenueRoute | null>(currentRoute);
-  const canSwap = picked != null && picked !== currentRoute;
+/** Mobile-only — pick another stage without re-entering name. */
+export function MobileStageSwapModal({
+  currentRoute,
+  currentCreatorSlug = null,
+  onSwap,
+  onClose,
+}: Props) {
+  const [featuredStages, setFeaturedStages] = useState<Awaited<ReturnType<typeof fetchFeaturedStages>>>([]);
+  const currentTarget = useMemo(
+    () => currentStagePickerTarget(currentRoute, currentCreatorSlug),
+    [currentRoute, currentCreatorSlug],
+  );
+  const [pickedId, setPickedId] = useState<string | null>(
+    currentTarget ? stagePickerTargetId(currentTarget) : null,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchFeaturedStages()
+      .then(stages => {
+        if (!cancelled) setFeaturedStages(stages);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const options = useMemo(
+    () => buildStagePickerOptions(featuredStages),
+    [featuredStages],
+  );
+
+  const picked = options.find(o => o.id === pickedId) ?? null;
+  const canSwap = picked != null
+    && currentTarget != null
+    && !stageTargetsEqual(picked.target, currentTarget);
 
   const submit = () => {
     if (!canSwap || !picked) return;
-    onSwap(picked);
+    onSwap(picked.target);
   };
 
   return (
@@ -84,7 +123,6 @@ export function MobileStageSwapModal({ currentRoute, onSwap, onClose }: Props) {
         >
           Change stage
         </div>
-        
 
         <div
           style={{
@@ -94,12 +132,13 @@ export function MobileStageSwapModal({ currentRoute, onSwap, onClose }: Props) {
             marginBottom: 16,
           }}
         >
-          {MOBILE_LOUNGE_STAGES.map(stage => (
+          {options.map(option => (
             <MobileStageCard
-              key={stage.route}
-              stage={stage}
-              selected={picked === stage.route}
-              onSelect={() => setPicked(stage.route)}
+              key={option.id}
+              title={option.title}
+              tagline={option.tagline}
+              selected={pickedId === option.id}
+              onSelect={() => setPickedId(option.id)}
             />
           ))}
         </div>

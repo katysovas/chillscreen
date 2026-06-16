@@ -26,6 +26,17 @@ export function stageCrowdCountForRoute(
   return real + extra + npcs;
 }
 
+/** Real festies + ambient NPCs for a creator stage slug. */
+export function stageCrowdCountForCreatorSlug(
+  realFestieCounts: Record<string, number>,
+  slug: string,
+  options?: { seed?: number },
+): number {
+  const real = Math.max(0, realFestieCounts[slug] ?? 0);
+  const npcs = ambientNpcCountForRoute('creator-chill', options?.seed);
+  return real + npcs;
+}
+
 export function formatStageCrowdCount(count: number): string {
   if (count === 1) return '1 festie';
   return `${count} festies`;

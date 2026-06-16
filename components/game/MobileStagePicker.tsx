@@ -1,34 +1,72 @@
 'use client';
 
-import { useState } from 'react';
-import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
+import { useEffect, useMemo, useState } from 'react';
 import { MobileStageCard } from './MobileStageCard';
 import {
   isValidPlayerName,
   sanitizePlayerNameInput,
 } from '@/lib/playerStorage';
+import {
+  buildStagePickerOptions,
+  type StagePickerTarget,
+} from '@/lib/stagePickerOptions';
+import { fetchFeaturedStages } from '@/lib/stages/client';
 import type { VenueRoute } from '@/lib/venueRoutes';
 
 type Props = {
   balloonColor: string;
   initialRoute?: VenueRoute | null;
+  initialCreatorSlug?: string | null;
   initialName?: string;
-  onEnter: (name: string, route: VenueRoute) => void;
+  onEnter: (name: string, target: StagePickerTarget) => void;
 };
 
 /**
  * Mobile-only welcome — pick a stage, enter your name, land at the show.
  * Desktop never mounts this.
  */
-export function MobileStagePicker({ initialRoute, initialName, onEnter }: Props) {
+export function MobileStagePicker({
+  initialRoute,
+  initialCreatorSlug = null,
+  initialName,
+  onEnter,
+}: Props) {
   const [draft, setDraft] = useState(initialName ?? '');
-  const [picked, setPicked] = useState<VenueRoute | null>(initialRoute ?? null);
+  const [featuredStages, setFeaturedStages] = useState<Awaited<ReturnType<typeof fetchFeaturedStages>>>([]);
+  const [pickedId, setPickedId] = useState<string | null>(null);
   const validName = isValidPlayerName(draft);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchFeaturedStages()
+      .then(stages => {
+        if (!cancelled) setFeaturedStages(stages);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const options = useMemo(
+    () => buildStagePickerOptions(featuredStages),
+    [featuredStages],
+  );
+
+  useEffect(() => {
+    if (pickedId || options.length === 0) return;
+    const current = initialCreatorSlug?.trim()
+      ? options.find(o => o.target.kind === 'creator' && o.target.slug === initialCreatorSlug.trim().toLowerCase())
+      : initialRoute
+        ? options.find(o => o.target.kind === 'venue' && o.target.route === initialRoute)
+        : null;
+    if (current) setPickedId(current.id);
+  }, [pickedId, options, initialCreatorSlug, initialRoute]);
+
+  const picked = options.find(o => o.id === pickedId) ?? null;
 
   const submit = () => {
     const name = draft.trim();
     if (!isValidPlayerName(name) || !picked) return;
-    onEnter(name, picked);
+    onEnter(name, picked.target);
   };
 
   return (
@@ -90,12 +128,13 @@ export function MobileStagePicker({ initialRoute, initialName, onEnter }: Props)
             marginBottom: 18,
           }}
         >
-          {MOBILE_LOUNGE_STAGES.map(stage => (
+          {options.map(option => (
             <MobileStageCard
-              key={stage.route}
-              stage={stage}
-              selected={picked === stage.route}
-              onSelect={() => setPicked(stage.route)}
+              key={option.id}
+              title={option.title}
+              tagline={option.tagline}
+              selected={pickedId === option.id}
+              onSelect={() => setPickedId(option.id)}
             />
           ))}
         </div>

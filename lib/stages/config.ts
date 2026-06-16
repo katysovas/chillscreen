@@ -19,6 +19,8 @@ export const STAGE_CONFIG = {
   /** Slug length bounds. */
   SLUG_MIN_LENGTH: 3,
   SLUG_MAX_LENGTH: 32,
+  /** Human-readable stage name — short truss label. */
+  DISPLAY_NAME_MAX_LENGTH: 20,
 } as const;
 
 export type StageLifecycleTier = 'active' | 'dormant' | 'reclaimable';

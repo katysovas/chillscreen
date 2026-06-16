@@ -12,13 +12,13 @@ import {
 import {
   parseAttributes,
   parsePreset,
-  parseStageSlug,
   parseTopics,
   validateFestieName,
   validateFestiePassword,
   validateNotifyEmail,
   validatePersonalityNotes,
 } from '@/lib/festie/validation';
+import { resolveStageSlugForFestie } from '@/lib/stages/resolveStageSlug';
 import { parseFestieLlmProvider } from '@/lib/festie/llmProviders';
 
 export const dynamic = 'force-dynamic';
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     const preset = parsePreset(body.preset);
     if (!preset) return NextResponse.json({ error: 'Invalid preset' }, { status: 400 });
 
-    const stage_slug = parseStageSlug(body.stage_slug);
+    const stage_slug = await resolveStageSlugForFestie(String(body.stage_slug ?? ''));
     if (!stage_slug) return NextResponse.json({ error: 'Invalid stage_slug' }, { status: 400 });
 
     const notesRaw = body.personality_notes != null ? String(body.personality_notes) : null;
@@ -112,7 +112,7 @@ export async function PATCH(request: Request) {
       patch.preset = preset;
     }
     if (body.stage_slug !== undefined) {
-      const slug = parseStageSlug(body.stage_slug);
+      const slug = await resolveStageSlugForFestie(String(body.stage_slug));
       if (!slug) return NextResponse.json({ error: 'Invalid stage_slug' }, { status: 400 });
       patch.stage_slug = slug;
     }

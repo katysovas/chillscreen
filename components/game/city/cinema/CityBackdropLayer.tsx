@@ -1,25 +1,28 @@
-import type { HTMLAttributes, CSSProperties } from 'react';
+'use client';
+
+import type { CSSProperties, HTMLAttributes } from 'react';
+import { useOptionalCreatorStage } from '@/lib/stages/CreatorStageContext';
 import {
-  CITY_BACKDROP_FILL,
   CITY_BLEND_HREF,
   CITY_MID_TILE_H,
   CITY_MID_TILE_W,
-  CITY_SKYLINE_BLEED_X,
   CITY_SKYLINE_HREF,
-  CITY_SKYLINE_OFFSET_X,
+  CITY_UPLOAD_BACKDROP_LIFT_Y,
+  isCustomCityBackdropUrl,
 } from './constants';
 import './cityBackdrop.css';
 
-const backdropStyle = {
-  '--city-blend-image': `url(${CITY_BLEND_HREF})`,
-  '--city-skyline-image': `url(${CITY_SKYLINE_HREF})`,
-  '--city-backdrop-fill': CITY_BACKDROP_FILL,
-  '--city-skyline-offset-x': `${CITY_SKYLINE_OFFSET_X}px`,
-  '--city-skyline-bleed-x': `${CITY_SKYLINE_BLEED_X}px`,
-} as CSSProperties;
+type CityBackdropLayerProps = {
+  /** Prefer prop (from MidLayer) — context is a fallback after live upload. */
+  skylineUrl?: string | null;
+};
 
 /** Animated city skyline — twirling color wash over hard-light skyline. */
-export function CityBackdropLayer() {
+export function CityBackdropLayer({ skylineUrl: skylineUrlProp }: CityBackdropLayerProps = {}) {
+  const stage = useOptionalCreatorStage();
+  const skylineUrl = skylineUrlProp ?? stage?.backdropUrl ?? CITY_SKYLINE_HREF;
+  const customBackdrop = isCustomCityBackdropUrl(skylineUrl);
+
   return (
     <foreignObject
       x={0}
@@ -31,10 +34,26 @@ export function CityBackdropLayer() {
       <div
         {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
         className="city-backdrop"
-        style={backdropStyle}
       >
-        <div className="city-backdrop__blend" aria-hidden />
-        <div className="city-backdrop__city" aria-hidden />
+        {/* Wrappers carry blend-mode + filter animations (matches CodePen div.blend / div.city). */}
+        <div className="city-backdrop__blend" aria-hidden>
+          {/* img src — CSS background-image does not paint inside SVG foreignObject (WebKit). */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={CITY_BLEND_HREF} alt="" draggable={false} />
+        </div>
+        <div
+          className={customBackdrop ? 'city-backdrop__city city-backdrop__city--upload' : 'city-backdrop__city'}
+          style={
+            customBackdrop
+              ? ({ '--city-upload-lift': `${CITY_UPLOAD_BACKDROP_LIFT_Y}px` } as CSSProperties)
+              : undefined
+          }
+          aria-hidden
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img key={skylineUrl} src={skylineUrl} alt="" draggable={false} />
+          <div className="city-backdrop__vignette" />
+        </div>
       </div>
     </foreignObject>
   );

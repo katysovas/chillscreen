@@ -1,4 +1,5 @@
 import { SITE_URL } from '@/lib/site';
+import { stagePathForSlug } from '@/lib/stages/runtime';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import {
@@ -44,10 +45,24 @@ export function activeVenueRoute(
   return venueKindToRoute(venueInFocus(vx), concertLiveTile(vx));
 }
 
-export function buildInviteUrl(route: VenueRoute, playerName: string | null): string {
-  const slug = venueRouteSlug(route);
+/** Origin for invite links — current page in the browser, else configured site URL. */
+export function inviteSiteOrigin(): string {
+  if (typeof window !== 'undefined') return window.location.origin;
+  return SITE_URL;
+}
+
+export function buildInviteUrl(
+  route: VenueRoute,
+  playerName: string | null,
+  creatorStageSlug?: string | null,
+): string {
+  const base = inviteSiteOrigin();
   const friend = encodeURIComponent(playerName?.trim() || 'friend');
-  return `${SITE_URL}/${slug}?friend=${friend}`;
+  if (creatorStageSlug?.trim()) {
+    return `${base}${stagePathForSlug(creatorStageSlug.trim().toLowerCase())}?friend=${friend}`;
+  }
+  const slug = venueRouteSlug(route);
+  return `${base}/${slug}?friend=${friend}`;
 }
 
 /** Pretty display — drop the scheme for a shorter copy line. */

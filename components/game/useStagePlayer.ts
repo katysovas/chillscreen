@@ -66,6 +66,7 @@ const EMPTY_CREATOR_STAGE: UserStagePublic = {
   lastActiveAt: 0,
   tier: 'active',
   takenDown: false,
+  shuffleOnStart: false,
 };
 
 function useSyncedStagePlayer({
