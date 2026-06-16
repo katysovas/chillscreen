@@ -2,6 +2,12 @@ import { minStageScale } from '@/lib/stageViewport';
 
 export const CREATOR_SCENE_HREF = '/images/cities/creator-cinema-scene.svg?v=1';
 
+export const CITY_BLEND_HREF = '/images/city/city-blend.jpg';
+export const CITY_SKYLINE_HREF = '/images/city/city-skyline.jpg';
+
+export const CITY_MID_TILE_W = 2600;
+export const CITY_MID_TILE_H = 900;
+
 export const TENTAROO_GND = 660;
 
 export const WHICH_STAGE_MID_X = 1620;

@@ -35,8 +35,8 @@ export const CREATOR_STAGE_TEMPLATES: StagePresetDef[] = [
   },
   {
     id: 'cinema',
-    label: 'Cinema',
-    tagline: 'Screen & spotlight mood',
+    label: 'City',
+    tagline: 'Urban skyline under shifting light',
     venueRoute: 'creator-cinema',
   },
 ];
