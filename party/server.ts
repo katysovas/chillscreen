@@ -41,6 +41,8 @@ export default class WhichStageServer implements Party.Server {
   private connUserIds = new Map<string, string>();
   /** Debounced last_seen_at when owner disconnects (userId → timer). */
   private festieSeenTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /** Coalesce festie roster refresh after rapid leave events. */
+  private festiesSyncTimer: ReturnType<typeof setTimeout> | null = null;
   /** Connection id whose local NPC sim is authoritative for the room. */
   private npcLeaderId: string | null = null;
   /** Latest leader snapshot — replayed to late joiners. */
@@ -263,6 +265,9 @@ export default class WhichStageServer implements Party.Server {
       case 'easel-painter-ready':
         this.easels.onPainterReady(msg.npcId);
         break;
+      case 'creator-stage-sync':
+        this.room.broadcast(encode({ t: 'creator-stage-sync', stage: msg.stage }), [sender.id]);
+        break;
     }
   }
 
@@ -297,7 +302,7 @@ export default class WhichStageServer implements Party.Server {
     }
     if (userId) {
       this.scheduleFestieSeen(userId);
-      void this.broadcastFestiesSync();
+      this.scheduleFestiesSync();
     }
     if (wasMuted) {
       this.chatter.setChatterDisabled(this.chatterMutedPlayers.size > 0);
@@ -380,6 +385,15 @@ export default class WhichStageServer implements Party.Server {
   private async broadcastFestiesSync(): Promise<void> {
     const festies = await this.fetchFesties();
     this.room.broadcast(encode({ t: 'festies-sync', festies }));
+  }
+
+  /** Debounce leave churn — join still refreshes immediately. */
+  private scheduleFestiesSync(): void {
+    if (this.festiesSyncTimer) clearTimeout(this.festiesSyncTimer);
+    this.festiesSyncTimer = setTimeout(() => {
+      this.festiesSyncTimer = null;
+      void this.broadcastFestiesSync();
+    }, 3000);
   }
 
   private cancelFestieSeen(userId: string) {

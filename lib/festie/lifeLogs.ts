@@ -420,6 +420,16 @@ export async function buildLifeLogContext(
   until: Date,
   rng: LifeLogRng,
 ): Promise<LifeLogContext> {
+  const shared = await buildLifeLogContextShared(festie, since, until);
+  return { ...shared, at, rng };
+}
+
+/** Expensive peer/profile lookups — reuse across a backfill batch. */
+export async function buildLifeLogContextShared(
+  festie: FestieRow,
+  since: Date,
+  until: Date,
+): Promise<Omit<LifeLogContext, 'at' | 'rng'>> {
   const route = parseVenueSlug(festie.stage_slug);
   const wandering = wanderingCharacters().map(ch => ({
     id: ch.id,
@@ -435,16 +445,24 @@ export async function buildLifeLogContext(
 
   return {
     festie,
-    at,
     since,
     until,
-    rng,
     venueLabel: venueLabelForSlug(festie.stage_slug),
     route,
     npcPool: wandering,
     peerFestieCount: peers.length,
     ownerOwnedItemNames,
   };
+}
+
+export function generateLifeLogWithContext(
+  shared: Omit<LifeLogContext, 'at' | 'rng'>,
+  generator: LifeLogGenerator,
+  at: Date,
+  slot: number,
+): LifeLogResult {
+  const rng = mulberry32(lifeLogSeed(shared.festie.id, shared.since.toISOString(), slot));
+  return generator({ ...shared, at, rng });
 }
 
 export async function generateLifeLog(
@@ -455,9 +473,8 @@ export async function generateLifeLog(
   until: Date,
   slot: number,
 ): Promise<LifeLogResult> {
-  const rng = mulberry32(lifeLogSeed(festie.id, since.toISOString(), slot));
-  const ctx = await buildLifeLogContext(festie, at, since, until, rng);
-  return generator(ctx);
+  const shared = await buildLifeLogContextShared(festie, since, until);
+  return generateLifeLogWithContext(shared, generator, at, slot);
 }
 
 /** Alternate venue label for cross-venue mystery logs. */

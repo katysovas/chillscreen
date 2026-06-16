@@ -26,7 +26,7 @@ export function CreatorStageLineupPanel() {
     nowPlayingIndex = stage.nowPlayingIndex,
   ) => {
     const updated = await updateUserStage(stage.slug, { streams, nowPlayingIndex });
-    setStage(updated);
+    setStage(updated, { broadcast: true });
   };
 
   const toggleShuffleOnStart = async (enabled: boolean) => {
@@ -35,7 +35,7 @@ export function CreatorStageLineupPanel() {
     setError(null);
     try {
       const updated = await updateUserStage(stage.slug, { shuffleOnStart: enabled });
-      setStage(updated);
+      setStage(updated, { broadcast: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update shuffle setting');
     } finally {

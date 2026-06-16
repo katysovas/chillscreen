@@ -6,16 +6,27 @@ import {
   useMemo,
   useState,
   useCallback,
+  useRef,
   useEffect,
   type ReactNode,
 } from 'react';
 import type { UserStagePublic } from '@/lib/stages/types';
-import { fetchUserStage, touchStagePresence, updateUserStage } from '@/lib/stages/client';
+import { touchStagePresence, updateUserStage } from '@/lib/stages/client';
+import {
+  mergeCreatorStageSync,
+  stageSyncFingerprint,
+  toCreatorStageSyncPayload,
+  type CreatorStageSyncPayload,
+} from '@/lib/stages/stageSync';
+
+type SetStageOptions = { broadcast?: boolean };
 
 type CreatorStageContextValue = {
   stage: UserStagePublic;
   isOwner: boolean;
-  setStage: (stage: UserStagePublic) => void;
+  setStage: (stage: UserStagePublic, opts?: SetStageOptions) => void;
+  applyRemoteStage: (patch: CreatorStageSyncPayload) => void;
+  registerStageBroadcast: (fn: ((payload: CreatorStageSyncPayload) => void) | null) => void;
   swapNowPlaying: (index: number) => Promise<void>;
 };
 
@@ -52,35 +63,44 @@ export function CreatorStageProvider({
   sessionReady = false,
   children,
 }: ProviderProps) {
-  const [stage, setStage] = useState(initialStage);
+  const [stage, setStageState] = useState(initialStage);
   const isOwner = viewerIsStageOwner(ownerUserId, currentUserId, authenticated, sessionReady);
+  const broadcastRef = useRef<((payload: CreatorStageSyncPayload) => void) | null>(null);
+
+  const registerStageBroadcast = useCallback(
+    (fn: ((payload: CreatorStageSyncPayload) => void) | null) => {
+      broadcastRef.current = fn;
+    },
+    [],
+  );
+
+  const setStage = useCallback((next: UserStagePublic, opts?: SetStageOptions) => {
+    setStageState(prev => {
+      if (stageSyncFingerprint(next) === stageSyncFingerprint(prev)) return prev;
+      return next;
+    });
+    if (opts?.broadcast) {
+      broadcastRef.current?.(toCreatorStageSyncPayload(next));
+    }
+  }, []);
+
+  const applyRemoteStage = useCallback((patch: CreatorStageSyncPayload) => {
+    setStageState(prev => {
+      const merged = mergeCreatorStageSync(prev, patch);
+      if (stageSyncFingerprint(merged) === stageSyncFingerprint(prev)) return prev;
+      return merged;
+    });
+  }, []);
 
   const swapNowPlaying = useCallback(async (index: number) => {
     if (!isOwner) return;
     const updated = await updateUserStage(stage.slug, { nowPlayingIndex: index });
-    setStage(updated);
-  }, [isOwner, stage.slug]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const poll = async () => {
-      try {
-        const fresh = await fetchUserStage(stage.slug);
-        if (!cancelled && fresh) setStage(fresh);
-      } catch {
-        /* ignore transient poll errors */
-      }
-    };
-    const id = window.setInterval(() => { void poll(); }, 15_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, [stage.slug]);
+    setStage(updated, { broadcast: true });
+  }, [isOwner, stage.slug, setStage]);
 
   const value = useMemo(
-    () => ({ stage, isOwner, setStage, swapNowPlaying }),
-    [stage, isOwner, swapNowPlaying],
+    () => ({ stage, isOwner, setStage, applyRemoteStage, registerStageBroadcast, swapNowPlaying }),
+    [stage, isOwner, setStage, applyRemoteStage, registerStageBroadcast, swapNowPlaying],
   );
 
   return (
@@ -103,12 +123,12 @@ export function useIsCreatorStageOwner(): boolean {
   return useContext(CreatorStageContext)?.isOwner ?? false;
 }
 
-/** Touch presence on mount and periodically while on a creator stage. */
+/** Bump last_active_at on mount and periodically (server skips if recently touched). */
 export function useCreatorStagePresence(slug: string | null): void {
   useEffect(() => {
     if (!slug) return;
     void touchStagePresence(slug);
-    const id = window.setInterval(() => { void touchStagePresence(slug); }, 60_000);
+    const id = window.setInterval(() => { void touchStagePresence(slug); }, 5 * 60_000);
     return () => window.clearInterval(id);
   }, [slug]);
 }

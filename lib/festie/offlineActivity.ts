@@ -3,10 +3,12 @@ import {
   countSynthesizedLifeLogsSince,
   FESTIE_EVENT_TYPES,
   hasLifeLogKindSince,
-  insertFestieEvent,
+  insertFestieEventsBatch,
+  type FestieEventInsert,
 } from '@/lib/festie/events';
 import {
-  generateLifeLog,
+  buildLifeLogContextShared,
+  generateLifeLogWithContext,
   lifeLogSeed,
   pickLifeLogGenerators,
   randomLogTimestamp,
@@ -47,34 +49,34 @@ export async function ensureOfflineFestieActivity(
   const lostItemAllowed = !(await hasLifeLogKindSince(festie.id, since, 'lost_item'));
   let lostItemLogged = !lostItemAllowed;
 
+  const shared = await buildLifeLogContextShared(festie, sinceDate, untilDate);
+  const pending: FestieEventInsert[] = [];
+
   for (let i = 0; i < generators.length; i++) {
     const slot = existing + i;
     const tsRng = () => ((lifeLogSeed(festie.id, since, slot + 500) >>> 0) % 10000) / 10000;
     const atMs = randomLogTimestamp(sinceMs, effectiveUntilMs, i, generators.length, tsRng);
     const at = new Date(atMs);
-    const result = await generateLifeLog(
-      festie,
-      generators[i]!,
-      at,
-      sinceDate,
-      untilDate,
-      slot,
-    );
+    const result = generateLifeLogWithContext(shared, generators[i]!, at, slot);
     if (!result) continue;
     if (result.kind === 'lost_item') {
       if (lostItemLogged) continue;
       lostItemLogged = true;
     }
 
-    await insertFestieEvent(
-      festie.id,
-      FESTIE_EVENT_TYPES.LIFE_LOG,
-      {
+    pending.push({
+      festieId: festie.id,
+      type: FESTIE_EVENT_TYPES.LIFE_LOG,
+      payload: {
         kind: result.kind,
         text: result.text,
         synthesized: true,
       },
-      at.toISOString(),
-    );
+      createdAt: at.toISOString(),
+    });
+  }
+
+  if (pending.length) {
+    await insertFestieEventsBatch(pending);
   }
 }

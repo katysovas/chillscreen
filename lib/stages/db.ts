@@ -95,17 +95,7 @@ export async function getUserStageBySlug(slug: string): Promise<UserStageRow | n
 export async function getUserStagePublicBySlug(slug: string): Promise<UserStagePublic | null> {
   const row = await getUserStageBySlug(slug);
   if (!row) return null;
-  const pub = rowToPublic(row);
-  const streams = await enrichStreamsChannelTitles(pub.streams);
-  if (streams !== pub.streams && !row.taken_down_at) {
-    const sql = requireDb();
-    void sql`
-      UPDATE user_stages
-      SET streams = ${JSON.stringify(streams)}::jsonb
-      WHERE slug = ${slug} AND taken_down_at IS NULL
-    `.catch(() => {});
-  }
-  return streams === pub.streams ? pub : { ...pub, streams };
+  return rowToPublic(row);
 }
 
 export async function getUserStageByOwnerId(ownerId: string): Promise<UserStageRow | null> {
@@ -122,13 +112,16 @@ export async function getUserStageByOwnerId(ownerId: string): Promise<UserStageR
   return parseRow(row);
 }
 
-export async function touchUserStageActive(slug: string): Promise<void> {
+export async function touchUserStageActive(slug: string): Promise<boolean> {
   const sql = requireDb();
-  await sql`
+  const rows = await sql`
     UPDATE user_stages
     SET last_active_at = now()
     WHERE slug = ${slug} AND taken_down_at IS NULL
+      AND last_active_at < now() - interval '5 minutes'
+    RETURNING slug
   `;
+  return rows.length > 0;
 }
 
 export type CreateUserStageInput = {
@@ -156,7 +149,8 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
       AND (slug = ${input.slug} OR owner_id = ${input.ownerId}::uuid)
   `;
 
-  const streamsJson = JSON.stringify(input.streams);
+  const enrichedStreams = await enrichStreamsChannelTitles(input.streams);
+  const streamsJson = JSON.stringify(enrichedStreams);
   const rows = await sql`
     INSERT INTO user_stages (
       slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index, backdrop_url
@@ -190,14 +184,18 @@ export async function updateUserStage(
   slug: string,
   ownerId: string,
   patch: UpdateUserStagePatch,
+  existingRow?: UserStageRow | null,
 ): Promise<UserStageRow | null> {
-  const existing = await getUserStageBySlug(slug);
+  const existing = existingRow ?? await getUserStageBySlug(slug);
   if (!existing || existing.owner_id !== ownerId || existing.taken_down_at) return null;
 
   if (patch.preset && !stagePresetById(patch.preset)) return null;
 
   const sql = requireDb();
-  const streams = patch.streams ?? existing.streams;
+  let streams = patch.streams ?? existing.streams;
+  if (patch.streams) {
+    streams = await enrichStreamsChannelTitles(streams);
+  }
   const nowPlayingIndex = patch.nowPlayingIndex ?? existing.now_playing_index;
   const preset = patch.preset ?? existing.preset;
   const sky = patch.sky !== undefined ? patch.sky : existing.sky;
@@ -235,7 +233,7 @@ export async function takedownUserStage(slug: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-/** Reclaim dormant slugs — run opportunistically on slug check. */
+/** Reclaim dormant slugs — run via cron or on stage create. */
 export async function reclaimStaleStageSlugs(now = Date.now()): Promise<number> {
   const sql = requireDb();
   const reclaimBefore = new Date(now - STAGE_CONFIG.RECLAIM_WINDOW_MS).toISOString();

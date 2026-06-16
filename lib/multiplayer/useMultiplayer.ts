@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import PartySocket from 'partysocket';
 import type { FestiePublic } from '@/lib/festie/types';
+import type { CreatorStageSyncPayload } from '@/lib/stages/stageSync';
 import {
   chatPairKey,
   decodeServer,
@@ -148,6 +149,10 @@ export type Multiplayer = {
   sendNpcChat: (npcId: string, open: boolean) => void;
   sendNpcPositions: (positions: { id: string; worldX: number; pct: number }[], viewportWidth: number) => void;
   sendEaselPainterReady: (npcId: string) => void;
+  sendCreatorStageSync: (stage: CreatorStageSyncPayload) => void;
+  registerCreatorStageSyncHandler: (
+    handler: ((stage: CreatorStageSyncPayload) => void) | null,
+  ) => void;
 };
 
 /**
@@ -169,6 +174,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const pendingProfileRef = useRef<PlayerProfile | null>(null);
   /** Messages sent before the socket handshake completes. */
   const pendingSendRef = useRef<object[]>([]);
+  const creatorStageSyncHandlerRef = useRef<((stage: CreatorStageSyncPayload) => void) | null>(null);
 
   const [selfId, setSelfId] = useState<string | null>(null);
   const selfIdRef = useRef<string | null>(null);
@@ -435,6 +441,9 @@ export function useMultiplayer(opts: Options): Multiplayer {
           setIsNpcLeader(!msg.leaderId || msg.leaderId === selfIdRef.current);
           if (!msg.leaderId) npcSyncRef.current.clear();
           break;
+        case 'creator-stage-sync':
+          creatorStageSyncHandlerRef.current?.(msg.stage);
+          break;
       }
     };
 
@@ -491,11 +500,22 @@ export function useMultiplayer(opts: Options): Multiplayer {
     (npcId: string) => connectAndSend({ t: 'easel-painter-ready', npcId }),
     [connectAndSend],
   );
+  const sendCreatorStageSync = useCallback(
+    (stage: CreatorStageSyncPayload) => connectAndSend({ t: 'creator-stage-sync', stage }),
+    [connectAndSend],
+  );
+  const registerCreatorStageSyncHandler = useCallback(
+    (handler: ((stage: CreatorStageSyncPayload) => void) | null) => {
+      creatorStageSyncHandlerRef.current = handler;
+    },
+    [],
+  );
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
     chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,
     isNpcLeader, npcSyncRef,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
     sendAmbientMessage, sendRoomChat, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
+    sendCreatorStageSync, registerCreatorStageSyncHandler,
   };
 }

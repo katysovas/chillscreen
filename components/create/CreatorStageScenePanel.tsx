@@ -35,7 +35,7 @@ export function CreatorStageScenePanel() {
       if (preset === 'cinema') patch.backdropUrl = backdropUrl;
       else patch.backdropUrl = null;
       const updated = await updateUserStage(stage.slug, patch);
-      setStage(updated);
+      setStage(updated, { broadcast: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not change scene');
     } finally {
@@ -54,7 +54,7 @@ export function CreatorStageScenePanel() {
         return;
       }
       const updated = await uploadStageBackdrop(stage.slug, file);
-      setStage(updated);
+      setStage(updated, { broadcast: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {

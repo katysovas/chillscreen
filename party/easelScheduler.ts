@@ -116,7 +116,7 @@ export class EaselScheduler {
 
   private startCheckLoop() {
     this.stopCheckLoop();
-    this.checkTimer = setInterval(() => void this.checkSession(), 1000);
+    this.checkTimer = setInterval(() => void this.checkSession(), 2000);
   }
 
   private stopCheckLoop() {

@@ -101,6 +101,7 @@ import {
 import { setLastUsedStage } from '@/lib/lastUsedStage';
 import { stageBackdropDisplayUrl } from '@/lib/stages/wallpapers';
 import { useCreatorStageShuffleOnStart } from '@/lib/stages/useCreatorStageShuffleOnStart';
+import { useCreatorStageRemoteSync } from '@/lib/stages/useCreatorStageRemoteSync';
 import {
   useOptionalCreatorStage,
   useIsCreatorStageOwner,
@@ -787,6 +788,8 @@ export default function SFCity({
     creatorStage?.shuffleOnStart ?? false,
     mp.connected,
   );
+
+  useCreatorStageRemoteSync(creatorStage?.slug, isCreatorStageOwner, mp);
 
   const easelChannel = stageChannelForRoute(effectiveVenueRoute);
   const easelStageSlug = stageSlugFromVenueRoute(effectiveVenueRoute);

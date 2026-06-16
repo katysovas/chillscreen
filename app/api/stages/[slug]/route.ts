@@ -120,7 +120,7 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       patch.backdropUrl = parsed ?? null;
     }
 
-    const row = await updateUserStage(slug, userId, patch);
+    const row = await updateUserStage(slug, userId, patch, existing);
     if (!row) {
       return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
     }

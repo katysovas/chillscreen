@@ -141,10 +141,22 @@ export async function writeSeedsToDb(data: SeedsFile): Promise<SeedsFile> {
     }
   }
 
-  for (const row of inserts) {
+  const BATCH = 100;
+  for (let i = 0; i < inserts.length; i += BATCH) {
+    const batch = inserts.slice(i, i + BATCH);
+    const scopes = batch.map(r => r.scope);
+    const stageSlugs = batch.map(r => r.stage_slug);
+    const kinds = batch.map(r => r.kind);
+    const lines = batch.map(r => r.line);
     await sql`
       INSERT INTO chat_seeds (scope, stage_slug, kind, line)
-      VALUES (${row.scope}, ${row.stage_slug}, ${row.kind}, ${row.line})
+      SELECT *
+      FROM UNNEST(
+        ${scopes}::text[],
+        ${stageSlugs}::text[],
+        ${kinds}::text[],
+        ${lines}::text[]
+      ) AS t(scope, stage_slug, kind, line)
     `;
   }
 

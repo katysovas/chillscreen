@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getUserStagePublicBySlug, maybeShuffleStageOnStart } from '@/lib/stages/db';
+import { maybeShuffleStageOnStart } from '@/lib/stages/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,14 +21,9 @@ export async function POST(_req: Request, ctx: RouteContext) {
       return NextResponse.json({ error: 'Stage not found' }, { status: 404 });
     }
 
-    const stage = await getUserStagePublicBySlug(slug);
-    if (!stage) {
-      return NextResponse.json({ error: 'Stage not found' }, { status: 404 });
-    }
-
     return NextResponse.json({
       shuffled: result.shuffled,
-      stage,
+      stage: result.stage,
     });
   } catch (err) {
     console.error('[api/stages/[slug]/shuffle-start POST]', err);

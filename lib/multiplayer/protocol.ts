@@ -10,6 +10,7 @@
 import type { FestiePublic } from '../festie/types';
 import type { StageSync } from '../stageVideos';
 import type { EaselSessionSync, EaselSlotSync } from '../easel/types';
+import type { CreatorStageSyncPayload } from '../stages/stageSync';
 
 export type Facing = 'left' | 'right';
 
@@ -78,7 +79,9 @@ export type ClientMessage =
       viewportWidth: number;
     }
   /** Painting NPC reached the easel — starts the watched drawing clock. */
-  | { t: 'easel-painter-ready'; npcId: string };
+  | { t: 'easel-painter-ready'; npcId: string }
+  /** Owner lineup / now-playing change — relayed to everyone in the creator room. */
+  | { t: 'creator-stage-sync'; stage: CreatorStageSyncPayload };
 
 /** Debug metadata for NPC↔NPC pair convos. */
 export type NpcConvoMeta = {
@@ -134,7 +137,9 @@ export type ServerMessage =
     }
   | { t: 'npc-leader'; leaderId: string | null }
   | { t: 'easel-session'; sessionStart: number; slots: EaselSlotSync[] }
-  | { t: 'easel-update'; sessionStart: number; slots: EaselSlotSync[] };
+  | { t: 'easel-update'; sessionStart: number; slots: EaselSlotSync[] }
+  /** Creator stage lineup / scene update from owner or shuffle. */
+  | { t: 'creator-stage-sync'; stage: CreatorStageSyncPayload };
 
 export type { EaselSessionSync, EaselSlotSync };
 

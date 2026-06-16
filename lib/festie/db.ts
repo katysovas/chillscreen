@@ -354,14 +354,9 @@ export async function appendFestieConversation(
 ): Promise<string> {
   const sql = requireDb();
   if (conversationId) {
-    const rows = await sql`
-      SELECT messages FROM festie_conversations WHERE id = ${conversationId}::uuid LIMIT 1
-    `;
-    const existing = rows[0] as { messages: unknown } | undefined;
-    const prior = Array.isArray(existing?.messages) ? existing.messages as ChatMessage[] : [];
-    const merged = [...prior, ...entries];
     await sql`
-      UPDATE festie_conversations SET messages = ${JSON.stringify(merged)}::jsonb
+      UPDATE festie_conversations
+      SET messages = COALESCE(messages, '[]'::jsonb) || ${JSON.stringify(entries)}::jsonb
       WHERE id = ${conversationId}::uuid
     `;
     return conversationId;

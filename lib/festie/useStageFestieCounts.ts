@@ -7,7 +7,8 @@ import {
 } from '@/lib/stageCrowdCount';
 import type { VenueRoute } from '@/lib/venueSlugs';
 
-const REFRESH_MS = 60_000;
+/** Poll interval — crowd counts are cached server-side (~60s); no need to hammer the API. */
+const REFRESH_MS = 180_000;
 
 export { formatStageCrowdCount as formatFestieCount };
 

@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import {
-  isStageSlugTaken,
-  reclaimStaleStageSlugs,
-} from '@/lib/stages/db';
+import { isStageSlugTaken } from '@/lib/stages/db';
 import {
   normalizeStageSlug,
   slugRejectMessage,
@@ -24,7 +21,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ available: false, reason: slugRejectMessage(formatErr) });
   }
 
-  await reclaimStaleStageSlugs();
   const taken = await isStageSlugTaken(slug);
   if (taken) {
     return NextResponse.json({ available: false, reason: slugRejectMessage('taken') });

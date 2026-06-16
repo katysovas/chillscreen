@@ -6,6 +6,10 @@
     {
       "path": "/api/cron/festie-offline-chatter",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/reclaim-stage-slugs",
+      "schedule": "0 4 * * *"
     }
   ]
 }

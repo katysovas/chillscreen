@@ -26,7 +26,7 @@ export function useCreatorStageShuffleOnStart(
       void tryShuffleOnStageStart(slug)
         .then(result => {
           if (result?.shuffled) {
-            ctx.setStage(result.stage);
+            ctx.setStage(result.stage, { broadcast: true });
           }
         })
         .catch(() => {

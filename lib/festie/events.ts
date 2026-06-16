@@ -99,18 +99,35 @@ export async function insertFestieEvent(
   payload: Record<string, unknown>,
   createdAt?: string,
 ): Promise<void> {
+  await insertFestieEventsBatch([{ festieId, type, payload, createdAt }]);
+}
+
+export type FestieEventInsert = {
+  festieId: string;
+  type: FestieEventType;
+  payload: Record<string, unknown>;
+  createdAt?: string;
+};
+
+/** Multi-row insert for offline life-log backfill. */
+export async function insertFestieEventsBatch(rows: FestieEventInsert[]): Promise<void> {
+  if (!rows.length) return;
   const sql = requireDb();
-  const at = createdAt ? toIsoTimestamp(createdAt) : undefined;
-  if (at) {
-    await sql`
-      INSERT INTO festie_events (festie_id, type, payload, created_at)
-      VALUES (${festieId}::uuid, ${type}, ${JSON.stringify(payload)}::jsonb, ${at}::timestamptz)
-    `;
-    return;
-  }
+
+  const festieIds = rows.map(r => r.festieId);
+  const types = rows.map(r => r.type);
+  const payloads = rows.map(r => JSON.stringify(r.payload));
+  const createdAts = rows.map(r => toIsoTimestamp(r.createdAt ?? new Date().toISOString()));
+
   await sql`
-    INSERT INTO festie_events (festie_id, type, payload)
-    VALUES (${festieId}::uuid, ${type}, ${JSON.stringify(payload)}::jsonb)
+    INSERT INTO festie_events (festie_id, type, payload, created_at)
+    SELECT *
+    FROM UNNEST(
+      ${festieIds}::uuid[],
+      ${types}::text[],
+      ${payloads}::jsonb[],
+      ${createdAts}::timestamptz[]
+    ) AS t(festie_id, type, payload, created_at)
   `;
 }
 
