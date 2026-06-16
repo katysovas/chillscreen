@@ -10,6 +10,7 @@ import type { FestieOwner } from '@/lib/festie/types';
 import {
   isValidFestieName,
   isValidFestiePassword,
+  isValidNotifyEmail,
   sanitizeFestieNameInput,
 } from '@/lib/festie/validation';
 import { STAGE_CONFIG } from '@/lib/stages/config';
@@ -17,15 +18,22 @@ import {
   checkStageSlug,
   createUserStage,
   fetchMyStage,
-  parseStageStreamUrl,
+  parseStageStreams,
+  takedownUserStage,
 } from '@/lib/stages/client';
-import { STAGE_SCENE_PRESETS, STAGE_SKY_OPTIONS } from '@/lib/stages/presets';
+import type { StageStreamPasteMode } from '@/lib/stages/parseStream';
 import { stagePathForSlug } from '@/lib/stages/runtime';
+import {
+  slugRejectMessage,
+  stageNameToSlug,
+  validateStageSlugFormat,
+} from '@/lib/stages/slugValidation';
 import type { StagePresetId, StageStream } from '@/lib/stages/types';
-import type { SkyPeriod } from '@/lib/skyTimeOfDay';
-import { LOGO_PATH, SITE_TAGLINE } from '@/lib/site';
+import { CREATOR_STAGE_TEMPLATES } from '@/lib/stages/presets';
+import { LOGO_PATH, SITE_TAGLINE, SITE_URL } from '@/lib/site';
 
 const TOTAL_STEPS = 3;
+const STAGE_EXISTS_MSG = 'You already have a stage.';
 
 const INPUT: React.CSSProperties = {
   width: '100%',
@@ -85,20 +93,11 @@ function ModalHero() {
   );
 }
 
-function StepHeader({ step }: { step: number }) {
+function StepHeader() {
   return (
     <div style={{ textAlign: 'center', marginBottom: 20 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={LOGO_PATH} alt="WhichStage" style={{ height: 36, margin: '0 auto 12px' }} />
-      <p style={{
-        margin: 0,
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.58)',
-        fontFamily: 'system-ui,sans-serif',
-      }}
-      >
-        Step {step} of {TOTAL_STEPS}
-      </p>
     </div>
   );
 }
@@ -121,19 +120,20 @@ const STEP_SUB: React.CSSProperties = {
 };
 
 type Draft = {
+  stageName: string;
   slug: string;
   festieName: string;
   festiePassword: string;
   preset: StagePresetId;
-  sky?: SkyPeriod;
   streams: StageStream[];
 };
 
 const DEFAULT_DRAFT: Draft = {
+  stageName: '',
   slug: '',
   festieName: '',
   festiePassword: '',
-  preset: 'thefarm',
+  preset: 'chill',
   streams: [],
 };
 
@@ -151,6 +151,129 @@ const PRIMARY_BTN: React.CSSProperties = {
   fontFamily: 'system-ui,sans-serif',
   transition: 'background 0.2s, color 0.2s, box-shadow 0.2s',
 };
+
+function parseInviteEmails(raw: string): string[] {
+  return raw
+    .split(/[\n,;]+/)
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+
+function hasValidInviteEmail(raw: string): boolean {
+  return parseInviteEmails(raw).some(isValidNotifyEmail);
+}
+
+function TemplatePicker({
+  preset,
+  onChange,
+}: {
+  preset: StagePresetId;
+  onChange: (preset: StagePresetId) => void;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Stage template"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 8,
+        marginBottom: 4,
+        fontFamily: 'system-ui,sans-serif',
+      }}
+    >
+      {CREATOR_STAGE_TEMPLATES.map(template => {
+        const active = preset === template.id;
+        return (
+          <button
+            key={template.id}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(template.id)}
+            style={{
+              borderRadius: 12,
+              padding: '12px 10px',
+              border: active
+                ? '1px solid rgba(111,207,151,0.65)'
+                : '1px solid rgba(255,255,255,0.14)',
+              background: active
+                ? 'rgba(111,207,151,0.14)'
+                : 'rgba(255,255,255,0.05)',
+              color: active ? '#eafff6' : 'rgba(255,255,255,0.82)',
+              cursor: 'pointer',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 700 }}>{template.label}</div>
+            <div style={{
+              marginTop: 4,
+              fontSize: 11,
+              lineHeight: 1.35,
+              color: active ? 'rgba(234,255,246,0.72)' : 'rgba(255,255,255,0.45)',
+            }}
+            >
+              {template.tagline}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function StreamPasteTabs({
+  mode,
+  onChange,
+}: {
+  mode: StageStreamPasteMode;
+  onChange: (mode: StageStreamPasteMode) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Paste mode"
+      style={{
+        display: 'flex',
+        gap: 6,
+        marginBottom: 10,
+        fontFamily: 'system-ui,sans-serif',
+      }}
+    >
+      {([
+        { mode: 'video' as const, label: 'Video' },
+        { mode: 'playlist' as const, label: 'Playlist' },
+        { mode: 'channel' as const, label: 'Channel' },
+      ]).map(({ mode: tabMode, label }) => {
+        const active = mode === tabMode;
+        return (
+          <button
+            key={tabMode}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(tabMode)}
+            style={{
+              flex: 1,
+              borderRadius: 8,
+              padding: '7px 8px',
+              fontSize: 12,
+              fontWeight: 600,
+              border: active
+                ? '1px solid rgba(230,126,34,0.5)'
+                : '1px solid rgba(255,255,255,0.1)',
+              background: active ? 'rgba(230,126,34,0.16)' : 'rgba(255,255,255,0.04)',
+              color: active ? '#fff' : 'rgba(255,255,255,0.55)',
+              cursor: 'pointer',
+            }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function AuthTabs({
   authIntent,
@@ -221,6 +344,63 @@ function ProgressBar({ step }: { step: number }) {
   );
 }
 
+function StageShareUrlRow({
+  url,
+  copied,
+  onCopy,
+  prominent = false,
+}: {
+  url: string;
+  copied: boolean;
+  onCopy: () => void;
+  prominent?: boolean;
+}) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: prominent ? '12px 14px' : '8px 10px',
+      borderRadius: 12,
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      fontFamily: 'system-ui,sans-serif',
+    }}
+    >
+      <span style={{
+        flex: 1,
+        minWidth: 0,
+        fontSize: prominent ? 13 : 11,
+        color: prominent ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.55)',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+      >
+        {url}
+      </span>
+      <button
+        type="button"
+        onClick={onCopy}
+        style={{
+          flexShrink: 0,
+          borderRadius: 8,
+          padding: prominent ? '6px 12px' : '4px 10px',
+          fontSize: prominent ? 12 : 11,
+          fontWeight: 600,
+          border: '1px solid rgba(255,255,255,0.12)',
+          background: 'rgba(255,255,255,0.06)',
+          color: 'rgba(255,255,255,0.75)',
+          cursor: 'pointer',
+          fontFamily: 'system-ui,sans-serif',
+        }}
+      >
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  );
+}
+
 export function CreateStageWizard() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -230,10 +410,18 @@ export function CreateStageWizard() {
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'ok' | 'bad'>('idle');
   const [slugMessage, setSlugMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [existingStageSlug, setExistingStageSlug] = useState<string | null>(null);
+  const [deletingStage, setDeletingStage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [streamInput, setStreamInput] = useState('');
+  const [streamPasteMode, setStreamPasteMode] = useState<StageStreamPasteMode>('video');
   const [streamParsing, setStreamParsing] = useState(false);
+  const [streamHint, setStreamHint] = useState<string | null>(null);
+  const [urlCopied, setUrlCopied] = useState(false);
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [inviteHint, setInviteHint] = useState<string | null>(null);
   const [mobile, setMobile] = useState(false);
+  const [bootstrapped, setBootstrapped] = useState(false);
   const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -242,6 +430,7 @@ export function CreateStageWizard() {
     if (savedName) {
       setDraft(d => ({ ...d, festieName: savedName }));
     }
+    setBootstrapped(true);
   }, []);
 
   useEffect(() => {
@@ -253,6 +442,7 @@ export function CreateStageWizard() {
   }, []);
 
   useEffect(() => {
+    if (!bootstrapped) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -261,7 +451,10 @@ export function CreateStageWizard() {
         const existing = await fetchMyStage();
         if (cancelled) return;
         if (existing) {
-          setError('You already have a stage (one per account in v1).');
+          setSignedInFestie(festie);
+          setDraft(d => ({ ...d, festieName: festie.name }));
+          setExistingStageSlug(existing.slug);
+          setError(STAGE_EXISTS_MSG);
           return;
         }
         setSignedInFestie(festie);
@@ -272,7 +465,9 @@ export function CreateStageWizard() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [bootstrapped]);
+
+  const displayStep = bootstrapped ? step : 1;
 
   const isCreate = authIntent === 'create';
   const nameValid = isValidFestieName(draft.festieName);
@@ -296,11 +491,35 @@ export function CreateStageWizard() {
   const advancePastAuth = async () => {
     const existing = await fetchMyStage();
     if (existing) {
-      setError('You already have a stage (one per account in v1).');
+      setExistingStageSlug(existing.slug);
+      setError(STAGE_EXISTS_MSG);
       return;
     }
+    setExistingStageSlug(null);
     setError(null);
     setStep(2);
+  };
+
+  const deleteExistingStage = async () => {
+    if (!existingStageSlug || deletingStage) return;
+    setDeletingStage(true);
+    try {
+      await takedownUserStage(existingStageSlug);
+      setExistingStageSlug(null);
+      setError(null);
+      if (!signedInFestie) {
+        const { authenticated, festie } = await fetchAuthMe();
+        if (authenticated && festie) {
+          setSignedInFestie(festie);
+          setDraft(d => ({ ...d, festieName: festie.name }));
+        }
+      }
+      setStep(2);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete stage');
+    } finally {
+      setDeletingStage(false);
+    }
   };
 
   const submitStep1 = async () => {
@@ -334,6 +553,12 @@ export function CreateStageWizard() {
       setSlugMessage(null);
       return;
     }
+    const formatErr = validateStageSlugFormat(slug);
+    if (formatErr) {
+      setSlugStatus('bad');
+      setSlugMessage(slugRejectMessage(formatErr));
+      return;
+    }
     setSlugStatus('checking');
     slugTimer.current = setTimeout(async () => {
       try {
@@ -361,9 +586,10 @@ export function CreateStageWizard() {
       case 1:
         return signedInFestie != null || canSubmitAuth;
       case 2:
-        return slugStatus === 'ok' && draft.slug.trim().length > 0 && Boolean(draft.preset);
-      case 3:
-        return draft.streams.length > 0;
+        return slugStatus === 'ok'
+          && draft.stageName.trim().length > 0
+          && draft.slug.trim().length > 0
+          && draft.streams.length > 0;
       default:
         return false;
     }
@@ -372,26 +598,50 @@ export function CreateStageWizard() {
   const addStream = async () => {
     const url = streamInput.trim();
     if (!url || streamParsing) return;
-    if (draft.streams.length >= STAGE_CONFIG.MAX_STREAMS) {
+    const slotsLeft = STAGE_CONFIG.MAX_STREAMS - draft.streams.length;
+    if (slotsLeft <= 0) {
       setError(`Maximum ${STAGE_CONFIG.MAX_STREAMS} streams.`);
       return;
     }
     setError(null);
+    setStreamHint(null);
     setStreamParsing(true);
     try {
-      const result = await parseStageStreamUrl(url);
+      const result = await parseStageStreams(url, streamPasteMode, {
+        existingVideoIds: draft.streams.map(s => s.videoId),
+        maxToAdd: slotsLeft,
+      });
       if (!result.ok) {
         setError(result.message);
         return;
       }
-      if (draft.streams.some(s => s.videoId === result.stream.videoId)) {
-        setError('That video is already in your lineup.');
+
+      if ('stream' in result) {
+        if (draft.streams.some(s => s.videoId === result.stream.videoId)) {
+          setError('That video is already in your lineup.');
+          return;
+        }
+        setDraft(d => ({ ...d, streams: [...d.streams, result.stream] }));
+        setStreamInput('');
         return;
       }
-      setDraft(d => ({ ...d, streams: [...d.streams, result.stream] }));
+
+      if (!result.streams.length) {
+        setError('No videos could be added.');
+        return;
+      }
+
+      setDraft(d => ({ ...d, streams: [...d.streams, ...result.streams] }));
       setStreamInput('');
+      const added = result.streams.length;
+      const skipped = result.skipped;
+      setStreamHint(
+        skipped > 0
+          ? `Added ${added} video${added === 1 ? '' : 's'} (${skipped} skipped).`
+          : `Added ${added} video${added === 1 ? '' : 's'}.`,
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not parse video');
+      setError(err instanceof Error ? err.message : 'Could not parse videos');
     } finally {
       setStreamParsing(false);
     }
@@ -408,8 +658,8 @@ export function CreateStageWizard() {
     try {
       const payload: Parameters<typeof createUserStage>[0] = {
         slug: draft.slug.trim().toLowerCase(),
+        displayName: draft.stageName.trim(),
         preset: draft.preset,
-        sky: draft.sky,
         streams: draft.streams,
       };
       if (!signedInFestie) {
@@ -425,11 +675,49 @@ export function CreateStageWizard() {
       await createUserStage(payload);
       router.push(stagePathForSlug(draft.slug.trim().toLowerCase()));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create stage');
+      const msg = err instanceof Error ? err.message : 'Could not create stage';
+      setError(msg);
+      if (msg === STAGE_EXISTS_MSG) {
+        try {
+          const existing = await fetchMyStage();
+          if (existing) setExistingStageSlug(existing.slug);
+        } catch {
+          /* ignore */
+        }
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const stageShareUrl = draft.slug
+    ? `${SITE_URL}${stagePathForSlug(draft.slug)}`
+    : null;
+
+  const copyStageUrl = async () => {
+    if (!stageShareUrl) return;
+    try {
+      await navigator.clipboard.writeText(stageShareUrl);
+      setUrlCopied(true);
+      window.setTimeout(() => setUrlCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleStageNameChange = (raw: string) => {
+    const stageName = raw.slice(0, 48);
+    const slug = stageNameToSlug(stageName);
+    setDraft(d => ({ ...d, stageName, slug }));
+    checkSlugDebounced(slug);
+  };
+
+  const handleInvite = () => {
+    if (!hasValidInviteEmail(inviteEmails)) return;
+    setInviteHint('Invites queued — email sending is coming soon.');
+  };
+
+  const canInvite = hasValidInviteEmail(inviteEmails);
 
   return (
     <div style={{
@@ -439,9 +727,9 @@ export function CreateStageWizard() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'rgba(0,0,0,0.72)',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
+      background: 'rgba(0,0,0,0.36)',
+      backdropFilter: 'blur(4px)',
+      WebkitBackdropFilter: 'blur(4px)',
       animation: 'wlc-fade-in 0.45s ease',
       padding: 16,
       fontFamily: "Georgia,'Times New Roman',serif",
@@ -450,22 +738,22 @@ export function CreateStageWizard() {
         background: '#131415',
         border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 20,
-        maxWidth: step === 1 ? 520 : 560,
-        width: `min(94vw, ${step === 1 ? 520 : 560}px)`,
+        maxWidth: displayStep === 1 ? 520 : 560,
+        width: `min(94vw, ${displayStep === 1 ? 520 : 560}px)`,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         boxShadow: '0 32px 80px rgba(0,0,0,0.9)',
       }}>
-        <ProgressBar step={step} />
+        <ProgressBar step={displayStep} />
 
         <div style={{
-          padding: step === 1 ? (mobile ? '28px 22px 24px' : '32px 36px 28px') : '28px 28px 24px',
+          padding: displayStep === 1 ? (mobile ? '28px 22px 24px' : '32px 36px 28px') : '28px 28px 24px',
           color: 'rgba(255,255,255,0.9)',
         }}>
-          {step === 1 ? <ModalHero /> : <StepHeader step={step} />}
+          {displayStep === 1 ? <ModalHero /> : <StepHeader />}
 
-          {step === 1 && (
+          {displayStep === 1 && (
             <>
               {!signedInFestie && (
                 <AuthTabs
@@ -561,17 +849,43 @@ export function CreateStageWizard() {
                 </div>
               )}
 
-              {step === 1 && error && (
-                <p style={{
-                  color: '#ff9d9d',
-                  fontSize: 13,
-                  margin: '12px 0 0',
-                  fontFamily: 'system-ui,sans-serif',
-                  textAlign: 'center',
-                }}
-                >
-                  {error}
-                </p>
+              {displayStep === 1 && error && (
+                <>
+                  <p style={{
+                    color: '#ff9d9d',
+                    fontSize: 13,
+                    margin: '12px 0 0',
+                    fontFamily: 'system-ui,sans-serif',
+                    textAlign: 'center',
+                  }}
+                  >
+                    {error}
+                  </p>
+                  {error === STAGE_EXISTS_MSG && existingStageSlug && (
+                    <button
+                      type="button"
+                      onClick={() => void deleteExistingStage()}
+                      disabled={deletingStage}
+                      style={{
+                        width: '100%',
+                        marginTop: 10,
+                        borderRadius: 10,
+                        padding: '10px 14px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,107,107,0.35)',
+                        background: 'rgba(255,107,107,0.08)',
+                        color: '#ff9d9d',
+                        cursor: deletingStage ? 'wait' : 'pointer',
+                        fontFamily: 'system-ui,sans-serif',
+                      }}
+                    >
+                      {deletingStage
+                        ? 'Deleting…'
+                        : `Delete existing stage (${existingStageSlug}) — testing`}
+                    </button>
+                  )}
+                </>
               )}
 
               <button
@@ -598,45 +912,24 @@ export function CreateStageWizard() {
             </>
           )}
 
-          {step === 2 && (
+          {displayStep === 2 && (
             <>
               <h1 style={STEP_TITLE}>
-                Name &amp; style your stage
+                Set up your stage
               </h1>
-              <p style={STEP_SUB}>
-                Pick your URL and a scene.
-              </p>
-              <label style={LABEL}>Stage slug</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 8 }}>
-                <span style={{
-                  padding: '11px 12px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  borderRight: 'none',
-                  borderRadius: '12px 0 0 12px',
-                  fontSize: 14,
-                  color: 'rgba(255,255,255,0.62)',
-                  fontFamily: 'system-ui,sans-serif',
-                }}
-                >
-                  whichstage.com/watch/
-                </span>
-                <input
-                  style={{ ...INPUT, borderRadius: '0 12px 12px 0', flex: 1 }}
-                  value={draft.slug}
-                  onChange={e => {
-                    const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, STAGE_CONFIG.SLUG_MAX_LENGTH);
-                    setDraft(d => ({ ...d, slug: v }));
-                    checkSlugDebounced(v);
-                  }}
-                  placeholder="my-stage"
-                  autoFocus
-                  spellCheck={false}
-                />
-              </div>
+              
+              <label style={LABEL}>Stage name</label>
+              <input
+                style={INPUT}
+                value={draft.stageName}
+                onChange={e => handleStageNameChange(e.target.value)}
+                placeholder="My Sunset Set"
+                autoFocus
+                spellCheck={false}
+              />
               {slugMessage && (
                 <p style={{
-                  margin: '0 0 20px',
+                  margin: '10px 0 0',
                   fontSize: 12,
                   fontFamily: 'system-ui,sans-serif',
                   color: slugStatus === 'ok' ? '#6fcf97' : '#ff6b6b',
@@ -646,97 +939,44 @@ export function CreateStageWizard() {
                 </p>
               )}
 
-              <label style={{ ...LABEL, marginTop: slugMessage ? 0 : 12 }}>Scene</label>
-              <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
-                {STAGE_SCENE_PRESETS.map(p => {
-                  const active = draft.preset === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setDraft(d => ({ ...d, preset: p.id }))}
-                      style={{
-                        textAlign: 'left',
-                        borderRadius: 12,
-                        padding: '14px 16px',
-                        border: active
-                          ? '1px solid rgba(230,126,34,0.5)'
-                          : '1px solid rgba(255,255,255,0.1)',
-                        background: active ? 'rgba(230,126,34,0.12)' : 'rgba(255,255,255,0.04)',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        fontFamily: 'system-ui,sans-serif',
-                      }}
-                    >
-                      <div style={{ fontWeight: 700, fontSize: 15 }}>{p.label}</div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', marginTop: 4 }}>
-                        {p.tagline}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              <label style={LABEL}>Sky (optional)</label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => setDraft(d => ({ ...d, sky: undefined }))}
-                  style={{
-                    borderRadius: 10,
-                    padding: '8px 12px',
-                    fontSize: 12,
-                    border: !draft.sky
-                      ? '1px solid rgba(230,126,34,0.5)'
-                      : '1px solid rgba(255,255,255,0.1)',
-                    background: !draft.sky ? 'rgba(230,126,34,0.16)' : 'rgba(255,255,255,0.04)',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontFamily: 'system-ui,sans-serif',
-                  }}
-                >
-                  Auto
-                </button>
-                {STAGE_SKY_OPTIONS.map(s => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setDraft(d => ({ ...d, sky: s.id }))}
-                    style={{
-                      borderRadius: 10,
-                      padding: '8px 12px',
-                      fontSize: 12,
-                      border: draft.sky === s.id
-                        ? '1px solid rgba(230,126,34,0.5)'
-                        : '1px solid rgba(255,255,255,0.1)',
-                      background: draft.sky === s.id
-                        ? 'rgba(230,126,34,0.16)'
-                        : 'rgba(255,255,255,0.04)',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      fontFamily: 'system-ui,sans-serif',
-                    }}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+              <label style={{ ...LABEL, marginTop: 24 }}>Template</label>
+              <TemplatePicker
+                preset={draft.preset}
+                onChange={next => setDraft(d => ({ ...d, preset: next }))}
+              />
 
-          {step === 3 && (
-            <>
-              <h1 style={STEP_TITLE}>
-                Add streams
-              </h1>
-              <p style={{ ...STEP_SUB, marginBottom: 16 }}>
-                Paste YouTube links — one plays at a time, you swap live.
+              <label style={{ ...LABEL, marginTop: 24 }}>Streams</label>
+              <StreamPasteTabs
+                mode={streamPasteMode}
+                onChange={mode => {
+                  setStreamPasteMode(mode);
+                  setError(null);
+                  setStreamHint(null);
+                }}
+              />
+              <p style={{
+                margin: '0 0 12px',
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.55)',
+                fontFamily: 'system-ui,sans-serif',
+              }}
+              >
+                {streamPasteMode === 'video' && 'Paste your YouTube video link.'}
+                {streamPasteMode === 'playlist' && 'Paste a playlist link — we import embeddable videos (up to your lineup limit).'}
+                {streamPasteMode === 'channel' && 'Paste a channel link or @handle — we import recent uploads.'}
               </p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 <input
                   style={{ ...INPUT, flex: 1 }}
                   value={streamInput}
                   onChange={e => setStreamInput(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=…"
+                  placeholder={
+                    streamPasteMode === 'video'
+                      ? 'https://youtube.com/watch?v=…'
+                      : streamPasteMode === 'playlist'
+                        ? 'https://youtube.com/playlist?list=…'
+                        : 'https://youtube.com/@channel'
+                  }
                   onKeyDown={e => { if (e.key === 'Enter') void addStream(); }}
                 />
                 <button
@@ -757,9 +997,21 @@ export function CreateStageWizard() {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {streamParsing ? '…' : 'Add'}
+                  {streamParsing ? '…' : streamPasteMode === 'video' ? 'Add' : 'Import'}
                 </button>
               </div>
+              {streamHint && (
+                <p style={{
+                  margin: '0 0 12px',
+                  fontSize: 12,
+                  color: '#6fcf97',
+                  fontFamily: 'system-ui,sans-serif',
+                  textAlign: 'center',
+                }}
+                >
+                  {streamHint}
+                </p>
+              )}
               {draft.streams.length > 0 && (
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8 }}>
                   {draft.streams.map((s, i) => (
@@ -818,72 +1070,161 @@ export function CreateStageWizard() {
                   textAlign: 'center',
                 }}
                 >
-                  Add at least one YouTube link to create your stage.
+                  Add at least one YouTube link. You can update this later. 
                 </p>
               )}
             </>
           )}
 
-          {error && step !== 1 && (
-            <p style={{
-              margin: '12px 0 0',
-              fontSize: 13,
-              color: '#ff6b6b',
-              fontFamily: 'system-ui,sans-serif',
-              textAlign: 'center',
-            }}
-            >
-              {error}
-            </p>
+          {displayStep === 3 && (
+            <>
+              <h1 style={STEP_TITLE}>
+                Invite friends
+              </h1>
+              
+              {stageShareUrl && (
+                <div style={{ marginBottom: 24 }}>
+                  <label style={LABEL}>Share your stage link</label>
+                  <StageShareUrlRow
+                    url={stageShareUrl}
+                    copied={urlCopied}
+                    onCopy={() => void copyStageUrl()}
+                    prominent
+                  />
+                </div>
+              )}
+              <label style={LABEL}>Email invites (Paste one email per line or comma-separated)</label>
+              <textarea
+                value={inviteEmails}
+                onChange={e => {
+                  setInviteEmails(e.target.value);
+                  setInviteHint(null);
+                }}
+                placeholder={'friend@example.com\ncrew@example.com'}
+                rows={5}
+                style={{
+                  ...INPUT,
+                  resize: 'vertical',
+                  minHeight: 110,
+                  lineHeight: 1.45,
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleInvite}
+                disabled={!canInvite}
+                style={{
+                  marginTop: 12,
+                  width: 'fit-content',
+                  borderRadius: 10,
+                  padding: '8px 14px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  background: canInvite ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+                  color: canInvite ? 'rgba(255,255,255,0.82)' : 'rgba(255,255,255,0.35)',
+                  cursor: canInvite ? 'pointer' : 'default',
+                  fontFamily: 'system-ui,sans-serif',
+                }}
+              >
+                Invite
+              </button>
+              {inviteHint && (
+                <p style={{
+                  margin: '10px 0 0',
+                  fontSize: 12,
+                  color: '#6fcf97',
+                  fontFamily: 'system-ui,sans-serif',
+                  textAlign: 'center',
+                }}
+                >
+                  {inviteHint}
+                </p>
+              )}
+             
+            </>
           )}
 
-          {step > 1 && (
-            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-              <button
-                type="button"
-                onClick={() => { setError(null); setStep(s => s - 1); }}
-                style={{
-                  flex: 1,
-                  borderRadius: 12,
-                  padding: '12px 16px',
-                  fontSize: 15,
-                  fontWeight: 600,
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: 'transparent',
-                  color: 'rgba(255,255,255,0.75)',
-                  cursor: 'pointer',
-                  fontFamily: 'system-ui,sans-serif',
-                }}
+          {error && displayStep !== 1 && (
+            <>
+              <p style={{
+                margin: '12px 0 0',
+                fontSize: 13,
+                color: '#ff6b6b',
+                fontFamily: 'system-ui,sans-serif',
+                textAlign: 'center',
+              }}
               >
-                Back
-              </button>
+                {error}
+              </p>
+              {error === STAGE_EXISTS_MSG && existingStageSlug && (
+                <button
+                  type="button"
+                  onClick={() => void deleteExistingStage()}
+                  disabled={deletingStage}
+                  style={{
+                    width: '100%',
+                    marginTop: 10,
+                    borderRadius: 10,
+                    padding: '10px 14px',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    border: '1px solid rgba(255,107,107,0.35)',
+                    background: 'rgba(255,107,107,0.08)',
+                    color: '#ff9d9d',
+                    cursor: deletingStage ? 'wait' : 'pointer',
+                    fontFamily: 'system-ui,sans-serif',
+                  }}
+                >
+                  {deletingStage
+                    ? 'Deleting…'
+                    : `Delete existing stage (${existingStageSlug}) — testing`}
+                </button>
+              )}
+            </>
+          )}
+
+          {displayStep === 2 && (
+            <button
+              type="button"
+              disabled={!canAdvance() || loading}
+              onClick={() => {
+                setError(null);
+                setStep(3);
+              }}
+              style={{
+                ...PRIMARY_BTN,
+                marginTop: 24,
+                cursor: canAdvance() && !loading ? 'pointer' : 'default',
+                background: canAdvance() && !loading
+                  ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
+                  : 'rgba(255,255,255,0.1)',
+                color: canAdvance() ? '#fff' : 'rgba(255,255,255,0.35)',
+              }}
+            >
+              Continue →
+            </button>
+          )}
+
+          {displayStep === 3 && (
+            <div style={{ marginTop: 24 }}>
               <button
                 type="button"
-                disabled={!canAdvance() || loading}
+                disabled={loading}
                 onClick={() => {
                   setError(null);
-                  if (step === 3) {
-                    void handleCreate();
-                  } else {
-                    setStep(s => s + 1);
-                  }
+                  void handleCreate();
                 }}
                 style={{
-                  flex: 2,
-                  borderRadius: 12,
-                  padding: '12px 20px',
-                  fontSize: 15,
-                  fontWeight: 700,
-                  border: 'none',
-                  background: canAdvance() && !loading
+                  ...PRIMARY_BTN,
+                  cursor: loading ? 'default' : 'pointer',
+                  background: !loading
                     ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
                     : 'rgba(255,255,255,0.1)',
-                  color: canAdvance() ? '#fff' : 'rgba(255,255,255,0.35)',
-                  cursor: canAdvance() && !loading ? 'pointer' : 'default',
-                  fontFamily: 'system-ui,sans-serif',
+                  color: !loading ? '#fff' : 'rgba(255,255,255,0.35)',
                 }}
               >
-                {loading ? 'Creating…' : step === 3 ? 'Create stage' : 'Continue'}
+                {loading ? 'Creating…' : 'Create stage'}
               </button>
             </div>
           )}

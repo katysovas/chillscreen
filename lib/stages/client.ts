@@ -1,4 +1,5 @@
 import type { UserStagePublic, StageStream, StagePresetId } from '@/lib/stages/types';
+import type { StageStreamPasteMode } from '@/lib/stages/parseStream';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
 import type { FestieOwner } from '@/lib/festie/types';
 
@@ -11,6 +12,12 @@ export type ParseStreamResult =
   | { ok: true; stream: StageStream }
   | { ok: false; reason: string; message: string };
 
+export type ParseStreamsBulkResult =
+  | { ok: true; streams: StageStream[]; skipped: number; totalFound: number }
+  | { ok: false; reason: string; message: string };
+
+export type ParseStageStreamsResult = ParseStreamResult | ParseStreamsBulkResult;
+
 export async function checkStageSlug(slug: string): Promise<SlugCheckResult> {
   const res = await fetch(`/api/stages/check-slug?slug=${encodeURIComponent(slug)}`);
   const data = await res.json() as SlugCheckResult & { error?: string };
@@ -18,26 +25,45 @@ export async function checkStageSlug(slug: string): Promise<SlugCheckResult> {
   return data;
 }
 
-export async function parseStageStreamUrl(url: string): Promise<ParseStreamResult> {
+export async function parseStageStreams(
+  url: string,
+  mode: StageStreamPasteMode,
+  opts?: { existingVideoIds?: string[]; maxToAdd?: number },
+): Promise<ParseStageStreamsResult> {
   const res = await fetch('/api/stages/parse-stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({
+      url,
+      mode,
+      existingVideoIds: opts?.existingVideoIds,
+      maxToAdd: opts?.maxToAdd,
+    }),
   });
-  const data = await res.json() as ParseStreamResult | { error?: string; message?: string; reason?: string };
+  const data = await res.json() as ParseStageStreamsResult & { error?: string; message?: string };
   if (!res.ok) {
     const errBody = data as { message?: string; error?: string };
     return {
       ok: false,
       reason: 'error',
-      message: errBody.message || errBody.error || 'Could not parse video.',
+      message: errBody.message || errBody.error || 'Could not parse videos.',
     };
   }
-  return data as ParseStreamResult;
+  return data;
+}
+
+export async function parseStageStreamUrl(url: string): Promise<ParseStreamResult> {
+  const result = await parseStageStreams(url, 'video');
+  if (!result.ok) return result;
+  if ('streams' in result) {
+    return { ok: false, reason: 'error', message: 'Unexpected bulk response.' };
+  }
+  return result;
 }
 
 export type CreateStagePayload = {
   slug: string;
+  displayName: string;
   preset: StagePresetId;
   sky?: SkyPeriod;
   streams: StageStream[];

@@ -144,6 +144,124 @@ export function parseYoutubeVideoId(input: string): string | null {
   return null;
 }
 
+/** Extract playlist id from a YouTube URL (`list=` query param). */
+export function parseYoutubePlaylistId(input: string): string | null {
+  const trimmed = input.trim();
+  if (/^PL[\w-]{10,}$/.test(trimmed) || /^UU[\w-]{10,}$/.test(trimmed) || /^OLAK[\w_-]+$/.test(trimmed)) {
+    return trimmed;
+  }
+  try {
+    const url = trimmed.startsWith('http') ? new URL(trimmed) : new URL(`https://${trimmed}`);
+    if (!url.hostname.includes('youtube.com') && !url.hostname.includes('youtu.be')) return null;
+    const list = url.searchParams.get('list');
+    return list && list.length >= 10 ? list : null;
+  } catch {
+    return null;
+  }
+}
+
+export type YoutubeChannelRef =
+  | { kind: 'id'; channelId: string }
+  | { kind: 'handle'; handle: string };
+
+/** Channel URL, @handle, or bare UC… channel id. */
+export function parseYoutubeChannelRef(input: string): YoutubeChannelRef | null {
+  const trimmed = input.trim();
+  if (/^UC[\w-]{22}$/.test(trimmed)) return { kind: 'id', channelId: trimmed };
+  if (trimmed.startsWith('@')) {
+    const handle = trimmed.slice(1).replace(/\/$/, '');
+    return handle ? { kind: 'handle', handle } : null;
+  }
+  try {
+    const url = trimmed.startsWith('http') ? new URL(trimmed) : new URL(`https://${trimmed}`);
+    if (!url.hostname.includes('youtube.com')) return null;
+    const channelMatch = url.pathname.match(/^\/channel\/(UC[\w-]{22})/);
+    if (channelMatch?.[1]) return { kind: 'id', channelId: channelMatch[1] };
+    const handleMatch = url.pathname.match(/^\/@([\w.-]+)/);
+    if (handleMatch?.[1]) return { kind: 'handle', handle: handleMatch[1] };
+  } catch {
+    /* invalid URL */
+  }
+  return null;
+}
+
+/** Ordered video ids from a playlist (public playlists only). */
+export async function fetchYoutubePlaylistVideoIds(
+  playlistId: string,
+  apiKey: string,
+  maxResults: number,
+): Promise<string[]> {
+  const ids: string[] = [];
+  let pageToken: string | undefined;
+
+  while (ids.length < maxResults) {
+    const listUrl = new URL('https://www.googleapis.com/youtube/v3/playlistItems');
+    listUrl.searchParams.set('part', 'contentDetails');
+    listUrl.searchParams.set('playlistId', playlistId);
+    listUrl.searchParams.set('maxResults', String(Math.min(50, maxResults - ids.length)));
+    listUrl.searchParams.set('key', apiKey);
+    if (pageToken) listUrl.searchParams.set('pageToken', pageToken);
+
+    const res = await fetch(listUrl);
+    if (!res.ok) {
+      throw new Error(`YouTube playlist failed: ${res.status} ${await res.text()}`);
+    }
+
+    const data = await res.json() as {
+      items?: { contentDetails?: { videoId?: string } }[];
+      nextPageToken?: string;
+    };
+
+    for (const item of data.items ?? []) {
+      const videoId = item.contentDetails?.videoId;
+      if (videoId && /^[\w-]{11}$/.test(videoId)) ids.push(videoId);
+    }
+
+    pageToken = data.nextPageToken;
+    if (!pageToken || (data.items ?? []).length === 0) break;
+  }
+
+  return ids;
+}
+
+/** Uploads playlist id for a channel (@handle or UC… id). */
+export async function fetchYoutubeChannelUploadsPlaylistId(
+  ref: YoutubeChannelRef,
+  apiKey: string,
+): Promise<string> {
+  const channelsUrl = new URL('https://www.googleapis.com/youtube/v3/channels');
+  channelsUrl.searchParams.set('part', 'contentDetails');
+  channelsUrl.searchParams.set('key', apiKey);
+  if (ref.kind === 'id') {
+    channelsUrl.searchParams.set('id', ref.channelId);
+  } else {
+    channelsUrl.searchParams.set('forHandle', ref.handle);
+  }
+
+  const res = await fetch(channelsUrl);
+  if (!res.ok) {
+    throw new Error(`YouTube channel failed: ${res.status} ${await res.text()}`);
+  }
+
+  const data = await res.json() as {
+    items?: { contentDetails?: { relatedPlaylists?: { uploads?: string } } }[];
+  };
+
+  const playlistId = data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!playlistId) throw new Error('Channel not found or has no public uploads.');
+  return playlistId;
+}
+
+/** Recent uploads from a channel — newest first. */
+export async function fetchYoutubeChannelVideoIds(
+  ref: YoutubeChannelRef,
+  apiKey: string,
+  maxResults: number,
+): Promise<string[]> {
+  const uploadsPlaylistId = await fetchYoutubeChannelUploadsPlaylistId(ref, apiKey);
+  return fetchYoutubePlaylistVideoIds(uploadsPlaylistId, apiKey, maxResults);
+}
+
 function isYoutubeQuotaError(status: number, body: string): boolean {
   return status === 429 || (status === 403 && body.toLowerCase().includes('quota'));
 }

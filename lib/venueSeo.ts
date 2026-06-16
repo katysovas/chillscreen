@@ -167,6 +167,27 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'AI festie',
     ],
   },
+  'creator-chill': {
+    title: 'Chill Stage',
+    metaTitle: 'Chill Creator Stage — Custom Sets & AI Festies',
+    description: 'A relaxed creator stage on WhichStage.',
+    longDescription: 'Custom creator stage template with open-field chill vibes.',
+    keywords: ['creator stage', 'chill stage'],
+  },
+  'creator-live': {
+    title: 'Live Stage',
+    metaTitle: 'Live Creator Stage — Custom Sets & AI Festies',
+    description: 'A live-energy creator stage on WhichStage.',
+    longDescription: 'Custom creator stage template with festival main-stage energy.',
+    keywords: ['creator stage', 'live stage'],
+  },
+  'creator-cinema': {
+    title: 'Cinema Stage',
+    metaTitle: 'Cinema Creator Stage — Custom Sets & AI Festies',
+    description: 'A cinema-style creator stage on WhichStage.',
+    longDescription: 'Custom creator stage template with screen and spotlight mood.',
+    keywords: ['creator stage', 'cinema stage'],
+  },
 };
 
 export function venueSeoForRoute(route: VenueRoute): VenueSeo {
@@ -184,7 +205,9 @@ export function venuePathForRoute(route: VenueRoute): string {
 
 /** All stage entries for sitemaps, feeds, and index pages. */
 export function allStageSeoEntries(): Array<VenueSeo & { route: VenueRoute; slug: string; path: string }> {
-  return (Object.keys(VENUE_SEO) as VenueRoute[]).map(route => ({
+  return (Object.keys(VENUE_SEO) as VenueRoute[])
+    .filter(route => !route.startsWith('creator-'))
+    .map(route => ({
     route,
     slug: venueSlugForRoute(route),
     path: venuePathForRoute(route),

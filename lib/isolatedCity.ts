@@ -4,7 +4,7 @@ import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
 import type { StageAnchorKind } from '@/lib/stageAnchor';
 import { cityTileIndex } from '@/lib/spawn';
 import type { VenueRoute } from '@/lib/venueSlugs';
-import { venueSlugForRoute } from '@/lib/venueSlugs';
+import { isCreatorTemplateRoute, venueSlugForRoute } from '@/lib/venueSlugs';
 import { worldOffForVenueRoute } from '@/lib/venueRoutes';
 import { cinemaMidX, deepSpaceMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
 import { midOriginForTile, midWidthForTile, nearGndTiles, TOWN_MID_W } from '@/lib/worldTileGeometry';
@@ -23,6 +23,9 @@ export function cityTileForRoute(route: VenueRoute): number {
     case 'coachella':
       return cityTileIndex('san_diego');
     case 'tentaroo':
+    case 'creator-chill':
+    case 'creator-live':
+    case 'creator-cinema':
       return cityTileIndex('tentaroo');
     case 'forest':
       return cityTileIndex('forest');
@@ -85,16 +88,22 @@ function deepSpaceWorldOffBounds(): { min: number; max: number } {
   };
 }
 
-/**
- * Walk bounds in worldOff units — derived from the MID tile, which defines the
- * city's visual extent (mid vx = worldOff * MID_PARALLAX). The rendered art
- * spans the city tile plus its two town connectors; these bounds keep the view
- * fully covered so the world never visibly ends, while letting the player walk
- * past the city edge into the connector town.
- */
+/** Creator templates — walk the full mid tile without bleeding into connector towns. */
+function creatorTemplateWorldOffBounds(route: VenueRoute): { min: number; max: number } {
+  const tile = cityTileForRoute(route);
+  const origin = midOriginForTile(tile);
+  const width = midWidthForTile(tile);
+  const full = fullCityWorldOffBounds(route);
+  return {
+    min: Math.max(full.min, origin / MID_PARALLAX),
+    max: Math.min(full.max, (origin + width - VIEW_WIDTH) / MID_PARALLAX),
+  };
+}
+
 export function cityWorldOffBounds(route: VenueRoute): { min: number; max: number } {
   if (route === 'cinema') return cinemaWorldOffBounds();
   if (route === 'deep-space') return deepSpaceWorldOffBounds();
+  if (isCreatorTemplateRoute(route)) return creatorTemplateWorldOffBounds(route);
   return fullCityWorldOffBounds(route);
 }
 
@@ -116,8 +125,10 @@ export function nearIsolatedMidTiles(
   tileIndex: number,
   route?: VenueRoute,
 ): (vx: number) => number[] {
-  // Deep Space — orbit stage only; skip connector town cottages on the flanks.
-  if (route === 'deep-space') return () => [tileIndex];
+  // Deep Space + creator templates — single mid tile (no flanking town/stage art).
+  if (route === 'deep-space' || (route && isCreatorTemplateRoute(route))) {
+    return () => [tileIndex];
+  }
   return () => [tileIndex - 1, tileIndex, tileIndex + 1];
 }
 
@@ -126,7 +137,7 @@ export function nearIsolatedMidTiles(
  * moves at GND_F=1 — far from `gndOriginForTile(midTileIndex)`. Render the
  * tiles actually under the viewport so the street is always present.
  */
-export function nearIsolatedGndTiles(_tileIndex: number): (x: number) => number[] {
+export function nearIsolatedGndTiles(_tileIndex: number, _route?: VenueRoute): (x: number) => number[] {
   return x => nearGndTiles(x);
 }
 
@@ -142,6 +153,7 @@ const EDGE_ORDER: VenueRoute[] = [
 ];
 
 function edgeIndexForRoute(route: VenueRoute): number {
+  if (isCreatorTemplateRoute(route)) return EDGE_ORDER.indexOf('tentaroo');
   const i = EDGE_ORDER.indexOf(route);
   return i === -1 ? 0 : i; // cinema shares the SF tile
 }
@@ -171,6 +183,9 @@ export function stageAnchorForRoute(route: VenueRoute): StageAnchorKind | null {
     case 'edc':
       return 'edc';
     case 'tentaroo':
+    case 'creator-chill':
+    case 'creator-live':
+    case 'creator-cinema':
       return 'which-stage';
     case 'forest':
       return 'forest';
@@ -193,6 +208,9 @@ export function stageChannelForRoute(route: VenueRoute):
     case 'coachella': return 'coachella';
     case 'edc': return 'edc';
     case 'tentaroo': return 'which-stage';
+    case 'creator-chill': return 'which-stage';
+    case 'creator-live': return 'which-stage';
+    case 'creator-cinema': return 'which-stage';
     case 'forest': return 'forest';
     case 'silent-disco': return 'silent-disco';
   }

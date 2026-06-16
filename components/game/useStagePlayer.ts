@@ -56,9 +56,10 @@ type UseStagePlayerResult = {
 
 const EMPTY_CREATOR_STAGE: UserStagePublic = {
   slug: '',
+  displayName: '',
   ownerId: '',
   festieId: '',
-  preset: 'thefarm',
+  preset: 'chill',
   streams: [],
   nowPlayingIndex: 0,
   createdAt: 0,

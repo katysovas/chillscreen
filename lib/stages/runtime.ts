@@ -1,5 +1,5 @@
 import type { UserStagePublic } from '@/lib/stages/types';
-import { venueRouteForStagePreset } from '@/lib/stages/presets';
+import { venueRouteForStagePreset, DEFAULT_STAGE_PRESET } from '@/lib/stages/presets';
 import type { VenueRoute } from '@/lib/venueSlugs';
 
 /** URL path prefix for creator-owned stages. */
@@ -14,7 +14,7 @@ export function partyRoomIdForStageSlug(slug: string): string {
 }
 
 export function venueRouteForUserStage(stage: UserStagePublic): VenueRoute {
-  return venueRouteForStagePreset(stage.preset);
+  return venueRouteForStagePreset(stage.preset ?? DEFAULT_STAGE_PRESET);
 }
 
 export function nowPlayingStream(stage: UserStagePublic) {

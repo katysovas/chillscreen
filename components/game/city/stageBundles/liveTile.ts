@@ -60,6 +60,11 @@ export function coachellaLiveOnTile({
   );
 }
 
+/** Creator templates share the farm tile geometry. */
+export function creatorTemplateLiveOnTile(args: LiveArgs): boolean {
+  return whichStageLiveOnTile(args);
+}
+
 export function whichStageLiveOnTile(args: LiveArgs): boolean {
   const { tileIndex: t, vx } = args;
   if (!isTentarooTile(t)) return false;

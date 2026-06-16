@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { CreateStageWizard } from '@/components/create/CreateStageWizard';
+import { CreateStageShell } from '@/components/create/CreateStageShell';
 import { buildPageMetadata } from '@/lib/siteMetadata';
 
 export const metadata: Metadata = buildPageMetadata({
@@ -10,5 +10,5 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export default function CreatePage() {
-  return <CreateStageWizard />;
+  return <CreateStageShell />;
 }

@@ -8,7 +8,14 @@ export type VenueRoute =
   | 'deep-space'
   | 'tentaroo'
   | 'forest'
-  | 'silent-disco';
+  | 'silent-disco'
+  | 'creator-chill'
+  | 'creator-live'
+  | 'creator-cinema';
+
+export function isCreatorTemplateRoute(route: VenueRoute): boolean {
+  return route === 'creator-chill' || route === 'creator-live' || route === 'creator-cinema';
+}
 
 /** Canonical URL path segments — slugified in-game venue names. */
 export function venueSlugForRoute(route: VenueRoute): string {
@@ -31,6 +38,12 @@ export function venueSlugForRoute(route: VenueRoute): string {
       return 'forest';
     case 'silent-disco':
       return 'silent-disco';
+    case 'creator-chill':
+      return 'creator-chill';
+    case 'creator-live':
+      return 'creator-live';
+    case 'creator-cinema':
+      return 'creator-cinema';
   }
 }
 

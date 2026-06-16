@@ -186,13 +186,15 @@ const S = `
   }
 `;
 
-function DeepSpaceView({
+export function DeepSpaceView({
   screen,
   videoTitle,
+  signTitle = 'DEEP SPACE',
   titleKey = 'idle',
 }: {
   screen: ReactNode;
   videoTitle: string;
+  signTitle?: string;
   titleKey?: string | number;
 }) {
   return (
@@ -204,7 +206,7 @@ function DeepSpaceView({
         <div className="ds-pylon ds-pylon--r" />
       </div>
       <div className="ds-sign">
-        <div className="ds-title">DEEP SPACE</div>
+        <div className="ds-title">{signTitle}</div>
         <div key={titleKey} className="ds-sub">{videoTitle}</div>
       </div>
       <div className="ds-orbit-strip" aria-hidden />

@@ -39,6 +39,9 @@ const SIGN_STYLE: Record<VenueRoute, { icon: string; accent: string }> = {
   'silent-disco': { icon: '🎧', accent: '#ff3df0' },
   cinema: { icon: '🎬', accent: '#b88c3d' },
   'deep-space': { icon: '🛸', accent: '#36e0c8' },
+  'creator-chill': { icon: '🎸', accent: '#50b87a' },
+  'creator-live': { icon: '🌌', accent: '#c064ff' },
+  'creator-cinema': { icon: '🎬', accent: '#50b87a' },
 };
 
 type EdgeSignProps = {

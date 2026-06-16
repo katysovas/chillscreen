@@ -4,6 +4,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { STAGE_CONFIG } from '@/lib/stages/config';
 import type { CharacterDef } from '@/components/game/characters';
 
+const INTRO_SEEN_KEY_PREFIX = 'whichstage:creator-npc-intro:';
+
+function creatorNpcIntroSeen(slug: string): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return sessionStorage.getItem(`${INTRO_SEEN_KEY_PREFIX}${slug}`) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markCreatorNpcIntroSeen(slug: string): void {
+  try {
+    sessionStorage.setItem(`${INTRO_SEEN_KEY_PREFIX}${slug}`, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
 function mulberry32(seed: number): () => number {
   let t = seed >>> 0;
   return () => {
@@ -16,13 +35,15 @@ function mulberry32(seed: number): () => number {
 
 /**
  * Gradually reveal 3–5 ambient NPCs on creator stage entry (visual-only).
- * Returns the subset of the cast that should be visible so far.
+ * Stagger runs once per stage per browser tab; reloads show the full crowd immediately.
  */
 export function useStaggeredCreatorNpcCast(
   fullCast: CharacterDef[],
   enabled: boolean,
   seed: number,
+  stageSlug: string | null = null,
 ): CharacterDef[] {
+  const skipStagger = Boolean(stageSlug && creatorNpcIntroSeen(stageSlug));
   const [visibleCount, setVisibleCount] = useState(0);
 
   const targetCount = useMemo(() => {
@@ -50,16 +71,28 @@ export function useStaggeredCreatorNpcCast(
       setVisibleCount(0);
       return;
     }
+    if (skipStagger) {
+      setVisibleCount(targetCount);
+      return;
+    }
     setVisibleCount(0);
     const timers = delays.map((ms, i) =>
-      window.setTimeout(() => setVisibleCount(i + 1), ms),
+      window.setTimeout(() => {
+        const next = i + 1;
+        setVisibleCount(next);
+        if (stageSlug && next >= targetCount) {
+          markCreatorNpcIntroSeen(stageSlug);
+        }
+      }, ms),
     );
     return () => timers.forEach(clearTimeout);
-  }, [enabled, delays]);
+  }, [enabled, delays, skipStagger, stageSlug, targetCount]);
 
   return useMemo(() => {
-    if (!enabled || visibleCount === 0) return [];
-    const cap = Math.min(visibleCount, targetCount, fullCast.length);
-    return fullCast.slice(0, cap);
-  }, [enabled, visibleCount, targetCount, fullCast]);
+    if (!enabled) return [];
+    const cap = Math.min(targetCount, fullCast.length);
+    if (skipStagger) return fullCast.slice(0, cap);
+    if (visibleCount === 0) return [];
+    return fullCast.slice(0, Math.min(visibleCount, cap));
+  }, [enabled, skipStagger, visibleCount, targetCount, fullCast]);
 }

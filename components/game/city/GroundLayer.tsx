@@ -7,6 +7,7 @@ import {
   nearGndTiles,
 } from '@/lib/parallax';
 import { nearIsolatedGndTiles } from '@/lib/isolatedCity';
+import type { VenueRoute } from '@/lib/venueRoutes';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
 import { skipGroundStreetProp, skipGroundStreetTree } from '@/lib/stageTreeExclusion';
 import { SleepingCatsGround } from '../SleepingCat';
@@ -31,6 +32,7 @@ type GroundLayerProps = {
   bareGround?: boolean;
   /** When set, only this city tile is rendered (isolated city mode). */
   isolatedTileIndex?: number;
+  deepLinkRoute?: VenueRoute;
 };
 
 function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = false, bareGround = false) {
@@ -156,10 +158,10 @@ function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = fal
 }
 
 export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
-  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, bareGround = false, isolatedTileIndex }, ref) {
+  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, bareGround = false, isolatedTileIndex, deepLinkRoute }, ref) {
     const vx = worldOff * GND_F;
     const nearTiles = isolatedTileIndex != null
-      ? nearIsolatedGndTiles(isolatedTileIndex)
+      ? nearIsolatedGndTiles(isolatedTileIndex, deepLinkRoute)
       : nearGndTiles;
 
     return (

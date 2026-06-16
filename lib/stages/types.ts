@@ -6,18 +6,28 @@ export type StageStream = {
   url: string;
   videoId: string;
   title: string;
+  /** YouTube channel / artist name — preferred for on-stage marquee. */
+  channelTitle?: string;
   thumbnail: string;
   /** Seconds — required for PartyKit sync; null if unknown at paste time. */
   durationSec: number | null;
 };
 
-export type StagePresetId = 'thefarm' | 'forest' | 'thedesert' | 'silent-disco';
+export type StagePresetId =
+  | 'chill'
+  | 'live'
+  | 'cinema'
+  | 'thefarm'
+  | 'forest'
+  | 'thedesert'
+  | 'silent-disco';
 
 export type UserStageRow = {
   slug: string;
   owner_id: string;
   festie_id: string;
   preset: StagePresetId;
+  display_name: string;
   sky: SkyPeriod | null;
   streams: StageStream[];
   now_playing_index: number;
@@ -28,6 +38,7 @@ export type UserStageRow = {
 
 export type UserStagePublic = {
   slug: string;
+  displayName: string;
   ownerId: string;
   festieId: string;
   preset: StagePresetId;

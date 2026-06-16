@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
 import type { UserStagePublic } from '@/lib/stages/types';
 import { nowPlayingStream } from '@/lib/stages/runtime';
+import { streamChannelMarquee } from '@/lib/stages/streamLabel';
 import { registerStagePlayerNudge, registerStagePlayerPlayingListener } from '@/lib/stagePlayerRegistry';
 import {
   applyYouTubeAudio,
@@ -91,8 +92,8 @@ export function useCreatorStagePlayer({
       onNowPlayingRef.current?.(null);
       return;
     }
-    onNowPlayingRef.current?.(stream.title ?? null);
-  }, [live, stream?.videoId, stream?.title]);
+    onNowPlayingRef.current?.(stream ? streamChannelMarquee(stream) || null : null);
+  }, [live, stream?.videoId, stream?.channelTitle, stream?.title]);
 
   const onPlayingRef = useRef<() => void>(() => {});
 

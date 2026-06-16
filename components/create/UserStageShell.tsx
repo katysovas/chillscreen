@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import SFCityLoader from '@/components/game/SFCityLoader';
 import { VenueBootOverlay } from '@/components/game/VenueBootOverlay';
 import { CreatorStageProvider } from '@/lib/stages/CreatorStageContext';
-import { CreatorStageOwnerPanel } from '@/components/create/CreatorStageOwnerPanel';
 import { venueRouteForUserStage } from '@/lib/stages/runtime';
 import type { UserStagePublic } from '@/lib/stages/types';
 import { worldOffForVenueRoute } from '@/lib/venueRoutes';
@@ -38,7 +37,6 @@ export function UserStageShell({ stage }: Props) {
         venueRoute={venueRoute}
         serverBootOverlay
       />
-      <CreatorStageOwnerPanel />
     </CreatorStageProvider>
   );
 }

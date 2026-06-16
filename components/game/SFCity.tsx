@@ -116,6 +116,8 @@ import { npcChatLabelForId } from '@/lib/npcRoster';
 import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
+import { CHILL_FOREST_BG } from '@/components/game/city/chill/constants';
+import { SPACE_BG } from '@/components/game/city/live/constants';
 import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { BottomControlPanel, SignOutIcon } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
@@ -233,6 +235,9 @@ export default function SFCity({
 
   const effectiveVenueRoute = venueRoute;
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
+  const isCreatorChill = effectiveVenueRoute === 'creator-chill';
+  const isCreatorLive = effectiveVenueRoute === 'creator-live';
+  const isCreatorCustomSky = isCreatorChill || isCreatorLive;
   /** Stable per tab session — matches stage picker crowd counts. */
   const ambientSeed = useMemo(
     () => ambientSeedForRoute(effectiveVenueRoute),
@@ -248,6 +253,7 @@ export default function SFCity({
     fullAmbientCast,
     Boolean(creatorStage),
     ambientSeed,
+    creatorStage?.slug ?? null,
   );
   const npcCast = creatorStage ? staggeredAmbientCast : fullAmbientCast;
   /** Wait for equipped prop chunks before showing player/NPCs (avoids balloon-then-props flicker). */
@@ -1122,6 +1128,13 @@ export default function SFCity({
     setGndScrollWorldOff(spawnWorldOff);
     gameWorldOffRef.current = spawnWorldOff;
     updateViewBoxes(spawnWorldOff);
+    lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
+    lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
+  // updateViewBoxes is stable (no deps)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spawnWorldOff]);
+
+  useLayoutEffect(() => {
     npcWorldXRefs.current = effectiveNpcCast.map(cfg =>
       npcWorldXByIdRef.current.get(cfg.id) ?? Infinity,
     );
@@ -1131,11 +1144,7 @@ export default function SFCity({
       if (next.length === prev.length && next.every((v, i) => v === prev[i])) return prev;
       return next;
     });
-    lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
-    lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
-  // updateViewBoxes is stable (no deps)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spawnWorldOff, effectiveNpcCastKey]);
+  }, [effectiveNpcCastKey]);
 
   const navigateToCity = useCallback((route: VenueRoute) => {
     setShowCityPicker(false);
@@ -2047,7 +2056,29 @@ export default function SFCity({
       }}
     >
       <div>
-        {isDeepSpace ? (
+        {isCreatorChill ? (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: CHILL_FOREST_BG,
+            }}
+          />
+        ) : isCreatorLive ? (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: SPACE_BG,
+            }}
+          />
+        ) : isDeepSpace ? (
           <SpaceParallaxStars />
         ) : (
           <SkyLayer
@@ -2056,10 +2087,10 @@ export default function SFCity({
             initialViewBoxX={spawnWorldOff * SKY_F}
           />
         )}
-        {!isDeepSpace && (
+        {!isDeepSpace && !isCreatorCustomSky && (
           <SkyCloudsLayer ref={cloudsRef} period={skyPeriod} initialViewBoxX={spawnWorldOff * SKY_F} />
         )}
-        {!isDeepSpace && <SkyCreaturesLayer period={skyPeriod} />}
+        {!isDeepSpace && !isCreatorCustomSky && <SkyCreaturesLayer period={skyPeriod} />}
         <MidLayer
           ref={midRef}
           foregroundRef={midForegroundRef}
@@ -2074,10 +2105,17 @@ export default function SFCity({
           worldOff={gndScrollWorldOff}
           hideTrees={mobileDevice || isDeepSpace}
           hideStreetDogs={effectiveVenueRoute === 'silent-disco' || isDeepSpace}
-          bareGround={isDeepSpace}
+          bareGround={isDeepSpace || isCreatorLive}
           isolatedTileIndex={isolatedTile}
+          deepLinkRoute={effectiveVenueRoute}
         />
-        {!isDeepSpace && <CabanaForegroundLayer ref={cabanaRef} worldOff={gndScrollWorldOff} />}
+        {!isDeepSpace && (
+          <CabanaForegroundLayer
+            ref={cabanaRef}
+            worldOff={gndScrollWorldOff}
+            venueRoute={effectiveVenueRoute}
+          />
+        )}
 
         {!homePreview && (
           <GroundScoreLayer

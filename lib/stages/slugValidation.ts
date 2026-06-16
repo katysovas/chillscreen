@@ -41,6 +41,17 @@ export function normalizeStageSlug(raw: string): string {
   return raw.trim().toLowerCase().replace(/_/g, '-');
 }
 
+/** Derive a URL slug from a human-readable stage name. */
+export function stageNameToSlug(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, STAGE_CONFIG.SLUG_MAX_LENGTH);
+}
+
 export function isValidStageSlugFormat(slug: string): boolean {
   if (slug.length < STAGE_CONFIG.SLUG_MIN_LENGTH || slug.length > STAGE_CONFIG.SLUG_MAX_LENGTH) {
     return false;

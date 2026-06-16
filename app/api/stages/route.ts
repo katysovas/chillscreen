@@ -71,6 +71,11 @@ export async function POST(req: Request) {
     const preset = presetDef.id as StagePresetId;
     const sky = parseSky(body.sky);
 
+    const displayName = String(body.displayName ?? body.display_name ?? '').trim().slice(0, 48);
+    if (!displayName) {
+      return NextResponse.json({ error: 'Stage name is required.' }, { status: 400 });
+    }
+
     const streams = parseStreamsJson(body.streams);
     if (!streams.length) {
       return NextResponse.json({ error: 'Add at least one stream.' }, { status: 400 });
@@ -99,7 +104,7 @@ export async function POST(req: Request) {
       const existingStage = await getUserStageByOwnerId(sessionUserId);
       if (existingStage) {
         return NextResponse.json(
-          { error: 'You already have a stage (one per account in v1).' },
+          { error: 'You already have a stage.' },
           { status: 409 },
         );
       }
@@ -121,6 +126,7 @@ export async function POST(req: Request) {
 
       const row = await insertUserStage({
         slug,
+        displayName,
         ownerId: sessionUserId,
         festieId: updatedFestie.id,
         preset,
@@ -176,7 +182,7 @@ export async function POST(req: Request) {
     const existingStage = await getUserStageByOwnerId(festie.user_id);
     if (existingStage) {
       return NextResponse.json(
-        { error: 'You already have a stage (one per account in v1).' },
+        { error: 'You already have a stage.' },
         { status: 409 },
       );
     }
@@ -193,6 +199,7 @@ export async function POST(req: Request) {
 
     const row = await insertUserStage({
       slug,
+      displayName,
       ownerId: festie.user_id,
       festieId: festie.id,
       preset,
@@ -210,6 +217,10 @@ export async function POST(req: Request) {
     return res;
   } catch (err) {
     console.error('[api/stages POST]', err);
+    const code = (err as { code?: string }).code;
+    if (code === '23505') {
+      return NextResponse.json({ error: slugRejectMessage('taken') }, { status: 409 });
+    }
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
