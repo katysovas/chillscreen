@@ -1,15 +1,21 @@
 import type { HTMLAttributes, CSSProperties } from 'react';
 import {
+  CITY_BACKDROP_FILL,
   CITY_BLEND_HREF,
   CITY_MID_TILE_H,
   CITY_MID_TILE_W,
+  CITY_SKYLINE_BLEED_X,
   CITY_SKYLINE_HREF,
+  CITY_SKYLINE_OFFSET_X,
 } from './constants';
 import './cityBackdrop.css';
 
 const backdropStyle = {
   '--city-blend-image': `url(${CITY_BLEND_HREF})`,
   '--city-skyline-image': `url(${CITY_SKYLINE_HREF})`,
+  '--city-backdrop-fill': CITY_BACKDROP_FILL,
+  '--city-skyline-offset-x': `${CITY_SKYLINE_OFFSET_X}px`,
+  '--city-skyline-bleed-x': `${CITY_SKYLINE_BLEED_X}px`,
 } as CSSProperties;
 
 /** Animated city skyline — twirling color wash over hard-light skyline. */
