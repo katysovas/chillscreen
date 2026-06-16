@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { listActiveFestiesForStage } from '@/lib/festie/db';
-import { parseStageSlug } from '@/lib/festie/validation';
+import { resolveStageSlugForFestie } from '@/lib/stages/resolveStageSlug';
 import { verifyChatterRequest } from '@/lib/npcChatter/auth';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(req.url);
-  const stageSlug = parseStageSlug(url.searchParams.get('stage_slug'));
+  const stageSlug = await resolveStageSlugForFestie(url.searchParams.get('stage_slug') ?? '');
   if (!stageSlug) {
     return NextResponse.json({ error: 'Invalid stage_slug' }, { status: 400 });
   }

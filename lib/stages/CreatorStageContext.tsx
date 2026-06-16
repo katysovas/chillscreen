@@ -1,0 +1,91 @@
+'use client';
+
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from 'react';
+import type { UserStagePublic } from '@/lib/stages/types';
+import { fetchUserStage, touchStagePresence, updateUserStage } from '@/lib/stages/client';
+
+type CreatorStageContextValue = {
+  stage: UserStagePublic;
+  isOwner: boolean;
+  setStage: (stage: UserStagePublic) => void;
+  swapNowPlaying: (index: number) => Promise<void>;
+};
+
+const CreatorStageContext = createContext<CreatorStageContextValue | null>(null);
+
+type ProviderProps = {
+  initialStage: UserStagePublic;
+  ownerUserId?: string | null;
+  currentUserId?: string | null;
+  children: ReactNode;
+};
+
+export function CreatorStageProvider({
+  initialStage,
+  ownerUserId,
+  currentUserId,
+  children,
+}: ProviderProps) {
+  const [stage, setStage] = useState(initialStage);
+  const isOwner = Boolean(ownerUserId && currentUserId && ownerUserId === currentUserId);
+
+  const swapNowPlaying = useCallback(async (index: number) => {
+    if (!isOwner) return;
+    const updated = await updateUserStage(stage.slug, { nowPlayingIndex: index });
+    setStage(updated);
+  }, [isOwner, stage.slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const fresh = await fetchUserStage(stage.slug);
+        if (!cancelled && fresh) setStage(fresh);
+      } catch {
+        /* ignore transient poll errors */
+      }
+    };
+    const id = window.setInterval(() => { void poll(); }, 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [stage.slug]);
+
+  const value = useMemo(
+    () => ({ stage, isOwner, setStage, swapNowPlaying }),
+    [stage, isOwner, swapNowPlaying],
+  );
+
+  return (
+    <CreatorStageContext.Provider value={value}>
+      {children}
+    </CreatorStageContext.Provider>
+  );
+}
+
+export function useOptionalCreatorStage(): UserStagePublic | null {
+  return useContext(CreatorStageContext)?.stage ?? null;
+}
+
+export function useCreatorStageControls(): CreatorStageContextValue | null {
+  return useContext(CreatorStageContext);
+}
+
+/** Touch presence on mount and periodically while on a creator stage. */
+export function useCreatorStagePresence(slug: string | null): void {
+  useEffect(() => {
+    if (!slug) return;
+    void touchStagePresence(slug);
+    const id = window.setInterval(() => { void touchStagePresence(slug); }, 60_000);
+    return () => window.clearInterval(id);
+  }, [slug]);
+}

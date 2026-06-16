@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
+import { useOptionalCreatorStage } from '@/lib/stages/CreatorStageContext';
 import { currentSchedule, subscribeStageSync, useStageChannel } from '@/lib/stageClock';
 import type { StageChannel, StageVideo } from '@/lib/stageVideos';
 import { registerStagePlayerNudge, registerStagePlayerPlayingListener } from '@/lib/stagePlayerRegistry';
@@ -13,6 +14,8 @@ import {
   scheduleYouTubePlaybackKicks,
   stageEmbedSrc,
 } from '@/lib/youtubePlayer';
+import { useCreatorStagePlayer } from './useCreatorStagePlayer';
+import type { UserStagePublic } from '@/lib/stages/types';
 
 export type { StageVideo } from '@/lib/stageVideos';
 
@@ -51,24 +54,33 @@ type UseStagePlayerResult = {
   onIframeLoad: () => void;
 };
 
-/**
- * YouTube stage player for isolated-city pages — one live channel per URL.
- * When `live`, the iframe mounts immediately and autoplays on page load.
- */
-export function useStagePlayer({
-  live, channel, iframeRef, onNowPlaying, alwaysMuted = false,
-}: UseStagePlayerOptions): UseStagePlayerResult {
-  const { video, vidKey } = useStageChannel(channel, live);
+const EMPTY_CREATOR_STAGE: UserStagePublic = {
+  slug: '',
+  ownerId: '',
+  festieId: '',
+  preset: 'thefarm',
+  streams: [],
+  nowPlayingIndex: 0,
+  createdAt: 0,
+  lastActiveAt: 0,
+  tier: 'active',
+  takenDown: false,
+};
+
+function useSyncedStagePlayer({
+  live, channel, iframeRef, onNowPlaying, alwaysMuted = false, enabled = true,
+}: UseStagePlayerOptions & { enabled?: boolean }): UseStagePlayerResult {
+  const { video, vidKey } = useStageChannel(channel, live && enabled);
   const [embedReady, setEmbedReady] = useState(false);
 
   useEffect(() => {
-    if (!live) {
+    if (!enabled || !live) {
       setEmbedReady(false);
       return;
     }
     setEmbedReady(false);
     return scheduleYouTubeEmbed(() => setEmbedReady(true));
-  }, [live, vidKey]);
+  }, [enabled, live, vidKey]);
 
   const applyAudio = useCallback(
     (iframe: HTMLIFrameElement | null) => {
@@ -87,12 +99,12 @@ export function useStagePlayer({
   onNowPlayingRef.current = onNowPlaying;
 
   const src = useMemo(() => {
-    if (!live || !embedReady || !video) return '';
+    if (!enabled || !live || !embedReady || !video) return '';
     const sched = currentSchedule(channel);
     const url = stageEmbedSrc(video.id, sched?.offsetSec ?? 0);
     console.log(`[${channel}] embed`, video.id, video.title, sched?.offsetSec ?? 0, url);
     return url;
-  }, [live, embedReady, video?.id, video?.title, channel, vidKey]);
+  }, [enabled, live, embedReady, video?.id, video?.title, channel, vidKey]);
 
   useEffect(() => {
     if (!live || !video) {
@@ -177,5 +189,42 @@ export function useStagePlayer({
     return () => { onNowPlayingRef.current?.(null); };
   }, [live]);
 
-  return { video: live ? video : undefined, src, vidKey, onIframeLoad };
+  return { video: live && enabled ? video : undefined, src, vidKey, onIframeLoad };
+}
+
+/**
+ * YouTube stage player for isolated-city pages — one live channel per URL.
+ * When `live`, the iframe mounts immediately and autoplays on page load.
+ * User-created stages use lineup now-playing via CreatorStageContext.
+ */
+export function useStagePlayer(opts: UseStagePlayerOptions): UseStagePlayerResult {
+  const creatorStage = useOptionalCreatorStage();
+  const creator = useCreatorStagePlayer({
+    live: opts.live,
+    stage: creatorStage ?? EMPTY_CREATOR_STAGE,
+    iframeRef: opts.iframeRef,
+    onNowPlaying: opts.onNowPlaying,
+    alwaysMuted: opts.alwaysMuted,
+    enabled: Boolean(creatorStage),
+  });
+  const synced = useSyncedStagePlayer({ ...opts, enabled: !creatorStage });
+
+  if (creatorStage) {
+    const stream = creator.stream;
+    const video: StageVideo | undefined = stream
+      ? {
+        id: stream.videoId,
+        title: stream.title,
+        durationSec: stream.durationSec ?? undefined,
+      }
+      : undefined;
+    return {
+      video: opts.live ? video : undefined,
+      src: creator.src,
+      vidKey: creator.vidKey,
+      onIframeLoad: creator.onIframeLoad,
+    };
+  }
+
+  return synced;
 }

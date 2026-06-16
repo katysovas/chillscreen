@@ -1,0 +1,217 @@
+import { requireDb } from '@/lib/db';
+import { STAGE_CONFIG, stageLifecycleTier } from '@/lib/stages/config';
+import { parseStreamsJson } from '@/lib/stages/parseStream';
+import { stagePresetById } from '@/lib/stages/presets';
+import type {
+  StagePresetId,
+  StageStream,
+  UserStagePublic,
+  UserStageRow,
+} from '@/lib/stages/types';
+import type { SkyPeriod } from '@/lib/skyTimeOfDay';
+
+function parseSky(raw: unknown): SkyPeriod | null {
+  if (raw == null) return null;
+  const s = String(raw).trim().toLowerCase();
+  if (s === 'night' || s === 'morning' || s === 'day' || s === 'evening') return s;
+  return null;
+}
+
+function rowToPublic(row: UserStageRow, now = Date.now()): UserStagePublic {
+  const takenDown = row.taken_down_at != null;
+  const lastActiveAt = new Date(row.last_active_at).getTime();
+  const tier = takenDown ? 'reclaimable' as const : stageLifecycleTier(lastActiveAt, now);
+  return {
+    slug: row.slug,
+    ownerId: row.owner_id,
+    festieId: row.festie_id,
+    preset: row.preset as StagePresetId,
+    sky: parseSky(row.sky) ?? undefined,
+    streams: parseStreamsJson(row.streams),
+    nowPlayingIndex: Number(row.now_playing_index) || 0,
+    createdAt: new Date(row.created_at).getTime(),
+    lastActiveAt,
+    tier,
+    takenDown,
+  };
+}
+
+function parseRow(raw: Record<string, unknown>): UserStageRow {
+  return {
+    slug: String(raw.slug),
+    owner_id: String(raw.owner_id),
+    festie_id: String(raw.festie_id),
+    preset: String(raw.preset) as StagePresetId,
+    sky: raw.sky != null ? parseSky(raw.sky) : null,
+    streams: parseStreamsJson(raw.streams),
+    now_playing_index: Number(raw.now_playing_index) || 0,
+    created_at: raw.created_at instanceof Date ? raw.created_at : new Date(String(raw.created_at)),
+    last_active_at: raw.last_active_at instanceof Date
+      ? raw.last_active_at
+      : new Date(String(raw.last_active_at)),
+    taken_down_at: raw.taken_down_at != null
+      ? (raw.taken_down_at instanceof Date
+        ? raw.taken_down_at
+        : new Date(String(raw.taken_down_at)))
+      : null,
+  };
+}
+
+export function toUserStagePublic(row: UserStageRow): UserStagePublic {
+  return rowToPublic(row);
+}
+
+export async function isStageSlugTaken(slug: string): Promise<boolean> {
+  const sql = requireDb();
+  const rows = await sql`
+    SELECT 1 FROM user_stages WHERE slug = ${slug} AND taken_down_at IS NULL LIMIT 1
+  `;
+  return rows.length > 0;
+}
+
+export async function getUserStageBySlug(slug: string): Promise<UserStageRow | null> {
+  const sql = requireDb();
+  const rows = await sql`
+    SELECT slug, owner_id, festie_id, preset, sky, streams, now_playing_index,
+           created_at, last_active_at, taken_down_at
+    FROM user_stages
+    WHERE slug = ${slug}
+    LIMIT 1
+  `;
+  const row = rows[0] as Record<string, unknown> | undefined;
+  if (!row) return null;
+  return parseRow(row);
+}
+
+export async function getUserStagePublicBySlug(slug: string): Promise<UserStagePublic | null> {
+  const row = await getUserStageBySlug(slug);
+  if (!row) return null;
+  return rowToPublic(row);
+}
+
+export async function getUserStageByOwnerId(ownerId: string): Promise<UserStageRow | null> {
+  const sql = requireDb();
+  const rows = await sql`
+    SELECT slug, owner_id, festie_id, preset, sky, streams, now_playing_index,
+           created_at, last_active_at, taken_down_at
+    FROM user_stages
+    WHERE owner_id = ${ownerId}::uuid AND taken_down_at IS NULL
+    LIMIT 1
+  `;
+  const row = rows[0] as Record<string, unknown> | undefined;
+  if (!row) return null;
+  return parseRow(row);
+}
+
+export async function touchUserStageActive(slug: string): Promise<void> {
+  const sql = requireDb();
+  await sql`
+    UPDATE user_stages
+    SET last_active_at = now()
+    WHERE slug = ${slug} AND taken_down_at IS NULL
+  `;
+}
+
+export type CreateUserStageInput = {
+  slug: string;
+  ownerId: string;
+  festieId: string;
+  preset: StagePresetId;
+  sky?: SkyPeriod | null;
+  streams: StageStream[];
+  nowPlayingIndex?: number;
+};
+
+export async function insertUserStage(input: CreateUserStageInput): Promise<UserStageRow> {
+  if (!stagePresetById(input.preset)) {
+    throw new Error('Invalid stage preset');
+  }
+  const sql = requireDb();
+  const streamsJson = JSON.stringify(input.streams);
+  const rows = await sql`
+    INSERT INTO user_stages (
+      slug, owner_id, festie_id, preset, sky, streams, now_playing_index
+    ) VALUES (
+      ${input.slug},
+      ${input.ownerId}::uuid,
+      ${input.festieId}::uuid,
+      ${input.preset},
+      ${input.sky ?? null},
+      ${streamsJson}::jsonb,
+      ${input.nowPlayingIndex ?? 0}
+    )
+    RETURNING slug, owner_id, festie_id, preset, sky, streams, now_playing_index,
+              created_at, last_active_at, taken_down_at
+  `;
+  return parseRow(rows[0] as Record<string, unknown>);
+}
+
+export type UpdateUserStagePatch = {
+  streams?: StageStream[];
+  nowPlayingIndex?: number;
+  preset?: StagePresetId;
+  sky?: SkyPeriod | null;
+};
+
+export async function updateUserStage(
+  slug: string,
+  ownerId: string,
+  patch: UpdateUserStagePatch,
+): Promise<UserStageRow | null> {
+  const existing = await getUserStageBySlug(slug);
+  if (!existing || existing.owner_id !== ownerId || existing.taken_down_at) return null;
+
+  if (patch.preset && !stagePresetById(patch.preset)) return null;
+
+  const sql = requireDb();
+  const streams = patch.streams ?? existing.streams;
+  const nowPlayingIndex = patch.nowPlayingIndex ?? existing.now_playing_index;
+  const preset = patch.preset ?? existing.preset;
+  const sky = patch.sky !== undefined ? patch.sky : existing.sky;
+
+  const rows = await sql`
+    UPDATE user_stages SET
+      streams = ${JSON.stringify(streams)}::jsonb,
+      now_playing_index = ${nowPlayingIndex},
+      preset = ${preset},
+      sky = ${sky},
+      last_active_at = now()
+    WHERE slug = ${slug} AND owner_id = ${ownerId}::uuid AND taken_down_at IS NULL
+    RETURNING slug, owner_id, festie_id, preset, sky, streams, now_playing_index,
+              created_at, last_active_at, taken_down_at
+  `;
+  if (!rows.length) return null;
+  return parseRow(rows[0] as Record<string, unknown>);
+}
+
+/** Owner or admin takedown — marks stage dead immediately. */
+export async function takedownUserStage(slug: string): Promise<boolean> {
+  const sql = requireDb();
+  const rows = await sql`
+    UPDATE user_stages
+    SET taken_down_at = now()
+    WHERE slug = ${slug} AND taken_down_at IS NULL
+    RETURNING slug
+  `;
+  return rows.length > 0;
+}
+
+/** Reclaim dormant slugs — run opportunistically on slug check. */
+export async function reclaimStaleStageSlugs(now = Date.now()): Promise<number> {
+  const sql = requireDb();
+  const reclaimBefore = new Date(now - STAGE_CONFIG.RECLAIM_WINDOW_MS).toISOString();
+  const rows = await sql`
+    DELETE FROM user_stages
+    WHERE taken_down_at IS NULL
+      AND last_active_at < ${reclaimBefore}::timestamptz
+    RETURNING slug
+  `;
+  return rows.length;
+}
+
+export async function isValidActiveStageSlug(slug: string): Promise<boolean> {
+  const row = await getUserStageBySlug(slug);
+  if (!row || row.taken_down_at) return false;
+  const pub = rowToPublic(row);
+  return pub.tier !== 'reclaimable';
+}

@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isAdminAuthenticatedAsync, isAdminEnabled } from '@/lib/adminAuthCore';
+import {
+  isValidStageSlugFormat,
+  normalizeStageSlug,
+  RESERVED_STAGE_SLUGS,
+} from '@/lib/stages/slugValidation';
 import { parseVenueSlug } from '@/lib/venueSlugs';
 
 /** App routes that are not venue deep links. */
-const PASSTHROUGH = new Set(['privacy', 'support', 'admin']);
+const PASSTHROUGH = new Set(['privacy', 'support', 'admin', 'create', 'stages']);
 
 /** Legacy venue slugs → canonical paths. */
 const LEGACY_VENUE_REDIRECTS: Record<string, string> = {
@@ -84,6 +89,13 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url, 308);
     }
     if (parseVenueSlug(segment)) return NextResponse.next();
+  }
+
+  if (segments.length === 2 && segments[0] === 'watch') {
+    const norm = normalizeStageSlug(segments[1]!);
+    if (!RESERVED_STAGE_SLUGS.has(norm) && isValidStageSlugFormat(norm)) {
+      return NextResponse.next();
+    }
   }
 
   return NextResponse.redirect(new URL('/', request.url));

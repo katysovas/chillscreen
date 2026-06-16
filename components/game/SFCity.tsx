@@ -91,6 +91,12 @@ import {
   stageChannelForRoute,
   stageWorldOffForRoute,
 } from '@/lib/isolatedCity';
+import { partyRoomIdForStageSlug } from '@/lib/stages/runtime';
+import {
+  useOptionalCreatorStage,
+  useCreatorStagePresence,
+} from '@/lib/stages/CreatorStageContext';
+import { useStaggeredCreatorNpcCast } from '@/lib/stages/useStaggeredCreatorNpcCast';
 import { setVenueDressCode } from '@/lib/dressCode';
 import { WelcomePopup } from './WelcomePopup';
 import { CityNavSigns } from './CityNavSigns';
@@ -213,7 +219,10 @@ export default function SFCity({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const skyPeriod  = useSkyPeriod();
+  const autoSkyPeriod = useSkyPeriod();
+  const creatorStage = useOptionalCreatorStage();
+  const skyPeriod = creatorStage?.sky ?? autoSkyPeriod;
+  useCreatorStagePresence(creatorStage?.slug ?? null);
 
   const [mobileDevice, setMobileDevice] = useState(
     () => typeof window !== 'undefined' && isMobileLoungeDevice(),
@@ -231,10 +240,16 @@ export default function SFCity({
   );
   // Generated crowd for this stage (+ local Buz). Falls back to legacy cast when
   // no generated NPCs are saved for the channel yet.
-  const npcCast = useMemo(
+  const fullAmbientCast = useMemo(
     () => npcCastForVenue(effectiveVenueRoute, ambientSeed),
     [effectiveVenueRoute, ambientSeed],
   );
+  const staggeredAmbientCast = useStaggeredCreatorNpcCast(
+    fullAmbientCast,
+    Boolean(creatorStage),
+    ambientSeed,
+  );
+  const npcCast = creatorStage ? staggeredAmbientCast : fullAmbientCast;
   /** Wait for equipped prop chunks before showing player/NPCs (avoids balloon-then-props flicker). */
   const [crowdVisualsReady, setCrowdVisualsReady] = useState(false);
   const isolatedTile = cityTileForRoute(effectiveVenueRoute);
@@ -713,7 +728,9 @@ export default function SFCity({
     profileRef,
     userIdRef,
     spawnWorldOffRef: gameWorldOffRef,
-    roomId: partyRoomIdForRoute(effectiveVenueRoute),
+    roomId: creatorStage
+      ? partyRoomIdForStageSlug(creatorStage.slug)
+      : partyRoomIdForRoute(effectiveVenueRoute),
     onPeerOpen:   pid => beginPeerChatRef.current?.(pid, false),
     onPeerClose:  pid => { if (peerChatRef.current === pid) endPeerChatRef.current?.(false); },
     onPeerLeft:   pid => { if (peerChatRef.current === pid) endPeerChatRef.current?.(false); },
@@ -752,7 +769,7 @@ export default function SFCity({
 
   const easelChannel = stageChannelForRoute(effectiveVenueRoute);
   const easelStageSlug = stageSlugFromVenueRoute(effectiveVenueRoute);
-  const easelSessionEnabled = !homePreview;
+  const easelSessionEnabled = !homePreview && !creatorStage;
   const easelUserActive = TEST_EASEL_ON_LOAD || mp.connected || (!showWelcome && !showCityPicker);
   const activeEaselSession = useEaselSession(
     easelStageSlug,

@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import { getUserStagePublicBySlug } from '@/lib/stages/db';
+import { getDb } from '@/lib/db';
 import SFCityLoader from '@/components/game/SFCityLoader';
 import { VenueBootOverlay } from '@/components/game/VenueBootOverlay';
 import { JsonLd } from '@/components/JsonLd';
 import { invitePageCopy, parseFriendParam } from '@/lib/inviteSeo';
 import { breadcrumbJsonLd, festivalStageJsonLd, webPageJsonLd } from '@/lib/jsonLd';
 import { buildPageMetadata } from '@/lib/siteMetadata';
+import { stagePathForSlug } from '@/lib/stages/runtime';
 import { venueSeoForRoute, venuePathForRoute } from '@/lib/venueSeo';
 import { parseVenueSlug, VENUE_SLUGS, worldOffForVenueRoute } from '@/lib/venueRoutes';
 
@@ -45,7 +48,16 @@ export async function generateMetadata({
 export default async function VenuePage({ params, searchParams }: VenuePageProps) {
   const { venue } = await params;
   const route = parseVenueSlug(venue);
-  if (!route) redirect('/');
+
+  if (!route) {
+    if (getDb()) {
+      const userStage = await getUserStagePublicBySlug(venue.toLowerCase());
+      if (userStage && !userStage.takenDown && userStage.tier !== 'reclaimable') {
+        redirect(stagePathForSlug(userStage.slug));
+      }
+    }
+    redirect('/');
+  }
 
   const seo = venueSeoForRoute(route);
   const friendName = parseFriendParam((await searchParams).friend);
