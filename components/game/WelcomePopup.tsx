@@ -16,6 +16,7 @@ import { isMobileLoungeDevice, MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
 import { LOGO_PATH, SITE_TAGLINE } from '@/lib/site';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
+import { ForgotPasswordPanel } from '@/components/auth/ForgotPasswordPanel';
 
 type Props = {
   balloonColor: string;
@@ -198,6 +199,7 @@ export function WelcomePopup({
   const [mobile, setMobile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
 
   const nameValid = isValidFestieName(draft);
   const passwordValid = isValidFestiePassword(password);
@@ -274,6 +276,7 @@ export function WelcomePopup({
   const setAuthMode = (mode: AuthIntent) => {
     setAuthIntent(mode);
     setError(null);
+    setForgotPasswordOpen(false);
   };
 
   const primaryBtnBg = (enabled: boolean) => {
@@ -323,6 +326,13 @@ export function WelcomePopup({
 
           {showAuth && (
             <>
+              {forgotPasswordOpen ? (
+                <ForgotPasswordPanel
+                  initialName={draft}
+                  onBack={() => setForgotPasswordOpen(false)}
+                />
+              ) : (
+                <>
               {!signInOnly && (
                 <AuthTabs authIntent={authIntent} onChange={setAuthMode} />
               )}
@@ -387,6 +397,35 @@ export function WelcomePopup({
                 </label>
               </div>
 
+              {!isCreate && (
+                <p style={{
+                  margin: '0 0 12px',
+                  textAlign: 'center',
+                  fontFamily: 'system-ui,sans-serif',
+                }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setForgotPasswordOpen(true);
+                    }}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      padding: 0,
+                      fontSize: 13,
+                      color: 'rgba(126,184,255,0.9)',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </p>
+              )}
+
               {error && (
                 <p style={{
                   color: '#ff9d9d',
@@ -417,6 +456,8 @@ export function WelcomePopup({
                     ? 'Create festie →'
                     : 'Sign in →'}
               </button>
+                </>
+              )}
             </>
           )}
 

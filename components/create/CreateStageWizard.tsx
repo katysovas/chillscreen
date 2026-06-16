@@ -31,6 +31,7 @@ import {
 import type { StagePresetId, StageStream } from '@/lib/stages/types';
 import { CREATOR_STAGE_TEMPLATES } from '@/lib/stages/presets';
 import { LOGO_PATH, SITE_TAGLINE, SITE_URL } from '@/lib/site';
+import { ForgotPasswordPanel } from '@/components/auth/ForgotPasswordPanel';
 
 const TOTAL_STEPS = 3;
 const STAGE_EXISTS_MSG = 'You already have a stage.';
@@ -163,6 +164,8 @@ function hasValidInviteEmail(raw: string): boolean {
   return parseInviteEmails(raw).some(isValidNotifyEmail);
 }
 
+const TEMPLATE_THUMB_PLACEHOLDER = '/images/city.jpg';
+
 function TemplatePicker({
   preset,
   onChange,
@@ -193,7 +196,8 @@ function TemplatePicker({
             onClick={() => onChange(template.id)}
             style={{
               borderRadius: 12,
-              padding: '12px 10px',
+              padding: 0,
+              overflow: 'hidden',
               border: active
                 ? '1px solid rgba(111,207,151,0.65)'
                 : '1px solid rgba(255,255,255,0.14)',
@@ -205,15 +209,30 @@ function TemplatePicker({
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: 14, fontWeight: 700 }}>{template.label}</div>
-            <div style={{
-              marginTop: 4,
-              fontSize: 11,
-              lineHeight: 1.35,
-              color: active ? 'rgba(234,255,246,0.72)' : 'rgba(255,255,255,0.45)',
-            }}
-            >
-              {template.tagline}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={TEMPLATE_THUMB_PLACEHOLDER}
+              alt=""
+              draggable={false}
+              style={{
+                display: 'block',
+                width: '100%',
+                height: 64,
+                objectFit: 'cover',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+              }}
+            />
+            <div style={{ padding: '10px 8px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{template.label}</div>
+              <div style={{
+                marginTop: 4,
+                fontSize: 11,
+                lineHeight: 1.35,
+                color: active ? 'rgba(234,255,246,0.72)' : 'rgba(255,255,255,0.45)',
+              }}
+              >
+                {template.tagline}
+              </div>
             </div>
           </button>
         );
@@ -422,6 +441,7 @@ export function CreateStageWizard() {
   const [inviteHint, setInviteHint] = useState<string | null>(null);
   const [mobile, setMobile] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -755,12 +775,20 @@ export function CreateStageWizard() {
 
           {displayStep === 1 && (
             <>
+              {forgotPasswordOpen ? (
+                <ForgotPasswordPanel
+                  initialName={draft.festieName}
+                  onBack={() => setForgotPasswordOpen(false)}
+                />
+              ) : (
+                <>
               {!signedInFestie && (
                 <AuthTabs
                   authIntent={authIntent}
                   onChange={mode => {
                     setAuthIntent(mode);
                     setError(null);
+                    setForgotPasswordOpen(false);
                   }}
                 />
               )}
@@ -849,6 +877,35 @@ export function CreateStageWizard() {
                 </div>
               )}
 
+              {!signedInFestie && authIntent === 'signin' && (
+                <p style={{
+                  margin: '0 0 12px',
+                  textAlign: 'center',
+                  fontFamily: 'system-ui,sans-serif',
+                }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      setForgotPasswordOpen(true);
+                    }}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      padding: 0,
+                      fontSize: 13,
+                      color: 'rgba(126,184,255,0.9)',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </p>
+              )}
+
               {displayStep === 1 && error && (
                 <>
                   <p style={{
@@ -909,6 +966,8 @@ export function CreateStageWizard() {
                       ? 'Continue →'
                       : 'Sign in →'}
               </button>
+                </>
+              )}
             </>
           )}
 
@@ -939,7 +998,7 @@ export function CreateStageWizard() {
                 </p>
               )}
 
-              <label style={{ ...LABEL, marginTop: 24 }}>Template</label>
+              <label style={{ ...LABEL, marginTop: 24 }}>Choose theme</label>
               <TemplatePicker
                 preset={draft.preset}
                 onChange={next => setDraft(d => ({ ...d, preset: next }))}

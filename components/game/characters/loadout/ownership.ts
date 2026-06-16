@@ -24,15 +24,14 @@ export function hasGlowsticksEquipped(loadout: CharacterLoadout | undefined): bo
   return loadout?.hand === PARTY_GLOWSTICKS_ID;
 }
 
-/** Psychedelic screen bursts — while the mystery sticker is in owned. */
+/** Psychedelic screen bursts — only while the mystery sticker is equipped. */
 export function hasStickerTripActive(loadout: CharacterLoadout | undefined): boolean {
-  if (!loadout) return false;
-  return loadout.owned?.includes(PARTY_STICKER_ID) ?? false;
+  return loadout?.hand === PARTY_STICKER_ID;
 }
 
 /** @deprecated use hasStickerTripActive */
 export function hasStickerEquipped(loadout: CharacterLoadout | undefined): boolean {
-  return loadout?.hand === PARTY_STICKER_ID;
+  return hasStickerTripActive(loadout);
 }
 
 /** Confetti cannon bursts — while confetti cannon is in the hand slot. */

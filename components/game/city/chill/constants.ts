@@ -1,10 +1,10 @@
+import { CHILL_FOREST_BG } from '@/lib/creatorVenueBackdrop';
 import { minStageScale } from '@/lib/stageViewport';
+
+export { CHILL_FOREST_BG };
 
 /** Mid-layer scene art — customize per template folder. */
 export const CREATOR_SCENE_HREF = '/images/cities/creator-chill-scene.svg?v=1';
-
-/** Chill forest backdrop — mint field behind parallax trees. */
-export const CHILL_FOREST_BG = '#D1EBD4';
 
 export const CHILL_MID_TILE_W = 2600;
 export const CHILL_MID_TILE_H = 900;

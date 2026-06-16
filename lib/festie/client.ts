@@ -87,20 +87,25 @@ export async function fetchSessionRecapSince(
   since: string,
   festieName?: string,
 ): Promise<FestieSessionRecap | null> {
-  const data = await fetchFestieEvents(since);
-  const who = festieName?.trim() ?? '';
-  const events = who
-    ? filterOwnerCentricRecapEvents(data.events, who)
-    : data.events;
-  const recap: FestieSessionRecap = {
-    since: data.since,
-    until: new Date().toISOString(),
-    events,
-    coinsEarned: data.coinsEarned,
-    chatCount: countFestieChatsInEvents(events),
-    festieName: who || undefined,
-  };
-  return shouldShowSessionRecap(recap, who || undefined) ? recap : null;
+  try {
+    const data = await fetchFestieEvents(since);
+    const who = festieName?.trim() ?? '';
+    const events = who
+      ? filterOwnerCentricRecapEvents(data.events, who)
+      : data.events;
+    const recap: FestieSessionRecap = {
+      since: data.since,
+      until: new Date().toISOString(),
+      events,
+      coinsEarned: data.coinsEarned,
+      chatCount: countFestieChatsInEvents(events),
+      festieName: who || undefined,
+    };
+    return shouldShowSessionRecap(recap, who || undefined) ? recap : null;
+  } catch (err) {
+    console.warn('[festie] session recap fetch failed', err);
+    return null;
+  }
 }
 
 /** Recent activity for Life modal history — no minimum event threshold. */
@@ -208,6 +213,27 @@ export async function updatePassword(
     ...fetchOpts,
     method: 'PATCH',
     body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+}
+
+export async function requestPasswordReset(name: string, email: string): Promise<string> {
+  const res = await fetch('/api/auth/forgot-password', {
+    ...fetchOpts,
+    method: 'POST',
+    body: JSON.stringify({ name, email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+  return String(data.message ?? 'If an account with that festie name and email exists, we sent a password reset link.');
+}
+
+export async function resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
+  const res = await fetch('/api/auth/reset-password', {
+    ...fetchOpts,
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? res.statusText);

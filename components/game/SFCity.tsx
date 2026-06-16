@@ -116,8 +116,6 @@ import { npcChatLabelForId } from '@/lib/npcRoster';
 import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
-import { CHILL_FOREST_BG } from '@/components/game/city/chill/constants';
-import { SPACE_BG } from '@/components/game/city/live/constants';
 import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { BottomControlPanel, SignOutIcon } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
@@ -194,6 +192,10 @@ const TEST_CHAT_CONNECT_ON_LOAD = false;
 
 /** Preview session recap modal on load with sample events (testing). */
 const TEST_FESTIE_RECAP_ON_LOAD = false;
+
+/** Creator venue sky fills — keep in sync with lib/creatorVenueBackdrop.ts */
+const CHILL_FOREST_BG = '#D1EBD4';
+const SPACE_BG = '#160016';
 
 // ─── NPC cast ─────────────────────────────────────────────────────────────────
 

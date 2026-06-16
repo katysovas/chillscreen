@@ -26,8 +26,38 @@ type SFCityLoaderProps = SFCityProps & {
 };
 
 const FADE_MS = 320;
+const SF_CITY_CHUNK_RELOAD_KEY = 'sfCityChunkReload';
 
 type SFCityComponent = ComponentType<SFCityProps>;
+
+function isStaleChunkError(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('module factory is not available');
+}
+
+function reloadForStaleChunk(): boolean {
+  if (
+    process.env.NODE_ENV !== 'development'
+    || typeof sessionStorage === 'undefined'
+    || sessionStorage.getItem(SF_CITY_CHUNK_RELOAD_KEY)
+  ) {
+    return false;
+  }
+  sessionStorage.setItem(SF_CITY_CHUNK_RELOAD_KEY, '1');
+  window.location.reload();
+  return true;
+}
+
+/** Recover from Turbopack HMR serving a stale SFCity dependency graph. */
+async function importSFCity() {
+  try {
+    return await import('./SFCity');
+  } catch (err) {
+    if (isStaleChunkError(err) && reloadForStaleChunk()) {
+      return new Promise<typeof import('./SFCity')>(() => {});
+    }
+    throw err;
+  }
+}
 
 /** Code-split entry — keeps the main route JS small until the game is needed. */
 export default function SFCityLoader({
@@ -46,6 +76,19 @@ export default function SFCityLoader({
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+
+    const onStaleChunk = (event: PromiseRejectionEvent) => {
+      if (!isStaleChunkError(event.reason)) return;
+      event.preventDefault();
+      reloadForStaleChunk();
+    };
+
+    window.addEventListener('unhandledrejection', onStaleChunk);
+    return () => window.removeEventListener('unhandledrejection', onStaleChunk);
   }, []);
 
   useEffect(() => {
@@ -71,10 +114,13 @@ export default function SFCityLoader({
     }
 
     Promise.all([
-      import('./SFCity'),
+      importSFCity(),
       preloadStageRouteAssets(venueRoute),
     ]).then(([mod]) => {
       if (cancelled) return;
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(SF_CITY_CHUNK_RELOAD_KEY);
+      }
       loadedRef.current = true;
       setGame(() => mod.default);
 
@@ -88,6 +134,9 @@ export default function SFCityLoader({
           if (!cancelled) setShowShell(false);
         }, FADE_MS);
       }
+    }).catch((err) => {
+      if (isStaleChunkError(err) && reloadForStaleChunk()) return;
+      console.error('[SFCityLoader] failed to load game chunk', err);
     });
 
     return () => {

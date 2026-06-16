@@ -12,7 +12,7 @@ function randomBetween(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
-/** Full-screen WebGL noise trips while the mystery sticker is owned. */
+/** Full-screen WebGL noise trips while the mystery sticker is equipped. */
 export function StickerTripOverlay({ active }: { active: boolean }) {
   const [mounted, setMounted] = useState(false);
   const [burst, setBurst] = useState<TripShaderConfig | null>(null);
