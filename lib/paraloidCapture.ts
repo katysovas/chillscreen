@@ -1,4 +1,3 @@
-import html2canvas from 'html2canvas';
 import { LOGO_PATH, SITE_TAGLINE, SITE_URL } from './site';
 import { playParaloidShutter } from './playParaloidShutter';
 
@@ -103,6 +102,7 @@ async function captureViewport(
   root: HTMLElement,
   pixelRatio: number,
 ): Promise<HTMLCanvasElement> {
+  const { default: html2canvas } = await import('html2canvas');
   return html2canvas(root, {
     backgroundColor: null,
     scale: pixelRatio,

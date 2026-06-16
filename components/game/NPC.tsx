@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect, useMemo, memo } from 'react';
 import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
@@ -24,6 +24,7 @@ import {
 } from '@/lib/easel/canvasBlocking';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { setNpcMovementTick, getNpcSyncedScreenPct, isNpcNetworkFollowMode } from '@/lib/npcMovementRegistry';
+import { setNpcDancingToggle } from '@/lib/npcDancingRegistry';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
 import {
   NPC_FAR_WANDER_CHANCE,
@@ -75,7 +76,7 @@ type NPCProps = NPCConfig & {
   easelPaintingSlot?: number;
   easelStageSlug?: string;
   /** Fired when NPC pins at the easel stand (starts drawing clock). */
-  onEaselStationed?: () => void;
+  onEaselStationed?: (npcId: string) => void;
   /** Drawing subject — shown in chat bubble while status is painting. */
   easelPaintingLabel?: string | null;
   /** Chat-triggered drawing subject — canvas appears next to NPC. */
@@ -89,7 +90,6 @@ type NPCProps = NPCConfig & {
   /** Offline festie dim tier — reduced opacity and glow. */
   dimmed?: boolean;
   greetFacing: 'left' | 'right';
-  dancing?: boolean;
   greetingChat?: {
     name: string;
     npcTyping: boolean;
@@ -126,7 +126,7 @@ const NPC_OFFSCREEN_RIGHT = 122;
 const ON_SCREEN_SPAWN_MIN = 15;
 const ON_SCREEN_SPAWN_MAX = 85;
 
-export default function NPC({
+function NPC({
   characterId,
   index,
   name,
@@ -138,7 +138,7 @@ export default function NPC({
   easelPaintingLabel,
   chatPromptDrawingLabel,
   chatPromptCanvasWorldX,
-  paused, greeting, chatConnected = false, dimmed = false, greetFacing, dancing = false,   greetingChat,
+  paused, greeting, chatConnected = false, dimmed = false, greetFacing, greetingChat,
   spaceFloat = false,
 }: NPCProps) {
   const depthY = useMemo(() => crowdDepthOffsetPx(characterId), [characterId]);
@@ -153,6 +153,8 @@ export default function NPC({
 
   // ── Imperative animation state — updated directly to DOM, zero React cost ───
   const characterRef  = useRef<CharacterHandle>(null);
+  const greetingRef   = useRef(greeting);
+  greetingRef.current = greeting;
   const facingRef     = useRef<'left' | 'right'>(entryDirection);
   const walkingRef    = useRef(false);
   const onScreenRef   = useRef(true);
@@ -218,6 +220,17 @@ export default function NPC({
     }
   });
 
+  useLayoutEffect(() => {
+    setNpcDancingToggle(index, (d) => {
+      characterRef.current?.setDancing(d && !greetingRef.current);
+    });
+    return () => setNpcDancingToggle(index, null);
+  }, [index]);
+
+  useLayoutEffect(() => {
+    if (greeting) characterRef.current?.setDancing(false);
+  }, [greeting]);
+
   // ── Imperative helpers — update ref + Character DOM together ────────────────
   const applyFacing = (f: 'left' | 'right') => {
     if (f === facingRef.current) return;
@@ -234,7 +247,7 @@ export default function NPC({
     easelStationedRef.current = true;
     setEaselStationed(true);
     setEaselPainterReady(characterId, true);
-    onEaselStationed?.();
+    onEaselStationed?.(characterId);
     worldXRef.current = worldX;
     targetWorldRef.current = worldX;
     const pct = worldXToScreenPct(worldX, gameWorldOffRef.current, vw());
@@ -677,7 +690,6 @@ export default function NPC({
           // Initial values only — imperative setFacing/setWalking take over after mount.
           walking={walkingRef.current}
           facing={facingRef.current}
-          dancing={dancing && !greeting}
           spaceFloat={spaceFloat}
           balloonColor={balloonColor}
           loadout={loadout}
@@ -705,3 +717,46 @@ export default function NPC({
     </div>
   );
 }
+
+function greetingChatEqual(
+  a: NPCProps['greetingChat'],
+  b: NPCProps['greetingChat'],
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.name === b.name
+    && a.npcTyping === b.npcTyping
+    && a.messages === b.messages;
+}
+
+function areNpcPropsEqual(prev: NPCProps, next: NPCProps): boolean {
+  return prev.characterId === next.characterId
+    && prev.index === next.index
+    && prev.name === next.name
+    && prev.startX === next.startX
+    && prev.entryDelay === next.entryDelay
+    && prev.entryDirection === next.entryDirection
+    && prev.balloonColor === next.balloonColor
+    && prev.scale === next.scale
+    && prev.outfit === next.outfit
+    && prev.loadout === next.loadout
+    && prev.accessory === next.accessory
+    && prev.stageAnchor === next.stageAnchor
+    && prev.stageCrowd === next.stageCrowd
+    && prev.wanderAttractWorldX === next.wanderAttractWorldX
+    && prev.easelPaintingSlot === next.easelPaintingSlot
+    && prev.easelStageSlug === next.easelStageSlug
+    && prev.onEaselStationed === next.onEaselStationed
+    && prev.easelPaintingLabel === next.easelPaintingLabel
+    && prev.chatPromptDrawingLabel === next.chatPromptDrawingLabel
+    && prev.chatPromptCanvasWorldX === next.chatPromptCanvasWorldX
+    && prev.paused === next.paused
+    && prev.greeting === next.greeting
+    && prev.chatConnected === next.chatConnected
+    && prev.dimmed === next.dimmed
+    && prev.greetFacing === next.greetFacing
+    && prev.spaceFloat === next.spaceFloat
+    && greetingChatEqual(prev.greetingChat, next.greetingChat);
+}
+
+export default memo(NPC, areNpcPropsEqual);

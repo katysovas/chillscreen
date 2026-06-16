@@ -12,6 +12,7 @@ import { preloadStageRouteAssets } from '@/lib/stagePreload';
 import { hideVenueBootOverlay, keepVenueBootOverlay } from '@/lib/venueBoot';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { StageBootShell } from './StageBootShell';
+import { GameCharacterStyles } from './GameCharacterStyles';
 
 type SFCityProps = {
   spawnWorldOff?: number;
@@ -150,6 +151,7 @@ export default function SFCityLoader({
 
   return (
     <>
+      <GameCharacterStyles />
       {renderClientShell && (
         <StageBootShell visible={debugPin || shellVisible} />
       )}

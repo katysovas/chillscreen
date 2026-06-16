@@ -1,3 +1,5 @@
+import 'server-only';
+
 import sizeOf from 'image-size';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';

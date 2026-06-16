@@ -10,11 +10,10 @@ export type VenueRoute =
   | 'forest'
   | 'silent-disco'
   | 'creator-chill'
-  | 'creator-live'
   | 'creator-cinema';
 
 export function isCreatorTemplateRoute(route: VenueRoute): boolean {
-  return route === 'creator-chill' || route === 'creator-live' || route === 'creator-cinema';
+  return route === 'creator-chill' || route === 'creator-cinema';
 }
 
 /** Canonical URL path segments — slugified in-game venue names. */
@@ -40,8 +39,6 @@ export function venueSlugForRoute(route: VenueRoute): string {
       return 'silent-disco';
     case 'creator-chill':
       return 'creator-chill';
-    case 'creator-live':
-      return 'creator-live';
     case 'creator-cinema':
       return 'creator-cinema';
   }

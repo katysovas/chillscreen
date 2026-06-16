@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import PartySocket from 'partysocket';
 import type { FestiePublic } from '@/lib/festie/types';
 import type { CreatorStageSyncPayload } from '@/lib/stages/stageSync';
+import { mergeNpcSyncMap } from '@/lib/npcPositionSync';
 import {
   chatPairKey,
   decodeServer,
@@ -430,11 +431,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
           }
           break;
         case 'npc-positions-sync': {
-          const sync = npcSyncRef.current;
-          sync.clear();
-          for (const p of msg.positions) {
-            if (p.id && Number.isFinite(p.pct)) sync.set(p.id, p.pct);
-          }
+          mergeNpcSyncMap(npcSyncRef.current, msg.positions);
           break;
         }
         case 'npc-leader':

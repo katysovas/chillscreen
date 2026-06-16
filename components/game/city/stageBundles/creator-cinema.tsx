@@ -1,5 +1,4 @@
-import { CityBackdropLayer, CinemaTrussLabel } from '../cinema';
-import { ChillStage } from '../chill';
+import { CityBackdropLayer, CinemaStage, CinemaTrussLabel } from '../cinema';
 import { StageToiletsFlanking } from '../street/StageToiletRow';
 import { CINEMA_STAGE_MID_X, CINEMA_STAGE_TOILET_HALF } from '../cinema';
 import { creatorTemplateLiveOnTile } from './liveTile';
@@ -19,7 +18,7 @@ export const bundle = {
   },
   CityTileForeground(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileForeground']>>[0]) {
     return (
-      <ChillStage live={creatorTemplateLiveOnTile(props)} />
+      <CinemaStage live={creatorTemplateLiveOnTile(props)} />
     );
   },
   CityTileSkyLabels({ tileIndex: t }: { tileIndex: number }) {

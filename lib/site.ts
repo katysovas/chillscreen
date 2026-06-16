@@ -7,7 +7,7 @@ export const SITE_NAME = 'WhichStage';
 export const SITE_TAGLINE = 'Join the AI Festival';
 
 export const SITE_DESCRIPTION =
-  'WhichStage is a free browser festival world where you explore cities, campgrounds, and glowing forests, ' +
+  'WhichStage is a free browser festival world where you explore stages, campgrounds, and glowing forests, ' +
   'watch synchronized live sets, chat with real players and NPCs, and create an AI festival buddy that stays at the stage when you leave. No download.';
 
 export const SITE_KEYWORDS = [

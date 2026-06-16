@@ -177,9 +177,20 @@ export async function tryShuffleOnStageStart(slug: string): Promise<ShuffleStart
   return data;
 }
 
+let featuredStagesCache: Promise<FeaturedStageSummary[]> | null = null;
+
 export async function fetchFeaturedStages(): Promise<FeaturedStageSummary[]> {
-  const res = await fetch('/api/stages/featured');
-  const data = await res.json() as { stages?: FeaturedStageSummary[]; error?: string };
-  if (!res.ok) throw new Error(data.error ?? 'Failed to load featured stages');
-  return data.stages ?? [];
+  if (!featuredStagesCache) {
+    featuredStagesCache = fetch('/api/stages/featured')
+      .then(async res => {
+        const data = await res.json() as { stages?: FeaturedStageSummary[]; error?: string };
+        if (!res.ok) throw new Error(data.error ?? 'Failed to load featured stages');
+        return data.stages ?? [];
+      })
+      .catch(err => {
+        featuredStagesCache = null;
+        throw err;
+      });
+  }
+  return featuredStagesCache;
 }

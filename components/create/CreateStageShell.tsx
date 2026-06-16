@@ -5,10 +5,13 @@ import { CreateStageWizard } from './CreateStageWizard';
 
 const CREATE_BACKDROP_ROUTE = 'creator-chill' as const;
 
+import { GameCharacterStyles } from '@/components/game/GameCharacterStyles';
+
 /** `/create` — live stage backdrop with the wizard modal on top. */
 export function CreateStageShell() {
   return (
     <>
+      <GameCharacterStyles />
       <div
         aria-hidden
         style={{

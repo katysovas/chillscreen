@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import type { HTMLAttributes } from 'react';
 import { useOptionalCreatorStage } from '@/lib/stages/CreatorStageContext';
 import { nowPlayingStream } from '@/lib/stages/runtime';
-import { streamChannelMarquee } from '@/lib/stages/streamLabel';
+import { streamChannelMarquee, streamTitleMarquee } from '@/lib/stages/streamLabel';
 import { useStagePlayer } from '../../../useStagePlayer';
 import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../../StageVideoFrame';
 import { stageChannelForVenueKind } from '@/lib/venues';
@@ -31,7 +31,8 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
   const streamLabelY = C.WHICH_STAGE_STREAM_LABEL_Y ?? trussY + 38;
   const speakerY = C.WHICH_STAGE_SPEAKER_Y ?? trussY + 28;
   const rigW = 480;
-  const isChill = C.idPrefix === 'chill' || C.idPrefix === 'live';
+  const isChill = C.idPrefix === 'chill';
+  const isCinema = C.idPrefix === 'cinema';
   const marqueeGradId = `${C.idPrefix}-marquee`;
 
   const LENS_COLORS = [
@@ -63,7 +64,9 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
     const deck = GND;
     const creator = useOptionalCreatorStage();
     const stream = creator ? nowPlayingStream(creator) : null;
-    const artistMarquee = stream ? streamChannelMarquee(stream) : null;
+    const artistMarquee = stream
+      ? (isCinema ? streamTitleMarquee(stream) : streamChannelMarquee(stream))
+      : null;
 
     return (
       <>

@@ -1,16 +1,18 @@
 import CHARACTERS, { type CharacterDef } from '@/components/game/characters';
 import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
-import { easelPaintingContextForNpc, easelPaintingWorldNote } from '@/lib/easel/chatContext';
+import { easelPaintingWorldNote } from '@/lib/easel/chatContext';
 import { allGeneratedCharacters } from '@/lib/generatedNpcs';
-import { npcDisplayNameForCharacter } from '@/lib/npcRoster';
-import { bitcoinWorldNote, formatBitcoinUsd, type BitcoinSnapshot } from '@/lib/bitcoinPrice';
+import { npcDisplayNameForCharacter } from '@/lib/chatterCast';
+import { bitcoinWorldNote, type BitcoinSnapshot } from '@/lib/bitcoinPrice';
+import {
+  NPC_CHAT_MODEL,
+  NPC_TYPING_MS,
+  type ChatTurn,
+} from '@/lib/npcChatConstants';
 
-export type ChatTurn = { role: 'user' | 'assistant'; content: string };
-
-export const NPC_CHAT_MODEL = 'gpt-4.1-nano';
-
-/** Minimum time the typing bubble stays visible before the reply appears. */
-export const NPC_TYPING_MS = 1400;
+export type { ChatTurn } from '@/lib/npcChatConstants';
+export { NPC_CHAT_MODEL, NPC_TYPING_MS } from '@/lib/npcChatConstants';
+export { pickFallbackGreeting, pickFallbackReply } from '@/lib/npcChatFallbacks';
 
 /** Shared rules for every NPC conversation. */
 export const BASE_NPC_PROMPT = `You are an NPC in WhichStage — a cozy 2D walking game where players explore festival cities and live stages. A player just walked up to chat with you on the street.
@@ -76,30 +78,6 @@ Personality: ${character.personalityNotes}
 How you move through the world: ${movementVibe(character)}.
 ${cinemaWorldNote(cinemaNowPlaying)}
 ${concertWorldNote(concertNowPlaying)}${btcNote}${easelBlock}`;
-}
-
-export function pickFallbackReply(
-  character: CharacterDef,
-  bitcoinSnapshot?: BitcoinSnapshot | null,
-): string {
-  if (character.id === 'satosh' && bitcoinSnapshot) {
-    return `${formatBitcoinUsd(bitcoinSnapshot.usd)} right now — say that again?`;
-  }
-  return 'Hmm, lost my train of thought — say that again?';
-}
-
-export function pickFallbackGreeting(
-  character: CharacterDef,
-  bitcoinSnapshot?: BitcoinSnapshot | null,
-): string {
-  if (character.id === 'satosh' && bitcoinSnapshot) {
-    const change =
-      bitcoinSnapshot.change24hPct != null
-        ? `, ${bitcoinSnapshot.change24hPct >= 0 ? 'up' : 'down'} ${Math.abs(bitcoinSnapshot.change24hPct).toFixed(1)}% today`
-        : '';
-    return `₿ ${formatBitcoinUsd(bitcoinSnapshot.usd)}${change} — what's good?`;
-  }
-  return `Hey! I'm ${npcDisplayNameForCharacter({ id: character.id, name: character.name, modelId: character.modelId })}.`;
 }
 
 export function buildGreetingMessages(

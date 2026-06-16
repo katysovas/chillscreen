@@ -44,6 +44,7 @@ import { DEFAULT_STAGE_WALLPAPER_URL } from '@/lib/stages/wallpapers';
 import { StageSceneGallery, type StageGallerySelection } from '@/components/create/StageSceneGallery';
 import { LOGO_PATH, SITE_TAGLINE, SITE_URL } from '@/lib/site';
 import { ForgotPasswordPanel } from '@/components/auth/ForgotPasswordPanel';
+import { getPlayerSession, hydratePlayerSession } from '@/lib/player/session';
 
 const TOTAL_STEPS = 4;
 const STAGE_EXISTS_MSG = 'You already have a stage.';
@@ -359,6 +360,23 @@ function StageShareUrlRow({
   );
 }
 
+function BootstrapLoading() {
+  return (
+    <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+      <ModalHero />
+      <p style={{
+        margin: 0,
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.45)',
+        fontFamily: 'system-ui,sans-serif',
+      }}
+      >
+        Loading…
+      </p>
+    </div>
+  );
+}
+
 export function CreateStageWizard() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -410,12 +428,47 @@ export function CreateStageWizard() {
     ?? stageDisplayNameHint;
 
   useEffect(() => {
-    if (hasLocalFestieAccount()) setAuthIntent('signin');
-    const savedName = getLocalFestieName();
-    if (savedName) {
-      setDraft(d => ({ ...d, festieName: savedName }));
-    }
-    setBootstrapped(true);
+    let cancelled = false;
+
+    void (async () => {
+      if (hasLocalFestieAccount()) setAuthIntent('signin');
+      const savedName = getLocalFestieName();
+      if (savedName) {
+        setDraft(d => ({ ...d, festieName: savedName }));
+      }
+
+      let festie = getPlayerSession().festie;
+      let authenticated = getPlayerSession().authenticated;
+
+      if (!getPlayerSession().hydrated) {
+        const session = await hydratePlayerSession();
+        if (cancelled) return;
+        festie = session.festie;
+        authenticated = session.authenticated;
+      }
+
+      if (authenticated && festie) {
+        setSignedInFestie(festie);
+        setDraft(d => ({ ...d, festieName: festie!.name }));
+        try {
+          const existing = await fetchMyStage();
+          if (cancelled) return;
+          if (existing) {
+            setExistingStageSlug(existing.slug);
+            setError(STAGE_EXISTS_MSG);
+            setStep(1);
+          } else {
+            setStep(2);
+          }
+        } catch {
+          if (!cancelled) setStep(2);
+        }
+      }
+
+      if (!cancelled) setBootstrapped(true);
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -426,33 +479,7 @@ export function CreateStageWizard() {
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  useEffect(() => {
-    if (!bootstrapped) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const { authenticated, festie } = await fetchAuthMe();
-        if (cancelled || !authenticated || !festie) return;
-        const existing = await fetchMyStage();
-        if (cancelled) return;
-        if (existing) {
-          setSignedInFestie(festie);
-          setDraft(d => ({ ...d, festieName: festie.name }));
-          setExistingStageSlug(existing.slug);
-          setError(STAGE_EXISTS_MSG);
-          return;
-        }
-        setSignedInFestie(festie);
-        setDraft(d => ({ ...d, festieName: festie.name }));
-        setStep(2);
-      } catch {
-        /* ignore — user can sign in manually */
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [bootstrapped]);
-
-  const displayStep = bootstrapped ? step : 1;
+  const displayStep = step;
 
   const isCreate = authIntent === 'create';
   const nameValid = isValidFestieName(draft.festieName);
@@ -767,10 +794,10 @@ export function CreateStageWizard() {
         overflow: 'hidden',
         boxShadow: '0 32px 80px rgba(0,0,0,0.9)',
       }}>
-        <ProgressBar step={displayStep} />
+        <ProgressBar step={bootstrapped ? displayStep : 0} />
 
         <div style={{
-          padding: displayStep === 1 ? (mobile ? '28px 22px 24px' : '32px 36px 28px') : '28px 28px 24px',
+          padding: !bootstrapped || displayStep === 1 ? (mobile ? '28px 22px 24px' : '32px 36px 28px') : '28px 28px 24px',
           color: 'rgba(255,255,255,0.9)',
           ...(displayStep === 2 || displayStep === 3 ? {
             maxHeight: 'min(82vh, 920px)',
@@ -778,6 +805,10 @@ export function CreateStageWizard() {
             scrollbarWidth: 'thin' as const,
           } : {}),
         }}>
+          {!bootstrapped ? (
+            <BootstrapLoading />
+          ) : (
+            <>
           {displayStep === 1 ? <ModalHero /> : <StepHeader />}
 
           {displayStep === 1 && (
@@ -1387,6 +1418,8 @@ export function CreateStageWizard() {
                 {loading ? 'Creating…' : 'Create stage'}
               </button>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

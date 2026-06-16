@@ -82,6 +82,9 @@ export function useCreatorStagePlayer({
   const onNowPlayingRef = useRef(onNowPlaying);
   onNowPlayingRef.current = onNowPlaying;
 
+  const kickCancelRef = useRef<(() => void) | null>(null);
+  const audioTimersRef = useRef<number[]>([]);
+
   const src = useMemo(() => {
     if (!enabled || !live || !embedReady || !stream) return '';
     return stageEmbedSrc(stream.videoId, 0);
@@ -115,6 +118,18 @@ export function useCreatorStagePlayer({
 
   useEffect(() => {
     if (!live || !src) return;
+
+    return () => {
+      kickCancelRef.current?.();
+      kickCancelRef.current = null;
+      for (const id of audioTimersRef.current) window.clearTimeout(id);
+      audioTimersRef.current = [];
+      resetYouTubePlayerState(iframeRef.current);
+    };
+  }, [live, src, vidKey, iframeRef]);
+
+  useEffect(() => {
+    if (!live || !src) return;
     return registerStagePlayerNudge(nudgePlayback);
   }, [live, src, vidKey, nudgePlayback]);
 
@@ -130,10 +145,12 @@ export function useCreatorStagePlayer({
     if (!iframe || !live || !src) return;
     resetYouTubePlayerState(iframe);
     primeYouTubePlayback(iframe);
-    scheduleYouTubePlaybackKicks(iframe);
-    for (const ms of [300, 800, 2000, 4000, 6000]) {
-      window.setTimeout(() => applyAudio(iframe), ms);
-    }
+    kickCancelRef.current?.();
+    kickCancelRef.current = scheduleYouTubePlaybackKicks(iframe);
+    for (const id of audioTimersRef.current) window.clearTimeout(id);
+    audioTimersRef.current = [300, 800, 2000, 4000, 6000].map(ms =>
+      window.setTimeout(() => applyAudio(iframe), ms),
+    );
   }, [iframeRef, applyAudio, live, src]);
 
   useEffect(() => {

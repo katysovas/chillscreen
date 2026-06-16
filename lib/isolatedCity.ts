@@ -24,7 +24,6 @@ export function cityTileForRoute(route: VenueRoute): number {
       return cityTileIndex('san_diego');
     case 'tentaroo':
     case 'creator-chill':
-    case 'creator-live':
     case 'creator-cinema':
       return cityTileIndex('tentaroo');
     case 'forest':
@@ -184,7 +183,6 @@ export function stageAnchorForRoute(route: VenueRoute): StageAnchorKind | null {
       return 'edc';
     case 'tentaroo':
     case 'creator-chill':
-    case 'creator-live':
     case 'creator-cinema':
       return 'which-stage';
     case 'forest':
@@ -209,7 +207,6 @@ export function stageChannelForRoute(route: VenueRoute):
     case 'edc': return 'edc';
     case 'tentaroo': return 'which-stage';
     case 'creator-chill': return 'which-stage';
-    case 'creator-live': return 'which-stage';
     case 'creator-cinema': return 'which-stage';
     case 'forest': return 'forest';
     case 'silent-disco': return 'silent-disco';

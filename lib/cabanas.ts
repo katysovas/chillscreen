@@ -127,7 +127,6 @@ const WHICH_STAGE_CABANA: CabanaPlacement = {
 
 const CREATOR_TEMPLATE_ROUTES = new Set([
   'creator-chill',
-  'creator-live',
   'creator-cinema',
 ]);
 

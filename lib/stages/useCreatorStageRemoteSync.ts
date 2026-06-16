@@ -7,6 +7,8 @@ import type { CreatorStageSyncPayload } from '@/lib/stages/stageSync';
 
 const OWNER_POLL_MS = 30_000;
 const VIEWER_POLL_MS = 60_000;
+/** Fallback when PartyKit is connected — push handles owner edits in real time. */
+const CONNECTED_FALLBACK_POLL_MS = 5 * 60_000;
 
 type MultiplayerStageSync = {
   connected: boolean;
@@ -43,7 +45,9 @@ export function useCreatorStageRemoteSync(
     if (!slug || !ctx) return;
 
     let cancelled = false;
-    const intervalMs = isOwner ? OWNER_POLL_MS : VIEWER_POLL_MS;
+    const intervalMs = mp.connected
+      ? CONNECTED_FALLBACK_POLL_MS
+      : (isOwner ? OWNER_POLL_MS : VIEWER_POLL_MS);
 
     const poll = async () => {
       if (document.hidden) return;
@@ -62,5 +66,5 @@ export function useCreatorStageRemoteSync(
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [slug, isOwner, ctx]);
+  }, [slug, isOwner, ctx, mp.connected]);
 }

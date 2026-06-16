@@ -2,7 +2,7 @@ import { isChatterMuted } from '@/lib/chatterMuted';
 import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
 import { chatterDebugFetchHeaders } from '@/lib/chatterDebug';
 import { ilog, iwarn, ierror, internalDebugFetchHeaders } from '@/lib/internalDebug';
-import { NPC_TYPING_MS } from '@/lib/npcChat';
+import { NPC_TYPING_MS } from '@/lib/npcChatConstants';
 
 export type NpcChatRequest = {
   characterId: string;

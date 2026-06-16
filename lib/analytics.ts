@@ -1,32 +1,42 @@
-import posthog from 'posthog-js';
+import { getPosthog } from '@/lib/posthogClient';
 import { getOrCreatePlayerId } from '@/lib/playerStorage';
+
+function withPosthog(run: (ph: NonNullable<Awaited<ReturnType<typeof getPosthog>>>) => void): void {
+  if (typeof window === 'undefined') return;
+  void getPosthog().then(ph => {
+    if (ph) run(ph);
+  });
+}
 
 /** Link an anonymous id to the chosen display name. */
 export function identifyPlayer(name: string) {
-  if (typeof window === 'undefined') return;
-  posthog.identify(getOrCreatePlayerId(), { name });
+  withPosthog(ph => {
+    ph.identify(getOrCreatePlayerId(), { name });
+  });
 }
 
 /** SPA / App Router pageview — includes landing at `/`. */
 export function trackPageView(pathname: string, search = '') {
-  if (typeof window === 'undefined') return;
-  const url = `${window.location.origin}${pathname}${search}`;
-  if (pathname === '/') {
-    posthog.identify(getOrCreatePlayerId());
-  }
-  posthog.capture('$pageview', {
-    $current_url: url,
-    page_type: pathname === '/' ? 'landing' : 'app',
-    path: pathname,
+  withPosthog(ph => {
+    const url = `${window.location.origin}${pathname}${search}`;
+    if (pathname === '/') {
+      ph.identify(getOrCreatePlayerId());
+    }
+    ph.capture('$pageview', {
+      $current_url: url,
+      page_type: pathname === '/' ? 'landing' : 'app',
+      path: pathname,
+    });
   });
 }
 
 /** First-time character creation — welcome flow submit. */
 export function trackCharacterCreated(name: string) {
-  if (typeof window === 'undefined') return;
-  const id = getOrCreatePlayerId();
-  posthog.identify(id, { name });
-  posthog.capture('character_created', { name });
+  withPosthog(ph => {
+    const id = getOrCreatePlayerId();
+    ph.identify(id, { name });
+    ph.capture('character_created', { name });
+  });
 }
 
 /** Festie account created (signup). */
@@ -36,17 +46,18 @@ export function trackFestieSignedUp(festie: {
   stage_slug: string;
   preset: string;
 }) {
-  if (typeof window === 'undefined') return;
-  const playerId = getOrCreatePlayerId();
-  posthog.identify(festie.id, {
-    festie_name: festie.name,
-    player_id: playerId,
-  });
-  posthog.capture('festie_signed_up', {
-    festie_id: festie.id,
-    festie_name: festie.name,
-    stage_slug: festie.stage_slug,
-    preset: festie.preset,
+  withPosthog(ph => {
+    const playerId = getOrCreatePlayerId();
+    ph.identify(festie.id, {
+      festie_name: festie.name,
+      player_id: playerId,
+    });
+    ph.capture('festie_signed_up', {
+      festie_id: festie.id,
+      festie_name: festie.name,
+      stage_slug: festie.stage_slug,
+      preset: festie.preset,
+    });
   });
 }
 
@@ -56,16 +67,17 @@ export function trackFestieSignedIn(festie: {
   name: string;
   stage_slug: string;
 }) {
-  if (typeof window === 'undefined') return;
-  const playerId = getOrCreatePlayerId();
-  posthog.identify(festie.id, {
-    festie_name: festie.name,
-    player_id: playerId,
-  });
-  posthog.capture('festie_signed_in', {
-    festie_id: festie.id,
-    festie_name: festie.name,
-    stage_slug: festie.stage_slug,
+  withPosthog(ph => {
+    const playerId = getOrCreatePlayerId();
+    ph.identify(festie.id, {
+      festie_name: festie.name,
+      player_id: playerId,
+    });
+    ph.capture('festie_signed_in', {
+      festie_id: festie.id,
+      festie_name: festie.name,
+      stage_slug: festie.stage_slug,
+    });
   });
 }
 
@@ -82,20 +94,22 @@ export function trackNpcChatterLine(props: {
   playerName?: string;
   isFestie?: boolean;
 }) {
-  if (typeof window === 'undefined') return;
-  posthog.capture('npc_chatter_line', {
-    npc_id: props.npcId,
-    npc_name: props.npcName,
-    text: props.text,
-    kind: props.kind,
-    convo_id: props.convoId ?? null,
-    stage: props.stage ?? null,
-    player_name: props.playerName ?? null,
-    is_festie: props.isFestie ?? false,
+  withPosthog(ph => {
+    ph.capture('npc_chatter_line', {
+      npc_id: props.npcId,
+      npc_name: props.npcName,
+      text: props.text,
+      kind: props.kind,
+      convo_id: props.convoId ?? null,
+      stage: props.stage ?? null,
+      player_name: props.playerName ?? null,
+      is_festie: props.isFestie ?? false,
+    });
   });
 }
 
 export function captureEvent(event: string, properties?: Record<string, unknown>) {
-  if (typeof window === 'undefined') return;
-  posthog.capture(event, properties);
+  withPosthog(ph => {
+    ph.capture(event, properties);
+  });
 }

@@ -16,7 +16,6 @@ export const STAGE_MID_BUNDLE_LOADERS: Record<
   forest: () => import('./forest'),
   'silent-disco': () => import('./silent-disco'),
   'creator-chill': () => import('./creator-chill'),
-  'creator-live': () => import('./creator-live'),
   'creator-cinema': () => import('./creator-cinema'),
 };
 

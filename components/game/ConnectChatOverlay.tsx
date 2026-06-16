@@ -92,14 +92,6 @@ export function NpcPairChatOverlay({
   typingSpeakerKey?: string | null;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
-  const [screenPcts, setScreenPcts] = useState<[number, number]>(() => {
-    const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const off = gameWorldOffRef.current;
-    return [
-      worldXToScreenPct(worldXA, off, vw),
-      worldXToScreenPct(worldXB, off, vw),
-    ];
-  });
 
   useLayoutEffect(() => {
     let raf = 0;
@@ -123,19 +115,11 @@ export function NpcPairChatOverlay({
         const clampedCenter = clampOverlayCenterPx(midCenterPx, overlayW, vw);
         divRef.current.style.left = `${clampedCenter}px`;
       }
-      setScreenPcts(prev =>
-        prev[0] === aPct && prev[1] === bPct ? prev : [aPct, bPct],
-      );
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [worldXA, worldXB]);
-
-  const trackedSpeakers: [SpeakerProfile, SpeakerProfile] = [
-    { ...speakers[0], screenPct: screenPcts[0] },
-    { ...speakers[1], screenPct: screenPcts[1] },
-  ];
 
   return (
     <div
@@ -162,7 +146,7 @@ export function NpcPairChatOverlay({
     >
       <DualSpeakerChatThread
         lines={lines}
-        speakers={trackedSpeakers}
+        speakers={speakers}
         typingSpeakerKey={typingSpeakerKey}
       />
     </div>

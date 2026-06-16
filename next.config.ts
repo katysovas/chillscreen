@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: ['posthog-js'],
+  },
   async headers() {
     // Skip custom cache headers in dev — they break Turbopack HMR.
     if (process.env.NODE_ENV !== 'production') {
@@ -30,4 +33,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default process.env.ANALYZE === 'true'
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ? require('@next/bundle-analyzer')({ enabled: true })(nextConfig)
+  : nextConfig;

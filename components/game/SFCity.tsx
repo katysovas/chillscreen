@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Character from './Character';
-import NPC, { worldXToScreenPct } from './NPC';
+import { worldXToScreenPct } from './NPC';
 import { AmbientPlayerOverlay, NpcPairChatOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
 import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
@@ -13,7 +14,7 @@ import { playChatInviteBeep } from '@/lib/playChatInviteBeep';
 import { SFX_VOLUME } from '@/lib/sfxVolume';
 import { npcCastForVenue } from '@/lib/npcCast';
 import { ambientSeedForRoute } from '@/lib/ambientSeed';
-import RemotePlayer from './RemotePlayer';
+import SFCityCrowdLayer from './SFCityCrowdLayer';
 import { PLAYER_AMBIENT_VISIBLE_MS, useMultiplayer } from '@/lib/multiplayer/useMultiplayer';
 import { filterChatMessage } from '@/lib/messageFilter';
 import {
@@ -73,7 +74,8 @@ import { installGameInputAnalytics, trackMobileControl } from '@/lib/gameInputAn
 import { isChatterMuted } from '@/lib/chatterMuted';
 import { isChatterDebugMode } from '@/lib/chatterDebug';
 import { ierror, iwarn } from '@/lib/internalDebug';
-import { pickFallbackReply, NPC_TYPING_MS, type ChatTurn } from '@/lib/npcChat';
+import { pickFallbackReply } from '@/lib/npcChatFallbacks';
+import { NPC_TYPING_MS, type ChatTurn } from '@/lib/npcChatConstants';
 import { pickPromptDrawAck, PROMPT_DRAW_ACK_HOLD_MS } from '@/lib/easel/promptDrawAck';
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
@@ -107,6 +109,8 @@ import {
   useIsCreatorStageOwner,
   useCreatorStagePresence,
 } from '@/lib/stages/CreatorStageContext';
+import { fetchMyStage } from '@/lib/stages/client';
+import type { UserStagePublic } from '@/lib/stages/types';
 import { setVenueDressCode } from '@/lib/dressCode';
 import { WelcomePopup } from './WelcomePopup';
 import { CityNavSigns } from './CityNavSigns';
@@ -123,6 +127,7 @@ import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { AMBIENT_CHAT_ENABLED } from '@/lib/ambientChatEnabled';
 import { useRoomChatter } from './hooks/useRoomChatter';
 import { npcChatLabelForId } from '@/lib/npcRoster';
+import { applyNpcDancing } from '@/lib/npcDancingRegistry';
 import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
@@ -147,11 +152,9 @@ import {
 import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
 import { isEaselPainterReady, subscribeEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
-import { easelPaintingLabelForNpc } from '@/lib/easel/paintingLabel';
 import { setActiveEaselCanvasBlockZones } from '@/lib/easel/canvasBlocking';
 import { easelSlotWorldX } from '@/lib/easel/layout';
 import { mergeEaselOwnersIntoCast, preloadEaselOwners } from '@/lib/easel/cast';
-import { easelHandLoadout } from '@/lib/easel/brushLoadout';
 import { easelPaintingContextForNpc } from '@/lib/easel/chatContext';
 import { ensureEaselSession } from '@/lib/easel/checkpointClient';
 import { notifyEaselUpdated } from '@/lib/easel/notifyUpdated';
@@ -181,9 +184,6 @@ import { appendChatLine, type ChatLine } from '@/lib/chatLines';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
 
-/** Set to an NPC id to spawn only that character immediately (testing). */
-const TEST_SPAWN_NPC_ID: string | null = null;
-
 /** Force all characters into dance mode regardless of stage proximity (testing). */
 const TEST_FORCE_DANCE = false;
 
@@ -193,11 +193,6 @@ const TEST_PLAYER_VARIANT_GALLERY = false;
 /** Equip loadout items on the player at startup (testing). */
 const TEST_PLAYER_LOADOUT = {} as const;
 
-/** Equip gas mask on a cinema NPC at startup (testing). */
-const TEST_NPC_MASK_ON_LOAD = false;
-const TEST_NPC_MASK_ID = 'gen-cinema-vanessa';
-const TEST_NPC_MASK_ITEM = 'mask-gasmask' as const;
-
 /** Auto-connect player + first NPC on load to preview chat connect glow (testing). */
 const TEST_CHAT_CONNECT_ON_LOAD = false;
 
@@ -206,7 +201,6 @@ const TEST_FESTIE_RECAP_ON_LOAD = false;
 
 /** Creator venue sky fills — keep in sync with lib/creatorVenueBackdrop.ts */
 const CHILL_FOREST_BG = '#D1EBD4';
-const SPACE_BG = '#160016';
 
 // ─── NPC cast ─────────────────────────────────────────────────────────────────
 
@@ -253,8 +247,7 @@ export default function SFCity({
     : venueRoute;
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
   const isCreatorChill = effectiveVenueRoute === 'creator-chill';
-  const isCreatorLive = effectiveVenueRoute === 'creator-live';
-  const isCreatorCustomSky = isCreatorChill || isCreatorLive;
+  const isCreatorCustomSky = isCreatorChill;
   /** Stable per tab session — matches stage picker crowd counts. */
   const ambientSeed = useMemo(
     () => ambientSeedForRoute(effectiveVenueRoute),
@@ -383,7 +376,6 @@ export default function SFCity({
   const [walking,   setWalking]   = useState(false);
   const [jumping,   setJumping]   = useState(false);
   const [playerDancing, setPlayerDancing] = useState(false);
-  const [npcDancing,  setNpcDancing]  = useState<boolean[]>(() => npcCast.map(() => false));
   const playerDancingRef = useRef(false);
   const npcDancingRef    = useRef<boolean[]>(npcCast.map(() => false));
   const [greetingNpc, setGreetingNpc] = useState<number | null>(null);
@@ -447,6 +439,8 @@ export default function SFCity({
   const [festieSignedIn, setFestieSignedIn] = useState(false);
   const [ownerFestie, setOwnerFestie] = useState<FestieOwner | null>(null);
   const [profileReady, setProfileReady] = useState(false);
+  /** undefined = not checked yet; null = signed in with no owned stage. */
+  const [ownedStage, setOwnedStage] = useState<UserStagePublic | null | undefined>(undefined);
   const [sessionRecapOpen, setSessionRecapOpen] = useState(false);
   const [sessionRecap, setSessionRecap] = useState<FestieSessionRecap | null>(null);
   const lifeRefillFromRef = useRef<number | null>(null);
@@ -534,6 +528,28 @@ export default function SFCity({
       setProfileReady(true);
     });
   }, [myColor]);
+
+  useEffect(() => {
+    if (!festieSignedIn || !profileReady) {
+      setOwnedStage(undefined);
+      return;
+    }
+    if (isCreatorStageOwner && creatorStage) {
+      setOwnedStage(creatorStage);
+      return;
+    }
+    let cancelled = false;
+    void fetchMyStage()
+      .then(stage => {
+        if (!cancelled) setOwnedStage(stage);
+      })
+      .catch(() => {
+        if (!cancelled) setOwnedStage(null);
+      });
+    return () => { cancelled = true; };
+  }, [festieSignedIn, profileReady, isCreatorStageOwner, creatorStage?.slug]);
+
+  const showCreateStagePrompt = festieSignedIn && profileReady && ownedStage === null;
 
   useEffect(() => {
     return subscribePlayerSession(() => {
@@ -1157,11 +1173,6 @@ export default function SFCity({
       npcWorldXByIdRef.current.get(cfg.id) ?? Infinity,
     );
     npcDancingRef.current = effectiveNpcCast.map((_, i) => npcDancingRef.current[i] ?? false);
-    setNpcDancing(prev => {
-      const next = effectiveNpcCast.map((_, i) => prev[i] ?? false);
-      if (next.length === prev.length && next.every((v, i) => v === prev[i])) return prev;
-      return next;
-    });
   }, [effectiveNpcCastKey]);
 
   const navigateToStageTarget = useCallback((target: StagePickerTarget) => {
@@ -1244,11 +1255,7 @@ export default function SFCity({
     void preloadCrowdLoadouts(
       [
         playerLoadout,
-        ...effectiveNpcCast.map(c => (
-          TEST_NPC_MASK_ON_LOAD && c.id === TEST_NPC_MASK_ID
-            ? { ...(c.loadout ?? {}), mask: TEST_NPC_MASK_ITEM }
-            : c.loadout
-        )),
+        ...effectiveNpcCast.map(c => c.loadout),
       ],
       dressCodeExtras,
     )
@@ -1742,7 +1749,7 @@ export default function SFCity({
       );
       if (next.some((v, i) => v !== npcDancingRef.current[i])) {
         npcDancingRef.current = next;
-        setNpcDancing([...next]);
+        next.forEach((d, i) => applyNpcDancing(i, d));
       }
     };
 
@@ -2053,6 +2060,11 @@ export default function SFCity({
     if (hasNpcConvoHold(npcId)) return true;
     return false;
   }, [chatNpcDrawings, greetingNpc, mp.remoteNpcChats, mp.npcConvoPairs, roomChatter, convoHoldTick]);
+
+  const handleEaselStationed = useCallback((npcId: string) => {
+    mpRef.current?.sendEaselPainterReady(npcId);
+  }, []);
+
   const showMobileChatBar = mobileDevice
     && !showWelcome
     && !showCityPicker
@@ -2118,17 +2130,6 @@ export default function SFCity({
               background: CHILL_FOREST_BG,
             }}
           />
-        ) : isCreatorLive ? (
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 1,
-              pointerEvents: 'none',
-              background: SPACE_BG,
-            }}
-          />
         ) : isDeepSpace ? (
           <SpaceParallaxStars />
         ) : (
@@ -2157,7 +2158,7 @@ export default function SFCity({
           worldOff={gndScrollWorldOff}
           hideTrees={mobileDevice || isDeepSpace}
           hideStreetDogs={effectiveVenueRoute === 'silent-disco' || isDeepSpace}
-          bareGround={isDeepSpace || isCreatorLive}
+          bareGround={isDeepSpace}
           isolatedTileIndex={isolatedTile}
           deepLinkRoute={effectiveVenueRoute}
         />
@@ -2176,7 +2177,7 @@ export default function SFCity({
           />
         )}
 
-        {!homePreview && (
+        {!homePreview && !showCreateStagePrompt && (
           <CityNavSigns
             ref={navSignsRef}
             route={effectiveVenueRoute}
@@ -2200,84 +2201,34 @@ export default function SFCity({
           />
         )}
 
-        {/* Autonomous NPCs */}
-        {!homePreview && crowdVisualsReady && effectiveNpcCast.map((cfg, i) => {
-          if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
-          const testing = TEST_SPAWN_NPC_ID === cfg.id;
-          const chatConnected = isNpcChatConnected(i, cfg.id);
-          const npcLabel = npcChatLabel(cfg.id, cfg.name);
-          const isPainting = activePainterNpcIds(activeEaselSession).has(cfg.id);
-          const chatPromptDrawing = activeChatDrawingForNpc(chatNpcDrawings, cfg.id);
-          const chatPromptPainting = chatPromptDrawing?.status === 'painting';
-          const comparePin = compareDrawPins.find(p => p.npcId === cfg.id);
-          const chatPromptDrawingLabel = chatPromptPainting
-            ? chatPromptDrawing?.topic ?? null
-            : comparePin?.topic ?? null;
-          const chatPromptCanvasWorldX = chatPromptPainting
-            ? chatPromptDrawing?.canvasWorldX ?? null
-            : comparePin?.canvasWorldX ?? null;
-          const easelPaintingLabel = isPainting
-            ? easelPaintingLabelForNpc(cfg.id, activeEaselSession)
-            : null;
-          const baseLoadout = TEST_NPC_MASK_ON_LOAD && cfg.id === TEST_NPC_MASK_ID
-            ? { ...(cfg.loadout ?? {}), mask: TEST_NPC_MASK_ITEM }
-            : cfg.loadout;
-          const easelPaintingSlot = isPainting
-            ? activeEaselSession?.slots.find(s => s.npc === cfg.id && s.status === 'painting')?.slot
-            : undefined;
-          const isDrawing = isPainting || chatPromptPainting || Boolean(comparePin);
-          return (
-          <NPC
-            key={cfg.id}
-            characterId={cfg.id}
-            index={i}
-            {...cfg}
-            loadout={easelHandLoadout(baseLoadout, isDrawing)}
-            stageAnchor={cfg.stageAnchor}
-            easelPaintingSlot={easelPaintingSlot}
-            easelStageSlug={isPainting ? easelStageSlug : undefined}
-            onEaselStationed={isPainting ? () => mpRef.current?.sendEaselPainterReady(cfg.id) : undefined}
-            easelPaintingLabel={easelPaintingLabel}
-            chatPromptDrawingLabel={chatPromptDrawingLabel}
-            chatPromptCanvasWorldX={chatPromptCanvasWorldX}
-            startX={testing ? 55 : cfg.startX}
-            entryDelay={testing ? 0 : cfg.entryDelay}
-            paused={chatConnected}
-            greeting={greetingNpc === i}
-            chatConnected={chatConnected}
-            dimmed={festieDimNpcIds.has(cfg.id)}
-            greetFacing={greetNpcX < 50 ? 'right' : 'left'}
-            dancing={TEST_FORCE_DANCE || npcDancing[i]}
-            greetingChat={greetingNpc === i ? {
-              name: npcLabel,
-              npcTyping,
-              messages: npcMessages,
-            } : undefined}
+        {!homePreview && crowdVisualsReady && (
+          <SFCityCrowdLayer
+            cast={effectiveNpcCast}
+            greetingNpc={greetingNpc}
+            greetNpcX={greetNpcX}
+            npcTyping={npcTyping}
+            npcMessages={npcMessages}
+            npcChatLabel={npcChatLabel}
+            isNpcChatConnected={isNpcChatConnected}
+            activeEaselSession={activeEaselSession}
+            easelStageSlug={easelStageSlug}
+            chatNpcDrawings={chatNpcDrawings}
+            compareDrawPins={compareDrawPins}
+            festieDimNpcIds={festieDimNpcIds}
             spaceFloat={isDeepSpace}
+            onEaselStationed={handleEaselStationed}
+            remoteIds={mp.remoteIds}
+            remoteStateRef={mp.remoteStateRef}
+            ambientRef={mp.ambientRef}
+            peerChatId={peerChatId}
+            peerTyping={peerTyping}
+            peerMessages={peerMessages}
+            isPlayerChatConnected={isPlayerChatConnected}
+            playerMessages={roomChatter.playerMessages}
           />
-          );
-        })}
+        )}
 
         {!homePreview && npcPairOverlay}
-
-        {/* Remote human players (PartyKit presence) */}
-        {!homePreview && crowdVisualsReady && mp.remoteIds.map(pid => (
-          <RemotePlayer
-            key={pid}
-            id={pid}
-            stateRef={mp.remoteStateRef}
-            ambientRef={mp.ambientRef}
-            greeting={peerChatId === pid}
-            chatConnected={isPlayerChatConnected(pid)}
-            greetingChat={peerChatId === pid ? {
-              name: mp.remoteStateRef.current.get(pid)?.name ?? 'Wanderer',
-              npcTyping: peerTyping,
-              messages: peerMessages,
-            } : undefined}
-            publicMessages={roomChatter.playerMessages.get(pid)}
-            spaceFloat={isDeepSpace}
-          />
-        ))}
 
         {!homePreview && crowdVisualsReady && (TEST_PLAYER_VARIANT_GALLERY ? (
           <PlayerVariantGallery
@@ -2382,7 +2333,7 @@ export default function SFCity({
         }
         hidden={showWelcome || showCityPicker || stageSettingsOpen || isChatterDebugMode()}
         onConnectTap={mobileDevice ? () => connectNearRef.current?.() : undefined}
-        onOpenCityPicker={() => setShowCityPicker(true)}
+        onOpenCityPicker={showCreateStagePrompt ? undefined : () => setShowCityPicker(true)}
         onOpenStageSettings={
           isCreatorStageOwner ? () => setStageSettingsOpen(true) : undefined
         }
@@ -2516,8 +2467,29 @@ export default function SFCity({
         position: 'absolute', bottom: 22, right: 22,
         gap: 10, alignItems: 'center', zIndex: 40,
       }}>
-        <KeyboardMoveHint />
-        {!showWelcome && !showCityPicker && (
+        {!showCreateStagePrompt && <KeyboardMoveHint />}
+        {!showWelcome && !showCityPicker && showCreateStagePrompt && (
+          <Link
+            href="/create"
+            style={{
+              border: '1px solid rgba(255,255,255,.2)',
+              background: 'rgba(0,0,0,.3)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: 7,
+              padding: '7px 12px',
+              color: 'rgba(255,255,255,.78)',
+              fontSize: 10,
+              letterSpacing: 1.8,
+              textTransform: 'uppercase',
+              fontFamily: "Georgia,'Times New Roman',serif",
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Create Your Stage
+          </Link>
+        )}
+        {!showWelcome && !showCityPicker && !showCreateStagePrompt && (
           <button
             type="button"
             onClick={() => setMuted(m => !m)}
@@ -2585,7 +2557,7 @@ export default function SFCity({
           vendorShopOpen={vendorShopManualOpen}
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
-          onOpenStageSwap={() => setShowCityPicker(true)}
+          onOpenStageSwap={showCreateStagePrompt ? undefined : () => setShowCityPicker(true)}
           onOpenStageSettings={
             isCreatorStageOwner ? () => setStageSettingsOpen(true) : undefined
           }
@@ -2593,6 +2565,9 @@ export default function SFCity({
           onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}
           ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}
           onToggleMute={() => setMuted(m => !m)}
+          showMute={!showCreateStagePrompt}
+          showStageSwap={!showCreateStagePrompt}
+          showCreateStage={showCreateStagePrompt}
         />
       )}
 

@@ -1,6 +1,6 @@
-/** Client-safe chatter labels — see lib/chatterCast.ts for the unified roster. */
+/** Client-safe chatter labels — no monolithic generated-npcs.json. */
 export {
   npcChatLabel,
   npcChatLabelForId,
   npcDisplayNameForCharacter,
-} from '@/lib/chatterCast';
+} from '@/lib/chatterCastClient';

@@ -110,11 +110,10 @@ export function landingImageForCreatorPreset(preset: StagePresetId): string {
   if (match?.bgImage) return match.bgImage;
   switch (preset) {
     case 'live':
-      return '/images/homepage/space.webp';
-    case 'cinema':
-      return '/images/homepage/cinema.webp';
     case 'chill':
       return '/images/homepage/forest.webp';
+    case 'cinema':
+      return '/images/homepage/cinema.webp';
     default:
       return '/images/homepage/edc.webp';
   }

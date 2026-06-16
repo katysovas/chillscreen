@@ -14,7 +14,7 @@ export function createCreatorTrussLabel(C: CreatorStageConstants) {
   const oy = C.TENTAROO_GND;
   const trussY = C.WHICH_STAGE_TRUSS_Y ?? 368;
   const titleY = C.WHICH_STAGE_TITLE_Y ?? trussY - 18;
-  const isChill = C.idPrefix === 'chill' || C.idPrefix === 'live';
+  const isChill = C.idPrefix === 'chill';
 
   return function CreatorTrussLabel({ tile }: TrussLabelProps) {
     if (isChill) return null;

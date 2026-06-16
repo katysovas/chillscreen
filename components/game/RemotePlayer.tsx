@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, memo } from 'react';
 import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import { CHAR_BOTTOM, crowdDepthOffsetPx, crowdDepthZIndex } from './groundLayout';
@@ -44,7 +44,7 @@ const LERP = 0.22;
  * motion is driven by the shared roster ref rather than an AI loop, with light
  * interpolation so 15 Hz packets read as smooth 60 fps movement.
  */
-export default function RemotePlayer({
+function RemotePlayer({
   id, stateRef, scale = 0.34, greeting = false, greetingChat, chatConnected = false, ambientRef,
   publicMessages, spaceFloat = false,
 }: RemotePlayerProps) {
@@ -185,3 +185,27 @@ export default function RemotePlayer({
     </div>
   );
 }
+
+function areRemotePlayerPropsEqual(
+  prev: RemotePlayerProps,
+  next: RemotePlayerProps,
+): boolean {
+  if (prev.id !== next.id) return false;
+  if (prev.greeting !== next.greeting) return false;
+  if (prev.chatConnected !== next.chatConnected) return false;
+  if (prev.spaceFloat !== next.spaceFloat) return false;
+  if (prev.scale !== next.scale) return false;
+  if (prev.stateRef !== next.stateRef) return false;
+  if (prev.ambientRef !== next.ambientRef) return false;
+  if (prev.publicMessages !== next.publicMessages) return false;
+  if (prev.greeting) {
+    const pg = prev.greetingChat;
+    const ng = next.greetingChat;
+    if (pg?.name !== ng?.name) return false;
+    if (pg?.npcTyping !== ng?.npcTyping) return false;
+    if (pg?.messages !== ng?.messages) return false;
+  }
+  return true;
+}
+
+export default memo(RemotePlayer, areRemotePlayerPropsEqual);

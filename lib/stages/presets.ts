@@ -8,10 +8,9 @@ const DEFAULT_VENUE_ROUTE: VenueRoute = 'creator-chill';
 /** Plain lookup — safe during module init (no Map built from arrays). */
 const PRESET_VENUE_ROUTES: Record<string, VenueRoute> = {
   chill: 'creator-chill',
-  live: 'creator-live',
+  live: 'creator-chill',
   cinema: 'creator-cinema',
   'creator-chill': 'creator-chill',
-  'creator-live': 'creator-live',
   'creator-cinema': 'creator-cinema',
   thefarm: 'tentaroo',
   forest: 'forest',
@@ -26,12 +25,6 @@ export const CREATOR_STAGE_TEMPLATES: StagePresetDef[] = [
     label: 'Nature',
     tagline: 'Forest clearing under open sky',
     venueRoute: 'creator-chill',
-  },
-  {
-    id: 'live',
-    label: 'Space',
-    tagline: 'Nebula drift under a cosmic sky',
-    venueRoute: 'creator-live',
   },
   {
     id: 'cinema',
@@ -81,8 +74,9 @@ const PRESET_MAP = new Map<StagePresetId, StagePresetDef>(
 /** Wrong IDs sometimes stored as venue routes instead of preset ids. */
 const PRESET_ALIASES: Record<string, StagePresetId> = {
   'creator-chill': 'chill',
-  'creator-live': 'live',
+  'creator-live': 'chill',
   'creator-cinema': 'cinema',
+  live: 'chill',
 };
 
 export function normalizeStagePresetId(id: string): StagePresetId | null {

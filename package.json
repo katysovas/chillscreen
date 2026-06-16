@@ -8,6 +8,7 @@
     "dev:webpack": "next dev --webpack",
     "dev:clean": "rm -rf .next && next dev --webpack",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint",
     "party:dev": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; export PARTYKIT_DEV=true CHATTER_API_URL=${CHATTER_API_URL:-http://127.0.0.1:3000/api/npc-chatter}; exec partykit dev -p 1999'",
@@ -32,15 +33,14 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "resend": "^6.12.4",
-    "sharp": "^0.34.5",
-    "three": "^0.184.0"
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.7",
     "@types/image-size": "^0.7.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/three": "^0.184.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "^16.2.7",

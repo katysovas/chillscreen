@@ -174,13 +174,6 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
     longDescription: 'Custom creator stage template with open-field chill vibes.',
     keywords: ['creator stage', 'chill stage'],
   },
-  'creator-live': {
-    title: 'Live Stage',
-    metaTitle: 'Live Creator Stage — Custom Sets & AI Festies',
-    description: 'A live-energy creator stage on WhichStage.',
-    longDescription: 'Custom creator stage template with festival main-stage energy.',
-    keywords: ['creator stage', 'live stage'],
-  },
   'creator-cinema': {
     title: 'City Stage',
     metaTitle: 'City Creator Stage — Custom Sets & AI Festies',

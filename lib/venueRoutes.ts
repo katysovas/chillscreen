@@ -62,7 +62,6 @@ export function worldOffForVenueRoute(route: VenueRoute): number {
     }
     case 'tentaroo':
     case 'creator-chill':
-    case 'creator-live':
     case 'creator-cinema': {
       const tile = cityTileIndex('tentaroo');
       return worldOffCenteringMidX(tile, WHICH_STAGE_MID_X);
@@ -135,7 +134,6 @@ export function isDeepLinkVenueLive(
       return kind === 'edc' && isVegasTile(tileIndex);
     case 'tentaroo':
     case 'creator-chill':
-    case 'creator-live':
     case 'creator-cinema':
       return kind === 'which-stage' && isTentarooTile(tileIndex);
     case 'forest':

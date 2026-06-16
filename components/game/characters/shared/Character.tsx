@@ -1,5 +1,5 @@
 'use client';
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
+import { forwardRef, memo, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import type { BubbleSide } from '../../ChatBubble';
 import {
   areLoadoutItemsReady,
@@ -65,6 +65,8 @@ export type CharacterHandle = {
   setFacing: (f: 'left' | 'right') => void;
   /** Toggle walk animation — updates classList directly, zero React re-render. */
   setWalking: (w: boolean) => void;
+  /** Toggle dance animation — updates classList directly, zero React re-render. */
+  setDancing: (d: boolean) => void;
 };
 
 /** Artboard coords (500×240) — above the head, aligned to the sprite body. */
@@ -177,6 +179,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   easelChatAnchorRef.current = easelChatAnchor;
   const scaleRef       = useRef(scale);
   scaleRef.current     = scale;
+  const holdRightRef   = useRef(false);
 
   function syncChatAnchorTransform(mirrored: boolean) {
     if (!chatAnchorRef.current) return;
@@ -233,6 +236,24 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     return () => { cancelled = true; };
   }, [equippedItemIds]);
 
+  const mirrored = facing === 'left';
+  const effectiveLoadout = forcedHat && loadout
+    ? { ...loadout, hat: forcedHat }
+    : loadout;
+  const equipped = effectiveLoadout ? resolveLoadout(effectiveLoadout, balloonColor) : null;
+  const holdRight = equipped
+    ? loadoutHoldSide(equipped) === 'right'
+    : accessoryHoldSide(accessory) === 'right';
+  holdRightRef.current = holdRight;
+
+  function syncDancingClasses(active: boolean) {
+    if (!wrapperRef.current || !outerRef.current) return;
+    wrapperRef.current.classList.toggle('ch-dancing', active);
+    wrapperRef.current.classList.toggle('ch-free-hand-left', active && !holdRightRef.current);
+    wrapperRef.current.classList.toggle('ch-free-hand-right', active && holdRightRef.current);
+    outerRef.current.style.transition = active ? 'none' : 'transform 0.1s ease';
+  }
+
   useImperativeHandle(ref, () => ({
     setFacing(f) {
       if (!outerRef.current) return;
@@ -251,17 +272,16 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
         wrapperRef.current.classList.toggle('ch-walking', w);
       }
     },
+    setDancing(d) {
+      syncDancingClasses(d);
+    },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), []);
 
-  const mirrored = facing === 'left';
-  const effectiveLoadout = forcedHat && loadout
-    ? { ...loadout, hat: forcedHat }
-    : loadout;
-  const equipped = effectiveLoadout ? resolveLoadout(effectiveLoadout, balloonColor) : null;
-  const holdRight = equipped
-    ? loadoutHoldSide(equipped) === 'right'
-    : accessoryHoldSide(accessory) === 'right';
+  useLayoutEffect(() => {
+    syncDancingClasses(dancing);
+  }, [dancing]);
+
   const partyHandClass = dancing
     ? holdRight ? ' ch-free-hand-left' : ' ch-free-hand-right'
     : '';
@@ -344,4 +364,4 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   );
 });
 
-export default Character;
+export default memo(Character);

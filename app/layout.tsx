@@ -5,7 +5,6 @@ import { JsonLd } from '@/components/JsonLd';
 import { PostHogPageView } from '@/components/PostHogPageView';
 import { defaultSiteGraphJsonLd } from '@/lib/jsonLd';
 import { rootMetadata } from '@/lib/siteMetadata';
-import { CHARACTER_STYLES } from '@/components/game/characterStyles';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
@@ -28,7 +27,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <JsonLd data={defaultSiteGraphJsonLd()} />
-        <style dangerouslySetInnerHTML={{ __html: CHARACTER_STYLES }} />
         <Suspense fallback={null}>
           <PostHogPageView />
         </Suspense>

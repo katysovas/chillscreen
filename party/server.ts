@@ -2,6 +2,7 @@ import type * as Party from 'partykit/server';
 import { FESTIE_CONFIG } from '../lib/festie/config';
 import type { FestiePublic } from '../lib/festie/types';
 import { setFestieChatterRoster } from '../lib/npcRoster.server';
+import type { Facing } from '../lib/multiplayer/protocol';
 import {
   chatPairKey,
   decodeClient,
@@ -9,6 +10,7 @@ import {
   type PlayerState,
   type ServerMessage,
 } from '../lib/multiplayer/protocol';
+import { diffNpcPositions, type NpcPositionSync } from '../lib/npcPositionSync';
 import { chatterApiBase } from '../lib/npcChatter/apiBase';
 import { chatterAuthHeader } from '../lib/npcChatter/auth';
 import { venueSlugFromRoomId } from '../lib/npcChatter/roomContext';
@@ -47,6 +49,15 @@ export default class WhichStageServer implements Party.Server {
   private npcLeaderId: string | null = null;
   /** Latest leader snapshot — replayed to late joiners. */
   private lastNpcPositionsSync: Extract<ServerMessage, { t: 'npc-positions-sync' }> | null = null;
+  /** Coalesce move fan-out per sender (~10 Hz cap). */
+  private moveRelayPending = new Map<string, {
+    worldX: number;
+    facing: Facing;
+    walking: boolean;
+    timer: ReturnType<typeof setTimeout> | null;
+  }>();
+  private moveRelayLastSent = new Map<string, { worldX: number; facing: Facing; walking: boolean }>();
+  private static readonly MOVE_RELAY_MS = 100;
   private stageSync: StageSync | null = null;
   private chatter: NpcChatterScheduler;
   private easels: EaselScheduler;
@@ -160,13 +171,7 @@ export default class WhichStageServer implements Party.Server {
         player.worldX = msg.worldX;
         player.facing = msg.facing;
         player.walking = msg.walking;
-        this.broadcastExcept(sender.id, {
-          t: 'moved',
-          id: sender.id,
-          worldX: msg.worldX,
-          facing: msg.facing,
-          walking: msg.walking,
-        });
+        this.scheduleMoveRelay(sender.id, msg.worldX, msg.facing, msg.walking);
         break;
       }
 
@@ -252,14 +257,31 @@ export default class WhichStageServer implements Party.Server {
           this.broadcastNpcLeader();
         }
         this.chatter.updateNpcPositions(msg.positions, msg.viewportWidth, sender.id);
-        const syncMsg = {
-          t: 'npc-positions-sync' as const,
+        const delta = diffNpcPositions(
+          msg.positions as NpcPositionSync[],
+          this.lastNpcPositionsSync?.positions ?? [],
+        );
+        if (delta.length === 0) break;
+        const merged = this.mergeNpcPositionSnapshot(
+          this.lastNpcPositionsSync?.positions ?? [],
+          delta,
+        );
+        const serverNow = Date.now();
+        this.lastNpcPositionsSync = {
+          t: 'npc-positions-sync',
           leaderId: sender.id,
-          serverNow: Date.now(),
-          positions: msg.positions,
+          serverNow,
+          positions: merged,
         };
-        this.lastNpcPositionsSync = syncMsg;
-        this.room.broadcast(encode(syncMsg), [sender.id]);
+        this.room.broadcast(
+          encode({
+            t: 'npc-positions-sync',
+            leaderId: sender.id,
+            serverNow,
+            positions: delta,
+          }),
+          [sender.id],
+        );
         break;
       }
       case 'easel-painter-ready':
@@ -296,6 +318,7 @@ export default class WhichStageServer implements Party.Server {
     const wasLeader = conn.id === this.npcLeaderId;
     const userId = this.connUserIds.get(conn.id);
     this.connUserIds.delete(conn.id);
+    this.clearMoveRelay(conn.id);
     if (this.players.delete(conn.id)) {
       this.chatter.clearPlayerViewport(conn.id);
       this.room.broadcast(encode({ t: 'left', id: conn.id }));
@@ -328,6 +351,71 @@ export default class WhichStageServer implements Party.Server {
 
   private broadcastExcept(exceptId: string, msg: ServerMessage) {
     this.room.broadcast(encode(msg), [exceptId]);
+  }
+
+  private scheduleMoveRelay(
+    id: string,
+    worldX: number,
+    facing: Facing,
+    walking: boolean,
+  ) {
+    let pending = this.moveRelayPending.get(id);
+    if (!pending) {
+      pending = { worldX, facing, walking, timer: null };
+      this.moveRelayPending.set(id, pending);
+    } else {
+      pending.worldX = worldX;
+      pending.facing = facing;
+      pending.walking = walking;
+    }
+
+    if (pending.timer != null) return;
+
+    pending.timer = setTimeout(() => {
+      pending!.timer = null;
+      const latest = this.moveRelayPending.get(id);
+      if (!latest) return;
+
+      const last = this.moveRelayLastSent.get(id);
+      if (
+        last
+        && last.facing === latest.facing
+        && last.walking === latest.walking
+        && Math.abs(last.worldX - latest.worldX) < 0.5
+      ) {
+        return;
+      }
+
+      this.moveRelayLastSent.set(id, {
+        worldX: latest.worldX,
+        facing: latest.facing,
+        walking: latest.walking,
+      });
+      this.broadcastExcept(id, {
+        t: 'moved',
+        id,
+        worldX: latest.worldX,
+        facing: latest.facing,
+        walking: latest.walking,
+      });
+    }, WhichStageServer.MOVE_RELAY_MS);
+  }
+
+  private clearMoveRelay(id: string) {
+    const pending = this.moveRelayPending.get(id);
+    if (pending?.timer) clearTimeout(pending.timer);
+    this.moveRelayPending.delete(id);
+    this.moveRelayLastSent.delete(id);
+  }
+
+  /** Merge delta into the cached snapshot for late joiners. */
+  private mergeNpcPositionSnapshot(
+    previous: NpcPositionSync[],
+    delta: NpcPositionSync[],
+  ): NpcPositionSync[] {
+    const map = new Map(previous.map(p => [p.id, p]));
+    for (const p of delta) map.set(p.id, p);
+    return [...map.values()];
   }
 
   private ensureNpcLeader(): string | null {

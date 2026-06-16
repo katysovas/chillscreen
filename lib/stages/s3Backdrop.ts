@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 function trimEnv(name: string): string | undefined {

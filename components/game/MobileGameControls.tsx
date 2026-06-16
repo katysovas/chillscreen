@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { trackMobileControl } from '@/lib/gameInputAnalytics';
 import { LineupIcon, ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
 
@@ -15,6 +16,9 @@ type Props = {
   onOpenStageSettings?: () => void;
   onOpenAmbientChat?: () => void;
   ambientChatOpen?: boolean;
+  showMute?: boolean;
+  showStageSwap?: boolean;
+  showCreateStage?: boolean;
 };
 
 function ChatIcon({ size = 24 }: { size?: number }) {
@@ -65,9 +69,12 @@ export function MobileGameControls({
   onOpenStageSettings,
   onOpenAmbientChat,
   ambientChatOpen = false,
+  showMute = true,
+  showStageSwap: showStageSwapProp = true,
+  showCreateStage = false,
 }: Props) {
   const showCart = Boolean(onToggleVendorShop);
-  const showStageSwap = Boolean(onOpenStageSwap);
+  const showStageSwap = showStageSwapProp && Boolean(onOpenStageSwap);
   const showStageSettingsBtn = showStageSettings && Boolean(onOpenStageSettings);
   const showChat = Boolean(onOpenAmbientChat);
 
@@ -179,23 +186,48 @@ export function MobileGameControls({
           </button>
         )}
 
-        <button
-          type="button"
-          className="mobile-controls-mute mobile-controls-action-btn"
-          aria-label={muted ? 'Unmute' : 'Mute'}
-          onPointerDown={e => e.preventDefault()}
-          onClick={() => {
-            trackMobileControl(muted ? 'unmute' : 'mute');
-            onToggleMute();
-          }}
-          style={{
-            ...mobileActionBtn,
-            fontSize: 22,
-            color: muted ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.65)',
-          }}
-        >
-          {muted ? '🔇' : '🔊'}
-        </button>
+        {showCreateStage && (
+          <Link
+            href="/create"
+            className="mobile-controls-create-stage"
+            style={{
+              ...mobileActionBtn,
+              width: 'auto',
+              minHeight: 44,
+              padding: '0 12px',
+              borderRadius: 10,
+              color: 'rgba(255,255,255,.82)',
+              fontSize: 10,
+              letterSpacing: 1.4,
+              textTransform: 'uppercase',
+              fontFamily: "Georgia,'Times New Roman',serif",
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Create Your Stage
+          </Link>
+        )}
+
+        {showMute && (
+          <button
+            type="button"
+            className="mobile-controls-mute mobile-controls-action-btn"
+            aria-label={muted ? 'Unmute' : 'Mute'}
+            onPointerDown={e => e.preventDefault()}
+            onClick={() => {
+              trackMobileControl(muted ? 'unmute' : 'mute');
+              onToggleMute();
+            }}
+            style={{
+              ...mobileActionBtn,
+              fontSize: 22,
+              color: muted ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.65)',
+            }}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
+        )}
       </div>
     </>
   );

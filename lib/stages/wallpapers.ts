@@ -18,7 +18,8 @@ export const STAGE_WALLPAPERS: StageWallpaperDef[] = [
   { id: 'dj_2', label: 'DJ Booth', file: 'dj_2.webp' },
   { id: 'trippy', label: 'Trippy Vibes', file: 'trippy.webp' },
   { id: 'trippy_2', label: 'Neon Trip', file: 'trippy_2.webp' },
-  { id: 'space', label: 'Deep Space', file: 'space.webp' },
+  { id: 'dark_forest', label: 'Dark Forest', file: 'dark_forest.webp' },
+  { id: 'dark_rocks', label: 'Dark Rocks', file: 'dark_rocks.webp' },
 ];
 
 const WALLPAPER_BY_ID = new Map(STAGE_WALLPAPERS.map(w => [w.id, w]));
