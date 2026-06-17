@@ -22,6 +22,9 @@ export type CinemaVenueBlockProps = {
   cinemaFoH: number;
   cinemaFoY: number;
   deepLinkRoute?: VenueRoute;
+  toiletY?: number;
+  /** Pin stage x — used on static cinema where cinemaMidX varies per tile seed. */
+  centerX?: number;
 };
 
 export function CinemaVenueBlock({
@@ -33,8 +36,10 @@ export function CinemaVenueBlock({
   cinemaFoH,
   cinemaFoY,
   deepLinkRoute,
+  toiletY,
+  centerX,
 }: CinemaVenueBlockProps) {
-  const cinemaX = cinemaMidX(t);
+  const cinemaX = centerX ?? cinemaMidX(t);
   if (cinemaX == null) return null;
 
   const cinemaLiveNow = isVenueLive(
@@ -85,6 +90,7 @@ export function CinemaVenueBlock({
       <StageToiletsFlanking
         centerX={cinemaX}
         stageHalfWidth={cinemaFoW / 2 + STAGE_TOILET.stageHalfBleed}
+        y={toiletY ?? STAGE_TOILET.sidewalkY}
       />
     </>
   );

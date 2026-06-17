@@ -1,20 +1,19 @@
-import { GradientMidTerrain } from '../shared/GradientMidTerrain';
-import { TransitionWater } from '../transition';
-import { CityBuildingsTile } from '../buildings/CityBuildingsTile';
-import { MidBushes } from '../MidBushes';
-import { SfMidFeatures } from '../SfMidFeatures';
+import { SfScene } from '../sf/SfScene';
 import { CinemaVenueBlock } from '../cityVenues/CinemaVenueBlock';
+import { CINEMA_STATIC_MID_X, CINEMA_STATIC_VIEWPORT_X, SF_TOILET_DROP_Y } from '../sf/constants';
 import type { StageMidBundleModule } from './types';
+import { STAGE_TOILET } from '@/lib/stageToilets';
 
 export const bundle = {
   CityTileBody(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileBody']>>[0]) {
     return (
       <>
-        <GradientMidTerrain tileIndex={props.tileIndex} />
-        <TransitionWater tileIndex={props.tileIndex} />
-        <CityBuildingsTile />
-        {!props.hideTrees && <MidBushes />}
-        <SfMidFeatures />
+        <SfScene
+          tileIndex={props.tileIndex}
+          fitViewport
+          hideTrees={props.hideTrees}
+          viewportX={CINEMA_STATIC_VIEWPORT_X}
+        />
         <CinemaVenueBlock
           tileIndex={props.tileIndex}
           cinemaLive={props.cinemaLive}
@@ -24,6 +23,8 @@ export const bundle = {
           cinemaFoH={props.cinemaFoH}
           cinemaFoY={props.cinemaFoY}
           deepLinkRoute={props.deepLinkRoute}
+          centerX={CINEMA_STATIC_MID_X}
+          toiletY={STAGE_TOILET.sidewalkY + SF_TOILET_DROP_Y}
         />
       </>
     );

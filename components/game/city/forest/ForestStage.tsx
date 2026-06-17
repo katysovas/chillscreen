@@ -12,14 +12,14 @@ import {
   FOREST_STAGE_MID_X,
   FOREST_STAGE_PUSH_Y,
   FOREST_STAGE_SCALE,
+  STATIC_FOREST_STAGE_PUSH_Y,
+  STATIC_FOREST_STAGE_SCALE,
 } from './constants';
 
 export { FOREST_STAGE_MID_X, FOREST_STAGE_HALF };
 
 const GND = FOREST_GND;
 const cx = FOREST_STAGE_MID_X;
-const S = FOREST_STAGE_SCALE;
-const pushY = FOREST_STAGE_PUSH_Y;
 const ox = cx;
 const oy = GND;
 
@@ -58,13 +58,26 @@ const FIREFLIES = [
   { x: cx + 160, y: trussY - 70, dur: 6.2 },
 ] as const;
 
+type StageLayout = {
+  scale: number;
+  pushY: number;
+};
+
+function stageLayout(staticViewport: boolean): StageLayout {
+  return staticViewport
+    ? { scale: STATIC_FOREST_STAGE_SCALE, pushY: STATIC_FOREST_STAGE_PUSH_Y }
+    : { scale: FOREST_STAGE_SCALE, pushY: FOREST_STAGE_PUSH_Y };
+}
+
 type ForestStageShellProps = {
   marquee?: string;
   idleScreen?: boolean;
+  layout: StageLayout;
 };
 
 /** Glowing-woods rig — living canopy truss, trunk towers, LED frame (no video). */
-function ForestStageShell({ marquee = 'THE FOREST', idleScreen = true }: ForestStageShellProps) {
+function ForestStageShell({ marquee = 'THE FOREST', idleScreen = true, layout }: ForestStageShellProps) {
+  const { scale: S, pushY } = layout;
   const deck = GND;
   const fontFamily = 'system-ui, sans-serif';
 
@@ -349,7 +362,8 @@ function ForestStageShell({ marquee = 'THE FOREST', idleScreen = true }: ForestS
 
 const FOREST_STAGE_CHANNEL = stageChannelForVenueKind('forest', 0);
 
-function ForestStageLive() {
+function ForestStageLive({ layout }: { layout: StageLayout }) {
+  const { scale: S, pushY } = layout;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
@@ -365,7 +379,7 @@ function ForestStageLive() {
 
   return (
     <>
-      <ForestStageShell marquee={marquee} idleScreen={false} />
+      <ForestStageShell marquee={marquee} idleScreen={false} layout={layout} />
       <foreignObject
         x={videoFoX}
         y={videoFoY}
@@ -401,7 +415,14 @@ function ForestStageLive() {
 }
 
 /** The Forest main stage — glowing canopy rig with synchronized live video. */
-export function ForestStage({ live = false }: { live?: boolean }) {
-  if (!live) return <ForestStageShell />;
-  return <ForestStageLive />;
+export function ForestStage({
+  live = false,
+  staticViewport = false,
+}: {
+  live?: boolean;
+  staticViewport?: boolean;
+}) {
+  const layout = stageLayout(staticViewport);
+  if (!live) return <ForestStageShell layout={layout} />;
+  return <ForestStageLive layout={layout} />;
 }

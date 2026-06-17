@@ -1,7 +1,9 @@
 // All path strings pre-computed at module load — never recomputed on render.
 import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
 
-const PEAK_X = 1855;
+/** Snow-cap apex x — used to center the backdrop behind the static concert stage. */
+export const MOUNT_RAINIER_PEAK_X = 1855;
+const PEAK_X = MOUNT_RAINIER_PEAK_X;
 const PEAK_Y = 268;
 
 const BASE_PATH =
@@ -41,6 +43,32 @@ export function MountRainier() {
       <path d="M1812,332 L1792,432" stroke="#e2e9f3" strokeWidth={4} opacity={0.6} />
       <path d="M1900,332 L1918,432" stroke="#e2e9f3" strokeWidth={4} opacity={0.6} />
       <path d={GLACIER_ARC} stroke="rgba(255,236,210,.5)" strokeWidth={3} fill="none" />
+    </g>
+  );
+}
+
+type MountRainierBehindStageProps = {
+  /** World x where the snow-cap apex should land (tile coordinates). */
+  peakTargetX: number;
+  /** Slightly stronger fills on the flat static sky backdrop. */
+  emphasized?: boolean;
+};
+
+/** Static viewport — slide Rainier so its peak lands at `peakTargetX`. */
+export function MountRainierBehindStage({ peakTargetX, emphasized = false }: MountRainierBehindStageProps) {
+  return (
+    <g transform={`translate(${peakTargetX - MOUNT_RAINIER_PEAK_X}, 0)`}>
+      <g {...DECORATIVE_SHAPE}>
+        <path
+          d={BASE_PATH}
+          fill={emphasized ? 'rgba(202,216,236,.32)' : 'rgba(202,216,236,.18)'}
+        />
+        <path d={SNOW_PATH} fill={emphasized ? '#f6f9fd' : '#eef2f8'} />
+        <path d={RIDGE_L} stroke="#e2e9f3" strokeWidth={6} opacity={emphasized ? 0.85 : 0.7} />
+        <path d="M1812,332 L1792,432" stroke="#e2e9f3" strokeWidth={4} opacity={emphasized ? 0.75 : 0.6} />
+        <path d="M1900,332 L1918,432" stroke="#e2e9f3" strokeWidth={4} opacity={emphasized ? 0.75 : 0.6} />
+        <path d={GLACIER_ARC} stroke="rgba(255,236,210,.5)" strokeWidth={3} fill="none" />
+      </g>
     </g>
   );
 }

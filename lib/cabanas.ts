@@ -125,15 +125,19 @@ const WHICH_STAGE_CABANA: CabanaPlacement = {
   logoAsset: CABANA_DISCORD_LOGO,
 };
 
-const CREATOR_TEMPLATE_ROUTES = new Set([
+const NO_WHICH_STAGE_CABANA_ROUTES = new Set([
   'creator-chill',
   'creator-cinema',
+  'tentaroo',
+  'forest',
+  'silent-disco',
+  'seattle-concerts',
 ]);
 
 /** Static cabanas — always mounted; the scrolling viewBox handles visibility. */
 export function staticCabanaPlacements(venueRoute?: string): CabanaPlacement[] {
   const all = [EDC_PREVIEW_CABANA, WHICH_STAGE_CABANA];
-  if (venueRoute && CREATOR_TEMPLATE_ROUTES.has(venueRoute)) {
+  if (venueRoute && NO_WHICH_STAGE_CABANA_ROUTES.has(venueRoute)) {
     return all.filter(c => c.id !== WHICH_STAGE_CABANA.id);
   }
   return all;

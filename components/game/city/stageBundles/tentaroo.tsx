@@ -1,36 +1,44 @@
-import { GradientMidTerrain } from '../shared/GradientMidTerrain';
-import { TransitionWater } from '../transition';
-import { TentarooArchLabel, TentarooTile, WhichStage, WhichStageTrussLabel } from '../tentaroo';
+import { TentarooArchLabel, TentarooTile, WhichStage } from '../tentaroo';
+import {
+  TENTAROO_BACKDROP_FILL,
+  TENTAROO_MID_TILE_H,
+  TENTAROO_STATIC_VIEWPORT_W,
+  TENTAROO_STATIC_VIEWPORT_X,
+  TENTAROO_TOILET_DROP_Y,
+  WHICH_STAGE_MID_X,
+  WHICH_STAGE_TOILET_HALF,
+} from '../tentaroo/constants';
 import { StageToiletsFlanking } from '../street/StageToiletRow';
-import { WHICH_STAGE_MID_X, WHICH_STAGE_TOILET_HALF } from '../tentaroo/constants';
 import { whichStageLiveOnTile } from './liveTile';
 import type { StageMidBundleModule } from './types';
+import { STAGE_TOILET } from '@/lib/stageToilets';
 
 export const bundle = {
-  CityTileBody(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileBody']>>[0]) {
+  CityTileBody(_props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileBody']>>[0]) {
     return (
       <>
-        <GradientMidTerrain tileIndex={props.tileIndex} />
-        <TransitionWater tileIndex={props.tileIndex} />
-        <TentarooTile />
+        <rect
+          x={TENTAROO_STATIC_VIEWPORT_X}
+          y={0}
+          width={TENTAROO_STATIC_VIEWPORT_W}
+          height={TENTAROO_MID_TILE_H}
+          fill={TENTAROO_BACKDROP_FILL}
+        />
+        <TentarooTile fitViewport />
         <StageToiletsFlanking
           centerX={WHICH_STAGE_MID_X}
           stageHalfWidth={WHICH_STAGE_TOILET_HALF}
+          y={STAGE_TOILET.sidewalkY + TENTAROO_TOILET_DROP_Y}
         />
       </>
     );
   },
   CityTileForeground(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileForeground']>>[0]) {
     return (
-      <WhichStage live={whichStageLiveOnTile(props)} />
+      <WhichStage live={whichStageLiveOnTile(props)} staticViewport />
     );
   },
   CityTileSkyLabels({ tileIndex: t }: { tileIndex: number }) {
-    return (
-      <>
-        <TentarooArchLabel tile={t} />
-        <WhichStageTrussLabel tile={t} />
-      </>
-    );
+    return <TentarooArchLabel tile={t} />;
   },
 } satisfies StageMidBundleModule['bundle'];

@@ -1,36 +1,32 @@
-import { GradientMidTerrain } from '../shared/GradientMidTerrain';
-import { TransitionWater } from '../transition';
-import { LasVegasSkyline, EDCStage } from '../lasvegas';
-import { StageToiletRow } from '../street/StageToiletRow';
-import { STAGE_TOILET, stageToiletStartX } from '@/lib/stageToilets';
-import { CITY_MID_W } from '@/lib/parallax';
-import { isVegasTile } from '@/lib/worldTiles';
-import { EDC_STAGE_MID_X, EDC_STAGE_HALF } from '../lasvegas';
+import { VegasScene } from '../lasvegas/VegasScene';
+import { EDCStage } from '../lasvegas';
+import { StageToiletsFlanking } from '../street/StageToiletRow';
+import {
+  EDC_STATIC_STAGE_HALF,
+  EDC_STATIC_STAGE_MID_X,
+  EDC_STATIC_STAGE_SCALE,
+  VEGAS_TOILET_DROP_Y,
+} from '../lasvegas/constants';
 import { edcLiveOnTile } from './liveTile';
 import type { StageMidBundleModule } from './types';
-
-const EDC_TOILET_RIGHT_OVERFLOW_X =
-  stageToiletStartX(EDC_STAGE_MID_X, EDC_STAGE_HALF, 'right') - CITY_MID_W;
+import { STAGE_TOILET } from '@/lib/stageToilets';
 
 export const bundle = {
   CityTileBody(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileBody']>>[0]) {
     return (
       <>
-        <GradientMidTerrain tileIndex={props.tileIndex} />
-        <TransitionWater tileIndex={props.tileIndex} />
-        <LasVegasSkyline />
+        <VegasScene tileIndex={props.tileIndex} fitViewport />
+        <EDCStage
+          live={edcLiveOnTile(props)}
+          midX={EDC_STATIC_STAGE_MID_X}
+          scale={EDC_STATIC_STAGE_SCALE}
+        />
+        <StageToiletsFlanking
+          centerX={EDC_STATIC_STAGE_MID_X}
+          stageHalfWidth={EDC_STATIC_STAGE_HALF}
+          y={STAGE_TOILET.sidewalkY + VEGAS_TOILET_DROP_Y}
+        />
       </>
-    );
-  },
-  CityTileForeground(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileForeground']>>[0]) {
-    return (
-      <EDCStage live={edcLiveOnTile(props)} />
-    );
-  },
-  NeighborOverflow({ tileIndex: t }: { tileIndex: number }) {
-    if (!isVegasTile(t - 1)) return null;
-    return (
-      <StageToiletRow startX={EDC_TOILET_RIGHT_OVERFLOW_X} y={STAGE_TOILET.sidewalkY} />
     );
   },
 } satisfies StageMidBundleModule['bundle'];

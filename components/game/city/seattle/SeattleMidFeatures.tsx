@@ -8,10 +8,21 @@ import { SpaceNeedle } from './SpaceNeedle';
 
 type SeattleMidFeaturesProps = {
   tileIndex: number;
+  /** Isolated static viewport — skip tile-edge fade masks. */
+  staticViewport?: boolean;
 };
 
 /** Seattle landmarks with edge fade so they don't pop in at tile boundaries. */
-export function SeattleMidFeatures({ tileIndex }: SeattleMidFeaturesProps) {
+export function SeattleMidFeatures({ tileIndex, staticViewport = false }: SeattleMidFeaturesProps) {
+  if (staticViewport) {
+    return (
+      <g {...DECORATIVE_SHAPE}>
+        <GreatWheel />
+        <SpaceNeedle />
+      </g>
+    );
+  }
+
   const uid = `sf${tileIndex}`;
   const leftTown = worldTileKind(tileIndex - 1) === 'town';
   const rightTown = worldTileKind(tileIndex + 1) === 'town';

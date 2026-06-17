@@ -2,7 +2,13 @@
 
 import { useRef } from 'react';
 import type { HTMLAttributes } from 'react';
-import { EDC_STAGE_MID_X, EDC_STAGE_PUSH_Y, EDC_STAGE_SCALE, NEON, VEGAS_GND } from './constants';
+import {
+  EDC_STAGE_MID_X,
+  EDC_STAGE_PUSH_Y,
+  EDC_STAGE_SCALE,
+  NEON,
+  VEGAS_GND,
+} from './constants';
 import { Flame, laserFan } from './helpers';
 import { setEdcNowPlaying } from '@/lib/edcNowPlaying';
 import { useStagePlayer } from '../../useStagePlayer';
@@ -12,15 +18,25 @@ export { EDC_STAGE_MID_X };
 
 const GND = VEGAS_GND;
 
-type EDCStageShellProps = {
+type EDCStageLayout = {
+  midX?: number;
+  scale?: number;
+};
+
+type EDCStageShellProps = EDCStageLayout & {
   marquee?: string;
   /** Animated color wash on the LED wall when no video is mounted. */
   idleScreen?: boolean;
 };
 
 /** Static owl megastage geometry — no YouTube hooks. */
-function EDCStageShell({ marquee = 'ELECTRIC DAZE', idleScreen = true }: EDCStageShellProps) {
-  const cx = EDC_STAGE_MID_X;
+function EDCStageShell({
+  marquee = 'ELECTRIC DAZE',
+  idleScreen = true,
+  midX = EDC_STAGE_MID_X,
+  scale = EDC_STAGE_SCALE,
+}: EDCStageShellProps) {
+  const cx = midX;
   const stageY = GND;
   const scrW = 440;
   const scrH = 248;
@@ -28,7 +44,7 @@ function EDCStageShell({ marquee = 'ELECTRIC DAZE', idleScreen = true }: EDCStag
   const scrY = 404;
   const owlEyeY = 366;
   const deckY = 648;
-  const S = EDC_STAGE_SCALE;
+  const S = scale;
   const pushY = EDC_STAGE_PUSH_Y;
   const ox = cx;
   const oy = stageY;
@@ -44,7 +60,7 @@ function EDCStageShell({ marquee = 'ELECTRIC DAZE', idleScreen = true }: EDCStag
             return (
               <path
                 key={i}
-                d={`M${cx - rr - 55},${stageY} Q${cx - rr - 55},${stageY - rr * 1.3} ${cx},${stageY - rr * 1.35}
+                d={`M${cx - rr - 55},${stageY} Q${cx - rr - 55},${stageY - rr * 1.3} ${cx},${stageY - rr * 1.3}
                     Q${cx + rr + 55},${stageY - rr * 1.3} ${cx + rr + 55},${stageY}`}
                 fill="none"
                 stroke={col}
@@ -127,20 +143,6 @@ function EDCStageShell({ marquee = 'ELECTRIC DAZE', idleScreen = true }: EDCStag
             );
           })}
 
-          <text
-            x={cx}
-            y={290}
-            textAnchor="middle"
-            fontSize={30}
-            fontWeight={800}
-            fill={NEON.cyan}
-            fontFamily="'Arial Black', sans-serif"
-            letterSpacing={3}
-          >
-            ELECTRIC DAZE
-            <animate attributeName="fill" values={`${NEON.cyan};${NEON.pink};${NEON.cyan}`} dur="4s" repeatCount="indefinite" />
-          </text>
-
           <rect x={cx - 190} y={GND + 28} width={380} height={24} rx={3} fill="#15101c" stroke="rgba(0,229,255,.4)" strokeWidth={1} />
           <text
             x={cx}
@@ -161,8 +163,8 @@ function EDCStageShell({ marquee = 'ELECTRIC DAZE', idleScreen = true }: EDCStag
 }
 
 /** Live EDC — shell + synchronized YouTube player. */
-function EDCStageLive() {
-  const cx = EDC_STAGE_MID_X;
+function EDCStageLive({ midX = EDC_STAGE_MID_X, scale = EDC_STAGE_SCALE }: EDCStageLayout) {
+  const cx = midX;
   const stageY = GND;
   const scrW = 440;
   const scrH = 248;
@@ -176,7 +178,7 @@ function EDCStageLive() {
     onNowPlaying: setEdcNowPlaying,
   });
 
-  const S = EDC_STAGE_SCALE;
+  const S = scale;
   const pushY = EDC_STAGE_PUSH_Y;
   const ox = cx;
   const oy = stageY;
@@ -188,7 +190,7 @@ function EDCStageLive() {
 
   return (
     <>
-      <EDCStageShell marquee={marquee} idleScreen={false} />
+      <EDCStageShell marquee={marquee} idleScreen={false} midX={midX} scale={scale} />
       <foreignObject
         x={videoFoX}
         y={videoFoY}
@@ -222,8 +224,12 @@ function EDCStageLive() {
   );
 }
 
+type EDCStageProps = EDCStageLayout & {
+  live?: boolean;
+};
+
 /** EDC "Electric Daze" kineticFIELD-style owl megastage with synchronized YouTube when live. */
-export function EDCStage({ live = false }: { live?: boolean }) {
-  if (!live) return <EDCStageShell />;
-  return <EDCStageLive />;
+export function EDCStage({ live = false, midX, scale }: EDCStageProps) {
+  if (!live) return <EDCStageShell midX={midX} scale={scale} />;
+  return <EDCStageLive midX={midX} scale={scale} />;
 }

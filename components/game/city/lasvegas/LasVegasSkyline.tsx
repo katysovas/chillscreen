@@ -10,9 +10,31 @@ import {
 } from './stripBuildings';
 import { LasVegasSign } from './LasVegasSign';
 import { DECORATIVE_SHAPE } from '../shared/parallaxLayerStyle';
+import { VEGAS_STATIC_SIGN_X, VEGAS_STATIC_SPHERE_CX, VEGAS_STATIC_SPHERE_R } from './constants';
+
+type LasVegasSkylineProps = {
+  /** Fixed-camera /lasvegas — Sphere west of stage, Strip fills the viewport. */
+  staticViewport?: boolean;
+};
 
 /** Las Vegas Strip skyline — render before EDC so the stage sits in front. */
-export function LasVegasSkyline() {
+export function LasVegasSkyline({ staticViewport = false }: LasVegasSkylineProps) {
+  if (staticViewport) {
+    return (
+      <g {...DECORATIVE_SHAPE}>
+        <DesertRidge />
+        <StratTower x={110} />
+        <LuxorPyramid x={540} />
+        <VegasSphere cx={VEGAS_STATIC_SPHERE_CX} r={VEGAS_STATIC_SPHERE_R} />
+        <EiffelReplica x={860} />
+        <Bellagio x={1080} />
+        <VenetianCampanile x={1260} />
+        <LasVegasSign x={VEGAS_STATIC_SIGN_X} />
+        <HighRoller cx={1320} cy={400} r={120} />
+      </g>
+    );
+  }
+
   return (
     <g {...DECORATIVE_SHAPE}>
       <DesertRidge />

@@ -4,6 +4,10 @@ import { cinemaMidX, coachellaMidX, concertMidX, deepSpaceMidX, edcMidX, whichSt
 import { midOriginForTile } from '@/lib/worldTileGeometry';
 import { WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
 import { FOREST_STAGE_MID_X } from '@/components/game/city/forest/constants';
+import { CINEMA_STATIC_MID_X } from '@/components/game/city/sf/constants';
+import { EDC_STATIC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
+import { SF_CONCERT_MID_X } from '@/components/game/city/sf/constants';
+import { SEATTLE_CONCERT_MID_X } from '@/components/game/city/seattle/constants';
 import { SILENT_DISCO_STAGE_MID_X } from '@/components/game/city/silent-disco/constants';
 export type { VenueRoute } from '@/lib/venueSlugs';
 export {
@@ -32,27 +36,19 @@ export function worldOffForVenueRoute(route: VenueRoute): number {
     }
     case 'edc': {
       const tile = cityTileIndex('vegas');
-      const midX = edcMidX(tile);
-      if (midX == null) throw new Error('edc midX missing');
-      return worldOffCenteringMidX(tile, midX);
+      return worldOffCenteringMidX(tile, EDC_STATIC_STAGE_MID_X);
     }
     case 'outside-hands': {
       const tile = cityTileIndex('sf');
-      const midX = concertMidX(tile);
-      if (midX == null) throw new Error('outside-hands midX missing');
-      return worldOffCenteringMidX(tile, midX);
+      return worldOffCenteringMidX(tile, SF_CONCERT_MID_X);
     }
     case 'seattle-concerts': {
       const tile = cityTileIndex('seattle');
-      const midX = concertMidX(tile);
-      if (midX == null) throw new Error('seattle-concerts midX missing');
-      return worldOffCenteringMidX(tile, midX);
+      return worldOffCenteringMidX(tile, SEATTLE_CONCERT_MID_X);
     }
     case 'cinema': {
       const tile = cityTileIndex('sf');
-      const midX = cinemaMidX(tile);
-      if (midX == null) throw new Error('cinema midX missing');
-      return worldOffCenteringMidX(tile, midX);
+      return worldOffCenteringMidX(tile, CINEMA_STATIC_MID_X);
     }
     case 'deep-space': {
       const tile = cityTileIndex('sf');

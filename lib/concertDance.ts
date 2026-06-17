@@ -1,7 +1,5 @@
+import { cityTileIndex } from '@/lib/spawn';
 import {
-  MID_TILE,
-  VIEW_CENTER_X,
-  VIEW_WIDTH,
   cinemaLiveTile,
   cinemaMidX,
   coachellaLiveTile,
@@ -18,10 +16,13 @@ import {
   concertMidX,
   isVenueInView,
   midVxFromWorldOff,
+  VIEW_CENTER_X,
+  VIEW_WIDTH,
 } from './venues';
 import { midOriginForTile } from './worldTileGeometry';
 import { COACHELLA_STAGE_HALF } from '@/components/game/city/sandiego/constants';
-import { EDC_STAGE_HALF } from '@/components/game/city/lasvegas/constants';
+import { CINEMA_STATIC_MID_X } from '@/components/game/city/sf/constants';
+import { EDC_STAGE_HALF, EDC_STATIC_STAGE_HALF, EDC_STATIC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
 import { WHICH_STAGE_HALF } from '@/components/game/city/tentaroo/constants';
 import { FOREST_STAGE_HALF } from '@/components/game/city/forest/constants';
 import { SILENT_DISCO_STAGE_HALF } from '@/components/game/city/silent-disco/constants';
@@ -52,7 +53,13 @@ function liveVenueMidWorldX(
 }
 
 export function liveCinemaMidWorldX(worldOff: number): number | null {
-  return liveVenueMidWorldX(worldOff, cinemaLiveTile, cinemaMidX, CINEMA_HALF_MID);
+  const primary = liveVenueMidWorldX(worldOff, cinemaLiveTile, cinemaMidX, CINEMA_HALF_MID);
+  if (primary != null) return primary;
+  const vx = midVxFromWorldOff(worldOff);
+  const tile = cityTileIndex('sf');
+  if (cinemaLiveTile(vx) !== tile) return null;
+  if (!isVenueInView(vx, tile, CINEMA_STATIC_MID_X, CINEMA_HALF_MID)) return null;
+  return midOriginForTile(tile) + CINEMA_STATIC_MID_X;
 }
 
 export function liveConcertMidWorldX(worldOff: number): number | null {
@@ -64,7 +71,13 @@ export function liveCoachellaMidWorldX(worldOff: number): number | null {
 }
 
 export function liveEdcMidWorldX(worldOff: number): number | null {
-  return liveVenueMidWorldX(worldOff, edcLiveTile, edcMidX, EDC_STAGE_HALF);
+  const primary = liveVenueMidWorldX(worldOff, edcLiveTile, edcMidX, EDC_STAGE_HALF);
+  if (primary != null) return primary;
+  const vx = midVxFromWorldOff(worldOff);
+  const tile = cityTileIndex('vegas');
+  if (edcLiveTile(vx) !== tile) return null;
+  if (!isVenueInView(vx, tile, EDC_STATIC_STAGE_MID_X, EDC_STATIC_STAGE_HALF)) return null;
+  return midOriginForTile(tile) + EDC_STATIC_STAGE_MID_X;
 }
 
 export function liveWhichStageMidWorldX(worldOff: number): number | null {

@@ -1,17 +1,14 @@
-import { GradientMidTerrain } from '../shared/GradientMidTerrain';
-import { TransitionWater } from '../transition';
-import { SeattleBuildingsTile, SeattleMidFeatures } from '../seattle';
 import { ConcertVenueBlock } from '../cityVenues/ConcertVenueBlock';
+import { SeattleScene } from '../seattle/SeattleScene';
+import { SEATTLE_CONCERT_MID_X, SEATTLE_TOILET_DROP_Y } from '../seattle/constants';
 import type { StageMidBundleModule } from './types';
+import { STAGE_TOILET } from '@/lib/stageToilets';
 
 export const bundle = {
   CityTileBody(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileBody']>>[0]) {
     return (
       <>
-        <GradientMidTerrain tileIndex={props.tileIndex} />
-        <TransitionWater tileIndex={props.tileIndex} />
-        <SeattleMidFeatures tileIndex={props.tileIndex} />
-        <SeattleBuildingsTile />
+        <SeattleScene tileIndex={props.tileIndex} fitViewport />
         <ConcertVenueBlock
           tileIndex={props.tileIndex}
           cinemaLive={props.cinemaLive}
@@ -21,6 +18,8 @@ export const bundle = {
           concertFoH={props.concertFoH}
           concertFoY={props.concertFoY}
           deepLinkRoute={props.deepLinkRoute}
+          centerX={SEATTLE_CONCERT_MID_X}
+          toiletY={STAGE_TOILET.sidewalkY + SEATTLE_TOILET_DROP_Y}
         />
       </>
     );

@@ -133,6 +133,11 @@ import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { CITY_BACKDROP_FILL } from './city/cinema/constants';
+import { FOREST_BACKDROP_FILL } from './city/forest/constants';
+import { VEGAS_BACKDROP_FILL } from './city/lasvegas/constants';
+import { SF_BACKDROP_FILL } from './city/sf/constants';
+import { SEATTLE_BACKDROP_FILL } from './city/seattle/constants';
+import { TENTAROO_BACKDROP_FILL } from './city/tentaroo/constants';
 import { SILENT_DISCO_BACKDROP_FILL } from './city/silent-disco/constants';
 import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { BottomControlPanel, SignOutIcon } from './BottomControlPanel';
@@ -252,7 +257,13 @@ export default function SFCity({
   const isCreatorChill = effectiveVenueRoute === 'creator-chill';
   const isCreatorCinema = effectiveVenueRoute === 'creator-cinema';
   const isSilentDisco = effectiveVenueRoute === 'silent-disco';
-  const isCreatorCustomSky = isCreatorChill || isCreatorCinema || isSilentDisco;
+  const isForest = effectiveVenueRoute === 'forest';
+  const isTentaroo = effectiveVenueRoute === 'tentaroo';
+  const isSanFrancisco = effectiveVenueRoute === 'outside-hands';
+  const isChillCinema = effectiveVenueRoute === 'cinema';
+  const isLasVegas = effectiveVenueRoute === 'edc';
+  const isSeattle = effectiveVenueRoute === 'seattle-concerts';
+  const isCreatorCustomSky = isCreatorChill || isCreatorCinema || isSilentDisco || isForest || isTentaroo || isSanFrancisco || isChillCinema || isLasVegas || isSeattle;
   const isStaticCityView = isStaticCityTemplateRoute(effectiveVenueRoute);
   /** Stable per tab session — matches stage picker crowd counts. */
   const ambientSeed = useMemo(
@@ -2209,6 +2220,61 @@ export default function SFCity({
               background: CITY_BACKDROP_FILL,
             }}
           />
+        ) : isSeattle ? (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: SEATTLE_BACKDROP_FILL,
+            }}
+          />
+        ) : isSanFrancisco || isChillCinema ? (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: SF_BACKDROP_FILL,
+            }}
+          />
+        ) : isLasVegas ? (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: VEGAS_BACKDROP_FILL,
+            }}
+          />
+        ) : isTentaroo ? (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: TENTAROO_BACKDROP_FILL,
+            }}
+          />
+        ) : isForest ? (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: FOREST_BACKDROP_FILL,
+            }}
+          />
         ) : isSilentDisco ? (
           <div
             aria-hidden
@@ -2239,20 +2305,20 @@ export default function SFCity({
           skyLabelsRef={midSkyLabelsRef}
           worldOff={midScrollWorldOff}
           deepLinkRoute={effectiveVenueRoute}
-          hideTrees={mobileDevice || isDeepSpace}
+          hideTrees={mobileDevice || isDeepSpace || isLasVegas}
           isolatedTileIndex={isolatedTile}
           creatorBackdropUrl={stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null}
         />
         <GroundLayer
           ref={groundRef}
           worldOff={gndScrollWorldOff}
-          hideTrees={mobileDevice || isDeepSpace}
-          hideStreetDogs={effectiveVenueRoute === 'silent-disco' || isDeepSpace}
+          hideTrees={mobileDevice || isDeepSpace || isLasVegas}
+          hideStreetDogs={effectiveVenueRoute === 'silent-disco' || effectiveVenueRoute === 'forest' || effectiveVenueRoute === 'tentaroo' || effectiveVenueRoute === 'outside-hands' || effectiveVenueRoute === 'cinema' || effectiveVenueRoute === 'edc' || effectiveVenueRoute === 'seattle-concerts' || isDeepSpace}
           bareGround={isDeepSpace}
           isolatedTileIndex={isolatedTile}
           deepLinkRoute={effectiveVenueRoute}
         />
-        {!isDeepSpace && (
+        {!isDeepSpace && effectiveVenueRoute !== 'tentaroo' && (
           <CabanaForegroundLayer
             ref={cabanaRef}
             worldOff={gndScrollWorldOff}

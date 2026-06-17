@@ -5,10 +5,12 @@ import { WATER_PATH, SF_WATER, SEA_WATER } from '../shared/terrainPaths';
 
 type TransitionWaterProps = {
   tileIndex: number;
+  /** Isolated static viewport — solid bay fill without tile-edge fades. */
+  staticViewport?: boolean;
 };
 
 /** City waterfront only — countryside tiles have no bay / sound. */
-export function TransitionWater({ tileIndex }: TransitionWaterProps) {
+export function TransitionWater({ tileIndex, staticViewport = false }: TransitionWaterProps) {
   const kind = worldTileKind(tileIndex);
   const left = worldTileKind(tileIndex - 1);
   const right = worldTileKind(tileIndex + 1);
@@ -17,6 +19,16 @@ export function TransitionWater({ tileIndex }: TransitionWaterProps) {
   if (kind === 'town' || kind === 'san_diego' || kind === 'coachella' || kind === 'tentaroo' || kind === 'forest' || kind === 'silent_disco' || kind === 'vegas') return null;
 
   if (kind === 'sf') {
+    if (staticViewport) {
+      return (
+        <g {...DECORATIVE_SHAPE}>
+          <path d={WATER_PATH} fill={SF_WATER} />
+          <line x1={28} y1={604} x2={250} y2={604} stroke="#c6d4e0" strokeWidth={2} opacity={0.4} />
+          <line x1={70} y1={620} x2={300} y2={620} stroke="#b2c8d6" strokeWidth={2} opacity={0.32} />
+        </g>
+      );
+    }
+
     const fadeRight = right !== 'sf';
     return (
       <g {...DECORATIVE_SHAPE}>

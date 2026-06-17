@@ -7,7 +7,7 @@ import type { VenueRoute } from '@/lib/venueSlugs';
 import { screenPctToWorldX } from '@/lib/gameWorldRef';
 import { isCreatorTemplateRoute, isStaticCityTemplateRoute, venueSlugForRoute } from '@/lib/venueSlugs';
 import { worldOffForVenueRoute } from '@/lib/venueRoutes';
-import { cinemaMidX, deepSpaceMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
+import { deepSpaceMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
 
 /**
  * Distance from the viewport edge at which nav signs are planted (shared with
@@ -79,25 +79,6 @@ function fullCityWorldOffBounds(route: VenueRoute): { min: number; max: number }
   };
 }
 
-/** Chill Cinema shares the SF tile — keep walk range tight around the cinema. */
-function cinemaWorldOffBounds(): { min: number; max: number } {
-  const route = 'cinema' as const;
-  const tile = cityTileForRoute(route);
-  const midX = cinemaMidX(tile);
-  if (midX == null) throw new Error('cinema midX missing');
-
-  const full = fullCityWorldOffBounds(route);
-  const centerWorldOff = (midOriginForTile(tile) + midX - VIEW_CENTER_X) / MID_PARALLAX;
-
-  const westMidPx = 420;
-  const eastMidPx = 320;
-
-  return {
-    min: Math.max(full.min, centerWorldOff - westMidPx / MID_PARALLAX),
-    max: Math.min(full.max, centerWorldOff + eastMidPx / MID_PARALLAX),
-  };
-}
-
 /** Deep Space shares the SF tile — keep walk range tight around the stage. */
 function deepSpaceWorldOffBounds(): { min: number; max: number } {
   const route = 'deep-space' as const;
@@ -144,7 +125,6 @@ function creatorTemplateWorldOffBounds(route: VenueRoute): { min: number; max: n
 }
 
 export function cityWorldOffBounds(route: VenueRoute): { min: number; max: number } {
-  if (route === 'cinema') return cinemaWorldOffBounds();
   if (route === 'deep-space') return deepSpaceWorldOffBounds();
   if (isStaticCityTemplateRoute(route)) {
     const off = worldOffForVenueRoute(route);

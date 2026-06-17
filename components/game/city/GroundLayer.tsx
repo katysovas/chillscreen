@@ -10,6 +10,11 @@ import { nearIsolatedGndTiles } from '@/lib/isolatedCity';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { CITY_GRASS_DROP_Y } from './cinema/constants';
+import { FOREST_GRASS_DROP_Y } from './forest/constants';
+import { SEATTLE_GRASS_DROP_Y } from './seattle/constants';
+import { SF_GRASS_DROP_Y } from './sf/constants';
+import { VEGAS_GRASS_DROP_Y } from './lasvegas/constants';
+import { TENTAROO_GRASS_DROP_Y } from './tentaroo/constants';
 import { SILENT_DISCO_GRASS_DROP_Y } from './silent-disco/constants';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
 import { skipGroundStreetLamp, skipGroundStreetProp, skipGroundStreetTree, type GroundStreetSkipContext } from '@/lib/stageTreeExclusion';
@@ -33,8 +38,8 @@ function grassRand(i: number, salt: number) {
 }
 
 /** City template experiment — lawn instead of road/sidewalk. */
-function GrassGround({ w, tile }: { w: number; tile: number }) {
-  const top = GRASS_TOP + CITY_GRASS_DROP_Y;
+function GrassGround({ w, tile, dropY }: { w: number; tile: number; dropY: number }) {
+  const top = GRASS_TOP + dropY;
   const h = 900 - top;
   const gid = `city-grass-${tile}`;
 
@@ -155,7 +160,19 @@ function groundTileContent(
   // discrete art; just render fewer pieces in narrow tiles.
   const w = gndWidthForTile(tile);
   const grassGround = skipCtx?.route != null && isStaticCityTemplateRoute(skipCtx.route);
-  const grassDropY = skipCtx?.route === 'silent-disco' ? SILENT_DISCO_GRASS_DROP_Y : CITY_GRASS_DROP_Y;
+  const grassDropY = skipCtx?.route === 'silent-disco'
+    ? SILENT_DISCO_GRASS_DROP_Y
+    : skipCtx?.route === 'forest'
+      ? FOREST_GRASS_DROP_Y
+      : skipCtx?.route === 'tentaroo'
+        ? TENTAROO_GRASS_DROP_Y
+        : skipCtx?.route === 'seattle-concerts'
+          ? SEATTLE_GRASS_DROP_Y
+          : skipCtx?.route === 'outside-hands' || skipCtx?.route === 'cinema'
+            ? SF_GRASS_DROP_Y
+            : skipCtx?.route === 'edc'
+              ? VEGAS_GRASS_DROP_Y
+              : CITY_GRASS_DROP_Y;
   const gndY = grassGround ? GND_Y + grassDropY : GND_Y;
   // Keep a prop fully inside the tile (account for its art half-width).
   const fits = (x: number, halfW: number) => x <= w - halfW;
@@ -167,7 +184,7 @@ function groundTileContent(
 
   return (
     <g {...DECORATIVE_SHAPE}>
-      {grassGround ? <GrassGround w={w} tile={tile} /> : <StreetGround w={w} />}
+      {grassGround ? <GrassGround w={w} tile={tile} dropY={grassDropY} /> : <StreetGround w={w} />}
       {!hideTrees && GROUND_TREE_XS.map((x, i) => (
         fits(x, 90) && !skipGroundStreetTree(tile, x, w, skipCtx) ? (
           <ellipse key={`sh${i}`} cx={x + 28} cy={gndY + 8} rx={50} ry={11} fill="rgba(20,50,0,.2)" />

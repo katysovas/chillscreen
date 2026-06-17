@@ -18,6 +18,11 @@ import type { VenueRoute } from '@/lib/venueRoutes';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { Z_PLAYER_CHARACTER } from '@/lib/zLayers';
 import { CITY_GRASS_DROP_Y } from '@/components/game/city/cinema/constants';
+import { FOREST_GRASS_DROP_Y } from '@/components/game/city/forest/constants';
+import { TENTAROO_GRASS_DROP_Y } from '@/components/game/city/tentaroo/constants';
+import { SEATTLE_GRASS_DROP_Y } from '@/components/game/city/seattle/constants';
+import { SF_GRASS_DROP_Y } from '@/components/game/city/sf/constants';
+import { VEGAS_GRASS_DROP_Y } from '@/components/game/city/lasvegas/constants';
 import { SILENT_DISCO_GRASS_DROP_Y } from '@/components/game/city/silent-disco/constants';
 
 const GND_Y = 685;
@@ -181,7 +186,19 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
       : null;
     const leftX = edgeSigns ? edgeSigns.leftX : bounds.min + SIGN_EDGE_INSET_PX;
     const rightX = edgeSigns ? edgeSigns.rightX : bounds.max + VIEW_W - SIGN_EDGE_INSET_PX;
-    const grassDropY = route === 'silent-disco' ? SILENT_DISCO_GRASS_DROP_Y : CITY_GRASS_DROP_Y;
+    const grassDropY = route === 'silent-disco'
+      ? SILENT_DISCO_GRASS_DROP_Y
+      : route === 'forest'
+        ? FOREST_GRASS_DROP_Y
+        : route === 'tentaroo'
+          ? TENTAROO_GRASS_DROP_Y
+          : route === 'seattle-concerts'
+            ? SEATTLE_GRASS_DROP_Y
+            : route === 'outside-hands' || route === 'cinema'
+              ? SF_GRASS_DROP_Y
+              : route === 'edc'
+                ? VEGAS_GRASS_DROP_Y
+                : CITY_GRASS_DROP_Y;
     const signY = staticSigns ? SIGN_Y + grassDropY : SIGN_Y;
 
     const goTo = (target: VenueRoute) => {

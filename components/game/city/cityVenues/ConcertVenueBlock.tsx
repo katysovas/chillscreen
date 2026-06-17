@@ -22,6 +22,9 @@ export type ConcertVenueBlockProps = {
   concertFoH: number;
   concertFoY: number;
   deepLinkRoute?: VenueRoute;
+  toiletY?: number;
+  /** Pin stage x — used on static Seattle where concertMidX varies per tile seed. */
+  centerX?: number;
 };
 
 export function ConcertVenueBlock({
@@ -33,8 +36,10 @@ export function ConcertVenueBlock({
   concertFoH,
   concertFoY,
   deepLinkRoute,
+  toiletY,
+  centerX,
 }: ConcertVenueBlockProps) {
-  const concertX = concertMidX(t);
+  const concertX = centerX ?? concertMidX(t);
   if (concertX == null) return null;
 
   const concertLiveNow = isVenueLive(
@@ -96,6 +101,7 @@ export function ConcertVenueBlock({
       <StageToiletsFlanking
         centerX={concertX}
         stageHalfWidth={concertFoW / 2 + STAGE_TOILET.stageHalfBleed}
+        y={toiletY ?? STAGE_TOILET.sidewalkY}
       />
     </>
   );

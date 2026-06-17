@@ -13,14 +13,14 @@ import {
   WHICH_STAGE_MID_X,
   WHICH_STAGE_PUSH_Y,
   WHICH_STAGE_SCALE,
+  STATIC_WHICH_STAGE_PUSH_Y,
+  STATIC_WHICH_STAGE_SCALE,
 } from './constants';
 
 export { WHICH_STAGE_MID_X, WHICH_STAGE_HALF };
 
 const GND = TENTAROO_GND;
 const cx = WHICH_STAGE_MID_X;
-const S = WHICH_STAGE_SCALE;
-const pushY = WHICH_STAGE_PUSH_Y;
 const ox = cx;
 const oy = GND;
 
@@ -49,14 +49,26 @@ const BEAMS = [
   { x: cx + 180, c: WHICH_NEON.violet, a1: -14, a2: 18, dur: 7.2 },
 ] as const;
 
+type StageLayout = {
+  scale: number;
+  pushY: number;
+};
+
+function stageLayout(staticViewport: boolean): StageLayout {
+  return staticViewport
+    ? { scale: STATIC_WHICH_STAGE_SCALE, pushY: STATIC_WHICH_STAGE_PUSH_Y }
+    : { scale: WHICH_STAGE_SCALE, pushY: WHICH_STAGE_PUSH_Y };
+}
+
 type WhichStageShellProps = {
   marquee?: string;
   idleScreen?: boolean;
+  layout: StageLayout;
 };
 
-
 /** Bioluminescent glass-world rig — truss, towers, LED frame (no video). */
-function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true }: WhichStageShellProps) {
+function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true, layout }: WhichStageShellProps) {
+  const { scale: S, pushY } = layout;
   const deck = GND;
   const fontFamily = 'system-ui, sans-serif';
 
@@ -267,7 +279,8 @@ function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true }: WhichSt
 
 const WHICH_STAGE_CHANNEL = stageChannelForVenueKind('which-stage', 0);
 
-function WhichStageLive() {
+function WhichStageLive({ layout }: { layout: StageLayout }) {
+  const { scale: S, pushY } = layout;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
@@ -284,7 +297,7 @@ function WhichStageLive() {
 
   return (
     <>
-      <WhichStageShell marquee={marquee} idleScreen={false} />
+      <WhichStageShell marquee={marquee} idleScreen={false} layout={layout} />
       <foreignObject
         x={videoFoX}
         y={videoFoY}
@@ -319,7 +332,14 @@ function WhichStageLive() {
 }
 
 /** Tentaroo main stage — bioluminescent rig with synchronized Bonnaroo live video. */
-export function WhichStage({ live = false }: { live?: boolean }) {
-  if (!live) return <WhichStageShell />;
-  return <WhichStageLive />;
+export function WhichStage({
+  live = false,
+  staticViewport = false,
+}: {
+  live?: boolean;
+  staticViewport?: boolean;
+}) {
+  const layout = stageLayout(staticViewport);
+  if (!live) return <WhichStageShell layout={layout} />;
+  return <WhichStageLive layout={layout} />;
 }
