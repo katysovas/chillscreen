@@ -1,4 +1,7 @@
 import { worldTileSlot } from './worldTiles';
+import { gndOriginForTile } from './worldTileGeometry';
+import { VIEW_WIDTH } from './venues';
+import { isStaticCityTemplateRoute, type VenueRoute } from './venueSlugs';
 
 const SF_SLOT = 0;
 const SF_VEGAS_TOWN = 1;
@@ -17,6 +20,22 @@ const SEATTLE_EAST_TOWN = 13;
 
 /** City ground tiles are full-width; towns use TOWN_GND_W. */
 const CITY_GND_MIN = 3000;
+
+/** Static city — keep sidewalk trees / lamps only near the viewport edges. */
+export const STATIC_GROUND_EDGE_KEEP_PX = 280;
+
+export type GroundStreetSkipContext = {
+  route?: VenueRoute;
+  /** Fixed-camera ground scroll offset (GND_F = 1). */
+  cameraOff?: number;
+};
+
+function skipStaticCityCenterProp(tileIndex: number, propX: number, cameraOff: number): boolean {
+  const worldX = gndOriginForTile(tileIndex) + propX;
+  const innerLeft = cameraOff + STATIC_GROUND_EDGE_KEEP_PX;
+  const innerRight = cameraOff + VIEW_WIDTH - STATIC_GROUND_EDGE_KEEP_PX;
+  return worldX >= innerLeft && worldX <= innerRight;
+}
 
 /** Ground-x band where a stage sits — shared by trees, lamps, benches, etc. */
 function groundStageBand(tileIndex: number, propX: number, tileWidth: number): boolean {
@@ -72,9 +91,30 @@ function parallaxStageSidewalkBand(propX: number, tileWidth: number): boolean {
  * Skip a sidewalk street tree when it would sit in front of a stage on this tile.
  * Other trees on the tile are kept — only the stage footprint band is cleared.
  */
-export function skipGroundStreetTree(tileIndex: number, treeX: number, tileWidth: number): boolean {
+export function skipGroundStreetTree(
+  tileIndex: number,
+  treeX: number,
+  tileWidth: number,
+  ctx?: GroundStreetSkipContext,
+): boolean {
+  if (ctx?.route && ctx.cameraOff != null && isStaticCityTemplateRoute(ctx.route)) {
+    return skipStaticCityCenterProp(tileIndex, treeX, ctx.cameraOff);
+  }
   return groundStageBand(tileIndex, treeX, tileWidth)
     || parallaxStageSidewalkBand(treeX, tileWidth);
+}
+
+/** Lamp posts — same static-city center clear as trees; other props use {@link skipGroundStreetProp}. */
+export function skipGroundStreetLamp(
+  tileIndex: number,
+  propX: number,
+  tileWidth: number,
+  ctx?: GroundStreetSkipContext,
+): boolean {
+  if (ctx?.route && ctx.cameraOff != null && isStaticCityTemplateRoute(ctx.route)) {
+    return skipStaticCityCenterProp(tileIndex, propX, ctx.cameraOff);
+  }
+  return skipGroundStreetProp(tileIndex, propX, tileWidth);
 }
 
 /** Skip lamps, benches, hydrants, etc. in the same stage footprint band as trees. */

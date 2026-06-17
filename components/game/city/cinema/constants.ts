@@ -1,4 +1,5 @@
 import { minStageScale } from '@/lib/stageViewport';
+import { VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
 
 export const CREATOR_SCENE_HREF = '/images/cities/creator-cinema-scene.svg?v=1';
 
@@ -8,27 +9,20 @@ export const CITY_MID_TILE_H = 900;
 /** Ground / road line on the mid tile. */
 export const TENTAROO_GND = 660;
 
-/** Skyline photo horizontal framing (positive = shift image left). */
-export const CITY_SKYLINE_OFFSET_X = 100;
-
-/**
- * Lift user-uploaded skyline photos so the image bottom aligns with the road
- * (ground at y={@link TENTAROO_GND}) instead of the mid-tile bottom.
- */
-export const CITY_UPLOAD_BACKDROP_LIFT_Y = CITY_MID_TILE_H - TENTAROO_GND;
-
-/** True when the stage has an uploaded backdrop URL (vs. the default colour wash). */
-export function isCustomCityBackdropUrl(url: string | null | undefined): boolean {
-  return Boolean(url);
-}
-
-/** Extra width each side so framing shifts never expose seams. */
-export const CITY_SKYLINE_BLEED_X = 200;
-
 /** Fallback fill behind photos — matches night sky edge tone. */
 export const CITY_BACKDROP_FILL = '#0a0610';
 
+/** City template — grass + sidewalk props sit this many px lower than default GND_Y. */
+export const CITY_GRASS_DROP_Y = 30;
+
+/** City template — porta-potties sit this many px below the default sidewalk Y. */
+export const CITY_TOILET_DROP_Y = 40;
+
 export const WHICH_STAGE_MID_X = 1620;
+
+/** Mid-layer slice shown when the city template uses a fixed camera (stage-centered). */
+export const CITY_STATIC_VIEWPORT_X = WHICH_STAGE_MID_X - VIEW_CENTER_X;
+export const CITY_STATIC_VIEWPORT_W = VIEW_WIDTH;
 
 export const WHICH_STAGE_SCALE = minStageScale(1.95);
 

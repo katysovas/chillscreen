@@ -1,12 +1,16 @@
 /** Live camera offset — same space as ground scroll (GND_F = 1). Updated every game frame. */
 export const gameWorldOffRef = { current: 0 };
 
+/** Local player world-x — equals camera off when scrolling; moves independently on static city. */
+export const playerWorldXRef = { current: 0 };
+
 let cameraSeeded = false;
 
 /** Seed camera before stage iframes mount (once per venue load). */
 export function initGameCameraOnce(worldOff: number): void {
   if (cameraSeeded) return;
   gameWorldOffRef.current = worldOff;
+  playerWorldXRef.current = worldOff;
   cameraSeeded = true;
 }
 

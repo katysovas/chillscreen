@@ -9,11 +9,15 @@ import {
   nextCityRoute,
   prevCityRoute,
   SIGN_EDGE_INSET_PX,
+  staticCitySignGroundX,
 } from '@/lib/isolatedCity';
 import { ArrowSignBoard } from './city/ArrowSignBoard';
 import { PARALLAX_LAYER_BASE } from './city/shared/parallaxLayerStyle';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
+import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
+import { Z_PLAYER_CHARACTER } from '@/lib/zLayers';
+import { CITY_GRASS_DROP_Y } from '@/components/game/city/cinema/constants';
 
 const GND_Y = 685;
 const SIGN_Y = GND_Y + 12;
@@ -37,13 +41,16 @@ const SIGN_STYLE: Record<VenueRoute, { icon: string; accent: string }> = {
 
 type EdgeSignProps = {
   x: number;
+  y: number;
   dir: 'left' | 'right';
   route: VenueRoute;
   onGo: () => void;
+  /** Screen-edge placement — bias hit area inward so clicks register in-view. */
+  edgePinned?: boolean;
 };
 
 /** Wooden signpost with one chevron wing — same art as the old junction signs. */
-function EdgeSign({ x, dir, route, onGo }: EdgeSignProps) {
+function EdgeSign({ x, y, dir, route, onGo, edgePinned = false }: EdgeSignProps) {
   const { title } = cityOptionForRoute(route);
   const { icon, accent } = SIGN_STYLE[route];
   const label = `Enter ${title}`;
@@ -51,10 +58,12 @@ function EdgeSign({ x, dir, route, onGo }: EdgeSignProps) {
   const postW = 10;
   const postH = 124;
   const boardCy = -postH + 34;
+  const hitW = edgePinned ? 300 : 260;
+  const hitX = edgePinned ? (dir === 'left' ? -30 : -(hitW - 30)) : -130;
 
   return (
     <g
-      transform={`translate(${x},${SIGN_Y})`}
+      transform={`translate(${x},${y})`}
       style={{ pointerEvents: 'auto', cursor: 'pointer' }}
       onClick={onGo}
       role="link"
@@ -62,9 +71,9 @@ function EdgeSign({ x, dir, route, onGo }: EdgeSignProps) {
     >
       {/* Generous invisible hit area */}
       <rect
-        x={-130}
+        x={hitX}
         y={-postH - 50}
-        width={260}
+        width={hitW}
         height={postH + 66}
         fill="#fff"
         fillOpacity={0}
@@ -127,8 +136,13 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
     const bounds = cityWorldOffBounds(route);
     const prev = prevCityRoute(route);
     const next = nextCityRoute(route);
-    const leftX = bounds.min + SIGN_EDGE_INSET_PX;
-    const rightX = bounds.max + VIEW_W - SIGN_EDGE_INSET_PX;
+    const staticSigns = isStaticCityTemplateRoute(route);
+    const cameraOff = bounds.min;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : VIEW_W;
+    const edgeSigns = staticSigns ? staticCitySignGroundX(cameraOff, viewportWidth) : null;
+    const leftX = edgeSigns ? edgeSigns.leftX : bounds.min + SIGN_EDGE_INSET_PX;
+    const rightX = edgeSigns ? edgeSigns.rightX : bounds.max + VIEW_W - SIGN_EDGE_INSET_PX;
+    const signY = staticSigns ? SIGN_Y + CITY_GRASS_DROP_Y : SIGN_Y;
 
     const goTo = (target: VenueRoute) => {
       router.push(`/${venueSlugForRoute(target)}`);
@@ -144,7 +158,7 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
         preserveAspectRatio="xMidYMid slice"
         style={{
           ...PARALLAX_LAYER_BASE,
-          zIndex: 25,
+          zIndex: staticSigns ? Z_PLAYER_CHARACTER + 1 : 25,
           pointerEvents: 'none',
           opacity: active ? 1 : 0,
           transition: 'opacity 0.3s ease',
@@ -161,8 +175,8 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
         `}</style>
         {active && (
           <>
-            <EdgeSign x={leftX} dir="left" route={prev} onGo={() => goTo(prev)} />
-            <EdgeSign x={rightX} dir="right" route={next} onGo={() => goTo(next)} />
+            <EdgeSign x={leftX} y={signY} dir="left" route={prev} onGo={() => goTo(prev)} edgePinned={staticSigns} />
+            <EdgeSign x={rightX} y={signY} dir="right" route={next} onGo={() => goTo(next)} edgePinned={staticSigns} />
           </>
         )}
       </svg>

@@ -4,7 +4,8 @@ import { MOBILE_LOUNGE_STAGES } from '@/lib/mobileLounge';
 import type { StageAnchorKind } from '@/lib/stageAnchor';
 import { cityTileIndex } from '@/lib/spawn';
 import type { VenueRoute } from '@/lib/venueSlugs';
-import { isCreatorTemplateRoute, venueSlugForRoute } from '@/lib/venueSlugs';
+import { screenPctToWorldX } from '@/lib/gameWorldRef';
+import { isCreatorTemplateRoute, isStaticCityTemplateRoute, venueSlugForRoute } from '@/lib/venueSlugs';
 import { worldOffForVenueRoute } from '@/lib/venueRoutes';
 import { cinemaMidX, deepSpaceMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
 
@@ -13,6 +14,12 @@ import { cinemaMidX, deepSpaceMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } fr
  * CityNavSigns). VIEW_CENTER_X is the character's fixed screen position.
  */
 export const SIGN_EDGE_INSET_PX = 260;
+
+/** Screen-edge inset for static city template — matches walk bounds. */
+export const STATIC_CITY_EDGE_INSET_PCT = 5;
+
+/** Extra inward padding for static city nav signs (beyond the walk boundary). */
+export const STATIC_SIGN_EDGE_PADDING_PX = 20;
 import { midOriginForTile, midWidthForTile, nearGndTiles, TOWN_MID_W } from '@/lib/worldTileGeometry';
 
 /** West-to-east picker order — used for edge navigation and city select. */
@@ -122,8 +129,38 @@ function creatorTemplateWorldOffBounds(route: VenueRoute): { min: number; max: n
 export function cityWorldOffBounds(route: VenueRoute): { min: number; max: number } {
   if (route === 'cinema') return cinemaWorldOffBounds();
   if (route === 'deep-space') return deepSpaceWorldOffBounds();
+  if (isStaticCityTemplateRoute(route)) {
+    const off = worldOffForVenueRoute(route);
+    return { min: off, max: off };
+  }
   if (isCreatorTemplateRoute(route)) return creatorTemplateWorldOffBounds(route);
   return fullCityWorldOffBounds(route);
+}
+
+/** Walk range for the local player when the camera is fixed (screen-edge bounds). */
+export function staticCityPlayerWorldBounds(
+  cameraOff: number,
+  viewportWidth: number,
+  edgeInsetPct = STATIC_CITY_EDGE_INSET_PCT,
+): { min: number; max: number } {
+  return {
+    min: screenPctToWorldX(edgeInsetPct, cameraOff, viewportWidth),
+    max: screenPctToWorldX(100 - edgeInsetPct, cameraOff, viewportWidth),
+  };
+}
+
+/** Ground-layer x for prev/next signs on the static city template. */
+export function staticCitySignGroundX(
+  cameraOff: number,
+  viewportWidth = typeof window !== 'undefined' ? window.innerWidth : VIEW_WIDTH,
+): { leftX: number; rightX: number } {
+  const walkInsetPx = (STATIC_CITY_EDGE_INSET_PCT / 70) * viewportWidth;
+  const insetPx = walkInsetPx + STATIC_SIGN_EDGE_PADDING_PX;
+  const inset = (insetPx / viewportWidth) * VIEW_WIDTH;
+  return {
+    leftX: cameraOff + inset,
+    rightX: cameraOff + VIEW_WIDTH - inset,
+  };
 }
 
 /**

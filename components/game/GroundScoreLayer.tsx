@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CHAR_BOTTOM } from './groundLayout';
 import { worldXToScreenPct } from './NPC';
-import { gameWorldOffRef } from '@/lib/gameWorldRef';
+import { gameWorldOffRef, playerWorldXRef } from '@/lib/gameWorldRef';
 import {
   GROUND_SCORE_MAX_COINS,
   GROUND_SCORE_PICKUP_DIST_PX,
@@ -38,6 +38,7 @@ function GroundCoinSprite({
 
     const loop = () => {
       const off = gameWorldOffRef.current;
+      const playerX = playerWorldXRef.current;
       const el = divRef.current;
       if (el) el.style.left = `${worldXToScreenPct(coin.worldX, off)}%`;
 
@@ -46,7 +47,7 @@ function GroundCoinSprite({
       if (
         frame % 4 === 0 &&
         !pickedRef.current &&
-        Math.abs(coin.worldX - off) < GROUND_SCORE_PICKUP_DIST_PX
+        Math.abs(coin.worldX - playerX) < GROUND_SCORE_PICKUP_DIST_PX
       ) {
         pickedRef.current = true;
         onPickup(coin);
@@ -121,7 +122,7 @@ export function GroundScoreLayer({ active, onPickup }: GroundScoreLayerProps) {
         if (prev.length >= GROUND_SCORE_MAX_COINS) return prev;
         const coin: GroundCoinDef = {
           id: ++idRef.current,
-          worldX: groundCoinWorldX(gameWorldOffRef.current),
+          worldX: groundCoinWorldX(playerWorldXRef.current),
           value: groundCoinValue(),
         };
         return [...prev, coin];

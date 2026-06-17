@@ -8,8 +8,10 @@ import {
 } from '@/lib/parallax';
 import { nearIsolatedGndTiles } from '@/lib/isolatedCity';
 import type { VenueRoute } from '@/lib/venueRoutes';
+import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
+import { CITY_GRASS_DROP_Y } from './cinema/constants';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
-import { skipGroundStreetProp, skipGroundStreetTree } from '@/lib/stageTreeExclusion';
+import { skipGroundStreetLamp, skipGroundStreetProp, skipGroundStreetTree, type GroundStreetSkipContext } from '@/lib/stageTreeExclusion';
 import { SleepingCatsGround } from '../SleepingCat';
 import { StreetDogsGround } from '../StreetDog';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
@@ -18,39 +20,84 @@ import { StreetTree } from './street/StreetTree';
 import { LampPost } from './street/LampPost';
 
 const GND_Y = 685;
+const GRASS_TOP = GND_Y - 8;
 const LAMP_XS = [380, 700, 1060, 1400, 1740, 2080, 2420, 2760, 3100];
 const HYDRANTS = [560, 1850, 3050];
 const BENCHES = [920, 2180, 3380];
 const BUS_STOPS = [880, 2200];
 
-type GroundLayerProps = {
-  worldOff: number;
-  hideTrees?: boolean;
-  /** Skip animated sidewalk dogs (e.g. Silent Disco). */
-  hideStreetDogs?: boolean;
-  /** Lunar surface only — no street, trees, cats, or props (Chill Cinema / The Orbit). */
-  bareGround?: boolean;
-  /** When set, only this city tile is rendered (isolated city mode). */
-  isolatedTileIndex?: number;
-  deepLinkRoute?: VenueRoute;
-};
+/** Deterministic 0..1 for grass scatter (stable per index). */
+function grassRand(i: number, salt: number) {
+  return ((i * 2654435761 ^ salt * 2246822519) >>> 0) / 4294967296;
+}
 
-function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = false, bareGround = false) {
-  // Draw the road/sidewalk at the tile's natural width and show only the props
-  // that fit. Short town tiles previously squeezed everything with a non-uniform
-  // scale(scale,1), distorting trees, hydrants, benches and cats — never scale
-  // discrete art; just render fewer pieces in narrow tiles.
-  const w = gndWidthForTile(tile);
-  // Keep a prop fully inside the tile (account for its art half-width).
-  const fits = (x: number, halfW: number) => x <= w - halfW;
+/** City template experiment — lawn instead of road/sidewalk. */
+function GrassGround({ w, tile }: { w: number; tile: number }) {
+  const top = GRASS_TOP + CITY_GRASS_DROP_Y;
+  const h = 900 - top;
+  const gid = `city-grass-${tile}`;
 
-  if (bareGround) {
-    // Deep Space — transparent deck so parallax stars show through.
-    return null;
-  }
+  const tufts = Array.from({ length: Math.ceil(w / 28) }, (_, i) => {
+    const r0 = grassRand(i + tile * 97, 1);
+    const r1 = grassRand(i + tile * 97, 2);
+    const r2 = grassRand(i + tile * 97, 3);
+    const cx = i * 28 + r0 * 18;
+    const cy = top + 36 + r1 * (h - 48);
+    const rx = 10 + r2 * 14;
+    const ry = 4 + grassRand(i + tile * 97, 4) * 5;
+    const fill = r2 > 0.66 ? '#3d6b35' : r2 > 0.33 ? '#4a853f' : '#6aad5c';
+    return (
+      <ellipse
+        key={i}
+        cx={cx}
+        cy={cy}
+        rx={rx}
+        ry={ry}
+        fill={fill}
+        opacity={0.14 + r0 * 0.18}
+      />
+    );
+  });
 
   return (
-    <g {...DECORATIVE_SHAPE}>
+    <>
+      <defs>
+        <linearGradient id={`${gid}-fill`} gradientUnits="userSpaceOnUse" x1={0} y1={top} x2={0} y2={top + h}>
+          <stop offset="0%" stopColor="#6eb860" />
+          <stop offset="45%" stopColor="#5a9c4e" />
+          <stop offset="100%" stopColor="#3f7238" />
+        </linearGradient>
+        <linearGradient id={`${gid}-depth`} gradientUnits="userSpaceOnUse" x1={0} y1={top + h * 0.5} x2={0} y2={top + h}>
+          <stop offset="0%" stopColor="#1a3018" stopOpacity={0} />
+          <stop offset="100%" stopColor="#1a3018" stopOpacity={0.22} />
+        </linearGradient>
+        <linearGradient id={`${gid}-seam`} gradientUnits="userSpaceOnUse" x1={0} y1={top} x2={0} y2={top + 24}>
+          <stop offset="0%" stopColor="#8ecf7e" stopOpacity={0.35} />
+          <stop offset="100%" stopColor="#8ecf7e" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <rect x={0} y={top} width={w} height={h} fill={`url(#${gid}-fill)`} />
+      {Array.from({ length: Math.ceil(h / 52) }, (_, i) => (
+        <rect
+          key={`stripe-${i}`}
+          x={0}
+          y={top + i * 52}
+          width={w}
+          height={26}
+          fill={i % 2 === 0 ? '#ffffff' : '#1a3018'}
+          opacity={0.035}
+        />
+      ))}
+      <g opacity={0.9}>{tufts}</g>
+      <rect x={0} y={top} width={w} height={h} fill={`url(#${gid}-depth)`} />
+      <rect x={0} y={top} width={w} height={24} fill={`url(#${gid}-seam)`} />
+    </>
+  );
+}
+
+function StreetGround({ w }: { w: number }) {
+  return (
+    <>
       <rect x={0} y={GND_Y + 25} width={w} height={215} fill="#b0a878" />
       <rect x={0} y={GND_Y + 25} width={w} height={12} fill="rgba(0,0,0,.08)" />
       {Array.from({ length: Math.ceil(w / 80) }, (_, i) => (
@@ -78,44 +125,74 @@ function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = fal
         />
       ))}
       <line x1={0} y1={GND_Y + 8} x2={w} y2={GND_Y + 8} stroke="rgba(0,0,0,.05)" strokeWidth={1.5} />
-      <line x1={0} y1={GND_Y + 55} x2={w} y2={GND_Y + 55} stroke="#706850" strokeWidth={4} />
-      <line x1={0} y1={GND_Y + 68} x2={w} y2={GND_Y + 68} stroke="#706850" strokeWidth={4} />
-      {Array.from({ length: Math.ceil(w / 40) }, (_, i) => (
-        <rect
-          key={i}
-          x={i * 40}
-          y={GND_Y + 52}
-          width={6}
-          height={19}
-          fill="#605840"
-          opacity={0.6}
-        />
-      ))}
+    </>
+  );
+}
+
+type GroundLayerProps = {
+  worldOff: number;
+  hideTrees?: boolean;
+  /** Skip animated sidewalk dogs (e.g. Silent Disco). */
+  hideStreetDogs?: boolean;
+  /** Lunar surface only — no street, trees, cats, or props (Chill Cinema / The Orbit). */
+  bareGround?: boolean;
+  /** When set, only this city tile is rendered (isolated city mode). */
+  isolatedTileIndex?: number;
+  deepLinkRoute?: VenueRoute;
+};
+
+function groundTileContent(
+  tile: number,
+  hideTrees = false,
+  hideStreetDogs = false,
+  bareGround = false,
+  skipCtx?: GroundStreetSkipContext,
+) {
+  // Draw the road/sidewalk at the tile's natural width and show only the props
+  // that fit. Short town tiles previously squeezed everything with a non-uniform
+  // scale(scale,1), distorting trees, hydrants, benches and cats — never scale
+  // discrete art; just render fewer pieces in narrow tiles.
+  const w = gndWidthForTile(tile);
+  const grassGround = skipCtx?.route != null && isStaticCityTemplateRoute(skipCtx.route);
+  const gndY = grassGround ? GND_Y + CITY_GRASS_DROP_Y : GND_Y;
+  // Keep a prop fully inside the tile (account for its art half-width).
+  const fits = (x: number, halfW: number) => x <= w - halfW;
+
+  if (bareGround) {
+    // Deep Space — transparent deck so parallax stars show through.
+    return null;
+  }
+
+  return (
+    <g {...DECORATIVE_SHAPE}>
+      {grassGround ? <GrassGround w={w} tile={tile} /> : <StreetGround w={w} />}
       {!hideTrees && GROUND_TREE_XS.map((x, i) => (
-        fits(x, 90) && !skipGroundStreetTree(tile, x, w) ? (
-          <ellipse key={`sh${i}`} cx={x + 28} cy={GND_Y + 8} rx={50} ry={11} fill="rgba(20,50,0,.2)" />
+        fits(x, 90) && !skipGroundStreetTree(tile, x, w, skipCtx) ? (
+          <ellipse key={`sh${i}`} cx={x + 28} cy={gndY + 8} rx={50} ry={11} fill="rgba(20,50,0,.2)" />
         ) : null
       ))}
       {!hideTrees && GROUND_TREE_XS.map((x, i) => (
-        fits(x, 90) && !skipGroundStreetTree(tile, x, w) ? (
+        fits(x, 90) && !skipGroundStreetTree(tile, x, w, skipCtx) ? (
           <g
             key={i}
             style={{
               animation: `sw${1 + (i % 3)} ${5 + i * 0.4}s ease-in-out infinite`,
-              transformOrigin: `${x}px ${GND_Y}px`,
+              transformOrigin: `${x}px ${gndY}px`,
               animationDelay: `${i * 0.45}s`,
             }}
           >
-            <StreetTree x={x} y={GND_Y} h={195 + (i % 4) * 12} sp={88 + (i % 3) * 8} />
+            <StreetTree x={x} y={gndY} h={195 + (i % 4) * 12} sp={88 + (i % 3) * 8} />
           </g>
         ) : null
       ))}
-      <SleepingCatsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
+      <SleepingCatsGround tile={tile} gndY={gndY} maxX={w - 60} />
       {!hideStreetDogs && (
-        <StreetDogsGround tile={tile} gndY={GND_Y} maxX={w - 60} />
+        <StreetDogsGround tile={tile} gndY={gndY} maxX={w - 60} />
       )}
+      {!grassGround && (
+        <>
       {LAMP_XS.map((x, i) => (
-        fits(x, 30) && !skipGroundStreetProp(tile, x, w) ? <LampPost key={i} x={x} y={GND_Y} /> : null
+        fits(x, 30) && !skipGroundStreetLamp(tile, x, w, skipCtx) ? <LampPost key={i} x={x} y={GND_Y} /> : null
       ))}
       {HYDRANTS.map((x, i) => (
         fits(x, 24) && !skipGroundStreetProp(tile, x, w) ? (
@@ -153,6 +230,8 @@ function groundTileContent(tile: number, hideTrees = false, hideStreetDogs = fal
         </g>
         ) : null
       ))}
+        </>
+      )}
     </g>
   );
 }
@@ -163,6 +242,9 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
     const nearTiles = isolatedTileIndex != null
       ? nearIsolatedGndTiles(isolatedTileIndex, deepLinkRoute)
       : nearGndTiles;
+    const skipCtx: GroundStreetSkipContext | undefined = deepLinkRoute
+      ? { route: deepLinkRoute, cameraOff: worldOff }
+      : undefined;
 
     return (
       <ParallaxSvgLayer
@@ -173,7 +255,7 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
         nearTileIndices={nearTiles}
         shapeRendering="optimizeSpeed"
         style={{ zIndex: 5, pointerEvents: 'none' }}
-        children={tile => groundTileContent(tile, hideTrees, hideStreetDogs, bareGround)}
+        children={tile => groundTileContent(tile, hideTrees, hideStreetDogs, bareGround, skipCtx)}
       />
     );
   },

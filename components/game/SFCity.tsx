@@ -80,7 +80,7 @@ import { pickPromptDrawAck, PROMPT_DRAW_ACK_HOLD_MS } from '@/lib/easel/promptDr
 import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
 import { getConcertNowPlaying, subscribeConcertNowPlaying } from '@/lib/concertNowPlaying';
-import { gameWorldOffRef } from '@/lib/gameWorldRef';
+import { gameWorldOffRef, playerWorldXRef } from '@/lib/gameWorldRef';
 import {
   moveBroadcastFrameInterval,
   moveBroadcastWorldEpsilon,
@@ -92,6 +92,7 @@ import {
   partyRoomIdForRoute,
   stageChannelForRoute,
   stageWorldOffForRoute,
+  staticCityPlayerWorldBounds,
 } from '@/lib/isolatedCity';
 import { partyRoomIdForStageSlug, stagePathForSlug, venueRouteForUserStage } from '@/lib/stages/runtime';
 import {
@@ -130,6 +131,8 @@ import { applyNpcDancing } from '@/lib/npcDancingRegistry';
 import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
+import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
+import { CITY_BACKDROP_FILL } from './city/cinema/constants';
 import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { BottomControlPanel, SignOutIcon } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
@@ -246,7 +249,9 @@ export default function SFCity({
     : venueRoute;
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
   const isCreatorChill = effectiveVenueRoute === 'creator-chill';
-  const isCreatorCustomSky = isCreatorChill;
+  const isCreatorCinema = effectiveVenueRoute === 'creator-cinema';
+  const isCreatorCustomSky = isCreatorChill || isCreatorCinema;
+  const isStaticCityView = isStaticCityTemplateRoute(effectiveVenueRoute);
   /** Stable per tab session — matches stage picker crowd counts. */
   const ambientSeed = useMemo(
     () => ambientSeedForRoute(effectiveVenueRoute),
@@ -273,6 +278,9 @@ export default function SFCity({
     : spawnOverride;
   const spawnWorldOff = Math.max(cityBounds.min, Math.min(cityBounds.max, rawSpawn));
   const worldRef        = useRef(spawnWorldOff);
+  const playerCharRef   = useRef<HTMLDivElement>(null);
+  const isStaticCityViewRef = useRef(isStaticCityView);
+  isStaticCityViewRef.current = isStaticCityView;
   const keysRef         = useRef({ left: false, right: false });
   const facingRef       = useRef<'left' | 'right'>('right');
   const walkingRef      = useRef(false);
@@ -292,6 +300,8 @@ export default function SFCity({
   const navSignsRef = useRef<SVGSVGElement>(null);
   const lastMidScrollTileRef = useRef<number | null>(null);
   const lastGndScrollTileRef = useRef<number | null>(null);
+  /** Static city — skip redundant viewBox DOM writes when camera + viewport are unchanged. */
+  const lastStaticViewBoxKeyRef = useRef<string | null>(null);
 
   /**
    * Mobile mid-layer viewport.
@@ -320,8 +330,21 @@ export default function SFCity({
   // Formula: vb_h = STAGE_GND + (900 − GND_LAYER_Y) * vh/vw = 660 + 215 * vh/vw
   const MOBILE_MID_PAR = 'xMidYMax meet';
 
+  const staticViewBoxKey = (off: number) => {
+    if (typeof window === 'undefined') return String(off);
+    if (window.innerWidth <= 767) {
+      return `${off}|${window.innerWidth}|${window.innerHeight}`;
+    }
+    return String(off);
+  };
+
   /** Update scrolling SVG viewBoxes directly — zero React overhead. */
-  const updateViewBoxes = (off: number) => {
+  const updateViewBoxes = (off: number, opts?: { force?: boolean }) => {
+    if (isStaticCityViewRef.current) {
+      const key = staticViewBoxKey(off);
+      if (!opts?.force && lastStaticViewBoxKeyRef.current === key) return;
+      lastStaticViewBoxKeyRef.current = key;
+    }
     const skyVx = off * SKY_F;
     const midVx = off * MID_F;
     const gndVx = off * GND_F;
@@ -334,7 +357,8 @@ export default function SFCity({
     cloudsRef.current?.setAttribute('viewBox', vb(skyVx));
 
     // On mobile portrait, zoom the stage layer out to show the full stage width.
-    if (typeof window !== 'undefined' && window.innerWidth <= 767) {
+    // Static city keeps the desktop slice so the upload backdrop fills the screen top.
+    if (typeof window !== 'undefined' && window.innerWidth <= 767 && !isStaticCityViewRef.current) {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       // stage ground (y=660) in mid-layer must match GND_Y=685 in ground layer (slice, scale=vh/900).
@@ -1151,15 +1175,20 @@ export default function SFCity({
 
   useLayoutEffect(() => {
     worldRef.current = spawnWorldOff;
+    playerWorldXRef.current = spawnWorldOff;
     setMidScrollWorldOff(spawnWorldOff);
     setGndScrollWorldOff(spawnWorldOff);
     gameWorldOffRef.current = spawnWorldOff;
-    updateViewBoxes(spawnWorldOff);
+    lastStaticViewBoxKeyRef.current = null;
+    updateViewBoxes(spawnWorldOff, { force: true });
     lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
     lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
+    if (isStaticCityView && playerCharRef.current) {
+      playerCharRef.current.style.left = '50%';
+    }
   // updateViewBoxes is stable (no deps)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spawnWorldOff]);
+  }, [spawnWorldOff, isStaticCityView]);
 
   useLayoutEffect(() => {
     npcWorldXRefs.current = effectiveNpcCast.map(cfg =>
@@ -1593,6 +1622,24 @@ export default function SFCity({
     if (homePreview) return;
 
     const SPEED = 3.5;
+    const staticView = isStaticCityViewRef.current;
+
+    const cameraOff = () => worldRef.current;
+    const playerWorldX = () =>
+      staticView ? playerWorldXRef.current : worldRef.current;
+
+    const syncPlayerScreenX = (width: number) => {
+      if (!staticView || !playerCharRef.current) return;
+      const pct = worldXToScreenPct(playerWorldXRef.current, cameraOff(), width);
+      playerCharRef.current.style.left = `${pct}%`;
+    };
+
+    const clampPlayerWorldX = (width: number) => {
+      if (!staticView) return;
+      const { min, max } = staticCityPlayerWorldBounds(cameraOff(), width);
+      playerWorldXRef.current = Math.max(min, Math.min(max, playerWorldXRef.current));
+      syncPlayerScreenX(width);
+    };
 
     const triggerJump = () => {
       if (jumpingRef.current) return;
@@ -1727,8 +1774,9 @@ export default function SFCity({
     const updateDanceState = (off: number) => {
       const width = window.innerWidth;
       const greeting = greetingRef.current;
+      const playerWx = playerWorldX();
 
-      const playerNear = greeting === null && isNearStage(off, off, width);
+      const playerNear = greeting === null && isNearStage(playerWx, off, width);
       if (playerNear !== playerDancingRef.current) {
         playerDancingRef.current = playerNear;
         setPlayerDancing(playerNear);
@@ -1750,7 +1798,7 @@ export default function SFCity({
     const broadcastMove = () => {
       if (showWelcomeRef.current || showCityPickerRef.current) return;
       const last = lastSentRef.current;
-      const wx = worldRef.current;
+      const wx = playerWorldX();
       const f  = facingRef.current;
       const w  = walkingRef.current;
       const eps = moveBroadcastWorldEpsilon();
@@ -1843,13 +1891,14 @@ export default function SFCity({
       if (inChatFreeze) {
         frameCountRef.current++;
         tickNpcs();
-        updateViewBoxes(worldRef.current);
+        if (!staticView) updateViewBoxes(worldRef.current);
         if (frameCountRef.current % 4 === 0) {
           updateDanceState(worldRef.current);
           broadcastNpcPositions();
         }
         if (shouldBroadcastMove()) broadcastMove();
         gameWorldOffRef.current = worldRef.current;
+        if (!staticView) playerWorldXRef.current = worldRef.current;
         rafRef.current = requestAnimationFrame(loop);
         return;
       }
@@ -1858,7 +1907,18 @@ export default function SFCity({
       let isWalking = false;
 
       if (!noWalk) {
-        if (left && !right) {
+        if (staticView) {
+          if (left && !right) {
+            playerWorldXRef.current -= SPEED;
+            if (facingRef.current !== 'left') { facingRef.current = 'left'; setFacing('left'); }
+            isWalking = true;
+          } else if (right && !left) {
+            playerWorldXRef.current += SPEED;
+            if (facingRef.current !== 'right') { facingRef.current = 'right'; setFacing('right'); }
+            isWalking = true;
+          }
+          clampPlayerWorldX(window.innerWidth);
+        } else if (left && !right) {
           worldRef.current -= SPEED;
           if (facingRef.current !== 'left') { facingRef.current = 'left'; setFacing('left'); }
           isWalking = true;
@@ -1867,8 +1927,10 @@ export default function SFCity({
           if (facingRef.current !== 'right') { facingRef.current = 'right'; setFacing('right'); }
           isWalking = true;
         }
-        const { min, max } = cityBoundsRef.current;
-        worldRef.current = Math.max(min, Math.min(max, worldRef.current));
+        if (!staticView) {
+          const { min, max } = cityBoundsRef.current;
+          worldRef.current = Math.max(min, Math.min(max, worldRef.current));
+        }
       }
 
       if (isWalking !== walkingRef.current) {
@@ -1876,13 +1938,13 @@ export default function SFCity({
         setWalking(isWalking);
       }
 
-      // Always update viewBoxes + sign overlap imperatively — no React re-render
+      // Scroll layers each frame in normal cities; static city updates on spawn/resize only.
       const off = worldRef.current;
-      updateViewBoxes(off);
+      if (!staticView) updateViewBoxes(off);
       tickNpcs();
 
       // Re-render layers only when the visible tile window changes — avoids per-frame React re-renders.
-      if (isWalking) {
+      if (isWalking && !staticView) {
         const midTile = midScrollTile(off);
         if (midTile !== lastMidScrollTileRef.current) {
           lastMidScrollTileRef.current = midTile;
@@ -1908,11 +1970,12 @@ export default function SFCity({
           let nextPeer: string | null = null;
           let bestDist = Infinity;
           if (Date.now() > disconnectUntil.current) {
+            const playerWx = playerWorldX();
             for (let i = 0; i < npcWorldXRefs.current.length; i++) {
               const wx = npcWorldXRefs.current[i];
               if (!Number.isFinite(wx)) continue;
               const screenPct = worldXToScreenPct(wx, worldRef.current, width);
-              const distPx    = Math.abs(wx - worldRef.current);
+              const distPx    = Math.abs(wx - playerWx);
               if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx && distPx < bestDist) {
                 bestDist = distPx; nextNpc = i; nextPeer = null;
               }
@@ -1921,7 +1984,7 @@ export default function SFCity({
             if (roster) {
               for (const [pid, st] of roster) {
                 const screenPct = worldXToScreenPct(st.worldX, worldRef.current, width);
-                const distPx    = Math.abs(st.worldX - worldRef.current);
+                const distPx    = Math.abs(st.worldX - playerWx);
                 if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx && distPx < bestDist) {
                   bestDist = distPx; nextPeer = pid; nextNpc = null;
                 }
@@ -1948,15 +2011,24 @@ export default function SFCity({
       if (shouldBroadcastMove()) broadcastMove();
 
       gameWorldOffRef.current = worldRef.current;
+      if (!staticView) playerWorldXRef.current = worldRef.current;
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
+
+    const onResize = () => {
+      if (!isStaticCityViewRef.current) return;
+      updateViewBoxes(worldRef.current, { force: true });
+      clampPlayerWorldX(window.innerWidth);
+    };
+    window.addEventListener('resize', onResize);
 
     return () => {
       if (rafRef.current)     cancelAnimationFrame(rafRef.current);
       if (jumpTimerRef.current) { clearTimeout(jumpTimerRef.current); jumpTimerRef.current = null; }
       window.removeEventListener('keydown', onDown, true);
       window.removeEventListener('keyup',   onUp);
+      window.removeEventListener('resize', onResize);
     };
   }, [homePreview]);
 
@@ -1967,6 +2039,7 @@ export default function SFCity({
     const loop = () => {
       updateViewBoxes(worldRef.current);
       gameWorldOffRef.current = worldRef.current;
+      playerWorldXRef.current = worldRef.current;
       rafRef.current = requestAnimationFrame(loop);
     };
 
@@ -2123,6 +2196,17 @@ export default function SFCity({
               background: CHILL_FOREST_BG,
             }}
           />
+        ) : isCreatorCinema ? (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: CITY_BACKDROP_FILL,
+            }}
+          />
         ) : isDeepSpace ? (
           <SpaceParallaxStars />
         ) : (
@@ -2229,8 +2313,9 @@ export default function SFCity({
             dancing={TEST_FORCE_DANCE || playerDancing}
           />
         ) : (
-          /* Player — world scrolls, character stays centred */
+          /* Player — scrolls with world in normal cities; walks across screen in static city */
           <div
+            ref={isStaticCityView ? playerCharRef : undefined}
             className="game-character game-player-character"
             style={{
             position: 'absolute',
