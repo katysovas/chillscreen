@@ -57,7 +57,6 @@ function stageStreamFromApiItem(item: YoutubeVideoApiItem): ParsedStageStream | 
   const status = item.status;
   if (status?.contentRating?.ytRating === 'ytAgeRestricted') return null;
   if (!isYoutubeVideoEmbeddable(status)) return null;
-  if (item.contentDetails?.regionRestriction?.blocked?.length) return null;
 
   const durationSec = parseYoutubeDuration(item.contentDetails?.duration ?? '');
   if (!durationSec) return null;
@@ -80,7 +79,6 @@ function rejectReasonFromApiItem(item: YoutubeVideoApiItem): StreamParseRejectRe
   const status = item.status;
   if (status?.contentRating?.ytRating === 'ytAgeRestricted') return 'age_restricted';
   if (!isYoutubeVideoEmbeddable(status)) return 'not_embeddable';
-  if (item.contentDetails?.regionRestriction?.blocked?.length) return 'region_locked';
   return 'no_duration';
 }
 
@@ -175,9 +173,6 @@ export async function parseStageStreamUrl(
           }
           if (reason === 'not_embeddable') {
             return reject('not_embeddable', 'This video cannot be embedded.');
-          }
-          if (reason === 'region_locked') {
-            return reject('region_locked', 'Region-restricted videos cannot be used.');
           }
           return reject('no_duration', 'Live streams and videos without a fixed length are not supported.');
         }
