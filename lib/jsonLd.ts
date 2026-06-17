@@ -11,6 +11,9 @@ import { LANDING_PAGE_DESCRIPTION, LANDING_PAGE_TITLE } from '@/lib/landingSeo';
 import { allStageSeoEntries, venueSeoForRoute } from '@/lib/venueSeo';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { parseVenueSlug, venueSlugForRoute, VENUE_SLUGS } from '@/lib/venueRoutes';
+import { creatorStageSeo } from '@/lib/stages/creatorSeo';
+import { nowPlayingStream } from '@/lib/stages/runtime';
+import type { UserStagePublic } from '@/lib/stages/types';
 
 function absoluteUrl(path: string): string {
   return path.startsWith('http') ? path : `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
@@ -171,6 +174,70 @@ export function festivalStageJsonLd(route: VenueRoute) {
       '@id': `${SITE_URL}/#app`,
       name: SITE_NAME,
     },
+  };
+}
+
+/** Per creator-stage rich result — music venue + now-playing video. */
+export function creatorStageJsonLd(stage: UserStagePublic) {
+  const seo = creatorStageSeo(stage);
+  const url = absoluteUrl(seo.path);
+  const stream = nowPlayingStream(stage);
+
+  const node: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'TouristAttraction',
+    '@id': `${url}#stage`,
+    name: `${seo.name} on ${SITE_NAME}`,
+    description: seo.longDescription,
+    url,
+    isAccessibleForFree: true,
+    touristType: 'Festival and live music fans',
+    keywords: seo.keywords.join(', '),
+    additionalType: 'https://schema.org/MusicVenue',
+    containedInPlace: {
+      '@type': 'WebApplication',
+      '@id': `${SITE_URL}/#app`,
+      name: SITE_NAME,
+    },
+  };
+
+  if (stream?.title) {
+    node.subjectOf = {
+      '@type': 'VideoObject',
+      name: stream.title,
+      description: stream.channelTitle
+        ? `${stream.title} by ${stream.channelTitle}, now playing on ${seo.name}.`
+        : `${stream.title}, now playing on ${seo.name}.`,
+      thumbnailUrl: stream.thumbnail || undefined,
+      embedUrl: stream.url || undefined,
+      uploadDate: new Date(stage.createdAt).toISOString(),
+      ...(stream.channelTitle
+        ? { creator: { '@type': 'Organization', name: stream.channelTitle } }
+        : {}),
+    };
+  }
+
+  return node;
+}
+
+/** Full structured-data graph for a creator stage page. */
+export function creatorStageGraphJsonLd(stage: UserStagePublic) {
+  const seo = creatorStageSeo(stage);
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      webPageJsonLd({
+        path: seo.path,
+        title: `${seo.name} — ${SITE_NAME}`,
+        description: seo.description,
+      }),
+      breadcrumbJsonLd([
+        { name: SITE_NAME, path: '/' },
+        { name: 'Stages', path: '/stages' },
+        { name: seo.name, path: seo.path },
+      ]),
+      creatorStageJsonLd(stage),
+    ],
   };
 }
 

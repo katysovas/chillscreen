@@ -5,9 +5,10 @@ import { UserStageShell } from '@/components/create/UserStageShell';
 import { getUserStagePublicBySlug } from '@/lib/stages/db';
 import { getDb } from '@/lib/db';
 import { JsonLd } from '@/components/JsonLd';
-import { breadcrumbJsonLd, webPageJsonLd } from '@/lib/jsonLd';
+import { creatorStageGraphJsonLd } from '@/lib/jsonLd';
 import { buildPageMetadata } from '@/lib/siteMetadata';
-import { stagePathForSlug } from '@/lib/stages/runtime';
+import { SITE_NAME } from '@/lib/site';
+import { creatorStageSeo } from '@/lib/stages/creatorSeo';
 
 export const dynamicParams = true;
 
@@ -24,12 +25,16 @@ export async function generateMetadata({ params }: WatchPageProps): Promise<Meta
     return {};
   }
 
-  const path = stagePathForSlug(userStage.slug);
+  const seo = creatorStageSeo(userStage);
   return buildPageMetadata({
-    title: `${userStage.slug} — WhichStage`,
-    description: `Watch and hang out on ${userStage.slug}, a creator stage on WhichStage.`,
-    path,
-    keywords: ['stage', 'stream', userStage.slug],
+    title: seo.metaTitle,
+    description: seo.description,
+    path: seo.path,
+    keywords: seo.keywords,
+    image: `${seo.path}/opengraph-image`,
+    imageAlt: `${seo.name} — ${SITE_NAME}`,
+    // Dormant stages stay reachable but drop out of the index to save crawl budget.
+    noIndex: userStage.tier === 'dormant',
   });
 }
 
@@ -42,26 +47,9 @@ export default async function WatchPage({ params }: WatchPageProps) {
     redirect('/');
   }
 
-  const path = stagePathForSlug(userStage.slug);
-
   return (
     <>
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@graph': [
-            webPageJsonLd({
-              path,
-              title: `${userStage.slug} — WhichStage`,
-              description: 'Creator stage on WhichStage.',
-            }),
-            breadcrumbJsonLd([
-              { name: 'WhichStage', path: '/' },
-              { name: userStage.slug, path },
-            ]),
-          ],
-        }}
-      />
+      <JsonLd data={creatorStageGraphJsonLd(userStage)} />
       <Suspense fallback={null}>
         <UserStageShell stage={userStage} />
       </Suspense>

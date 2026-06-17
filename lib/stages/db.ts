@@ -284,6 +284,32 @@ export async function listFeaturedUserStages(now = Date.now()): Promise<Featured
     }));
 }
 
+export type IndexableStageEntry = { slug: string; lastActiveAt: number };
+
+/**
+ * Active (non-dormant, non-taken-down) creator stages for the sitemap.
+ * Mirrors the page's `noIndex` rule: only the `active` tier is crawlable.
+ */
+export async function listIndexableStageSlugs(now = Date.now()): Promise<IndexableStageEntry[]> {
+  const sql = requireDb();
+  const activeSince = new Date(now - STAGE_CONFIG.DORMANCY_WINDOW_MS).toISOString();
+  const rows = await sql`
+    SELECT slug, last_active_at
+    FROM user_stages
+    WHERE taken_down_at IS NULL
+      AND last_active_at >= ${activeSince}::timestamptz
+    ORDER BY last_active_at DESC
+    LIMIT 5000
+  `;
+  return rows.map(r => {
+    const row = r as { slug: string; last_active_at: unknown };
+    return {
+      slug: String(row.slug),
+      lastActiveAt: new Date(String(row.last_active_at)).getTime(),
+    };
+  });
+}
+
 /** When shuffle is on and the room is empty, pick a random track for the first viewer. */
 export async function maybeShuffleStageOnStart(
   slug: string,

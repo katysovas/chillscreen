@@ -17,6 +17,10 @@ type PageMetadataOptions = {
   path?: string;
   noIndex?: boolean;
   keywords?: string[];
+  /** Override the social share image (absolute or root-relative URL). */
+  image?: string;
+  /** Alt text for the override image. */
+  imageAlt?: string;
 };
 
 export function buildPageMetadata({
@@ -25,10 +29,14 @@ export function buildPageMetadata({
   path = '/',
   noIndex = false,
   keywords,
+  image,
+  imageAlt,
 }: PageMetadataOptions = {}): Metadata {
   const canonical = path.startsWith('/') ? path : `/${path}`;
   const pageTitle = title ?? SITE_NAME;
   const fullTitle = title && title !== SITE_NAME ? `${title} | ${SITE_NAME}` : SITE_NAME;
+  const ogImageUrl = image ?? OG_IMAGE_PATH;
+  const ogImageAlt = imageAlt ?? `${SITE_NAME} — ${pageTitle}`;
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -67,10 +75,10 @@ export function buildPageMetadata({
       description,
       images: [
         {
-          url: OG_IMAGE_PATH,
+          url: ogImageUrl,
           width: OG_IMAGE_WIDTH,
           height: OG_IMAGE_HEIGHT,
-          alt: `${SITE_NAME} — ${pageTitle}`,
+          alt: ogImageAlt,
           type: 'image/png',
         },
       ],
@@ -81,7 +89,7 @@ export function buildPageMetadata({
       creator: TWITTER_HANDLE,
       title: pageTitle,
       description,
-      images: [OG_IMAGE_PATH],
+      images: [ogImageUrl],
     },
     robots: noIndex
       ? { index: false, follow: false }
