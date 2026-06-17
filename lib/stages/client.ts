@@ -64,6 +64,7 @@ export async function parseStageStreamUrl(url: string): Promise<ParseStreamResul
 export type CreateStagePayload = {
   slug: string;
   displayName: string;
+  description?: string | null;
   preset: StagePresetId;
   sky?: SkyPeriod;
   streams: StageStream[];
@@ -135,6 +136,7 @@ export async function updateUserStage(
     sky?: SkyPeriod | null;
     backdropUrl?: string | null;
     shuffleOnStart?: boolean;
+    description?: string | null;
   },
 ): Promise<UserStagePublic> {
   const res = await fetch(`/api/stages/${encodeURIComponent(slug)}`, {

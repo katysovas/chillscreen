@@ -21,6 +21,8 @@ export const STAGE_CONFIG = {
   SLUG_MAX_LENGTH: 32,
   /** Human-readable stage name — short truss label. */
   DISPLAY_NAME_MAX_LENGTH: 20,
+  /** Homepage blurb under the stage name. */
+  DESCRIPTION_MAX_LENGTH: 120,
 } as const;
 
 export const STAGE_NAME_FIELD_HINT =

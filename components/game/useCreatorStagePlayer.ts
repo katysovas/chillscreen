@@ -5,6 +5,7 @@ import { getAudioMuted, subscribeAudioMuted } from '@/lib/audioMute';
 import type { UserStagePublic } from '@/lib/stages/types';
 import { nowPlayingStream } from '@/lib/stages/runtime';
 import { streamChannelMarquee } from '@/lib/stages/streamLabel';
+import { useCreatorStagePlaybackReady } from '@/lib/stages/CreatorStageContext';
 import { registerStagePlayerNudge, registerStagePlayerPlayingListener } from '@/lib/stagePlayerRegistry';
 import {
   applyYouTubeAudio,
@@ -59,18 +60,19 @@ export function useCreatorStagePlayer({
   alwaysMuted = false,
   enabled = true,
 }: UseCreatorStagePlayerOptions): UseCreatorStagePlayerResult {
+  const playbackReady = useCreatorStagePlaybackReady();
   const stream = useMemo(() => (enabled ? nowPlayingStream(stage) : null), [enabled, stage]);
   const vidKey = stage.nowPlayingIndex * 10_000 + (stream?.videoId ?? '').length;
   const [embedReady, setEmbedReady] = useState(false);
 
   useEffect(() => {
-    if (!enabled || !live) {
+    if (!enabled || !live || !playbackReady) {
       setEmbedReady(false);
       return;
     }
     setEmbedReady(false);
     return scheduleYouTubeEmbed(() => setEmbedReady(true));
-  }, [enabled, live, vidKey]);
+  }, [enabled, live, playbackReady, vidKey]);
 
   const applyAudio = useCallback(
     (iframe: HTMLIFrameElement | null) => {

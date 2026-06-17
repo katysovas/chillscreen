@@ -102,7 +102,6 @@ import {
 } from '@/lib/stagePickerOptions';
 import { setLastUsedStage } from '@/lib/lastUsedStage';
 import { stageBackdropDisplayUrl } from '@/lib/stages/wallpapers';
-import { useCreatorStageShuffleOnStart } from '@/lib/stages/useCreatorStageShuffleOnStart';
 import { useCreatorStageRemoteSync } from '@/lib/stages/useCreatorStageRemoteSync';
 import {
   useOptionalCreatorStage,
@@ -798,12 +797,6 @@ export default function SFCity({
       lastNpcPosSendRef.current = 0;
     }
   }, [mp.isNpcLeader, mp.connected, mp.selfId]);
-
-  useCreatorStageShuffleOnStart(
-    creatorStage?.slug,
-    creatorStage?.shuffleOnStart ?? false,
-    mp.connected,
-  );
 
   useCreatorStageRemoteSync(creatorStage?.slug, isCreatorStageOwner, mp);
 

@@ -1,7 +1,17 @@
 import type { VenueRoute } from '@/lib/venueRoutes';
-
-import type { StagePresetId } from '@/lib/stages/types';
+import type { StagePickerTarget } from '@/lib/stagePickerOptions';
+import type { FeaturedStageSummary, StagePresetId } from '@/lib/stages/types';
 import { stagePresetById } from '@/lib/stages/presets';
+
+export const LANDING_TRENDING_JOIN_LABEL = 'Join the stage';
+
+export type TrendingStageRow = {
+  id: string;
+  name: string;
+  description: string;
+  thumbnail: string | null;
+  target: StagePickerTarget;
+};
 
 export type LandingStage = {
   route: VenueRoute;
@@ -102,7 +112,7 @@ export const LANDING_STAGES: LandingStage[] = [
   },
 ];
 
-/** Thumbnail for a featured creator stage card on the landing page. */
+/** Thumbnail for a featured creator stage on the landing page. */
 export function landingImageForCreatorPreset(preset: StagePresetId): string {
   const def = stagePresetById(preset);
   const route = def?.venueRoute;
@@ -117,6 +127,47 @@ export function landingImageForCreatorPreset(preset: StagePresetId): string {
     default:
       return '/images/homepage/edc.webp';
   }
+}
+
+export function thumbnailForFeaturedStage(stage: FeaturedStageSummary): string {
+  if (stage.backdropUrl?.trim()) return stage.backdropUrl;
+  return landingImageForCreatorPreset(stage.preset);
+}
+
+export function shuffleArray<T>(items: readonly T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Featured creator stages, then all built-in venue stages. */
+export function buildTrendingStageRows(
+  featured: FeaturedStageSummary[],
+  options?: { randomOrder?: boolean },
+): TrendingStageRow[] {
+  const creators: TrendingStageRow[] = featured.map(stage => ({
+    id: `creator:${stage.slug}`,
+    name: stage.displayName,
+    description: stage.description?.trim()
+      || stagePresetById(stage.preset)?.tagline
+      || 'Creator stage',
+    thumbnail: thumbnailForFeaturedStage(stage),
+    target: { kind: 'creator', slug: stage.slug },
+  }));
+
+  const venues: TrendingStageRow[] = LANDING_STAGES.map(stage => ({
+    id: `venue:${stage.route}`,
+    name: stage.name,
+    description: stage.desc ?? '',
+    thumbnail: stage.bgImage ?? null,
+    target: { kind: 'venue', route: stage.route },
+  }));
+
+  const rows = [...creators, ...venues];
+  return options?.randomOrder ? shuffleArray(rows) : rows;
 }
 
 export const LANDING_FAQ = [

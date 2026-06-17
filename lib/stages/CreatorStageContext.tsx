@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { UserStagePublic } from '@/lib/stages/types';
-import { touchStagePresence, updateUserStage } from '@/lib/stages/client';
+import { touchStagePresence, tryShuffleOnStageStart, updateUserStage } from '@/lib/stages/client';
 import {
   mergeCreatorStageSync,
   stageSyncFingerprint,
@@ -24,10 +24,12 @@ type SetStageOptions = { broadcast?: boolean };
 type CreatorStageContextValue = {
   stage: UserStagePublic;
   isOwner: boolean;
+  /** False while shuffle-on-start runs — blocks the YouTube embed. */
+  playbackReady: boolean;
   setStage: (stage: UserStagePublic, opts?: SetStageOptions) => void;
   applyRemoteStage: (patch: CreatorStageSyncPayload) => void;
   registerStageBroadcast: (fn: ((payload: CreatorStageSyncPayload) => void) | null) => void;
-  swapNowPlaying: (index: number) => Promise<void>;
+  playNow: (index: number) => Promise<void>;
 };
 
 const CreatorStageContext = createContext<CreatorStageContextValue | null>(null);
@@ -55,6 +57,10 @@ function viewerIsStageOwner(
   return ownerUserId === currentUserId;
 }
 
+function needsShuffleOnStart(stage: UserStagePublic): boolean {
+  return Boolean(stage.shuffleOnStart && stage.streams.length > 1);
+}
+
 export function CreatorStageProvider({
   initialStage,
   ownerUserId,
@@ -64,8 +70,40 @@ export function CreatorStageProvider({
   children,
 }: ProviderProps) {
   const [stage, setStageState] = useState(initialStage);
+  const [playbackReady, setPlaybackReady] = useState(() => !needsShuffleOnStart(initialStage));
   const isOwner = viewerIsStageOwner(ownerUserId, currentUserId, authenticated, sessionReady);
   const broadcastRef = useRef<((payload: CreatorStageSyncPayload) => void) | null>(null);
+
+  useEffect(() => {
+    if (!needsShuffleOnStart(stage)) {
+      setPlaybackReady(true);
+      return;
+    }
+
+    setPlaybackReady(false);
+    let cancelled = false;
+    const fallback = window.setTimeout(() => {
+      if (!cancelled) setPlaybackReady(true);
+    }, 5000);
+
+    void tryShuffleOnStageStart(stage.slug)
+      .then(result => {
+        if (cancelled || !result?.shuffled) return;
+        setStageState(prev => {
+          if (stageSyncFingerprint(result.stage) === stageSyncFingerprint(prev)) return prev;
+          return result.stage;
+        });
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setPlaybackReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(fallback);
+    };
+  }, [stage.slug]);
 
   const registerStageBroadcast = useCallback(
     (fn: ((payload: CreatorStageSyncPayload) => void) | null) => {
@@ -92,15 +130,25 @@ export function CreatorStageProvider({
     });
   }, []);
 
-  const swapNowPlaying = useCallback(async (index: number) => {
-    if (!isOwner) return;
-    const updated = await updateUserStage(stage.slug, { nowPlayingIndex: index });
+  const playNow = useCallback(async (index: number) => {
+    if (!isOwner || !stage.streams.length) return;
+    const clamped = Math.max(0, Math.min(index, stage.streams.length - 1));
+    if (clamped === stage.nowPlayingIndex) return;
+    const updated = await updateUserStage(stage.slug, { nowPlayingIndex: clamped });
     setStage(updated, { broadcast: true });
-  }, [isOwner, stage.slug, setStage]);
+  }, [isOwner, stage.slug, stage.streams.length, stage.nowPlayingIndex, setStage]);
 
   const value = useMemo(
-    () => ({ stage, isOwner, setStage, applyRemoteStage, registerStageBroadcast, swapNowPlaying }),
-    [stage, isOwner, setStage, applyRemoteStage, registerStageBroadcast, swapNowPlaying],
+    () => ({
+      stage,
+      isOwner,
+      playbackReady,
+      setStage,
+      applyRemoteStage,
+      registerStageBroadcast,
+      playNow,
+    }),
+    [stage, isOwner, playbackReady, setStage, applyRemoteStage, registerStageBroadcast, playNow],
   );
 
   return (
@@ -112,6 +160,10 @@ export function CreatorStageProvider({
 
 export function useOptionalCreatorStage(): UserStagePublic | null {
   return useContext(CreatorStageContext)?.stage ?? null;
+}
+
+export function useCreatorStagePlaybackReady(): boolean {
+  return useContext(CreatorStageContext)?.playbackReady ?? true;
 }
 
 export function useCreatorStageControls(): CreatorStageContextValue | null {

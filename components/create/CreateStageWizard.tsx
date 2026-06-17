@@ -32,6 +32,12 @@ import {
   validateStageDisplayName,
 } from '@/lib/stages/stageDisplayName';
 import {
+  limitStageDescriptionInput,
+  normalizeStageDescription,
+  STAGE_DESCRIPTION_FIELD_HINT,
+  validateStageDescription,
+} from '@/lib/stages/stageDescription';
+import {
   stageNameToSlug,
   validateStageSlugFormat,
 } from '@/lib/stages/slugValidation';
@@ -132,6 +138,7 @@ const STEP_SUB: React.CSSProperties = {
 
 type Draft = {
   stageName: string;
+  stageDescription: string;
   slug: string;
   festieName: string;
   festiePassword: string;
@@ -143,6 +150,7 @@ type Draft = {
 
 const DEFAULT_DRAFT: Draft = {
   stageName: '',
+  stageDescription: '',
   slug: '',
   festieName: '',
   festiePassword: '',
@@ -397,6 +405,7 @@ export function CreateStageWizard() {
   const [bootstrapped, setBootstrapped] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [stageNameTouched, setStageNameTouched] = useState(false);
+  const [stageDescriptionTouched, setStageDescriptionTouched] = useState(false);
   const [pendingBackdropFile, setPendingBackdropFile] = useState<File | null>(null);
   const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backdropFileRef = useRef<HTMLInputElement>(null);
@@ -417,6 +426,13 @@ export function CreateStageWizard() {
 
   const stageFieldHint = stageDisplayNameHint;
   const stageFieldInvalid = stageNameError != null;
+
+  const stageDescriptionError = useMemo(() => {
+    if (!stageDescriptionTouched && !draft.stageDescription) return null;
+    return validateStageDescription(draft.stageDescription);
+  }, [stageDescriptionTouched, draft.stageDescription]);
+
+  const stageDescriptionInvalid = stageDescriptionError != null;
 
   useEffect(() => {
     let cancelled = false;
@@ -548,6 +564,7 @@ export function CreateStageWizard() {
         return signedInFestie != null || canSubmitAuth;
       case 2:
         return validateStageDisplayName(draft.stageName) == null
+          && validateStageDescription(draft.stageDescription) == null
           && validateStageSlugFormat(draft.slug) == null
           && slugStatus === 'ok';
       case 3:
@@ -663,6 +680,7 @@ export function CreateStageWizard() {
       const payload: Parameters<typeof createUserStage>[0] = {
         slug: draft.slug.trim().toLowerCase(),
         displayName: draft.stageName.trim(),
+        description: normalizeStageDescription(draft.stageDescription),
         preset: draft.preset,
         streams: draft.streams,
         shuffleOnStart: draft.shuffleOnStart,
@@ -999,6 +1017,37 @@ export function CreateStageWizard() {
               }}
               >
                 {stageFieldHint}
+              </p>
+
+              <label style={{ ...LABEL, marginTop: 20 }}>Short description</label>
+              <textarea
+                style={{
+                  ...INPUT,
+                  resize: 'vertical',
+                  minHeight: 72,
+                  lineHeight: 1.45,
+                  border: stageDescriptionInvalid
+                    ? '1px solid rgba(255,107,107,0.55)'
+                    : INPUT.border,
+                }}
+                value={draft.stageDescription}
+                onChange={e => setDraft(d => ({
+                  ...d,
+                  stageDescription: limitStageDescriptionInput(e.target.value),
+                }))}
+                onBlur={() => setStageDescriptionTouched(true)}
+                placeholder="Late-night rooftop sets with friends."
+                spellCheck
+                maxLength={STAGE_CONFIG.DESCRIPTION_MAX_LENGTH}
+              />
+              <p style={{
+                margin: '6px 0 0',
+                fontSize: 11,
+                color: stageDescriptionInvalid ? '#ff6b6b' : 'rgba(255,255,255,0.45)',
+                fontFamily: 'system-ui,sans-serif',
+              }}
+              >
+                {stageDescriptionInvalid ? stageDescriptionError : STAGE_DESCRIPTION_FIELD_HINT}
               </p>
               {slugStatus === 'checking' && (
                 <p style={{

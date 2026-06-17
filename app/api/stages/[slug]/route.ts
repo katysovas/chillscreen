@@ -12,6 +12,10 @@ import {
 import { stagePresetById } from '@/lib/stages/presets';
 import { parsePresetBackdropUrl } from '@/lib/stages/wallpapers';
 import { parseStreamsJson } from '@/lib/stages/parseStream';
+import {
+  normalizeStageDescription,
+  validateStageDescription,
+} from '@/lib/stages/stageDescription';
 import type { StagePresetId } from '@/lib/stages/types';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
 
@@ -87,7 +91,12 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     }
 
     if (body.nowPlayingIndex !== undefined) {
-      patch.nowPlayingIndex = Math.max(0, Math.floor(Number(body.nowPlayingIndex) || 0));
+      const streamCount = patch.streams?.length ?? existing.streams.length;
+      const maxIndex = Math.max(0, streamCount - 1);
+      patch.nowPlayingIndex = Math.min(
+        maxIndex,
+        Math.max(0, Math.floor(Number(body.nowPlayingIndex) || 0)),
+      );
     }
 
     if (body.preset !== undefined) {
@@ -103,6 +112,15 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 
     if (body.shuffleOnStart !== undefined) {
       patch.shuffleOnStart = Boolean(body.shuffleOnStart);
+    }
+
+    if (body.description !== undefined) {
+      const descriptionRaw = String(body.description ?? '');
+      const descriptionErr = validateStageDescription(descriptionRaw);
+      if (descriptionErr) {
+        return NextResponse.json({ error: descriptionErr }, { status: 400 });
+      }
+      patch.description = normalizeStageDescription(descriptionRaw);
     }
 
     if (body.backdropUrl !== undefined) {

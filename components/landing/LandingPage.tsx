@@ -8,9 +8,8 @@ import { SITE_NAME, TWITTER_HANDLE, TWITTER_URL } from '@/lib/site';
 
 const TRANSPARENT_LOGO_PATH = '/images/logos/logo_transparent.png';
 import type { StagePickerTarget } from '@/lib/stagePickerOptions';
-import { LANDING_FAQ, LANDING_STAGES, landingImageForCreatorPreset } from './landingData';
+import { LANDING_FAQ, LANDING_TRENDING_JOIN_LABEL, buildTrendingStageRows, type TrendingStageRow } from './landingData';
 import { fetchFeaturedStages } from '@/lib/stages/client';
-import type { FeaturedStageSummary } from '@/lib/stages/types';
 import { LANDING_HERO } from './landingHeroCopy';
 import { LandingHeroCanvas } from './LandingHeroCanvas';
 import { LandingHeroCta } from './LandingHeroCta';
@@ -107,15 +106,23 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
   const navRef = useRef<HTMLElement>(null);
   const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [contactError, setContactError] = useState('');
-  const [featuredCreators, setFeaturedCreators] = useState<FeaturedStageSummary[]>([]);
+  const [trendingStages, setTrendingStages] = useState<TrendingStageRow[]>(() =>
+    buildTrendingStageRows([]),
+  );
 
   useEffect(() => {
     let cancelled = false;
     void fetchFeaturedStages()
       .then(stages => {
-        if (!cancelled) setFeaturedCreators(stages);
+        if (!cancelled) {
+          setTrendingStages(buildTrendingStageRows(stages, { randomOrder: true }));
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) {
+          setTrendingStages(buildTrendingStageRows([], { randomOrder: true }));
+        }
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -183,12 +190,6 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
       setContactError('Network error. Please try again.');
       setContactStatus('error');
     }
-  };
-
-  const layoutClass = (layout: string) => {
-    if (layout === 'featured') return 'stage-card stage-featured';
-    if (layout === 'right') return 'stage-card stage-right';
-    return 'stage-card stage-small';
   };
 
   const scrollToSection = (id: string) => {
@@ -293,7 +294,8 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
       <section className="stages-section" id="stages">
         <div className="stages-inner">
           <header className="stages-header">
-            <h2 className="stages-title">Join our featured stages:</h2>
+            <p className="stages-eyebrow">Trending Now</p>
+            <h2 className="stages-title">Join a stage</h2>
             <div className="stages-subrow">
               <p className="stages-subtitle">Or create your own stage</p>
               <Link href="/create" className="stages-create-btn">
@@ -301,66 +303,54 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
               </Link>
             </div>
           </header>
-          <div className="stages-grid">
-            {LANDING_STAGES.map(stage => (
-              <button
-                key={stage.route}
-                type="button"
-                className={layoutClass(stage.layout)}
-                style={{ background: stage.background }}
-                onClick={() => onStageEnter({ kind: 'venue', route: stage.route })}
-              >
-                {stage.bgImage && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    className="stage-bg-img stage-bg-photo"
-                    src={stage.bgImage}
-                    alt=""
-                    onError={e => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                )}
-                <div className="stage-accent" style={{ ['--sa' as string]: stage.accent }} />
-                <div className="stage-content">
-                  {stage.live && (
-                    <div className="stage-live-tag">
-                      <span className="stage-live-dot" />
-                      New Stage
-                    </div>
-                  )}
-                  <h3 className="stage-name">{stage.name}</h3>
-                  {stage.desc && <p className="stage-desc">{stage.desc}</p>}
-                  <span className="stage-cta-btn">
-                    {stage.highlight ? 'Enter stage →' : 'Enter →'}
-                  </span>
+
+          <div className="trending-table" role="table" aria-label="Trending stages">
+            <div className="trending-table-head" role="row">
+              <span className="trending-col trending-col--thumb" role="columnheader" aria-hidden />
+              <span className="trending-col trending-col--name" role="columnheader">Stage</span>
+              <span className="trending-col trending-col--action" role="columnheader" aria-hidden />
+            </div>
+            {trendingStages.map(stage => (
+              <div key={stage.id} className="trending-row" role="row">
+                <div className="trending-col trending-col--thumb" role="cell">
+                  <div className="trending-thumb">
+                    {stage.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={stage.thumbnail}
+                        alt=""
+                        loading="lazy"
+                        onError={e => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <span className="trending-thumb-fallback" aria-hidden />
+                    )}
+                  </div>
                 </div>
-              </button>
-            ))}
-            {featuredCreators.map(stage => (
-              <button
-                key={`creator-${stage.slug}`}
-                type="button"
-                className="stage-card stage-small"
-                style={{ background: 'radial-gradient(ellipse at 50% 80%,#1a1508 0%,#0e0c06 100%)' }}
-                onClick={() => onStageEnter({ kind: 'creator', slug: stage.slug })}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="stage-bg-img stage-bg-photo"
-                  src={landingImageForCreatorPreset(stage.preset)}
-                  alt=""
-                  onError={e => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                <div className="stage-accent" style={{ ['--sa' as string]: '#e8c040' }} />
-                <div className="stage-content">
-                  <h3 className="stage-name">{stage.displayName}</h3>
-                  <p className="stage-desc">Creator stage</p>
-                  <span className="stage-cta-btn">Enter →</span>
+                <div className="trending-col trending-col--name" role="cell">
+                  <p className="trending-label">
+                    <span>{stage.name}</span>
+                    {stage.description && (
+                      <>
+                        <span aria-hidden> — </span>
+                        <span>{stage.description}</span>
+                      </>
+                    )}
+                  </p>
                 </div>
-              </button>
+                <div className="trending-col trending-col--action" role="cell">
+                  <button
+                    type="button"
+                    className="trending-join-btn"
+                    onClick={() => onStageEnter(stage.target)}
+                  >
+                    {LANDING_TRENDING_JOIN_LABEL}
+                    <ArrowIcon />
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         </div>

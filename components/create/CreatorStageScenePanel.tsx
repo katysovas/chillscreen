@@ -1,8 +1,15 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCreatorStageControls } from '@/lib/stages/CreatorStageContext';
 import { updateUserStage, uploadStageBackdrop } from '@/lib/stages/client';
+import {
+  limitStageDescriptionInput,
+  normalizeStageDescription,
+  STAGE_DESCRIPTION_FIELD_HINT,
+  validateStageDescription,
+} from '@/lib/stages/stageDescription';
+import { STAGE_CONFIG } from '@/lib/stages/config';
 import {
   stageBackdropUploadHint,
   validateBackdropFileForUpload,
@@ -15,11 +22,49 @@ export function CreatorStageScenePanel() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [description, setDescription] = useState('');
+  const [descriptionDirty, setDescriptionDirty] = useState(false);
 
-  if (!ctx?.isOwner) return null;
+  const stage = ctx?.stage;
+  const slug = stage?.slug;
+  const stageDescription = stage?.description;
 
-  const { stage, setStage } = ctx;
+  useEffect(() => {
+    if (!slug) return;
+    setDescription(stageDescription ?? '');
+    setDescriptionDirty(false);
+  }, [slug, stageDescription]);
+
+  if (!ctx?.isOwner || !stage) return null;
+
+  const { setStage } = ctx;
   const isCityTemplate = stage.preset === 'cinema';
+
+  const saveDescription = async () => {
+    if (busy) return;
+    const normalized = normalizeStageDescription(description);
+    const current = normalizeStageDescription(stage.description ?? '');
+    if (normalized === current) {
+      setDescriptionDirty(false);
+      return;
+    }
+    const validationErr = validateStageDescription(description);
+    if (validationErr) {
+      setError(validationErr);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await updateUserStage(stage.slug, { description: normalized });
+      setStage(updated, { broadcast: false });
+      setDescriptionDirty(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save description');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleGalleryPick = async ({ preset, backdropUrl }: StageGallerySelection) => {
     if (busy) return;
@@ -65,6 +110,59 @@ export function CreatorStageScenePanel() {
 
   return (
     <section>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 6 }}>
+        Short description
+      </label>
+      <textarea
+        value={description}
+        disabled={busy}
+        onChange={e => {
+          setDescription(limitStageDescriptionInput(e.target.value));
+          setDescriptionDirty(true);
+          setError(null);
+        }}
+        placeholder="Late-night rooftop sets with friends."
+        rows={3}
+        maxLength={STAGE_CONFIG.DESCRIPTION_MAX_LENGTH}
+        style={{
+          width: '100%',
+          boxSizing: 'border-box',
+          borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.12)',
+          background: 'rgba(255,255,255,0.06)',
+          color: '#fff',
+          padding: '8px 10px',
+          fontSize: 12,
+          lineHeight: 1.45,
+          resize: 'vertical',
+          marginBottom: 8,
+        }}
+      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <button
+          type="button"
+          disabled={busy || !descriptionDirty}
+          onClick={() => void saveDescription()}
+          style={{
+            borderRadius: 8,
+            padding: '7px 14px',
+            fontSize: 12,
+            fontWeight: 700,
+            border: 'none',
+            background: descriptionDirty && !busy
+              ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
+              : 'rgba(255,255,255,0.08)',
+            color: descriptionDirty && !busy ? '#fff' : 'rgba(255,255,255,0.35)',
+            cursor: busy ? 'wait' : descriptionDirty ? 'pointer' : 'default',
+          }}
+        >
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+        <p style={{ margin: 0, fontSize: 11, lineHeight: 1.4, color: 'rgba(255,255,255,0.45)' }}>
+          {STAGE_DESCRIPTION_FIELD_HINT}
+        </p>
+      </div>
+
       <p style={{ margin: '0 0 10px', fontSize: 11, lineHeight: 1.4, color: 'rgba(255,255,255,0.5)' }}>
         Pick a stage backdrop.
       </p>

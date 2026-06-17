@@ -28,6 +28,7 @@ export type UserStageRow = {
   festie_id: string;
   preset: StagePresetId;
   display_name: string;
+  description: string | null;
   sky: SkyPeriod | null;
   streams: StageStream[];
   now_playing_index: number;
@@ -42,6 +43,8 @@ export type UserStageRow = {
 export type UserStagePublic = {
   slug: string;
   displayName: string;
+  /** Short blurb for homepage / stage picker. */
+  description?: string | null;
   ownerId: string;
   festieId: string;
   preset: StagePresetId;
@@ -64,6 +67,9 @@ export type FeaturedStageSummary = {
   slug: string;
   displayName: string;
   preset: StagePresetId;
+  description?: string | null;
+  /** Custom City backdrop — used on landing / picker thumbnails when set. */
+  backdropUrl?: string | null;
 };
 
 export type StagePresetDef = {

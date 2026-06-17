@@ -27,6 +27,10 @@ import {
 import { stagePresetById } from '@/lib/stages/presets';
 import { parsePresetBackdropUrl } from '@/lib/stages/wallpapers';
 import { validateStageDisplayName } from '@/lib/stages/stageDisplayName';
+import {
+  normalizeStageDescription,
+  validateStageDescription,
+} from '@/lib/stages/stageDescription';
 import { parseStreamsJson } from '@/lib/stages/parseStream';
 import {
   normalizeStageSlug,
@@ -77,6 +81,13 @@ export async function POST(req: Request) {
     if (displayNameErr) {
       return NextResponse.json({ error: displayNameErr }, { status: 400 });
     }
+
+    const descriptionRaw = String(body.description ?? '');
+    const descriptionErr = validateStageDescription(descriptionRaw);
+    if (descriptionErr) {
+      return NextResponse.json({ error: descriptionErr }, { status: 400 });
+    }
+    const description = normalizeStageDescription(descriptionRaw);
 
     const streams = parseStreamsJson(body.streams);
     if (!streams.length) {
@@ -138,6 +149,7 @@ export async function POST(req: Request) {
       const row = await insertUserStage({
         slug,
         displayName,
+        description,
         ownerId: sessionUserId,
         festieId: updatedFestie.id,
         preset,
@@ -205,6 +217,7 @@ export async function POST(req: Request) {
     const row = await insertUserStage({
       slug,
       displayName,
+      description,
       ownerId: festie.user_id,
       festieId: festie.id,
       preset,

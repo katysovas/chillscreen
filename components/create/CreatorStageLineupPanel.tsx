@@ -17,10 +17,11 @@ export function CreatorStageLineupPanel() {
   const [streamPasteMode, setStreamPasteMode] = useState<StageStreamPasteMode>('video');
   const [streamHint, setStreamHint] = useState<string | null>(null);
   const [streamParsing, setStreamParsing] = useState(false);
+  const [playNowIndex, setPlayNowIndex] = useState<number | null>(null);
 
   if (!ctx?.isOwner) return null;
 
-  const { stage, setStage, swapNowPlaying } = ctx;
+  const { stage, setStage, playNow } = ctx;
 
   const persistStreams = async (
     streams: StageStream[],
@@ -179,6 +180,21 @@ export function CreatorStageLineupPanel() {
     }
   };
 
+  const handlePlayNow = async (index: number) => {
+    if (busy || playNowIndex !== null || index === stage.nowPlayingIndex) return;
+    setBusy(true);
+    setPlayNowIndex(index);
+    setError(null);
+    try {
+      await playNow(index);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not switch video');
+    } finally {
+      setBusy(false);
+      setPlayNowIndex(null);
+    }
+  };
+
   return (
     <section>
       <p style={{
@@ -188,7 +204,7 @@ export function CreatorStageLineupPanel() {
         color: 'rgba(255,255,255,0.5)',
       }}
       >
-        Add videos, reorder the queue, and choose what plays on your stage.
+        Add videos, reorder the queue, and use Play now to switch what everyone sees on stage.
       </p>
 
       <label
@@ -406,27 +422,72 @@ export function CreatorStageLineupPanel() {
               height={33}
               style={{ borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
             />
-            <button
-              type="button"
-              disabled={busy || i === stage.nowPlayingIndex}
-              onClick={() => void swapNowPlaying(i)}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                textAlign: 'left',
-                background: 'none',
-                border: 'none',
-                color: '#fff',
-                fontSize: 12,
-                cursor: i === stage.nowPlayingIndex ? 'default' : 'pointer',
-                padding: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {i === stage.nowPlayingIndex ? '▶ ' : ''}{s.title}
-            </button>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  color: '#fff',
+                  fontSize: 12,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {s.title}
+              </div>
+              {s.channelTitle && (
+                <div
+                  style={{
+                    marginTop: 2,
+                    fontSize: 10,
+                    color: 'rgba(255,255,255,0.45)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {s.channelTitle}
+                </div>
+              )}
+            </div>
+            {i === stage.nowPlayingIndex ? (
+              <span
+                style={{
+                  flexShrink: 0,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: 0.4,
+                  textTransform: 'uppercase',
+                  color: '#ffb347',
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  background: 'rgba(230,126,34,0.2)',
+                  border: '1px solid rgba(230,126,34,0.35)',
+                }}
+              >
+                Now playing
+              </span>
+            ) : (
+              <button
+                type="button"
+                disabled={busy || playNowIndex !== null}
+                onClick={() => void handlePlayNow(i)}
+                style={{
+                  flexShrink: 0,
+                  borderRadius: 6,
+                  padding: '5px 10px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  border: 'none',
+                  background: 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
+                  color: '#fff',
+                  cursor: busy || playNowIndex !== null ? 'wait' : 'pointer',
+                  opacity: busy || playNowIndex !== null ? 0.55 : 1,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {playNowIndex === i ? '…' : 'Play now'}
+              </button>
+            )}
             <button
               type="button"
               disabled={busy || stage.streams.length <= 1}

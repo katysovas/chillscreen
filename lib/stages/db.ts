@@ -25,6 +25,7 @@ function rowToPublic(row: UserStageRow, now = Date.now()): UserStagePublic {
   return {
     slug: row.slug,
     displayName: row.display_name,
+    description: row.description?.trim() || null,
     ownerId: row.owner_id,
     festieId: row.festie_id,
     preset: row.preset as StagePresetId,
@@ -47,6 +48,7 @@ function parseRow(raw: Record<string, unknown>): UserStageRow {
     owner_id: String(raw.owner_id),
     festie_id: String(raw.festie_id),
     display_name: String(raw.display_name ?? raw.slug),
+    description: raw.description != null ? String(raw.description) : null,
     preset: normalizeStagePresetId(String(raw.preset)) ?? DEFAULT_STAGE_PRESET,
     sky: raw.sky != null ? parseSky(raw.sky) : null,
     streams: parseStreamsJson(raw.streams),
@@ -81,7 +83,7 @@ export async function isStageSlugTaken(slug: string): Promise<boolean> {
 export async function getUserStageBySlug(slug: string): Promise<UserStageRow | null> {
   const sql = requireDb();
   const rows = await sql`
-    SELECT slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
+    SELECT slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
            backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE slug = ${slug}
@@ -101,7 +103,7 @@ export async function getUserStagePublicBySlug(slug: string): Promise<UserStageP
 export async function getUserStageByOwnerId(ownerId: string): Promise<UserStageRow | null> {
   const sql = requireDb();
   const rows = await sql`
-    SELECT slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
+    SELECT slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
            backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE owner_id = ${ownerId}::uuid AND taken_down_at IS NULL
@@ -127,6 +129,7 @@ export async function touchUserStageActive(slug: string): Promise<boolean> {
 export type CreateUserStageInput = {
   slug: string;
   displayName: string;
+  description?: string | null;
   ownerId: string;
   festieId: string;
   preset: StagePresetId;
@@ -153,12 +156,13 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
   const streamsJson = JSON.stringify(enrichedStreams);
   const rows = await sql`
     INSERT INTO user_stages (
-      slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index, backdrop_url, shuffle_on_start
+      slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index, backdrop_url, shuffle_on_start
     ) VALUES (
       ${input.slug},
       ${input.ownerId}::uuid,
       ${input.festieId}::uuid,
       ${input.displayName},
+      ${input.description ?? null},
       ${input.preset},
       ${input.sky ?? null},
       ${streamsJson}::jsonb,
@@ -166,7 +170,7 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
       ${input.backdropUrl ?? null},
       ${input.shuffleOnStart ?? false}
     )
-    RETURNING slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
+    RETURNING slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
               backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
   `;
   return parseRow(rows[0] as Record<string, unknown>);
@@ -179,6 +183,7 @@ export type UpdateUserStagePatch = {
   sky?: SkyPeriod | null;
   backdropUrl?: string | null;
   shuffleOnStart?: boolean;
+  description?: string | null;
 };
 
 export async function updateUserStage(
@@ -204,6 +209,9 @@ export async function updateUserStage(
     ? patch.backdropUrl
     : existing.backdrop_url;
   const shuffleOnStart = patch.shuffleOnStart ?? existing.shuffle_on_start;
+  const description = patch.description !== undefined
+    ? patch.description
+    : existing.description;
 
   const rows = await sql`
     UPDATE user_stages SET
@@ -213,9 +221,10 @@ export async function updateUserStage(
       sky = ${sky},
       backdrop_url = ${backdropUrl},
       shuffle_on_start = ${shuffleOnStart},
+      description = ${description},
       last_active_at = now()
     WHERE slug = ${slug} AND owner_id = ${ownerId}::uuid AND taken_down_at IS NULL
-    RETURNING slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
+    RETURNING slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
               backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
   `;
   if (!rows.length) return null;
@@ -269,7 +278,7 @@ export async function countActiveUserStages(): Promise<number> {
 export async function listFeaturedUserStages(now = Date.now()): Promise<FeaturedStageSummary[]> {
   const sql = requireDb();
   const rows = await sql`
-    SELECT slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
+    SELECT slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
            backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE featured = true AND taken_down_at IS NULL
@@ -282,6 +291,8 @@ export async function listFeaturedUserStages(now = Date.now()): Promise<Featured
       slug: stage.slug,
       displayName: stage.displayName,
       preset: stage.preset,
+      description: stage.description ?? null,
+      backdropUrl: stage.backdropUrl ?? null,
     }));
 }
 
@@ -343,7 +354,7 @@ export async function maybeShuffleStageOnStart(
     WHERE slug = ${slug}
       AND taken_down_at IS NULL
       AND shuffle_on_start = true
-    RETURNING slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
+    RETURNING slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
               backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
   `;
   if (!rows.length) return { stage: pub, shuffled: false };
