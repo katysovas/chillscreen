@@ -68,6 +68,7 @@ export type CreateStagePayload = {
   sky?: SkyPeriod;
   streams: StageStream[];
   backdropUrl?: string | null;
+  shuffleOnStart?: boolean;
   festie?: {
     name: string;
     password: string;

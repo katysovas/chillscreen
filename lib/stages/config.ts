@@ -13,7 +13,7 @@ export const STAGE_CONFIG = {
   /** Past this, slug is released back to the pool. */
   RECLAIM_WINDOW_MS: 90 * 24 * 60 * 60 * 1000,
   /** Max streams in a lineup. */
-  MAX_STREAMS: 12,
+  MAX_STREAMS: 100,
   /** Coin cost to publish a stage (TBD — adjust here). */
   CREATION_COIN_COST: 100,
   /** Slug length bounds. */

@@ -96,6 +96,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const shuffleOnStart = Boolean(body.shuffleOnStart);
+
     let backdropUrl: string | null = null;
     if (body.backdropUrl !== undefined) {
       if (preset !== 'cinema') {

@@ -269,7 +269,7 @@ export function CreatorStageLineupPanel() {
         marginBottom: 8,
       }}
       >
-        {stage.streams.length} / {STAGE_CONFIG.MAX_STREAMS} videos
+        {stage.streams.length} {stage.streams.length === 1 ? 'video' : 'videos'}
       </div>
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>

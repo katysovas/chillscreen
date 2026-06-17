@@ -134,6 +134,7 @@ export type CreateUserStageInput = {
   streams: StageStream[];
   nowPlayingIndex?: number;
   backdropUrl?: string | null;
+  shuffleOnStart?: boolean;
 };
 
 export async function insertUserStage(input: CreateUserStageInput): Promise<UserStageRow> {
@@ -153,7 +154,7 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
   const streamsJson = JSON.stringify(enrichedStreams);
   const rows = await sql`
     INSERT INTO user_stages (
-      slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index, backdrop_url
+      slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index, backdrop_url, shuffle_on_start
     ) VALUES (
       ${input.slug},
       ${input.ownerId}::uuid,
@@ -163,7 +164,8 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
       ${input.sky ?? null},
       ${streamsJson}::jsonb,
       ${input.nowPlayingIndex ?? 0},
-      ${input.backdropUrl ?? null}
+      ${input.backdropUrl ?? null},
+      ${input.shuffleOnStart ?? false}
     )
     RETURNING slug, owner_id, festie_id, display_name, preset, sky, streams, now_playing_index,
               backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at

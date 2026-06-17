@@ -682,11 +682,16 @@ export function CreateStageWizard() {
           personality_notes: null,
         };
       }
+      const finalSlug = draft.slug.trim().toLowerCase();
       await createUserStage(payload);
       if (pendingBackdropFile) {
-        await uploadStageBackdrop(draft.slug.trim().toLowerCase(), pendingBackdropFile);
+        try {
+          await uploadStageBackdrop(finalSlug, pendingBackdropFile);
+        } catch (uploadErr) {
+          console.warn('[CreateStageWizard] backdrop upload failed, proceeding anyway:', uploadErr);
+        }
       }
-      router.push(stagePathForSlug(draft.slug.trim().toLowerCase()));
+      router.push(stagePathForSlug(finalSlug));
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not create stage';
       setError(msg);
