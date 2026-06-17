@@ -19,6 +19,13 @@ type WatchPageProps = {
 
 export async function generateMetadata({ params }: WatchPageProps): Promise<Metadata> {
   const { slug } = await params;
+  if (slug.toLowerCase() === 'hulaween') {
+    return buildPageMetadata({
+      title: 'Hulaween',
+      description: 'Hula family hangout — synchronized Hulaween festival sets on WhichStage.',
+      path: '/hula',
+    });
+  }
   if (!getDb()) return {};
 
   const userStage = await getUserStagePublicBySlug(slug.toLowerCase());
@@ -41,6 +48,7 @@ export async function generateMetadata({ params }: WatchPageProps): Promise<Meta
 
 export default async function WatchPage({ params }: WatchPageProps) {
   const { slug } = await params;
+  if (slug.toLowerCase() === 'hulaween') redirect('/hula');
   if (!getDb()) redirect('/');
 
   const userStage = await getUserStagePublicBySlug(slug.toLowerCase());

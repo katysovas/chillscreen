@@ -21,6 +21,7 @@ export const CHANNEL_NPC_POOL: Record<StageChannel, GeneratedNpc[]> = {
   'which-stage': whichStageNpcs as GeneratedNpc[],
   forest: forestNpcs as GeneratedNpc[],
   'silent-disco': silentDiscoNpcs as GeneratedNpc[],
+  hula: whichStageNpcs as GeneratedNpc[],
 };
 
 export function npcSlug(name: string): string {

@@ -57,6 +57,17 @@ export const LANDING_STAGES: LandingStage[] = [
     bgImage: '/images/homepage/forest.webp',
   },
   {
+    route: 'hula',
+    name: 'Hulaween',
+    desc: 'Hula family hangout — full sets from Suwannee.',
+    highlight: true,
+    live: true,
+    layout: 'right',
+    background: 'radial-gradient(ellipse at 50% 80%,#0e1a08 0%,#090e06 100%)',
+    accent: '#50b87a',
+    bgImage: '/images/homepage/hula.webp',
+  },
+  {
     route: 'silent-disco',
     name: 'Silent Disco',
     desc: 'Headsets on, dance till the sun comes up.',

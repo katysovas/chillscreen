@@ -7,6 +7,8 @@ import { nowPlayingStream } from '@/lib/stages/runtime';
 import { streamChannelMarquee, streamTitleMarquee } from '@/lib/stages/streamLabel';
 import { useStagePlayer } from '../../../useStagePlayer';
 import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../../StageVideoFrame';
+import { stageChannelForRoute } from '@/lib/isolatedCity';
+import type { VenueRoute } from '@/lib/venueRoutes';
 import { stageChannelForVenueKind } from '@/lib/venues';
 import type { CreatorStageConstants } from './types';
 import { CreatorSpeakerTower } from './CreatorSpeakerTower';
@@ -393,13 +395,14 @@ ${beamKeyframes}
     );
   }
 
-  const WHICH_STAGE_CHANNEL = stageChannelForVenueKind('which-stage', 0);
+  const DEFAULT_PLAYBACK_CHANNEL = stageChannelForVenueKind('which-stage', 0);
 
-  function CreatorStageLive() {
+  function CreatorStageLive({ playbackRoute }: { playbackRoute?: VenueRoute }) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const channel = playbackRoute ? stageChannelForRoute(playbackRoute) : DEFAULT_PLAYBACK_CHANNEL;
     const { video, src, vidKey, onIframeLoad } = useStagePlayer({
       live: true,
-      channel: WHICH_STAGE_CHANNEL,
+      channel,
       iframeRef,
     });
 
@@ -444,9 +447,15 @@ ${beamKeyframes}
     );
   }
 
-  function MainStage({ live = false }: { live?: boolean }) {
+  function MainStage({
+    live = false,
+    playbackRoute,
+  }: {
+    live?: boolean;
+    playbackRoute?: VenueRoute;
+  }) {
     if (!live) return <CreatorStageShell />;
-    return <CreatorStageLive />;
+    return <CreatorStageLive playbackRoute={playbackRoute} />;
   }
 
   return { MainStage };

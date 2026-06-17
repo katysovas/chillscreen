@@ -26,6 +26,7 @@ const CHANNEL_IMPORTS: Record<
   'which-stage': () => import('@/data/generated-npcs/channels/which-stage.json').then(m => ({ default: m.default as GeneratedNpc[] })),
   forest: () => import('@/data/generated-npcs/channels/forest.json').then(m => ({ default: m.default as GeneratedNpc[] })),
   'silent-disco': () => import('@/data/generated-npcs/channels/silent-disco.json').then(m => ({ default: m.default as GeneratedNpc[] })),
+  hula: () => import('@/data/generated-npcs/channels/which-stage.json').then(m => ({ default: m.default as GeneratedNpc[] })),
 };
 
 export function preloadGeneratedNpcsForChannel(channel: StageChannel): Promise<void> {

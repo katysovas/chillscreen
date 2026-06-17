@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-17T21:27:23.108Z",
+  "updatedAt": "2026-06-17T22:48:20.108Z",
   "channels": {
     "cinema": {
       "label": "Chill Cinema",
@@ -853,6 +853,117 @@
           "id": "Dvwaq1rwioQ",
           "title": "CITADEL Mountain Outpost | Relaxing Sci-Fi Ambience for Focus & Sleep 4K",
           "durationSec": 7201
+        }
+      ]
+    },
+    "hula": {
+      "label": "Hulaween",
+      "source": "curated",
+      "videos": [
+        {
+          "id": "pUVJ44ZE0Xs",
+          "title": "The String Cheese Incident @Hulaween 10/29/22 Full Show HD Uncut From the rails.",
+          "durationSec": 5023
+        },
+        {
+          "id": "DN3mnFNwzn4",
+          "title": "Odd Mob Full Set Hulaween 2025",
+          "durationSec": 3709
+        },
+        {
+          "id": "akyPA2cdDKE",
+          "title": "The String Cheese Incident Live [4k] Hulaween Full Set Saturday 7:15 10/28/2023",
+          "durationSec": 4123
+        },
+        {
+          "id": "0FaZkqepA9o",
+          "title": "HULAWEEN N2 - Full Set - Pretty Lights Live - 2023 - Live Oak, FL - Remastered Audio",
+          "durationSec": 5338
+        },
+        {
+          "id": "0f6xgbKsIdk",
+          "title": "Zed's Dead Full Set Hulaween 2025",
+          "durationSec": 4550
+        },
+        {
+          "id": "nSTc9OARuLA",
+          "title": "Eggy | Suwannee Hulaween | Full Set | Live Oak, FL | 10.28.22",
+          "durationSec": 4409
+        },
+        {
+          "id": "czClSGiaXVA",
+          "title": "Disco Lines Full Set Hulaween 2025",
+          "durationSec": 4313
+        },
+        {
+          "id": "vrOMIiVBbyg",
+          "title": "Anderson .Paak & The Free Nationals, LIVE FULL SET, Suwannee Hulaween, 10-26-19",
+          "durationSec": 4799
+        },
+        {
+          "id": "acLdrrfLSoc",
+          "title": "ZEDS DEAD FULL SET @ HULAWEEN",
+          "durationSec": 4535
+        },
+        {
+          "id": "puoYdF4-X8g",
+          "title": "Mary Droppinz Full Set Hulaween 2025",
+          "durationSec": 3673
+        },
+        {
+          "id": "HBP2Ek_ewYk",
+          "title": "Dr. Fresch - Hulaween 2025 (Full Set)",
+          "durationSec": 3687
+        },
+        {
+          "id": "0NOriWyV0Co",
+          "title": "CloZee - Live @ Suwannee Hulaween 2019 (Full Set)",
+          "durationSec": 3733
+        },
+        {
+          "id": "4LM9YP3nSIc",
+          "title": "Future Joy - LIVE at Hulaween 10/30/25 (Full Set)",
+          "durationSec": 3687
+        },
+        {
+          "id": "w9epayEbtO0",
+          "title": "Clozee Full Set Hulaween 2024",
+          "durationSec": 4469
+        },
+        {
+          "id": "eVxWcZioup4",
+          "title": "Vulfpeck, Hulaween 2018 FULL SET, Live Oak, FL 10-27-18",
+          "durationSec": 4906
+        },
+        {
+          "id": "-5B1lltPozE",
+          "title": "Ravenscoon's Wave Set at DEF: Off Limits (Hulaween)",
+          "durationSec": 3412
+        },
+        {
+          "id": "dLWFWAsPL0E",
+          "title": "LSZEE - HULAWEEN 2025 - LSDREAM & CLOZEE - FULL SET - 4K",
+          "durationSec": 4343
+        },
+        {
+          "id": "SEqpNvDI6BQ",
+          "title": "The Fritz, Hulaween, FULL SET, Live Oak, FL, 10-27-18",
+          "durationSec": 3785
+        },
+        {
+          "id": "F6VlSnVcFkY",
+          "title": "The Bobby Weir Incident - \"Box of Rain\" - Hulaween - 10/27/24 [4K]",
+          "durationSec": 571
+        },
+        {
+          "id": "Ezd7F3jT0bo",
+          "title": "lespecial Live @ Hulaween 2021 (Full Show)",
+          "durationSec": 3540
+        },
+        {
+          "id": "iK7Vai4C3eo",
+          "title": "The Sponges Live @ Hulaween 2024",
+          "durationSec": 3678
         }
       ]
     }

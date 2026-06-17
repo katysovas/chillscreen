@@ -18,6 +18,7 @@ export const CHANNEL_STAGE_ANCHOR: Partial<Record<StageChannel, StageAnchorKind>
   'which-stage': 'which-stage',
   forest: 'forest',
   'silent-disco': 'silent-disco',
+  hula: 'which-stage',
 };
 
 export const STAGE_CROWD_AT_LOAD_RATIO = 0.7;

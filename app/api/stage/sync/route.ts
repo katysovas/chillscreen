@@ -25,6 +25,7 @@ const STAGE_CHANNEL_SET = new Set<string>([
   'which-stage',
   'forest',
   'silent-disco',
+  'hula',
 ]);
 
 function parseChannelParam(raw: string | null): StageChannel | null {

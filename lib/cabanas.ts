@@ -128,6 +128,7 @@ const WHICH_STAGE_CABANA: CabanaPlacement = {
 const NO_WHICH_STAGE_CABANA_ROUTES = new Set([
   'creator-chill',
   'creator-cinema',
+  'hula',
   'tentaroo',
   'forest',
   'silent-disco',

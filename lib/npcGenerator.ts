@@ -36,6 +36,7 @@ export const NPC_STAGE_CONTEXT: Record<StageChannel, { stageName: string; city: 
   'which-stage': { stageName: 'The Farm', city: 'The Farm', vibe: 'campground festival, jam-band energy' },
   forest: { stageName: 'The Forest Stage', city: 'The Forest', vibe: 'glowing woods rave, fireflies and lasers' },
   'silent-disco': { stageName: 'Silent Disco', city: 'Silent Disco', vibe: 'headphone rave under a dark sky, glowsticks everywhere' },
+  hula: { stageName: 'Hulaween', city: 'Suwannee', vibe: 'Halloween forest festival, full sets and bass under the oaks' },
 };
 
 /** Hardcoded cast — generated NPCs must not reuse these names. */

@@ -17,7 +17,8 @@ export type StageChannel =
   | 'edc'
   | 'which-stage'
   | 'forest'
-  | 'silent-disco';
+  | 'silent-disco'
+  | 'hula';
 
 export const STAGE_CHANNELS: StageChannel[] = [
   'cinema',
@@ -29,6 +30,7 @@ export const STAGE_CHANNELS: StageChannel[] = [
   'which-stage',
   'forest',
   'silent-disco',
+  'hula',
 ];
 
 export const DEFAULT_DURATION_MS = 60 * 60 * 1000;

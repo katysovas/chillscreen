@@ -18,7 +18,7 @@ export const bundle = {
   },
   CityTileForeground(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileForeground']>>[0]) {
     return (
-      <ChillStage live={creatorTemplateLiveOnTile(props)} />
+      <ChillStage live={creatorTemplateLiveOnTile(props)} playbackRoute={props.deepLinkRoute} />
     );
   },
   CityTileSkyLabels({ tileIndex: t }: { tileIndex: number }) {

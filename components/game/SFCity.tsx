@@ -243,7 +243,7 @@ export default function SFCity({
     : venueRoute;
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
   const isCreatorChill = effectiveVenueRoute === 'creator-chill';
-  const isCreatorCinema = effectiveVenueRoute === 'creator-cinema';
+  const isCreatorCinema = effectiveVenueRoute === 'creator-cinema' || effectiveVenueRoute === 'hula';
   const isSilentDisco = effectiveVenueRoute === 'silent-disco';
   const isForest = effectiveVenueRoute === 'forest';
   const isTentaroo = effectiveVenueRoute === 'tentaroo';
@@ -252,6 +252,7 @@ export default function SFCity({
   const isLasVegas = effectiveVenueRoute === 'edc';
   const isSeattle = effectiveVenueRoute === 'seattle-concerts';
   const isCreatorCustomSky = isCreatorChill || isCreatorCinema || isSilentDisco || isForest || isTentaroo || isSanFrancisco || isChillCinema || isLasVegas || isSeattle;
+  const staticStageBackdropUrl = effectiveVenueRoute === 'hula' ? '/images/stages/hula.webp' : null;
   const isStaticCityView = isStaticCityTemplateRoute(effectiveVenueRoute);
   /** Stable per tab session — matches stage picker crowd counts. */
   const ambientSeed = useMemo(
@@ -2332,13 +2333,13 @@ export default function SFCity({
           deepLinkRoute={effectiveVenueRoute}
           hideTrees={mobileDevice || isDeepSpace || isLasVegas}
           isolatedTileIndex={isolatedTile}
-          creatorBackdropUrl={stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null}
+          creatorBackdropUrl={staticStageBackdropUrl ?? stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null}
         />
         <GroundLayer
           ref={groundRef}
           worldOff={gndScrollWorldOff}
           hideTrees={mobileDevice || isDeepSpace || isLasVegas}
-          hideStreetDogs={effectiveVenueRoute === 'silent-disco' || effectiveVenueRoute === 'forest' || effectiveVenueRoute === 'tentaroo' || effectiveVenueRoute === 'outside-hands' || effectiveVenueRoute === 'cinema' || effectiveVenueRoute === 'edc' || effectiveVenueRoute === 'seattle-concerts' || isDeepSpace}
+          hideStreetDogs={effectiveVenueRoute === 'silent-disco' || effectiveVenueRoute === 'forest' || effectiveVenueRoute === 'tentaroo' || effectiveVenueRoute === 'outside-hands' || effectiveVenueRoute === 'cinema' || effectiveVenueRoute === 'hula' || effectiveVenueRoute === 'edc' || effectiveVenueRoute === 'seattle-concerts' || isDeepSpace}
           bareGround={isDeepSpace}
           isolatedTileIndex={isolatedTile}
           deepLinkRoute={effectiveVenueRoute}

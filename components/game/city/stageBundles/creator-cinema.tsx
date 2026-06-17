@@ -34,7 +34,7 @@ export const bundle = {
   },
   CityTileForeground(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileForeground']>>[0]) {
     return (
-      <CinemaStage live={creatorTemplateLiveOnTile(props)} />
+      <CinemaStage live={creatorTemplateLiveOnTile(props)} playbackRoute={props.deepLinkRoute} />
     );
   },
   CityTileSkyLabels({ tileIndex: t }: { tileIndex: number }) {

@@ -31,6 +31,7 @@ const LEGACY_VENUE_REDIRECTS: Record<string, string> = {
   theforest: 'forest',
   silentdisco: 'silent-disco',
   silent_disco: 'silent-disco',
+  hulaween: 'hula',
 };
 
 export async function proxy(request: NextRequest) {
@@ -93,6 +94,11 @@ export async function proxy(request: NextRequest) {
   }
 
   if (segments.length === 2 && segments[0] === 'watch') {
+    if (segments[1]!.toLowerCase() === 'hulaween') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/hula';
+      return NextResponse.redirect(url, 308);
+    }
     const norm = normalizeStageSlug(segments[1]!);
     if (!RESERVED_STAGE_SLUGS.has(norm) && isValidStageSlugFormat(norm)) {
       return NextResponse.next();

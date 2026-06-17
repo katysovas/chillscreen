@@ -17,6 +17,7 @@ export const STAGE_MID_BUNDLE_LOADERS: Record<
   'silent-disco': () => import('./silent-disco'),
   'creator-chill': () => import('./creator-chill'),
   'creator-cinema': () => import('./creator-cinema'),
+  hula: () => import('./creator-cinema'),
 };
 
 const cache = new Map<VenueRoute, StageMidBundleModule>();

@@ -96,6 +96,13 @@ export const MOBILE_LOUNGE_STAGES: MobileLoungeStageOption[] = [
     originYPercent: 54,
   },
   {
+    route: 'hula',
+    title: 'Hulaween',
+    tagline: 'Hula family hangout',
+    scale: 1.05,
+    originYPercent: 54,
+  },
+  {
     route: 'deep-space',
     title: 'Deep Space',
     tagline: 'Cosmic orbit stage',
