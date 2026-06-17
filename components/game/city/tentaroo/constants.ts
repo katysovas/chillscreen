@@ -14,6 +14,7 @@ export const TENTAROO_ARCH_ART_GROUND_Y = 742;
 export const TENTAROO_GND = 660;
 
 import { minStageScale } from '@/lib/stageViewport';
+import { STAGE_TOILET } from '@/lib/stageToilets';
 
 /** Which Stage — bioluminescent main stage, east of the arch. */
 export const WHICH_STAGE_MID_X = 1620;
@@ -28,7 +29,8 @@ const WHICH_STAGE_W = 500;
 export const WHICH_STAGE_HALF = Math.ceil((WHICH_STAGE_W * WHICH_STAGE_SCALE) / 2) + 28;
 
 /** Scaled deck half-width — lines up porta-potties with the visible stage edge. */
-export const WHICH_STAGE_TOILET_HALF = Math.ceil((480 * WHICH_STAGE_SCALE) / 2) + 12;
+export const WHICH_STAGE_TOILET_HALF =
+  Math.ceil((480 * WHICH_STAGE_SCALE) / 2) + STAGE_TOILET.stageHalfBleed;
 
 /** Bioluminescent palette — glass-world main stage. */
 export const WHICH_NEON = {

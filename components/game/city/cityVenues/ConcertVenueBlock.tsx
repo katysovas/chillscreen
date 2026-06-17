@@ -7,6 +7,7 @@ import {
 } from '@/lib/stageVideoLayout';
 import { STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
 import { StageToiletsFlanking } from '../street/StageToiletRow';
+import { STAGE_TOILET } from '@/lib/stageToilets';
 import { concertChannel, concertLabel, concertMidX } from '@/lib/venues';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isVenueLive } from '@/lib/venueRoutes';
@@ -94,7 +95,7 @@ export function ConcertVenueBlock({
       </foreignObject>
       <StageToiletsFlanking
         centerX={concertX}
-        stageHalfWidth={concertFoW / 2 + 18}
+        stageHalfWidth={concertFoW / 2 + STAGE_TOILET.stageHalfBleed}
       />
     </>
   );

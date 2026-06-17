@@ -1,5 +1,6 @@
 import { CHILL_FOREST_BG } from '@/lib/creatorVenueBackdrop';
 import { minStageScale } from '@/lib/stageViewport';
+import { STAGE_TOILET } from '@/lib/stageToilets';
 
 export { CHILL_FOREST_BG };
 
@@ -41,7 +42,8 @@ const WHICH_STAGE_W = 500;
 
 export const WHICH_STAGE_HALF = Math.ceil((WHICH_STAGE_W * WHICH_STAGE_SCALE) / 2) + 28;
 
-export const WHICH_STAGE_TOILET_HALF = Math.ceil((480 * WHICH_STAGE_SCALE) / 2) + 12;
+export const WHICH_STAGE_TOILET_HALF =
+  Math.ceil((480 * WHICH_STAGE_SCALE) / 2) + STAGE_TOILET.stageHalfBleed;
 
 export const WHICH_NEON = {
   green: '#38f5b0',

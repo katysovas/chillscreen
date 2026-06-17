@@ -7,6 +7,7 @@ import {
 } from '@/lib/stageVideoLayout';
 import { STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
 import { StageToiletsFlanking } from '../street/StageToiletRow';
+import { STAGE_TOILET } from '@/lib/stageToilets';
 import { cinemaMidX } from '@/lib/venues';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isVenueLive } from '@/lib/venueRoutes';
@@ -83,7 +84,7 @@ export function CinemaVenueBlock({
       </foreignObject>
       <StageToiletsFlanking
         centerX={cinemaX}
-        stageHalfWidth={cinemaFoW / 2 + 14}
+        stageHalfWidth={cinemaFoW / 2 + STAGE_TOILET.stageHalfBleed}
       />
     </>
   );

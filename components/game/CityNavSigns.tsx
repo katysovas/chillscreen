@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, memo } from 'react';
+import { forwardRef, memo, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GND_F } from '@/lib/parallax';
 import {
@@ -18,6 +18,7 @@ import type { VenueRoute } from '@/lib/venueRoutes';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { Z_PLAYER_CHARACTER } from '@/lib/zLayers';
 import { CITY_GRASS_DROP_Y } from '@/components/game/city/cinema/constants';
+import { SILENT_DISCO_GRASS_DROP_Y } from '@/components/game/city/silent-disco/constants';
 
 const GND_Y = 685;
 const SIGN_Y = GND_Y + 12;
@@ -45,74 +46,98 @@ type EdgeSignProps = {
   dir: 'left' | 'right';
   route: VenueRoute;
   onGo: () => void;
-  /** Screen-edge placement — bias hit area inward so clicks register in-view. */
-  edgePinned?: boolean;
+  /** Smaller board + post for static viewport stages. */
+  compact?: boolean;
 };
 
+const EDGE_SIGN_FULL = {
+  postW: 10,
+  postH: 124,
+  boardPad: 34,
+  halfLen: 104,
+  halfH: 30,
+  tipLen: 26,
+  fontSize: 13,
+  pulseInner: 60,
+  pulseOuter: 108,
+  shadowRx: 88,
+  shadowRy: 8,
+} as const;
+
+const EDGE_SIGN_COMPACT = {
+  postW: 8,
+  postH: 96,
+  boardPad: 26,
+  halfLen: 80,
+  halfH: 23,
+  tipLen: 20,
+  fontSize: 10,
+  pulseInner: 44,
+  pulseOuter: 78,
+  shadowRx: 66,
+  shadowRy: 6,
+} as const;
+
 /** Wooden signpost with one chevron wing — same art as the old junction signs. */
-function EdgeSign({ x, y, dir, route, onGo, edgePinned = false }: EdgeSignProps) {
+function EdgeSign({ x, y, dir, route, onGo, compact = false }: EdgeSignProps) {
   const { title } = cityOptionForRoute(route);
   const { icon, accent } = SIGN_STYLE[route];
   const label = `Enter ${title}`;
 
-  const postW = 10;
-  const postH = 124;
-  const boardCy = -postH + 34;
-  const hitW = edgePinned ? 300 : 260;
-  const hitX = edgePinned ? (dir === 'left' ? -30 : -(hitW - 30)) : -130;
+  const m = compact ? EDGE_SIGN_COMPACT : EDGE_SIGN_FULL;
+  const postW = m.postW;
+  const postH = m.postH;
+  const boardCy = -postH + m.boardPad;
 
   return (
-    <g
-      transform={`translate(${x},${y})`}
-      style={{ pointerEvents: 'auto', cursor: 'pointer' }}
-      onClick={onGo}
-      role="link"
-      aria-label={label}
-    >
-      {/* Generous invisible hit area */}
-      <rect
-        x={hitX}
-        y={-postH - 50}
-        width={hitW}
-        height={postH + 66}
-        fill="#fff"
-        fillOpacity={0}
-        pointerEvents="all"
+    <g transform={`translate(${x},${y})`}>
+      <ellipse
+        cx={0}
+        cy={3}
+        rx={m.shadowRx}
+        ry={m.shadowRy}
+        fill="rgba(0,0,0,.22)"
+        pointerEvents="none"
       />
 
-      <ellipse cx={0} cy={3} rx={88} ry={8} fill="rgba(0,0,0,.22)" />
-
-      {/* Post */}
-      <rect x={-postW / 2} y={-postH} width={postW} height={postH} rx={2} fill="#5c4636" />
-      <rect x={-postW / 2 + 1} y={-postH} width={postW - 2} height={postH - 2} rx={1.5} fill="#8a6b4f" />
-      <line x1={0} y1={-postH + 6} x2={0} y2={-4} stroke="#6b5344" strokeWidth={1} opacity={0.45} />
-      <circle cx={0} cy={-postH + 2} r={3} fill="#6b5344" stroke="#3a342c" strokeWidth={0.8} />
-
-      {/* Expanding pulse rings — clearly clickable */}
-      <g style={{ pointerEvents: 'none' }}>
-        <circle cx={0} cy={boardCy} fill="none" stroke={accent} strokeWidth={4}>
-          <animate attributeName="r" values="60;108" dur="1.8s" repeatCount="indefinite" />
+      {/* Expanding pulse rings — visual only */}
+      <g pointerEvents="none">
+        <circle cx={0} cy={boardCy} fill="none" stroke={accent} strokeWidth={3}>
+          <animate attributeName="r" values={`${m.pulseInner};${m.pulseOuter}`} dur="1.8s" repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.85;0" dur="1.8s" repeatCount="indefinite" />
         </circle>
-        <circle cx={0} cy={boardCy} fill="none" stroke={accent} strokeWidth={4}>
-          <animate attributeName="r" values="60;108" dur="1.8s" begin="0.9s" repeatCount="indefinite" />
+        <circle cx={0} cy={boardCy} fill="none" stroke={accent} strokeWidth={3}>
+          <animate attributeName="r" values={`${m.pulseInner};${m.pulseOuter}`} dur="1.8s" begin="0.9s" repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.85;0" dur="1.8s" begin="0.9s" repeatCount="indefinite" />
         </circle>
       </g>
 
-      {/* Bobbing board — same motion language as in-game pickups */}
-      <g className="edge-sign-board">
-        <ArrowSignBoard
-          cy={boardCy}
-          dir={dir}
-          label={label}
-          icon={icon}
-          accent={accent}
-          halfLen={104}
-          halfH={30}
-          tipLen={26}
-          fontSize={13}
-        />
+      <g
+        style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+        onClick={onGo}
+        role="link"
+        aria-label={label}
+      >
+        {/* Post */}
+        <rect x={-postW / 2} y={-postH} width={postW} height={postH} rx={2} fill="#5c4636" />
+        <rect x={-postW / 2 + 1} y={-postH} width={postW - 2} height={postH - 2} rx={1.5} fill="#8a6b4f" />
+        <line x1={0} y1={-postH + 6} x2={0} y2={-4} stroke="#6b5344" strokeWidth={1} opacity={0.45} />
+        <circle cx={0} cy={-postH + 2} r={2.5} fill="#6b5344" stroke="#3a342c" strokeWidth={0.8} />
+
+        {/* Bobbing board — same motion language as in-game pickups */}
+        <g className="edge-sign-board">
+          <ArrowSignBoard
+            cy={boardCy}
+            dir={dir}
+            label={label}
+            icon={icon}
+            accent={accent}
+            halfLen={m.halfLen}
+            halfH={m.halfH}
+            tipLen={m.tipLen}
+            fontSize={m.fontSize}
+          />
+        </g>
       </g>
     </g>
   );
@@ -132,17 +157,32 @@ type Props = {
 export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
   function CityNavSigns({ route, worldOff, active }, ref) {
     const router = useRouter();
+    const [viewport, setViewport] = useState(() => ({
+      w: typeof window !== 'undefined' ? window.innerWidth : VIEW_W,
+      h: typeof window !== 'undefined' ? window.innerHeight : 900,
+    }));
+
+    useEffect(() => {
+      const onResize = () => {
+        setViewport({ w: window.innerWidth, h: window.innerHeight });
+      };
+      onResize();
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, []);
 
     const bounds = cityWorldOffBounds(route);
     const prev = prevCityRoute(route);
     const next = nextCityRoute(route);
     const staticSigns = isStaticCityTemplateRoute(route);
     const cameraOff = bounds.min;
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : VIEW_W;
-    const edgeSigns = staticSigns ? staticCitySignGroundX(cameraOff, viewportWidth) : null;
+    const edgeSigns = staticSigns
+      ? staticCitySignGroundX(cameraOff, viewport.w, viewport.h)
+      : null;
     const leftX = edgeSigns ? edgeSigns.leftX : bounds.min + SIGN_EDGE_INSET_PX;
     const rightX = edgeSigns ? edgeSigns.rightX : bounds.max + VIEW_W - SIGN_EDGE_INSET_PX;
-    const signY = staticSigns ? SIGN_Y + CITY_GRASS_DROP_Y : SIGN_Y;
+    const grassDropY = route === 'silent-disco' ? SILENT_DISCO_GRASS_DROP_Y : CITY_GRASS_DROP_Y;
+    const signY = staticSigns ? SIGN_Y + grassDropY : SIGN_Y;
 
     const goTo = (target: VenueRoute) => {
       router.push(`/${venueSlugForRoute(target)}`);
@@ -175,8 +215,8 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
         `}</style>
         {active && (
           <>
-            <EdgeSign x={leftX} y={signY} dir="left" route={prev} onGo={() => goTo(prev)} edgePinned={staticSigns} />
-            <EdgeSign x={rightX} y={signY} dir="right" route={next} onGo={() => goTo(next)} edgePinned={staticSigns} />
+            <EdgeSign x={leftX} y={signY} dir="left" route={prev} onGo={() => goTo(prev)} compact={staticSigns} />
+            <EdgeSign x={rightX} y={signY} dir="right" route={next} onGo={() => goTo(next)} compact={staticSigns} />
           </>
         )}
       </svg>

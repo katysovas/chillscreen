@@ -18,8 +18,25 @@ export const SIGN_EDGE_INSET_PX = 260;
 /** Screen-edge inset for static city template — matches walk bounds. */
 export const STATIC_CITY_EDGE_INSET_PCT = 5;
 
-/** Extra inward padding for static city nav signs (beyond the walk boundary). */
-export const STATIC_SIGN_EDGE_PADDING_PX = 20;
+/** Extra inward padding for static city nav signs (screen px → viewBox). */
+export const STATIC_SIGN_EDGE_PADDING_PX = 6;
+
+/** Sign wing reach in ground viewBox units (compact static board). */
+export const STATIC_SIGN_WING_VB = 100;
+
+/** Walk-edge inset for sign placement only — signs sit slightly inside walk bounds. */
+export const STATIC_SIGN_EDGE_INSET_PCT = 2;
+
+/** Visible slice of the 1400×900 ground viewBox after `xMidYMid slice` scaling. */
+export function visibleGroundViewBoxSlice(
+  viewportWidth: number,
+  viewportHeight: number,
+): { vbLeft: number; vbWidth: number; scale: number } {
+  const scale = Math.max(viewportWidth / VIEW_WIDTH, viewportHeight / 900);
+  const vbWidth = viewportWidth / scale;
+  const vbLeft = VIEW_CENTER_X - vbWidth / 2;
+  return { vbLeft, vbWidth, scale };
+}
 import { midOriginForTile, midWidthForTile, nearGndTiles, TOWN_MID_W } from '@/lib/worldTileGeometry';
 
 /** West-to-east picker order — used for edge navigation and city select. */
@@ -149,17 +166,19 @@ export function staticCityPlayerWorldBounds(
   };
 }
 
-/** Ground-layer x for prev/next signs on the static city template. */
+/** Ground-layer x for prev/next signs on static stages — inset from the visible screen edges. */
 export function staticCitySignGroundX(
   cameraOff: number,
   viewportWidth = typeof window !== 'undefined' ? window.innerWidth : VIEW_WIDTH,
+  viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900,
 ): { leftX: number; rightX: number } {
-  const walkInsetPx = (STATIC_CITY_EDGE_INSET_PCT / 70) * viewportWidth;
-  const insetPx = walkInsetPx + STATIC_SIGN_EDGE_PADDING_PX;
-  const inset = (insetPx / viewportWidth) * VIEW_WIDTH;
+  const { vbLeft, vbWidth, scale } = visibleGroundViewBoxSlice(viewportWidth, viewportHeight);
+  const walkInsetVb = (STATIC_SIGN_EDGE_INSET_PCT / 100) * vbWidth
+    + STATIC_SIGN_EDGE_PADDING_PX / scale;
+  const insetVb = walkInsetVb + STATIC_SIGN_WING_VB;
   return {
-    leftX: cameraOff + inset,
-    rightX: cameraOff + VIEW_WIDTH - inset,
+    leftX: cameraOff + vbLeft + insetVb,
+    rightX: cameraOff + vbLeft + vbWidth - insetVb,
   };
 }
 
@@ -181,8 +200,12 @@ export function nearIsolatedMidTiles(
   tileIndex: number,
   route?: VenueRoute,
 ): (vx: number) => number[] {
-  // Deep Space + creator templates — single mid tile (no flanking town/stage art).
-  if (route === 'deep-space' || (route && isCreatorTemplateRoute(route))) {
+  // Deep Space + static viewport stages — single mid tile (no flanking town/stage art).
+  if (
+    route === 'deep-space'
+    || (route && isCreatorTemplateRoute(route))
+    || (route && isStaticCityTemplateRoute(route))
+  ) {
     return () => [tileIndex];
   }
   return () => [tileIndex - 1, tileIndex, tileIndex + 1];

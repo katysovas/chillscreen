@@ -5,6 +5,7 @@ export const FOREST_GND = 660;
 export const FOREST_STAGE_MID_X = 1500;
 
 import { minStageScale } from '@/lib/stageViewport';
+import { STAGE_TOILET } from '@/lib/stageToilets';
 
 export const FOREST_STAGE_SCALE = minStageScale(1.95);
 
@@ -16,7 +17,8 @@ const FOREST_STAGE_W = 500;
 export const FOREST_STAGE_HALF = Math.ceil((FOREST_STAGE_W * FOREST_STAGE_SCALE) / 2) + 28;
 
 /** Scaled deck half-width — lines up porta-potties with the visible stage edge. */
-export const FOREST_STAGE_TOILET_HALF = Math.ceil((480 * FOREST_STAGE_SCALE) / 2) + 12;
+export const FOREST_STAGE_TOILET_HALF =
+  Math.ceil((480 * FOREST_STAGE_SCALE) / 2) + STAGE_TOILET.stageHalfBleed;
 
 /** Electric-forest palette — lasers, fireflies, glowing shrooms. */
 export const FOREST_NEON = {

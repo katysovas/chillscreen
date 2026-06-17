@@ -1,4 +1,5 @@
 import { minStageScale } from '@/lib/stageViewport';
+import { STAGE_TOILET } from '@/lib/stageToilets';
 import { VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
 
 export const CREATOR_SCENE_HREF = '/images/cities/creator-cinema-scene.svg?v=1';
@@ -37,7 +38,8 @@ const WHICH_STAGE_W = 500;
 
 export const WHICH_STAGE_HALF = Math.ceil((WHICH_STAGE_W * WHICH_STAGE_SCALE) / 2) + 28;
 
-export const WHICH_STAGE_TOILET_HALF = Math.ceil((480 * WHICH_STAGE_SCALE) / 2) + 12;
+export const WHICH_STAGE_TOILET_HALF =
+  Math.ceil((480 * WHICH_STAGE_SCALE) / 2) + STAGE_TOILET.stageHalfBleed;
 
 export const WHICH_NEON = {
   green: '#38f5b0',

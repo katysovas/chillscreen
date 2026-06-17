@@ -10,6 +10,7 @@ import { nearIsolatedGndTiles } from '@/lib/isolatedCity';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { CITY_GRASS_DROP_Y } from './cinema/constants';
+import { SILENT_DISCO_GRASS_DROP_Y } from './silent-disco/constants';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
 import { skipGroundStreetLamp, skipGroundStreetProp, skipGroundStreetTree, type GroundStreetSkipContext } from '@/lib/stageTreeExclusion';
 import { SleepingCatsGround } from '../SleepingCat';
@@ -154,7 +155,8 @@ function groundTileContent(
   // discrete art; just render fewer pieces in narrow tiles.
   const w = gndWidthForTile(tile);
   const grassGround = skipCtx?.route != null && isStaticCityTemplateRoute(skipCtx.route);
-  const gndY = grassGround ? GND_Y + CITY_GRASS_DROP_Y : GND_Y;
+  const grassDropY = skipCtx?.route === 'silent-disco' ? SILENT_DISCO_GRASS_DROP_Y : CITY_GRASS_DROP_Y;
+  const gndY = grassGround ? GND_Y + grassDropY : GND_Y;
   // Keep a prop fully inside the tile (account for its art half-width).
   const fits = (x: number, halfW: number) => x <= w - halfW;
 

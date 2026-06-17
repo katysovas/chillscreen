@@ -7,7 +7,9 @@ export const STAGE_TOILET = {
   /** Sidewalk band — toilet bottoms align near y≈668. */
   sidewalkY: 596,
   /** Gap between stage edge and first unit. */
-  edgePad: 16,
+  edgePad: 4,
+  /** Extra half-width past scaled stage art for flanking toilet rows. */
+  stageHalfBleed: 4,
 } as const;
 
 export type StageToiletRow = {

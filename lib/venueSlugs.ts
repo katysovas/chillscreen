@@ -16,9 +16,9 @@ export function isCreatorTemplateRoute(route: VenueRoute): boolean {
   return route === 'creator-chill' || route === 'creator-cinema';
 }
 
-/** City template — fixed camera; player walks across the screen. */
+/** Fixed camera — player walks across the screen (no world scroll). */
 export function isStaticCityTemplateRoute(route: VenueRoute): boolean {
-  return route === 'creator-cinema';
+  return route === 'creator-cinema' || route === 'silent-disco';
 }
 
 /** Canonical URL path segments — slugified in-game venue names. */

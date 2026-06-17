@@ -133,6 +133,7 @@ import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { CITY_BACKDROP_FILL } from './city/cinema/constants';
+import { SILENT_DISCO_BACKDROP_FILL } from './city/silent-disco/constants';
 import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { BottomControlPanel, SignOutIcon } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
@@ -250,7 +251,8 @@ export default function SFCity({
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
   const isCreatorChill = effectiveVenueRoute === 'creator-chill';
   const isCreatorCinema = effectiveVenueRoute === 'creator-cinema';
-  const isCreatorCustomSky = isCreatorChill || isCreatorCinema;
+  const isSilentDisco = effectiveVenueRoute === 'silent-disco';
+  const isCreatorCustomSky = isCreatorChill || isCreatorCinema || isSilentDisco;
   const isStaticCityView = isStaticCityTemplateRoute(effectiveVenueRoute);
   /** Stable per tab session — matches stage picker crowd counts. */
   const ambientSeed = useMemo(
@@ -2205,6 +2207,17 @@ export default function SFCity({
               zIndex: 1,
               pointerEvents: 'none',
               background: CITY_BACKDROP_FILL,
+            }}
+          />
+        ) : isSilentDisco ? (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: SILENT_DISCO_BACKDROP_FILL,
             }}
           />
         ) : isDeepSpace ? (

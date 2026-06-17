@@ -12,14 +12,17 @@ import {
   SILENT_DISCO_STAGE_MID_X,
   SILENT_DISCO_STAGE_PUSH_Y,
   SILENT_DISCO_STAGE_SCALE,
+  STATIC_SILENT_DISCO_STAGE_PUSH_Y,
+  STATIC_SILENT_DISCO_STAGE_SCALE,
+  STATIC_SILENT_DISCO_MARQUEE_FONT,
+  STATIC_SILENT_DISCO_MARQUEE_X,
+  STATIC_SILENT_DISCO_MARQUEE_Y,
 } from './constants';
 
 export { SILENT_DISCO_STAGE_MID_X, SILENT_DISCO_STAGE_HALF };
 
 const GND = SILENT_DISCO_GND;
 const cx = SILENT_DISCO_STAGE_MID_X;
-const S = SILENT_DISCO_STAGE_SCALE;
-const pushY = SILENT_DISCO_STAGE_PUSH_Y;
 const ox = cx;
 const oy = GND;
 
@@ -29,6 +32,135 @@ const scrX = cx - scrW / 2;
 const scrY = 406;
 const trussY = 368;
 const rigW = 480;
+
+type StageLayout = {
+  scale: number;
+  pushY: number;
+  marqueeSize: number;
+  /** Draw scaled glitch title above the stage (static viewport). */
+  staticMarquee: boolean;
+};
+
+function stageLayout(staticViewport: boolean): StageLayout {
+  return staticViewport
+    ? {
+      scale: STATIC_SILENT_DISCO_STAGE_SCALE,
+      pushY: STATIC_SILENT_DISCO_STAGE_PUSH_Y,
+      marqueeSize: STATIC_SILENT_DISCO_MARQUEE_FONT,
+      staticMarquee: true,
+    }
+    : {
+      scale: SILENT_DISCO_STAGE_SCALE,
+      pushY: SILENT_DISCO_STAGE_PUSH_Y,
+      marqueeSize: 26,
+      staticMarquee: false,
+    };
+}
+
+function SilentDiscoStageDefs() {
+  return (
+    <defs>
+      <radialGradient id="sds-haze" cx="50%" cy="28%" r="65%">
+        <stop offset="0%" stopColor={SD_NEON.magenta} stopOpacity={0.14} />
+        <stop offset="45%" stopColor={SD_NEON.cyan} stopOpacity={0.08} />
+        <stop offset="100%" stopColor="#03060e" stopOpacity={0} />
+      </radialGradient>
+      <linearGradient id="sds-beam" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#fff" stopOpacity={0.55} />
+        <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+      </linearGradient>
+      <linearGradient id="sds-truss" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#1c2438" />
+        <stop offset="100%" stopColor="#0a0f1e" />
+      </linearGradient>
+      <radialGradient id="sds-ball" cx="35%" cy="30%" r="80%">
+        <stop offset="0%" stopColor="#f4faff" />
+        <stop offset="55%" stopColor="#9fb6cc" />
+        <stop offset="100%" stopColor="#3c4a5c" />
+      </radialGradient>
+      <filter id="sds-glow" x="-80%" y="-80%" width="260%" height="260%">
+        <feGaussianBlur stdDeviation="4" result="b" />
+        <feMerge>
+          <feMergeNode in="b" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
+  );
+}
+
+/** Scaled scene glitch sign — centered above the stage (pure SVG). */
+function SilentDiscoGlitchSign({ fontSize }: { fontSize: number }) {
+  const lineH = Math.round(fontSize * 0.92);
+  const lines = ['SILENT', 'DISCO'] as const;
+  const font = 'Oswald, Impact, sans-serif';
+
+  return (
+    <g
+      transform={`translate(${STATIC_SILENT_DISCO_MARQUEE_X},${STATIC_SILENT_DISCO_MARQUEE_Y}) rotate(-3) skewY(5)`}
+    >
+      {lines.map((line, i) => {
+        const y = fontSize + i * lineH;
+        return (
+          <g key={line}>
+            <text
+              x={-2}
+              y={y}
+              textAnchor="middle"
+              fontFamily={font}
+              fontWeight={700}
+              fontSize={fontSize}
+              letterSpacing={2}
+              fill="#ff0000"
+              opacity={0.85}
+            >
+              {line}
+              <animate attributeName="x" values="-2;2;-3;1;-2" dur="3s" repeatCount="indefinite" />
+              <animate
+                attributeName="fill"
+                values="red;green;blue;yellow;purple;pink;cyan;red"
+                dur="3s"
+                repeatCount="indefinite"
+              />
+            </text>
+            <text
+              x={2}
+              y={y}
+              textAnchor="middle"
+              fontFamily={font}
+              fontWeight={700}
+              fontSize={fontSize}
+              letterSpacing={2}
+              fill="#00ff00"
+              opacity={0.7}
+            >
+              {line}
+              <animate attributeName="x" values="2;-1;3;-2;2" dur="3s" repeatCount="indefinite" />
+              <animate
+                attributeName="fill"
+                values="lime;cyan;magenta;orange;teal;lime"
+                dur="3s"
+                repeatCount="indefinite"
+              />
+            </text>
+            <text
+              x={0}
+              y={y}
+              textAnchor="middle"
+              fontFamily={font}
+              fontWeight={700}
+              fontSize={fontSize}
+              letterSpacing={2}
+              fill="#000"
+            >
+              {line}
+            </text>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
 
 /** Headphone earcup colors cycling across the truss. */
 const LENS_COLORS = [
@@ -62,44 +194,20 @@ const GLOWSTICKS = [
 type SilentDiscoStageShellProps = {
   marquee?: string;
   idleScreen?: boolean;
+  layout: StageLayout;
 };
 
 /** Headphone-rave rig — disco ball, laser truss, LED frame (no video). */
-function SilentDiscoStageShell({ marquee = 'SILENT DISCO', idleScreen = true }: SilentDiscoStageShellProps) {
+function SilentDiscoStageShell({ marquee = 'SILENT DISCO', idleScreen = true, layout }: SilentDiscoStageShellProps) {
+  const { scale: S, pushY, marqueeSize, staticMarquee } = layout;
   const deck = GND;
   const fontFamily = 'system-ui, sans-serif';
 
   return (
     <>
+      <SilentDiscoStageDefs />
       <g transform={`translate(0, ${pushY})`}>
         <g transform={`translate(${ox},${oy}) scale(${S}) translate(${-ox},${-oy})`}>
-          <defs>
-            <radialGradient id="sds-haze" cx="50%" cy="28%" r="65%">
-              <stop offset="0%" stopColor={SD_NEON.magenta} stopOpacity={0.14} />
-              <stop offset="45%" stopColor={SD_NEON.cyan} stopOpacity={0.08} />
-              <stop offset="100%" stopColor="#03060e" stopOpacity={0} />
-            </radialGradient>
-            <linearGradient id="sds-beam" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#fff" stopOpacity={0.55} />
-              <stop offset="100%" stopColor="#fff" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="sds-truss" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#1c2438" />
-              <stop offset="100%" stopColor="#0a0f1e" />
-            </linearGradient>
-            <radialGradient id="sds-ball" cx="35%" cy="30%" r="80%">
-              <stop offset="0%" stopColor="#f4faff" />
-              <stop offset="55%" stopColor="#9fb6cc" />
-              <stop offset="100%" stopColor="#3c4a5c" />
-            </radialGradient>
-            <filter id="sds-glow" x="-80%" y="-80%" width="260%" height="260%">
-              <feGaussianBlur stdDeviation="4" result="b" />
-              <feMerge>
-                <feMergeNode in="b" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
 
           <ellipse cx={cx} cy={deck - 120} rx={rigW * 0.55} ry={140} fill="url(#sds-haze)" opacity={0.85}>
             <animate attributeName="opacity" values="0.65;1;0.65" dur="5s" repeatCount="indefinite" />
@@ -206,6 +314,8 @@ function SilentDiscoStageShell({ marquee = 'SILENT DISCO', idleScreen = true }: 
             </g>
           ))}
 
+          {!staticMarquee && (
+            <>
           {/* headphone marquee mark */}
           <g filter="url(#sds-glow)">
             <path
@@ -227,7 +337,7 @@ function SilentDiscoStageShell({ marquee = 'SILENT DISCO', idleScreen = true }: 
             y={trussY - 12}
             textAnchor="middle"
             fontFamily="Anton, Impact, sans-serif"
-            fontSize={26}
+            fontSize={marqueeSize}
             letterSpacing={3}
             fill="#eefbff"
             filter="url(#sds-glow)"
@@ -235,6 +345,8 @@ function SilentDiscoStageShell({ marquee = 'SILENT DISCO', idleScreen = true }: 
             SILENT DISCO
             <animate attributeName="opacity" values="1;0.85;0.5;0.95;1" dur="4.5s" repeatCount="indefinite" />
           </text>
+            </>
+          )}
 
           <rect
             x={scrX - 10}
@@ -388,6 +500,7 @@ function SilentDiscoStageShell({ marquee = 'SILENT DISCO', idleScreen = true }: 
           </text>
         </g>
       </g>
+      {staticMarquee && <SilentDiscoGlitchSign fontSize={marqueeSize} />}
     </>
   );
 }
@@ -396,7 +509,8 @@ function SilentDiscoStageShell({ marquee = 'SILENT DISCO', idleScreen = true }: 
  * Floating headphones above the DJ table — rendered as a separate top layer so
  * they stay visible in front of the video screen.
  */
-function FloatingHeadphones() {
+function FloatingHeadphones({ layout }: { layout: StageLayout }) {
+  const { scale: S, pushY } = layout;
   return (
     <g transform={`translate(0, ${pushY})`} style={{ pointerEvents: 'none' }}>
       <g transform={`translate(${ox},${oy}) scale(${S}) translate(${-ox},${-oy})`}>
@@ -438,7 +552,8 @@ function FloatingHeadphones() {
 
 const SILENT_DISCO_STAGE_CHANNEL = stageChannelForVenueKind('silent-disco', 0);
 
-function SilentDiscoStageLive() {
+function SilentDiscoStageLive({ layout }: { layout: StageLayout }) {
+  const { scale: S, pushY } = layout;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
@@ -454,7 +569,7 @@ function SilentDiscoStageLive() {
 
   return (
     <>
-      <SilentDiscoStageShell marquee={marquee} idleScreen={false} />
+      <SilentDiscoStageShell marquee={marquee} idleScreen={false} layout={layout} />
       <foreignObject
         x={videoFoX}
         y={videoFoY}
@@ -485,20 +600,27 @@ function SilentDiscoStageLive() {
           />
         </div>
       </foreignObject>
-      <FloatingHeadphones />
+      <FloatingHeadphones layout={layout} />
     </>
   );
 }
 
 /** Silent Disco main stage — headphone rave rig with synchronized live video. */
-export function SilentDiscoStage({ live = false }: { live?: boolean }) {
+export function SilentDiscoStage({
+  live = false,
+  staticViewport = false,
+}: {
+  live?: boolean;
+  staticViewport?: boolean;
+}) {
+  const layout = stageLayout(staticViewport);
   if (!live) {
     return (
       <>
-        <SilentDiscoStageShell />
-        <FloatingHeadphones />
+        <SilentDiscoStageShell layout={layout} />
+        <FloatingHeadphones layout={layout} />
       </>
     );
   }
-  return <SilentDiscoStageLive />;
+  return <SilentDiscoStageLive layout={layout} />;
 }
