@@ -10,7 +10,7 @@ import {
 } from '@/lib/youtubeApi';
 import type { StageStream } from '@/lib/stages/types';
 
-export type StageStreamPasteMode = 'video' | 'playlist' | 'channel';
+export type StageStreamPasteMode = 'video' | 'playlist' | 'channel' | 'bulk';
 
 export type StreamParseRejectReason =
   | 'invalid_url'
@@ -202,7 +202,38 @@ export async function parseStageStreamUrl(
   }
 }
 
-/** Parse a video, playlist, or channel URL into stage streams. */
+/** Parse multiple YouTube links (one per line) into stage streams. */
+async function parseBulkVideoLinks(
+  text: string,
+  apiKey: string,
+  maxToAdd: number,
+  existingVideoIds: Set<string>,
+): Promise<StreamBulkParseResult> {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const videoIds: string[] = [];
+  for (const line of lines) {
+    const id = parseYoutubeVideoId(line);
+    if (id && !videoIds.includes(id)) videoIds.push(id);
+  }
+  if (!videoIds.length) {
+    return rejectBulk('invalid_url', 'No valid YouTube links found. Paste one link per line.');
+  }
+
+  const { streams, skipped } = await resolveVideoIdsToStageStreams(
+    videoIds,
+    apiKey,
+    maxToAdd,
+    existingVideoIds,
+  );
+
+  if (!streams.length) {
+    return rejectBulk('not_embeddable', 'None of the pasted videos could be added.');
+  }
+
+  return { ok: true, streams, skipped, totalFound: videoIds.length };
+}
+
+/** Parse a video, playlist, channel, or bulk link list into stage streams. */
 export async function parseStageStreamSource(
   input: string,
   mode: StageStreamPasteMode,
@@ -219,6 +250,19 @@ export async function parseStageStreamSource(
 
   if (mode === 'video') {
     return parseStageStreamUrl(trimmed, opts.apiKey);
+  }
+
+  if (mode === 'bulk') {
+    if (!opts.apiKey) {
+      return rejectBulk(
+        'invalid_url',
+        'Bulk import requires a YouTube API key on the server.',
+      );
+    }
+    const existing = new Set(opts.existingVideoIds ?? []);
+    const maxToAdd = Math.max(0, opts.maxToAdd);
+    if (maxToAdd === 0) return rejectBulk('invalid_url', 'Your lineup is full.');
+    return parseBulkVideoLinks(trimmed, opts.apiKey, maxToAdd, existing);
   }
 
   if (!opts.apiKey) {

@@ -8,7 +8,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const PASTE_MODES = new Set<StageStreamPasteMode>(['video', 'playlist', 'channel']);
+const PASTE_MODES = new Set<StageStreamPasteMode>(['video', 'playlist', 'channel', 'bulk']);
 
 /** POST — parse + validate YouTube video, playlist, or channel at paste time. */
 export async function POST(req: Request) {
