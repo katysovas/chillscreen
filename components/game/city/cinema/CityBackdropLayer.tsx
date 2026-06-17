@@ -3,10 +3,8 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
 import { useOptionalCreatorStage } from '@/lib/stages/CreatorStageContext';
 import {
-  CITY_BLEND_HREF,
   CITY_MID_TILE_H,
   CITY_MID_TILE_W,
-  CITY_SKYLINE_HREF,
   CITY_UPLOAD_BACKDROP_LIFT_Y,
   isCustomCityBackdropUrl,
 } from './constants';
@@ -26,7 +24,7 @@ type CityBackdropLayerProps = {
 /** Animated city skyline — twirling color wash over hard-light skyline. */
 export function CityBackdropLayer({ skylineUrl: skylineUrlProp, bleedPx = 0 }: CityBackdropLayerProps = {}) {
   const stage = useOptionalCreatorStage();
-  const skylineUrl = skylineUrlProp ?? stage?.backdropUrl ?? CITY_SKYLINE_HREF;
+  const skylineUrl = skylineUrlProp ?? stage?.backdropUrl ?? null;
   const customBackdrop = isCustomCityBackdropUrl(skylineUrl);
 
   return (
@@ -42,11 +40,7 @@ export function CityBackdropLayer({ skylineUrl: skylineUrlProp, bleedPx = 0 }: C
         className="city-backdrop"
       >
         {/* Wrappers carry blend-mode + filter animations (matches CodePen div.blend / div.city). */}
-        <div className="city-backdrop__blend" aria-hidden>
-          {/* img src — CSS background-image does not paint inside SVG foreignObject (WebKit). */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={CITY_BLEND_HREF} alt="" draggable={false} />
-        </div>
+        <div className="city-backdrop__blend" aria-hidden />
         <div
           className={customBackdrop ? 'city-backdrop__city city-backdrop__city--upload' : 'city-backdrop__city'}
           style={
@@ -56,8 +50,10 @@ export function CityBackdropLayer({ skylineUrl: skylineUrlProp, bleedPx = 0 }: C
           }
           aria-hidden
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img key={skylineUrl} src={skylineUrl} alt="" draggable={false} />
+          {skylineUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={skylineUrl} src={skylineUrl} alt="" draggable={false} />
+          )}
           <div className="city-backdrop__vignette" />
         </div>
       </div>

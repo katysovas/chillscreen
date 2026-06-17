@@ -17,17 +17,20 @@
   width: 500%;
   height: 500%;
   transform-origin: 60% 60%;
+  /* Festival palette — gets blurred + hue-rotated at runtime so exact stops don't matter */
+  background: conic-gradient(
+    from 0deg,
+    #9b3fff,
+    #ff4fd8,
+    #ffc14d,
+    #38f5b0,
+    #2fe6ff,
+    #4a8fd4,
+    #9b3fff
+  );
   animation:
     city-backdrop-twirl 50s infinite linear,
     city-backdrop-glow 0.46875s infinite ease-in-out;
-}
-
-.city-backdrop__blend img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
 }
 
 /* ── Skyline / upload (z-index 2) — hard-light + vignette ── */
