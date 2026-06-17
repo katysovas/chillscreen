@@ -969,7 +969,7 @@ export function CreateStageWizard() {
                     >
                       {deletingStage
                         ? 'Deleting…'
-                        : `Delete existing stage (${existingStageSlug}) — testing`}
+                        : `Delete existing stage (${existingStageSlug})`}
                     </button>
                   )}
                 </>
@@ -1339,7 +1339,7 @@ export function CreateStageWizard() {
                 >
                   {deletingStage
                     ? 'Deleting…'
-                    : `Delete existing stage (${existingStageSlug}) — testing`}
+                    : `Delete existing stage (${existingStageSlug})`}
                 </button>
               )}
             </>

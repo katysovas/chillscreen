@@ -18,7 +18,7 @@ export const STAGE_BACKDROP_LIMITS = {
   minWidth: 1920,
   /** Keeps enough vertical detail for the wide tile aspect. */
   minHeight: Math.ceil(1920 / TILE_ASPECT),
-  maxBytes: 5 * 1024 * 1024,
+  maxBytes: 3 * 1024 * 1024,
   /** Landscape only — roughly 3:2 through ultrawide panorama. */
   minAspectRatio: 1.4,
   maxAspectRatio: 4,
