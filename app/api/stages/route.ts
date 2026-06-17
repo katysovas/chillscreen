@@ -154,6 +154,7 @@ export async function POST(req: Request) {
         streams,
         nowPlayingIndex: 0,
         backdropUrl,
+        shuffleOnStart,
       });
 
       return NextResponse.json({
@@ -228,6 +229,7 @@ export async function POST(req: Request) {
       streams,
       nowPlayingIndex: 0,
       backdropUrl,
+      shuffleOnStart,
     });
 
     const res = NextResponse.json({

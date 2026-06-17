@@ -141,6 +141,7 @@ type Draft = {
   preset: StagePresetId;
   backdropUrl: string | null;
   streams: StageStream[];
+  shuffleOnStart: boolean;
 };
 
 const DEFAULT_DRAFT: Draft = {
@@ -151,6 +152,7 @@ const DEFAULT_DRAFT: Draft = {
   preset: 'cinema',
   backdropUrl: DEFAULT_STAGE_WALLPAPER_URL,
   streams: [],
+  shuffleOnStart: false,
 };
 
 const FESTIE_BALLOON_COLOR = festiePresetById('ember').balloonColor;
@@ -668,6 +670,7 @@ export function CreateStageWizard() {
         displayName: draft.stageName.trim(),
         preset: draft.preset,
         streams: draft.streams,
+        shuffleOnStart: draft.shuffleOnStart,
       };
       if (draft.preset === 'cinema' && draft.backdropUrl && !pendingBackdropFile) {
         payload.backdropUrl = draft.backdropUrl;
@@ -1239,6 +1242,25 @@ export function CreateStageWizard() {
                   Add at least one YouTube link. You can update this later. 
                 </p>
               )}
+
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginTop: 16,
+                cursor: 'pointer',
+                userSelect: 'none',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={draft.shuffleOnStart}
+                  onChange={e => setDraft(d => ({ ...d, shuffleOnStart: e.target.checked }))}
+                  style={{ marginTop: 1, accentColor: '#e67e22' }}
+                />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'system-ui,sans-serif' }}>
+                  Shuffle on start
+                </span>
+              </label>
             </>
           )}
 
