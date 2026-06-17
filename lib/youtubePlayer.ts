@@ -32,13 +32,24 @@ function findIframeBySource(source: MessageEventSource | null): HTMLIFrameElemen
   return null;
 }
 
+/** unMute/setVolume must run inside a user gesture on iOS — never flush from onReady. */
+function isGestureAudioCommand(func: string): boolean {
+  return func === 'unMute' || func === 'setVolume';
+}
+
 function flushPending(iframe: HTMLIFrameElement) {
   const queue = pendingCommands.get(iframe);
   if (!queue?.length) return;
   pendingCommands.delete(iframe);
+  const held: PendingCommand[] = [];
   for (const cmd of queue) {
+    if (isGestureAudioCommand(cmd.func)) {
+      held.push(cmd);
+      continue;
+    }
     postCommandImmediate(iframe, cmd.func, cmd.args);
   }
+  if (held.length) pendingCommands.set(iframe, held);
 }
 
 function markYouTubeReady(iframe: HTMLIFrameElement) {
@@ -170,10 +181,13 @@ export function applyYouTubeAudio(
   if (!iframe) return;
   if (siteMuted) {
     postCommand(iframe, 'mute');
-  } else {
-    postCommand(iframe, 'unMute');
-    postCommand(iframe, 'setVolume', [55]);
+    return;
   }
+  // iOS Safari ignores unMute unless it runs synchronously during a user gesture.
+  // Skip queueing — gesture nudges retry until the iframe is ready.
+  if (!readyIframes.has(iframe)) return;
+  postCommandImmediate(iframe, 'unMute');
+  postCommandImmediate(iframe, 'setVolume', [55]);
 }
 
 /** Hard stop — mute + pause so off-screen players cannot leak chopped audio. */

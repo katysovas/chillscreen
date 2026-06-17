@@ -214,8 +214,8 @@ export function MobileGameControls({
             type="button"
             className="mobile-controls-mute mobile-controls-action-btn"
             aria-label={muted ? 'Unmute' : 'Mute'}
-            onPointerDown={e => e.preventDefault()}
-            onClick={() => {
+            onPointerDown={e => {
+              e.preventDefault();
               trackMobileControl(muted ? 'unmute' : 'mute');
               onToggleMute();
             }}

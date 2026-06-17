@@ -109,6 +109,8 @@ function ensureNudgeListeners() {
   if (gestureListenersOn) return;
   gestureListenersOn = true;
   window.addEventListener('pointerdown', fireNudges, { passive: true });
+  // iOS Safari often needs touchstart (not just pointerdown) for media unlock.
+  window.addEventListener('touchstart', fireNudges, { passive: true });
   window.addEventListener('keydown', fireNudges);
   document.addEventListener('visibilitychange', onVisibilityChange);
   if (!stageSyncUnsub) {
@@ -119,6 +121,7 @@ function ensureNudgeListeners() {
 function maybeRemoveNudgeListeners() {
   if (nudges.size === 0 && gestureListenersOn) {
     window.removeEventListener('pointerdown', fireNudges);
+    window.removeEventListener('touchstart', fireNudges);
     window.removeEventListener('keydown', fireNudges);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     stageSyncUnsub?.();

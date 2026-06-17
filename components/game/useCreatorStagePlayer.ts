@@ -100,10 +100,23 @@ export function useCreatorStagePlayer({
     onNowPlayingRef.current?.(stream ? streamChannelMarquee(stream) || null : null);
   }, [live, stream?.videoId, stream?.channelTitle, stream?.title]);
 
+  const [playing, setPlaying] = useState(false);
+  const playingRef = useRef(false);
+  playingRef.current = playing;
+
   const onPlayingRef = useRef<() => void>(() => {});
+
+  onPlayingRef.current = () => {
+    playingRef.current = true;
+    setPlaying(true);
+    applyAudio(iframeRef.current);
+  };
 
   useEffect(() => {
     if (!live || !src) return;
+    playingRef.current = false;
+    setPlaying(false);
+
     const unregister = registerStagePlayerPlayingListener(iframeRef, onPlayingRef);
     const fallback = window.setTimeout(() => onPlayingRef.current(), 5000);
     return () => {
@@ -111,6 +124,11 @@ export function useCreatorStagePlayer({
       window.clearTimeout(fallback);
     };
   }, [vidKey, live, src, iframeRef]);
+
+  useEffect(() => {
+    if (!playing) return;
+    applyAudio(iframeRef.current);
+  }, [playing, iframeRef, applyAudio]);
 
   const nudgePlayback = useCallback(() => {
     if (!live || !src) return;
