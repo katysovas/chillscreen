@@ -10,6 +10,7 @@ import { activePainterNpcIds } from '@/lib/easel/session';
 import { activeChatDrawingForNpc } from '@/lib/easel/chatNpcDrawings';
 import type { ChatNpcDrawingSession } from '@/lib/easel/types';
 import type { CompareDrawPin } from '@/lib/easel/runDrawModelCompare';
+import type { VenueRoute } from '@/lib/venueSlugs';
 import type { EaselSessionSync } from '@/lib/easel/types';
 import type { ChatLine } from '@/lib/chatLines';
 import type { RemoteAmbientMessage, RemotePlayerState } from '@/lib/multiplayer/useMultiplayer';
@@ -31,6 +32,7 @@ type SFCityCrowdLayerProps = {
   isNpcChatConnected: (npcIndex: number, npcId: string) => boolean;
   activeEaselSession: EaselSessionSync | null;
   easelStageSlug: string | undefined;
+  easelLayoutRoute?: VenueRoute;
   chatNpcDrawings: ChatNpcDrawingSession[];
   compareDrawPins: CompareDrawPin[];
   festieDimNpcIds: Set<string>;
@@ -56,6 +58,7 @@ function SFCityCrowdLayer({
   isNpcChatConnected,
   activeEaselSession,
   easelStageSlug,
+  easelLayoutRoute,
   chatNpcDrawings,
   compareDrawPins,
   festieDimNpcIds,
@@ -112,6 +115,7 @@ function SFCityCrowdLayer({
             stageAnchor={cfg.stageAnchor}
             easelPaintingSlot={easelPaintingSlot}
             easelStageSlug={isPainting ? easelStageSlug : undefined}
+            easelLayoutRoute={isPainting ? easelLayoutRoute : undefined}
             onEaselStationed={isPainting ? handleEaselStationed : undefined}
             easelPaintingLabel={easelPaintingLabel}
             chatPromptDrawingLabel={chatPromptDrawingLabel}

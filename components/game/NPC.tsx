@@ -14,6 +14,7 @@ import {
   type StageAnchorKind,
 } from '@/lib/stageAnchor';
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
+import type { VenueRoute } from '@/lib/venueSlugs';
 import { easelNpcStandWorldX, easelNpcStandWorldXForCanvas } from '@/lib/easel/layout';
 import { setEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import { easelPaintingChatter } from '@/lib/easel/paintingLabel';
@@ -75,6 +76,8 @@ type NPCProps = NPCConfig & {
   /** Easel slot while painting — stand position derived each frame from viewport width. */
   easelPaintingSlot?: number;
   easelStageSlug?: string;
+  /** Venue template for stand position when `easelStageSlug` is a creator stage id. */
+  easelLayoutRoute?: VenueRoute;
   /** Fired when NPC pins at the easel stand (starts drawing clock). */
   onEaselStationed?: (npcId: string) => void;
   /** Drawing subject — shown in chat bubble while status is painting. */
@@ -133,7 +136,7 @@ function NPC({
   startX, entryDirection, entryDelay,
   balloonColor, scale = 0.34, accessory, loadout, outfit,
   personality, stageAnchor, stageCrowd, wanderAttractWorldX,
-  easelPaintingSlot, easelStageSlug,
+  easelPaintingSlot, easelStageSlug, easelLayoutRoute,
   onEaselStationed,
   easelPaintingLabel,
   chatPromptDrawingLabel,
@@ -169,16 +172,18 @@ function NPC({
   const easelStationedRef   = useRef(false);
   const easelPaintingSlotRef = useRef<number | undefined>(easelPaintingSlot);
   const easelStageSlugRef    = useRef<string | undefined>(easelStageSlug);
+  const easelLayoutRouteRef  = useRef<VenueRoute | undefined>(easelLayoutRoute);
   const chatPromptCanvasWorldXRef = useRef<number | null | undefined>(chatPromptCanvasWorldX);
   easelPaintingSlotRef.current = easelPaintingSlot;
   easelStageSlugRef.current = easelStageSlug;
+  easelLayoutRouteRef.current = easelLayoutRoute;
   chatPromptCanvasWorldXRef.current = chatPromptCanvasWorldX;
 
   const resolveEaselStandWorldX = (width: number): number | undefined => {
     const slot = easelPaintingSlotRef.current;
     const slug = easelStageSlugRef.current;
     if (slot == null || !slug) return undefined;
-    return easelNpcStandWorldX(slot, slug, width);
+    return easelNpcStandWorldX(slot, slug, width, easelLayoutRouteRef.current);
   };
 
   const resolvePromptStandWorldX = (): number | undefined => {
@@ -407,10 +412,10 @@ function NPC({
 
   useEffect(() => {
     if (!active || easelPaintingSlot == null || !easelStageSlug) return;
-    const standX = easelNpcStandWorldX(easelPaintingSlot, easelStageSlug, vw());
+    const standX = easelNpcStandWorldX(easelPaintingSlot, easelStageSlug, vw(), easelLayoutRoute);
     stationAtEasel(standX);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, easelPaintingSlot, easelStageSlug]);
+  }, [active, easelPaintingSlot, easelStageSlug, easelLayoutRoute]);
 
   useEffect(() => {
     if (!active || chatPromptCanvasWorldX == null) return;
@@ -746,6 +751,7 @@ function areNpcPropsEqual(prev: NPCProps, next: NPCProps): boolean {
     && prev.wanderAttractWorldX === next.wanderAttractWorldX
     && prev.easelPaintingSlot === next.easelPaintingSlot
     && prev.easelStageSlug === next.easelStageSlug
+    && prev.easelLayoutRoute === next.easelLayoutRoute
     && prev.onEaselStationed === next.onEaselStationed
     && prev.easelPaintingLabel === next.easelPaintingLabel
     && prev.chatPromptDrawingLabel === next.chatPromptDrawingLabel

@@ -21,14 +21,24 @@ export function nextEaselSlot(afterSlot: number): number {
   return (afterSlot + 1) % EASEL_SLOTS_PER_STAGE;
 }
 
+/** Resolve venue layout — built-in slugs parse; creator `/watch/{slug}` uses fallback route. */
+export function easelLayoutRouteForSlug(
+  stageSlug: string,
+  layoutRoute?: VenueRoute,
+): VenueRoute {
+  return parseVenueSlug(stageSlug) ?? layoutRoute ?? (() => {
+    throw new Error(`unknown easel stage slug: ${stageSlug}`);
+  })();
+}
+
 /** Fixed ground worldX for an easel slot at the stage-centered scroll position. */
 export function easelSlotAnchorWorldX(
   slot: number,
   stageSlug: string,
   viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200,
+  layoutRoute?: VenueRoute,
 ): number {
-  const route = parseVenueSlug(stageSlug);
-  if (!route) throw new Error(`unknown easel stage slug: ${stageSlug}`);
+  const route = easelLayoutRouteForSlug(stageSlug, layoutRoute);
   return easelSlotAnchorWorldXForRoute(slot, route, viewportWidth);
 }
 

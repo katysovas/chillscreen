@@ -7,6 +7,7 @@ import { easelSlotWorldX } from '@/lib/easel/layout';
 import { useEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import type { EaselSessionSync, EaselSlotSync } from '@/lib/easel/types';
 import { pickVisibleEaselSlots } from '@/lib/easel/visibleSlots';
+import type { VenueRoute } from '@/lib/venueSlugs';
 import { venueSlugForRoute } from '@/lib/venueSlugs';
 import { setWorldPositionTick } from '@/lib/worldPositionTicks';
 import { EaselSlotView } from './EaselSlotView';
@@ -17,6 +18,8 @@ const OFFSCREEN_RIGHT = 122;
 type Props = {
   active: boolean;
   stageSlug: string;
+  /** Venue template for slot positions when `stageSlug` is a creator stage id. */
+  layoutRoute?: VenueRoute;
   session: EaselSessionSync | null;
 };
 
@@ -24,10 +27,12 @@ function EaselSlotLayer({
   slot,
   sessionStart,
   stageSlug,
+  layoutRoute,
 }: {
   slot: EaselSlotSync;
   sessionStart: number;
   stageSlug: string;
+  layoutRoute?: VenueRoute;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const onScreenRef = useRef(false);
@@ -41,7 +46,7 @@ function EaselSlotLayer({
       const el = outerRef.current;
       if (!el) return;
 
-      const worldX = easelSlotWorldX(slot.slot, stageSlug, width);
+      const worldX = easelSlotWorldX(slot.slot, stageSlug, width, layoutRoute);
       const pct = worldXToScreenPct(worldX, off, width);
       const px = Math.round((pct / 100) * width);
       el.style.transform = `translateX(${px}px) translateX(-50%)`;
@@ -53,7 +58,7 @@ function EaselSlotLayer({
         setOnScreenPaused(!onScreen);
       }
     });
-  }, [painterReady]);
+  }, [painterReady, slot.slot, stageSlug, layoutRoute]);
 
   if (painting && !painterReady) return null;
 
@@ -82,7 +87,12 @@ function EaselSlotLayer({
 }
 
 /** Ambient stage easels — one unprompted painter; user prompts are unlimited via chat. */
-export const StageEaselsLayer = memo(function StageEaselsLayer({ active, stageSlug, session }: Props) {
+export const StageEaselsLayer = memo(function StageEaselsLayer({
+  active,
+  stageSlug,
+  layoutRoute,
+  session,
+}: Props) {
   const visibleSlots = session ? pickVisibleEaselSlots(session.slots) : [];
   const sessionStart = session?.sessionStart ?? 0;
   if (!active || visibleSlots.length === 0) return null;
@@ -95,6 +105,7 @@ export const StageEaselsLayer = memo(function StageEaselsLayer({ active, stageSl
           slot={slot}
           sessionStart={sessionStart}
           stageSlug={stageSlug}
+          layoutRoute={layoutRoute}
         />
       ))}
     </>
@@ -102,6 +113,5 @@ export const StageEaselsLayer = memo(function StageEaselsLayer({ active, stageSl
 });
 
 export function stageSlugFromVenueRoute(route: string): string {
-  if (route === 'cinema') return venueSlugForRoute('cinema');
-  return venueSlugForRoute(route as 'cinema');
+  return venueSlugForRoute(route as VenueRoute);
 }

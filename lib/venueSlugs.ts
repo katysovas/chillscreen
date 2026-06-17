@@ -83,6 +83,8 @@ const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
   theforest: 'forest',
   'silent-disco': 'silent-disco',
   silentdisco: 'silent-disco',
+  'creator-chill': 'creator-chill',
+  'creator-cinema': 'creator-cinema',
 };
 
 /** Parse a URL segment like `thedesert`. */

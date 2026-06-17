@@ -1,4 +1,5 @@
 import { easelSlotAnchorWorldX } from './stageAnchor';
+import type { VenueRoute } from '@/lib/venueSlugs';
 import { venueSlugForRoute } from '@/lib/venueSlugs';
 import { EASEL_SLOTS_PER_STAGE } from './types';
 
@@ -13,8 +14,9 @@ export function easelSlotWorldX(
   slot: number,
   stageSlug: string,
   viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200,
+  layoutRoute?: VenueRoute,
 ): number {
-  return easelSlotAnchorWorldX(slot, stageSlug, viewportWidth);
+  return easelSlotAnchorWorldX(slot, stageSlug, viewportWidth, layoutRoute);
 }
 
 /** Gap between festie body and easel frame (screen px = world units). */
@@ -33,9 +35,14 @@ export function easelNpcStandWorldXForCanvas(canvasWorldX: number): number {
 }
 
 /** NPC stand position — left of canvas, close, facing right toward the easel. */
-export function easelNpcStandWorldX(slot: number, stageSlug?: string, width?: number): number {
+export function easelNpcStandWorldX(
+  slot: number,
+  stageSlug?: string,
+  width?: number,
+  layoutRoute?: VenueRoute,
+): number {
   const slug = stageSlug ?? venueSlugForRoute('cinema');
-  return easelNpcStandWorldXForCanvas(easelSlotWorldX(slot, slug, width));
+  return easelNpcStandWorldXForCanvas(easelSlotWorldX(slot, slug, width, layoutRoute));
 }
 
 export function easelSlotsForStage(stageSlug: string): number[] {
