@@ -2486,6 +2486,7 @@ export default function SFCity({
         <FestieLifeCorner
           festie={ownerFestie}
           ownerOnline={ownerOnline}
+          playerName={playerName}
           settingsOpen={settingsOpen}
           hidden={showWelcome || showCityPicker}
           isMobile={mobileDevice}

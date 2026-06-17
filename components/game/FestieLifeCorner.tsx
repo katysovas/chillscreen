@@ -8,6 +8,7 @@ import type { FestieOwner } from '@/lib/festie/types';
 type Props = {
   festie: FestieOwner;
   ownerOnline: boolean;
+  playerName: string | null;
   settingsOpen?: boolean;
   hidden?: boolean;
   /** Icon-only button on phone — matches MobileGameControls tray buttons. */
@@ -21,6 +22,7 @@ const CORNER_LEFT = 'max(12px, calc(env(safe-area-inset-left, 0px) + 8px))';
 export function FestieLifeCorner({
   festie,
   ownerOnline,
+  playerName,
   settingsOpen = false,
   hidden = false,
   isMobile = false,
@@ -138,8 +140,7 @@ export function FestieLifeCorner({
           <span
             style={{
               fontSize: 9,
-              letterSpacing: 1.4,
-              textTransform: 'uppercase',
+              letterSpacing: 0.6,
               color: 'rgba(255,255,255,.55)',
               fontFamily: "Georgia,'Times New Roman',serif",
               lineHeight: 1.2,
@@ -148,7 +149,7 @@ export function FestieLifeCorner({
               textOverflow: 'ellipsis',
             }}
           >
-            Settings
+            {playerName?.trim() || 'You'}
           </span>
         </div>
       </button>
