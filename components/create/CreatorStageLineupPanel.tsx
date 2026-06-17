@@ -13,6 +13,7 @@ export function CreatorStageLineupPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [streamInput, setStreamInput] = useState('');
+  const [bulkInput, setBulkInput] = useState('');
   const [streamPasteMode, setStreamPasteMode] = useState<StageStreamPasteMode>('video');
   const [streamHint, setStreamHint] = useState<string | null>(null);
   const [streamParsing, setStreamParsing] = useState(false);
@@ -90,6 +91,47 @@ export function CreatorStageLineupPanel() {
       setStreamInput('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not parse videos');
+    } finally {
+      setStreamParsing(false);
+    }
+  };
+
+  const addBulk = async () => {
+    const text = bulkInput.trim();
+    if (!text || streamParsing || busy) return;
+    const slotsLeft = STAGE_CONFIG.MAX_STREAMS - stage.streams.length;
+    if (slotsLeft <= 0) {
+      setError(`Maximum ${STAGE_CONFIG.MAX_STREAMS} streams.`);
+      return;
+    }
+    setError(null);
+    setStreamHint(null);
+    setStreamParsing(true);
+    try {
+      const result = await parseStageStreams(text, 'bulk', {
+        existingVideoIds: stage.streams.map(s => s.videoId),
+        maxToAdd: slotsLeft,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      if (!('streams' in result) || !result.streams.length) {
+        setError('No videos could be added.');
+        return;
+      }
+      const nextStreams = [...stage.streams, ...result.streams];
+      await persistStreams(nextStreams);
+      setBulkInput('');
+      const added = result.streams.length;
+      const skipped = result.skipped;
+      setStreamHint(
+        skipped > 0
+          ? `Added ${added} video${added === 1 ? '' : 's'} (${skipped} skipped — duplicates or unavailable).`
+          : `Added ${added} video${added === 1 ? '' : 's'}.`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not import videos');
     } finally {
       setStreamParsing(false);
     }
@@ -178,6 +220,7 @@ export function CreatorStageLineupPanel() {
           { mode: 'video' as const, label: 'Video' },
           { mode: 'playlist' as const, label: 'Playlist' },
           { mode: 'channel' as const, label: 'Channel' },
+          { mode: 'bulk' as const, label: 'Bulk' },
         ]).map(({ mode, label }) => {
           const active = streamPasteMode === mode;
           return (
@@ -212,49 +255,94 @@ export function CreatorStageLineupPanel() {
         })}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-        <input
-          value={streamInput}
-          onChange={e => setStreamInput(e.target.value)}
-          disabled={busy}
-          placeholder={
-            streamPasteMode === 'video'
-              ? 'YouTube video URL'
-              : streamPasteMode === 'playlist'
-                ? 'Playlist URL'
-                : 'Channel URL or @handle'
-          }
-          onKeyDown={e => { if (e.key === 'Enter') void addStream(); }}
-          style={{
-            flex: 1,
-            borderRadius: 8,
-            border: '1px solid rgba(255,255,255,0.12)',
-            background: 'rgba(255,255,255,0.06)',
-            color: '#fff',
-            padding: '8px 10px',
-            fontSize: 12,
-          }}
-        />
-        <button
-          type="button"
-          disabled={streamParsing || busy || !streamInput.trim()}
-          onClick={() => void addStream()}
-          style={{
-            borderRadius: 8,
-            padding: '0 14px',
-            fontSize: 12,
-            fontWeight: 700,
-            border: 'none',
-            background: 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
-            color: '#fff',
-            cursor: streamParsing || busy ? 'wait' : 'pointer',
-            opacity: streamParsing || busy || !streamInput.trim() ? 0.5 : 1,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {streamParsing ? '…' : streamPasteMode === 'video' ? 'Add' : 'Import'}
-        </button>
-      </div>
+      {streamPasteMode === 'bulk' ? (
+        <div style={{ marginBottom: 10 }}>
+          <textarea
+            value={bulkInput}
+            onChange={e => setBulkInput(e.target.value)}
+            disabled={busy}
+            placeholder={'https://youtube.com/watch?v=…\nhttps://youtube.com/watch?v=…'}
+            spellCheck={false}
+            rows={4}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(255,255,255,0.06)',
+              color: '#fff',
+              padding: '8px 10px',
+              fontSize: 12,
+              resize: 'vertical',
+              lineHeight: 1.5,
+            }}
+          />
+          <button
+            type="button"
+            disabled={streamParsing || busy || !bulkInput.trim()}
+            onClick={() => void addBulk()}
+            style={{
+              marginTop: 6,
+              width: '100%',
+              borderRadius: 8,
+              padding: '8px 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              border: 'none',
+              background: 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
+              color: '#fff',
+              cursor: streamParsing || busy ? 'wait' : 'pointer',
+              opacity: streamParsing || busy || !bulkInput.trim() ? 0.5 : 1,
+            }}
+          >
+            {streamParsing ? 'Importing…' : 'Import all'}
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <input
+            value={streamInput}
+            onChange={e => setStreamInput(e.target.value)}
+            disabled={busy}
+            placeholder={
+              streamPasteMode === 'video'
+                ? 'YouTube video URL'
+                : streamPasteMode === 'playlist'
+                  ? 'Playlist URL'
+                  : 'Channel URL or @handle'
+            }
+            onKeyDown={e => { if (e.key === 'Enter') void addStream(); }}
+            style={{
+              flex: 1,
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(255,255,255,0.06)',
+              color: '#fff',
+              padding: '8px 10px',
+              fontSize: 12,
+            }}
+          />
+          <button
+            type="button"
+            disabled={streamParsing || busy || !streamInput.trim()}
+            onClick={() => void addStream()}
+            style={{
+              borderRadius: 8,
+              padding: '0 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              border: 'none',
+              background: 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
+              color: '#fff',
+              cursor: streamParsing || busy ? 'wait' : 'pointer',
+              opacity: streamParsing || busy || !streamInput.trim() ? 0.5 : 1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {streamParsing ? '…' : streamPasteMode === 'video' ? 'Add' : 'Import'}
+          </button>
+        </div>
+      )}
 
       {streamHint && (
         <p style={{ margin: '0 0 8px', fontSize: 11, color: '#6fcf97' }}>{streamHint}</p>

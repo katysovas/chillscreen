@@ -17,7 +17,6 @@ import { STAGE_CONFIG } from '@/lib/stages/config';
 import {
   checkStageSlug,
   createUserStage,
-  fetchMyStage,
   parseStageStreams,
   uploadStageBackdrop,
 } from '@/lib/stages/client';
@@ -442,18 +441,7 @@ export function CreateStageWizard() {
       if (authenticated && festie) {
         setSignedInFestie(festie);
         setDraft(d => ({ ...d, festieName: festie!.name }));
-        try {
-          const existing = await fetchMyStage();
-          if (cancelled) return;
-          if (existing) {
-            router.replace(stagePathForSlug(existing.slug));
-            return;
-          } else {
-            setStep(2);
-          }
-        } catch {
-          if (!cancelled) setStep(2);
-        }
+        if (!cancelled) setStep(2);
       }
 
       if (!cancelled) setBootstrapped(true);
@@ -491,18 +479,13 @@ export function CreateStageWizard() {
       : '0 2px 10px rgba(74, 143, 212, 0.35)';
   };
 
-  const advancePastAuth = async () => {
-    const existing = await fetchMyStage();
-    if (existing) {
-      router.replace(stagePathForSlug(existing.slug));
-      return;
-    }
+  const advancePastAuth = () => {
     setStep(2);
   };
 
   const submitStep1 = async () => {
     if (signedInFestie) {
-      await advancePastAuth();
+      advancePastAuth();
       return;
     }
     if (!canSubmitAuth || loading) return;
@@ -513,10 +496,10 @@ export function CreateStageWizard() {
         const { festie } = await loginFestie(draft.festieName.trim(), draft.festiePassword);
         setSignedInFestie(festie);
         setDraft(d => ({ ...d, festieName: festie.name }));
-        await advancePastAuth();
+        advancePastAuth();
         return;
       }
-      await advancePastAuth();
+      advancePastAuth();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -708,17 +691,7 @@ export function CreateStageWizard() {
       }
       router.push(stagePathForSlug(finalSlug));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not create stage';
-      if (msg === 'You already have a stage.') {
-        try {
-          const existing = await fetchMyStage();
-          if (existing) {
-            router.replace(stagePathForSlug(existing.slug));
-            return;
-          }
-        } catch { /* ignore */ }
-      }
-      setError(msg);
+      setError(err instanceof Error ? err.message : 'Could not create stage');
     } finally {
       setLoading(false);
     }

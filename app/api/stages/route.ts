@@ -19,7 +19,6 @@ import {
 import { deductPlayerCoinsDb } from '@/lib/player/db';
 import { STAGE_CONFIG } from '@/lib/stages/config';
 import {
-  getUserStageByOwnerId,
   insertUserStage,
   isStageSlugTaken,
   reclaimStaleStageSlugs,
@@ -121,14 +120,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
       }
 
-      const existingStage = await getUserStageByOwnerId(sessionUserId);
-      if (existingStage) {
-        return NextResponse.json(
-          { error: 'You already have a stage.' },
-          { status: 409 },
-        );
-      }
-
       const coins = await deductPlayerCoinsDb(sessionUserId, STAGE_CONFIG.CREATION_COIN_COST);
       if (coins == null) {
         return NextResponse.json(
@@ -200,14 +191,6 @@ export async function POST(req: Request) {
       personality_notes: notesRaw?.trim() || null,
       stage_slug: slug,
     });
-
-    const existingStage = await getUserStageByOwnerId(festie.user_id);
-    if (existingStage) {
-      return NextResponse.json(
-        { error: 'You already have a stage.' },
-        { status: 409 },
-      );
-    }
 
     const coins = await deductPlayerCoinsDb(festie.user_id, STAGE_CONFIG.CREATION_COIN_COST);
     if (coins == null) {

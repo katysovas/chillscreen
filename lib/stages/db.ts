@@ -143,11 +143,10 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
   }
   const sql = requireDb();
 
-  // Takedown is soft-delete; purge dead rows so slug + owner unique constraints allow reuse.
+  // Purge any soft-deleted row with the same slug so the slug can be reused.
   await sql`
     DELETE FROM user_stages
-    WHERE taken_down_at IS NOT NULL
-      AND (slug = ${input.slug} OR owner_id = ${input.ownerId}::uuid)
+    WHERE taken_down_at IS NOT NULL AND slug = ${input.slug}
   `;
 
   const enrichedStreams = await enrichStreamsChannelTitles(input.streams);
