@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Character from '@/components/game/Character';
 import { festiePresetById } from '@/lib/festie/presets';
-import { loginFestie, fetchAuthMe } from '@/lib/festie/client';
+import { loginFestie } from '@/lib/festie/client';
 import { getLocalFestieName, hasLocalFestieAccount } from '@/lib/festie/localAccount';
 import type { FestieOwner } from '@/lib/festie/types';
 import {
@@ -19,7 +19,6 @@ import {
   createUserStage,
   fetchMyStage,
   parseStageStreams,
-  takedownUserStage,
   uploadStageBackdrop,
 } from '@/lib/stages/client';
 import {
@@ -45,7 +44,6 @@ import { ForgotPasswordPanel } from '@/components/auth/ForgotPasswordPanel';
 import { getPlayerSession, hydratePlayerSession } from '@/lib/player/session';
 
 const TOTAL_STEPS = 4;
-const STAGE_EXISTS_MSG = 'You already have a stage.';
 const MODAL_WIDTH_AUTH = 520;
 const MODAL_WIDTH_SETUP = 720;
 
@@ -386,8 +384,6 @@ export function CreateStageWizard() {
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'ok' | 'bad'>('idle');
   const [slugMessage, setSlugMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [existingStageSlug, setExistingStageSlug] = useState<string | null>(null);
-  const [deletingStage, setDeletingStage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [streamInput, setStreamInput] = useState('');
   const [streamPasteMode, setStreamPasteMode] = useState<StageStreamPasteMode>('video');
@@ -448,9 +444,8 @@ export function CreateStageWizard() {
           const existing = await fetchMyStage();
           if (cancelled) return;
           if (existing) {
-            setExistingStageSlug(existing.slug);
-            setError(STAGE_EXISTS_MSG);
-            setStep(1);
+            router.replace(stagePathForSlug(existing.slug));
+            return;
           } else {
             setStep(2);
           }
@@ -497,35 +492,10 @@ export function CreateStageWizard() {
   const advancePastAuth = async () => {
     const existing = await fetchMyStage();
     if (existing) {
-      setExistingStageSlug(existing.slug);
-      setError(STAGE_EXISTS_MSG);
+      router.replace(stagePathForSlug(existing.slug));
       return;
     }
-    setExistingStageSlug(null);
-    setError(null);
     setStep(2);
-  };
-
-  const deleteExistingStage = async () => {
-    if (!existingStageSlug || deletingStage) return;
-    setDeletingStage(true);
-    try {
-      await takedownUserStage(existingStageSlug);
-      setExistingStageSlug(null);
-      setError(null);
-      if (!signedInFestie) {
-        const { authenticated, festie } = await fetchAuthMe();
-        if (authenticated && festie) {
-          setSignedInFestie(festie);
-          setDraft(d => ({ ...d, festieName: festie.name }));
-        }
-      }
-      setStep(2);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete stage');
-    } finally {
-      setDeletingStage(false);
-    }
   };
 
   const submitStep1 = async () => {
@@ -697,15 +667,16 @@ export function CreateStageWizard() {
       router.push(stagePathForSlug(finalSlug));
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not create stage';
-      setError(msg);
-      if (msg === STAGE_EXISTS_MSG) {
+      if (msg === 'You already have a stage.') {
         try {
           const existing = await fetchMyStage();
-          if (existing) setExistingStageSlug(existing.slug);
-        } catch {
-          /* ignore */
-        }
+          if (existing) {
+            router.replace(stagePathForSlug(existing.slug));
+            return;
+          }
+        } catch { /* ignore */ }
       }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -945,42 +916,16 @@ export function CreateStageWizard() {
               )}
 
               {displayStep === 1 && error && (
-                <>
-                  <p style={{
-                    color: '#ff9d9d',
-                    fontSize: 13,
-                    margin: '12px 0 0',
-                    fontFamily: 'system-ui,sans-serif',
-                    textAlign: 'center',
-                  }}
-                  >
-                    {error}
-                  </p>
-                  {error === STAGE_EXISTS_MSG && existingStageSlug && (
-                    <button
-                      type="button"
-                      onClick={() => void deleteExistingStage()}
-                      disabled={deletingStage}
-                      style={{
-                        width: '100%',
-                        marginTop: 10,
-                        borderRadius: 10,
-                        padding: '10px 14px',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        border: '1px solid rgba(255,107,107,0.35)',
-                        background: 'rgba(255,107,107,0.08)',
-                        color: '#ff9d9d',
-                        cursor: deletingStage ? 'wait' : 'pointer',
-                        fontFamily: 'system-ui,sans-serif',
-                      }}
-                    >
-                      {deletingStage
-                        ? 'Deleting…'
-                        : `Delete existing stage (${existingStageSlug})`}
-                    </button>
-                  )}
-                </>
+                <p style={{
+                  color: '#ff9d9d',
+                  fontSize: 13,
+                  margin: '12px 0 0',
+                  fontFamily: 'system-ui,sans-serif',
+                  textAlign: 'center',
+                }}
+                >
+                  {error}
+                </p>
               )}
 
               <button
@@ -1334,42 +1279,16 @@ export function CreateStageWizard() {
           )}
 
           {error && displayStep !== 1 && (
-            <>
-              <p style={{
-                margin: '12px 0 0',
-                fontSize: 13,
-                color: '#ff6b6b',
-                fontFamily: 'system-ui,sans-serif',
-                textAlign: 'center',
-              }}
-              >
-                {error}
-              </p>
-              {error === STAGE_EXISTS_MSG && existingStageSlug && (
-                <button
-                  type="button"
-                  onClick={() => void deleteExistingStage()}
-                  disabled={deletingStage}
-                  style={{
-                    width: '100%',
-                    marginTop: 10,
-                    borderRadius: 10,
-                    padding: '10px 14px',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    border: '1px solid rgba(255,107,107,0.35)',
-                    background: 'rgba(255,107,107,0.08)',
-                    color: '#ff9d9d',
-                    cursor: deletingStage ? 'wait' : 'pointer',
-                    fontFamily: 'system-ui,sans-serif',
-                  }}
-                >
-                  {deletingStage
-                    ? 'Deleting…'
-                    : `Delete existing stage (${existingStageSlug})`}
-                </button>
-              )}
-            </>
+            <p style={{
+              margin: '12px 0 0',
+              fontSize: 13,
+              color: '#ff6b6b',
+              fontFamily: 'system-ui,sans-serif',
+              textAlign: 'center',
+            }}
+            >
+              {error}
+            </p>
           )}
 
           {displayStep === 2 && (
