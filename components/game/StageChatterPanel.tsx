@@ -1,7 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { filterChatMessage } from '@/lib/messageFilter';
+import {
+  filterStageChatterMessages,
+  filterStageChatterTypingSenders,
+  getHumansOnlyStageChatter,
+  setHumansOnlyStageChatter,
+  subscribeHumansOnlyStageChatter,
+} from '@/lib/stageChatter/preferences';
 import type { StageChatterMessage } from '@/lib/stageChatter/types';
 import { Z_CONTROLS } from '@/lib/zLayers';
 
@@ -23,6 +30,7 @@ type Props = {
   resolveGlow?: (sender: string) => string | undefined;
   onSend: (text: string) => void;
   onTypingChange?: (typing: boolean) => void;
+  onHumansOnlyChange?: (enabled: boolean) => void;
   hidden?: boolean;
 };
 
@@ -62,6 +70,7 @@ export function StageChatterPanel({
   resolveGlow,
   onSend,
   onTypingChange,
+  onHumansOnlyChange,
   hidden = false,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -69,6 +78,21 @@ export function StageChatterPanel({
   const stickToBottomRef = useRef(true);
   const typingHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [expanded, setExpanded] = useState(true);
+  const humansOnly = useSyncExternalStore(
+    subscribeHumansOnlyStageChatter,
+    getHumansOnlyStageChatter,
+    () => false,
+  );
+
+  const visibleMessages = useMemo(
+    () => filterStageChatterMessages(messages, humansOnly),
+    [humansOnly, messages],
+  );
+
+  const visibleTypingSenders = useMemo(
+    () => filterStageChatterTypingSenders(typingSenders, humansOnly),
+    [humansOnly, typingSenders],
+  );
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     const el = scrollRef.current;
@@ -78,8 +102,10 @@ export function StageChatterPanel({
 
   useEffect(() => {
     if (hidden || !expanded) return;
-    if (stickToBottomRef.current) scrollToBottom(messages.length <= 1 ? 'auto' : 'smooth');
-  }, [expanded, hidden, messages.length, scrollToBottom]);
+    if (stickToBottomRef.current) {
+      scrollToBottom(visibleMessages.length <= 1 ? 'auto' : 'smooth');
+    }
+  }, [expanded, hidden, visibleMessages.length, scrollToBottom]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -109,21 +135,21 @@ export function StageChatterPanel({
   }, [onTypingChange]);
 
   const rows = useMemo(
-    () => messages.map(msg => ({
+    () => visibleMessages.map(msg => ({
       ...msg,
       name: resolveName(msg.sender),
       glow: resolveGlow?.(msg.sender),
     })),
-    [messages, resolveGlow, resolveName],
+    [visibleMessages, resolveGlow, resolveName],
   );
 
   const typingRows = useMemo(
-    () => typingSenders.map(sender => ({
+    () => visibleTypingSenders.map(sender => ({
       sender,
       name: resolveName(sender),
       glow: resolveGlow?.(sender),
     })),
-    [typingSenders, resolveGlow, resolveName],
+    [visibleTypingSenders, resolveGlow, resolveName],
   );
 
   useEffect(() => () => {
@@ -158,51 +184,98 @@ export function StageChatterPanel({
     >
       <style>{PANEL_STYLES}</style>
 
-      <button
-        type="button"
-        onClick={() => setExpanded(prev => !prev)}
-        aria-expanded={expanded}
-        aria-label={expanded ? 'Collapse stage talk' : 'Expand stage talk'}
+      <div
         style={{
           padding: '12px 14px 10px',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 6,
           flexShrink: 0,
           width: '100%',
-          border: 'none',
           borderBottom: expanded ? '1px solid rgba(255, 255, 255, 0.08)' : 'transparent',
-          background: 'transparent',
-          cursor: 'pointer',
-          color: 'inherit',
-          fontFamily: 'inherit',
-          textAlign: 'left',
         }}
       >
-        <span
+        <button
+          type="button"
+          onClick={() => setExpanded(prev => !prev)}
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Collapse stage talk' : 'Expand stage talk'}
           style={{
-            width: 7,
-            height: 7,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, #ffb4dc 0%, #ff6eb4 70%)',
-            boxShadow: '0 0 10px rgba(255, 110, 180, 0.8)',
-            flexShrink: 0,
-          }}
-          aria-hidden
-        />
-        <span
-          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
             flex: 1,
-            fontSize: 10,
-            letterSpacing: 2.2,
-            textTransform: 'uppercase',
-            color: 'rgba(255, 220, 240, 0.82)',
-            fontWeight: 600,
+            minWidth: 0,
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: 'inherit',
+            fontFamily: 'inherit',
+            textAlign: 'left',
+            padding: 0,
           }}
         >
-          Stage Talk
-        </span>
-        <span
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, #ffb4dc 0%, #ff6eb4 70%)',
+              boxShadow: '0 0 10px rgba(255, 110, 180, 0.8)',
+              flexShrink: 0,
+            }}
+            aria-hidden
+          />
+          <span
+            style={{
+              fontSize: 10,
+              letterSpacing: 2.2,
+              textTransform: 'uppercase',
+              color: 'rgba(255, 220, 240, 0.82)',
+              fontWeight: 600,
+            }}
+          >
+            Stage Talk
+          </span>
+        </button>
+
+        <label
+          onClick={e => e.stopPropagation()}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            flexShrink: 0,
+            cursor: 'pointer',
+            fontSize: 9,
+            color: 'rgba(255, 255, 255, 0.5)',
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={humansOnly}
+            onChange={e => {
+              const enabled = e.target.checked;
+              setHumansOnlyStageChatter(enabled);
+              onHumansOnlyChange?.(enabled);
+            }}
+            style={{
+              width: 12,
+              height: 12,
+              margin: 0,
+              accentColor: '#ff6eb4',
+              cursor: 'pointer',
+            }}
+          />
+          Humans only
+        </label>
+
+        <button
+          type="button"
+          onClick={() => setExpanded(prev => !prev)}
+          aria-label={expanded ? 'Collapse stage talk' : 'Expand stage talk'}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -210,14 +283,17 @@ export function StageChatterPanel({
             width: 22,
             height: 22,
             borderRadius: 6,
+            border: 'none',
             color: 'rgba(255, 220, 240, 0.65)',
             background: 'rgba(255, 255, 255, 0.06)',
             flexShrink: 0,
+            cursor: 'pointer',
+            padding: 0,
           }}
         >
           <CollapseIcon expanded={expanded} />
-        </span>
-      </button>
+        </button>
+      </div>
 
       {expanded && (
       <>
@@ -247,7 +323,7 @@ export function StageChatterPanel({
               textAlign: 'center',
             }}
           >
-            The stage is quiet..
+            {humansOnly ? 'No player chat yet…' : 'The stage is quiet..'}
           </p>
         ) : (
           rows.map(msg => (

@@ -1,15 +1,15 @@
-/** PartyKit NPC chatter scheduler — spec v3 constants. */
-export const ALARM_MIN_MS = 15_000;
-export const ALARM_MAX_MS = 45_000;
-export const CONVO_PROBABILITY = 0.55;
-export const MAX_CONVOS_PER_ROOM_PER_HOUR = 30;
-export const LINE_PACING_MIN_MS = 3_500;
-export const LINE_PACING_MAX_MS = 7_000;
-export const FIRST_CONVO_DELAY_MIN_MS = 3_000;
-export const FIRST_CONVO_DELAY_MAX_MS = 7_000;
-export const NPC_REPLY_DELAY_MIN_MS = 3_000;
-export const NPC_REPLY_DELAY_MAX_MS = 7_000;
-export const NPC_REPLY_COOLDOWN_MS = 15_000;
+/** PartyKit NPC chatter scheduler — tuned for lower ambient frequency. */
+export const ALARM_MIN_MS = 28_000;
+export const ALARM_MAX_MS = 72_000;
+export const CONVO_PROBABILITY = 0.28;
+export const MAX_CONVOS_PER_ROOM_PER_HOUR = 14;
+export const LINE_PACING_MIN_MS = 4_500;
+export const LINE_PACING_MAX_MS = 8_500;
+export const FIRST_CONVO_DELAY_MIN_MS = 10_000;
+export const FIRST_CONVO_DELAY_MAX_MS = 20_000;
+export const NPC_REPLY_DELAY_MIN_MS = 4_000;
+export const NPC_REPLY_DELAY_MAX_MS = 9_000;
+export const NPC_REPLY_COOLDOWN_MS = 28_000;
 /** Solo NPC shouts / self-talk over room-chat — off; only pair convos run. */
 export const SOLO_NPC_ROOM_REPLIES_ENABLED = false;
 export const CHAT_BUFFER_SIZE = 20;
@@ -17,17 +17,17 @@ export const PROMPT_WINDOW_LINES = 15;
 
 /** Stage chatter panel — NPCs react to the last few public lines. */
 export const STAGE_CHATTER_PROMPT_LINES = 5;
-export const STAGE_CHATTER_NPC_MIN = 2;
-export const STAGE_CHATTER_NPC_MAX = 3;
-export const STAGE_CHATTER_TRIGGER_PROBABILITY = 0.72;
-export const STAGE_WAVE_DEBOUNCE_MIN_MS = 4_000;
-export const STAGE_WAVE_DEBOUNCE_MAX_MS = 8_000;
-export const STAGE_CHATTER_WAVE_DELAY_MIN_MS = 2_500;
-export const STAGE_CHATTER_WAVE_DELAY_MAX_MS = 5_500;
-export const STAGE_CHATTER_LINE_DELAY_MIN_MS = 3_000;
-export const STAGE_CHATTER_LINE_DELAY_MAX_MS = 6_500;
-export const STAGE_CHATTER_WAVE_COOLDOWN_MS = 28_000;
-export const STAGE_CHATTER_NPC_COOLDOWN_MS = 20_000;
+export const STAGE_CHATTER_NPC_MIN = 1;
+export const STAGE_CHATTER_NPC_MAX = 2;
+export const STAGE_CHATTER_TRIGGER_PROBABILITY = 0.35;
+export const STAGE_WAVE_DEBOUNCE_MIN_MS = 9_000;
+export const STAGE_WAVE_DEBOUNCE_MAX_MS = 16_000;
+export const STAGE_CHATTER_WAVE_DELAY_MIN_MS = 5_500;
+export const STAGE_CHATTER_WAVE_DELAY_MAX_MS = 11_000;
+export const STAGE_CHATTER_LINE_DELAY_MIN_MS = 5_000;
+export const STAGE_CHATTER_LINE_DELAY_MAX_MS = 9_500;
+export const STAGE_CHATTER_WAVE_COOLDOWN_MS = 60_000;
+export const STAGE_CHATTER_NPC_COOLDOWN_MS = 40_000;
 /** Stage panel lines — 1–2 short sentences; can be just a few words. */
 export const STAGE_LINE_MAX_WORDS = 18;
 
@@ -86,13 +86,13 @@ export const NPC_LINE_TIMEOUT_MS = 8_000;
 /** OpenRouter sampling — keep ≥0.9; 0.7 reads flat/agreeable. */
 export const NPC_LINE_TEMPERATURE = 0.95;
 
-/** Weighted line budgets 3–7 for pair convos. */
+/** Weighted line budgets 3–7 for pair convos — bias shorter exchanges. */
 export const LINE_BUDGET_WEIGHTS: { budget: number; weight: number }[] = [
-  { budget: 3, weight: 3 },
-  { budget: 4, weight: 4 },
-  { budget: 5, weight: 5 },
-  { budget: 6, weight: 3 },
-  { budget: 7, weight: 2 },
+  { budget: 3, weight: 5 },
+  { budget: 4, weight: 5 },
+  { budget: 5, weight: 3 },
+  { budget: 6, weight: 1 },
+  { budget: 7, weight: 1 },
 ];
 
 export function jitterMs(min: number, max: number): number {
