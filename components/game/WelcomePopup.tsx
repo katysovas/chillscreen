@@ -22,6 +22,7 @@ import { LOGO_PATH, SITE_TAGLINE } from '@/lib/site';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { ForgotPasswordPanel } from '@/components/auth/ForgotPasswordPanel';
+import { GameCharacterStyles } from '@/components/game/GameCharacterStyles';
 
 type Props = {
   balloonColor: string;
@@ -93,9 +94,17 @@ const HERO_SUB: React.CSSProperties = {
   lineHeight: 1.45,
 };
 
-function ModalHero() {
+function ModalHero({
+  balloonColor,
+  mobile,
+  showCharacter = false,
+}: {
+  balloonColor: string;
+  mobile: boolean;
+  showCharacter?: boolean;
+}) {
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: showCharacter ? 16 : 20, textAlign: 'center' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={LOGO_PATH}
@@ -104,6 +113,34 @@ function ModalHero() {
       />
       <h1 style={HERO_TITLE}>{SITE_TAGLINE}</h1>
       <p style={HERO_SUB}>Explore stages. Watch live sets. Blend in.</p>
+      {showCharacter && (
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: mobile ? 108 : 124,
+            marginTop: 18,
+            pointerEvents: 'none',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: '50%',
+              bottom: -14,
+            }}
+          >
+            <div style={{ animation: 'wlc-char-sway 3s ease-in-out infinite' }}>
+              <Character
+                walking={false}
+                facing="left"
+                balloonColor={balloonColor}
+                scale={mobile ? 0.38 : 0.44}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -362,6 +399,7 @@ export function WelcomePopup({
       animation: 'wlc-fade-in 0.45s ease',
       padding: 16,
     }}>
+      <GameCharacterStyles />
       <div style={{
         background: '#131415',
         border: '1px solid rgba(255,255,255,0.1)',
@@ -377,7 +415,11 @@ export function WelcomePopup({
         <ProgressBar pct={100} />
 
         <div style={{ padding: mobile ? '28px 22px 24px' : '32px 36px 28px' }}>
-          <ModalHero />
+          <ModalHero
+            balloonColor={balloonColor}
+            mobile={mobile}
+            showCharacter={showAuth && !forgotPasswordOpen}
+          />
 
           {showAuth && (
             <>
@@ -391,28 +433,6 @@ export function WelcomePopup({
               {!signInOnly && (
                 <AuthTabs authIntent={authIntent} onChange={setAuthMode} />
               )}
-
-              <div style={{
-                position: 'relative',
-                width: '100%',
-                height: mobile ? 120 : 140,
-                marginBottom: 20,
-                pointerEvents: 'none',
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  left: '50%',
-                  bottom: -20,
-                  animation: 'wlc-char-sway 3s ease-in-out infinite',
-                }}>
-                  <Character
-                    walking={false}
-                    facing="left"
-                    balloonColor={balloonColor}
-                    scale={mobile ? 0.38 : 0.44}
-                  />
-                </div>
-              </div>
 
               <div style={{
                 display: 'flex',
