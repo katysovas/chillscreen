@@ -7,6 +7,12 @@ import type { VenueRoute } from '@/lib/venueSlugs';
 import { isCreatorTemplateRoute, venueSlugForRoute } from '@/lib/venueSlugs';
 import { worldOffForVenueRoute } from '@/lib/venueRoutes';
 import { cinemaMidX, deepSpaceMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
+
+/**
+ * Distance from the viewport edge at which nav signs are planted (shared with
+ * CityNavSigns). VIEW_CENTER_X is the character's fixed screen position.
+ */
+export const SIGN_EDGE_INSET_PX = 260;
 import { midOriginForTile, midWidthForTile, nearGndTiles, TOWN_MID_W } from '@/lib/worldTileGeometry';
 
 /** West-to-east picker order — used for edge navigation and city select. */
@@ -87,15 +93,29 @@ function deepSpaceWorldOffBounds(): { min: number; max: number } {
   };
 }
 
-/** Creator templates — walk the full mid tile without bleeding into connector towns. */
+/**
+ * Walk bounds for creator templates.
+ *
+ * Start from the single mid tile (backdrop edges flush with viewport edges),
+ * then extend each side by `VIEW_CENTER_X − SIGN_EDGE_INSET_PX` (700 − 260 = 440)
+ * so the character — fixed at screen centre (700px) — can walk far enough that
+ * the nav signs land at screen x≈260 / x≈1140, exactly like every normal city.
+ *
+ * Signs use these same bounds (see CityNavSigns), so they sit at the walk edges
+ * and stay clickable. The 440-unit overshoot reveals ~154 mid-SVG units beyond
+ * the tile on each side, covered by the backdrop bleed in CityBackdropLayer.
+ */
 function creatorTemplateWorldOffBounds(route: VenueRoute): { min: number; max: number } {
   const tile = cityTileForRoute(route);
   const origin = midOriginForTile(tile);
   const width = midWidthForTile(tile);
   const full = fullCityWorldOffBounds(route);
+  const tileMin = Math.max(full.min, origin / MID_PARALLAX);
+  const tileMax = Math.min(full.max, (origin + width - VIEW_WIDTH) / MID_PARALLAX);
+  const signReach = VIEW_CENTER_X - SIGN_EDGE_INSET_PX; // 440
   return {
-    min: Math.max(full.min, origin / MID_PARALLAX),
-    max: Math.min(full.max, (origin + width - VIEW_WIDTH) / MID_PARALLAX),
+    min: tileMin - signReach,
+    max: tileMax + signReach,
   };
 }
 

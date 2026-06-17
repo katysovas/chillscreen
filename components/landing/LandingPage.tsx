@@ -239,6 +239,11 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
               Get In Touch
             </a>
           </li>
+          <li>
+            <Link className="nav-link" href="/create">
+              Create Your Stage
+            </Link>
+          </li>
         </ul>
         <div className="nav-actions">
           <button type="button" className="nav-pill nav-pill--ghost" onClick={onSignIn}>

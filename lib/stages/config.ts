@@ -23,6 +23,9 @@ export const STAGE_CONFIG = {
   DISPLAY_NAME_MAX_LENGTH: 20,
 } as const;
 
+export const STAGE_NAME_FIELD_HINT =
+  `${STAGE_CONFIG.DISPLAY_NAME_MAX_LENGTH} characters max. Min ${STAGE_CONFIG.SLUG_MIN_LENGTH}–${STAGE_CONFIG.SLUG_MAX_LENGTH} characters.`;
+
 export type StageLifecycleTier = 'active' | 'dormant' | 'reclaimable';
 
 export function stageLifecycleTier(

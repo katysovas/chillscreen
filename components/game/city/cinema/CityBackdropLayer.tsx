@@ -15,19 +15,25 @@ import './cityBackdrop.css';
 type CityBackdropLayerProps = {
   /** Prefer prop (from MidLayer) — context is a fallback after live upload. */
   skylineUrl?: string | null;
+  /**
+   * Extra pixels to extend the foreignObject on each side (left and right).
+   * Lets the image bleed past the tile edge when the camera walks to the
+   * nav-sign positions — prevents a hard colour seam at the backdrop boundary.
+   */
+  bleedPx?: number;
 };
 
 /** Animated city skyline — twirling color wash over hard-light skyline. */
-export function CityBackdropLayer({ skylineUrl: skylineUrlProp }: CityBackdropLayerProps = {}) {
+export function CityBackdropLayer({ skylineUrl: skylineUrlProp, bleedPx = 0 }: CityBackdropLayerProps = {}) {
   const stage = useOptionalCreatorStage();
   const skylineUrl = skylineUrlProp ?? stage?.backdropUrl ?? CITY_SKYLINE_HREF;
   const customBackdrop = isCustomCityBackdropUrl(skylineUrl);
 
   return (
     <foreignObject
-      x={0}
+      x={-bleedPx}
       y={0}
-      width={CITY_MID_TILE_W}
+      width={CITY_MID_TILE_W + 2 * bleedPx}
       height={CITY_MID_TILE_H}
       data-city-backdrop
     >

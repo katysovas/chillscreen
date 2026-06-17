@@ -34,10 +34,8 @@ import {
   validateStageDisplayName,
 } from '@/lib/stages/stageDisplayName';
 import {
-  slugRejectMessage,
   stageNameToSlug,
   validateStageSlugFormat,
-  validateStageSlugMessage,
 } from '@/lib/stages/slugValidation';
 import type { StagePresetId, StageStream } from '@/lib/stages/types';
 import { DEFAULT_STAGE_WALLPAPER_URL } from '@/lib/stages/wallpapers';
@@ -418,14 +416,8 @@ export function CreateStageWizard() {
     return validateStageDisplayName(draft.stageName);
   }, [stageNameTouched, draft.stageName]);
 
-  const slugFormatError = useMemo(
-    () => validateStageSlugMessage(draft.slug),
-    [draft.slug],
-  );
-
-  const stageFieldHint = stageNameError
-    ?? ((slugFormatError && (stageNameTouched || draft.stageName)) ? slugFormatError : null)
-    ?? stageDisplayNameHint;
+  const stageFieldHint = stageDisplayNameHint;
+  const stageFieldInvalid = stageNameError != null;
 
   useEffect(() => {
     let cancelled = false;
@@ -568,7 +560,7 @@ export function CreateStageWizard() {
     const formatErr = validateStageSlugFormat(slug);
     if (formatErr) {
       setSlugStatus('bad');
-      setSlugMessage(slugRejectMessage(formatErr));
+      setSlugMessage(null);
       return;
     }
     setSlugStatus('checking');
@@ -1019,7 +1011,7 @@ export function CreateStageWizard() {
               <input
                 style={{
                   ...INPUT,
-                  border: stageNameError || slugFormatError
+                  border: stageFieldInvalid
                     ? '1px solid rgba(255,107,107,0.55)'
                     : INPUT.border,
                 }}
@@ -1034,7 +1026,7 @@ export function CreateStageWizard() {
               <p style={{
                 margin: '6px 0 0',
                 fontSize: 11,
-                color: stageNameError || slugFormatError ? '#ff6b6b' : 'rgba(255,255,255,0.45)',
+                color: stageFieldInvalid ? '#ff6b6b' : 'rgba(255,255,255,0.45)',
                 fontFamily: 'system-ui,sans-serif',
               }}
               >
@@ -1051,7 +1043,7 @@ export function CreateStageWizard() {
                   Checking…
                 </p>
               )}
-              {slugMessage && slugStatus === 'bad' && !slugFormatError && (
+              {slugMessage && slugStatus === 'bad' && !stageFieldInvalid && (
                 <p style={{
                   margin: '10px 0 0',
                   fontSize: 12,

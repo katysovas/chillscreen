@@ -8,6 +8,7 @@ import {
   cityWorldOffBounds,
   nextCityRoute,
   prevCityRoute,
+  SIGN_EDGE_INSET_PX,
 } from '@/lib/isolatedCity';
 import { ArrowSignBoard } from './city/ArrowSignBoard';
 import { PARALLAX_LAYER_BASE } from './city/shared/parallaxLayerStyle';
@@ -18,15 +19,6 @@ const GND_Y = 685;
 const SIGN_Y = GND_Y + 12;
 
 const VIEW_W = 1400;
-
-/**
- * Distance from the viewport edge when the camera rests at a walk bound.
- * worldOff is the viewport's LEFT edge in ground px (GND_F = 1), so at
- * bounds.min the screen shows [min, min+VIEW_W] — the left sign must sit
- * inside that range, and the right sign near max+VIEW_W.
- */
-/** Inset from viewport edge at walk bounds — wing + pulse need ~130px clearance. */
-const SIGN_EDGE_INSET_PX = 260;
 
 /** City icon + accent for the sign boards (matches the old junction signs). */
 const SIGN_STYLE: Record<VenueRoute, { icon: string; accent: string }> = {

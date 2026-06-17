@@ -27,5 +27,5 @@ export function formatNpcBrandedName(
     opts?.modelBrand?.trim() ||
     (opts?.modelId ? npcBrandFromModelId(opts.modelId) : undefined);
   const proper = base.charAt(0).toUpperCase() + base.slice(1).toLowerCase();
-  return brand ? `${brand} ${proper}` : proper;
+  return proper;
 }

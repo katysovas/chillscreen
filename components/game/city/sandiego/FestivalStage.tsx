@@ -20,6 +20,17 @@ const STAGE_L = 2010;
 const STAGE_R = 2440;
 const STAGE_TOP = 404;
 
+/** LED wall aperture — shared by shell art and live iframe placement. */
+const SCREEN_X = STAGE_L + 54;
+const SCREEN_Y = 426;
+const SCREEN_W = STAGE_R - STAGE_L - 88;
+const SCREEN_H = 168;
+const SCREEN_PAD = 6;
+const IFRAME_X = SCREEN_X + SCREEN_PAD;
+const IFRAME_Y = SCREEN_Y + SCREEN_PAD;
+const IFRAME_W = SCREEN_W - SCREEN_PAD * 2;
+const IFRAME_H = SCREEN_H - SCREEN_PAD * 2;
+
 const FOOTLIGHTS = Array.from({ length: 13 }, (_, i) => ({
   x: STAGE_L + 26 + i * ((STAGE_R - STAGE_L - 32) / 12),
   color: FEST_COLORS[i % FEST_COLORS.length]!,
@@ -80,11 +91,6 @@ function FestivalStageShell({
   const R = STAGE_R;
   const top = STAGE_TOP;
   const deck = SD_GND;
-  // Trusses occupy [L, L+20] and [R, R+20] — interior is [L+20, R], so +54 centers the screen.
-  const screenX = L + 54;
-  const screenY = 426;
-  const screenW = R - L - 88;
-  const screenH = 168;
   const ox = COACHELLA_STAGE_MID_X;
   const oy = deck;
   const midX = (L + R) / 2;
@@ -194,21 +200,21 @@ function FestivalStageShell({
           ))}
 
           <rect
-            x={screenX - 8} y={screenY - 8} width={screenW + 16} height={screenH + 16}
+            x={SCREEN_X - 8} y={SCREEN_Y - 8} width={SCREEN_W + 16} height={SCREEN_H + 16}
             rx={4} fill="#1a1a22" stroke="#e85074" strokeWidth={3}
           />
           <rect
-            x={screenX} y={screenY} width={screenW} height={screenH} rx={3}
+            x={SCREEN_X} y={SCREEN_Y} width={SCREEN_W} height={SCREEN_H} rx={3}
             fill="#0b0b12" stroke="#2c2c34" strokeWidth={2.5}
           />
           {idleScreen && (
             <>
               <rect
-                x={screenX + 6} y={screenY + 6} width={screenW - 12} height={screenH - 12}
+                x={IFRAME_X} y={IFRAME_Y} width={IFRAME_W} height={IFRAME_H}
                 rx={2} fill="#0b0b12"
               />
               {Array.from({ length: 6 }, (_, i) => (
-                <rect key={i} x={screenX + 6} y={screenY + 14 + i * 26} width={screenW - 12} height={3}
+                <rect key={i} x={IFRAME_X} y={IFRAME_Y + 8 + i * 26} width={IFRAME_W} height={3}
                   fill="rgba(255,255,255,.12)" pointerEvents="none" />
               ))}
             </>
@@ -237,18 +243,7 @@ function FestivalStageShell({
 
 /** Live Coachella — shell + synchronized YouTube player. */
 function FestivalStageLive() {
-  const L = 2010;
-  const R = 2440;
-  const top = 404;
   const deck = SD_GND;
-  const screenX = L + 54;
-  const screenY = 446;
-  const screenW = R - L - 88;
-  const screenH = 168;
-  const iframeX = screenX + 6;
-  const iframeY = screenY + 6;
-  const iframeW = screenW - 12;
-  const iframeH = screenH - 12;
   const ox = COACHELLA_STAGE_MID_X;
   const oy = deck;
   const S = COACHELLA_STAGE_SCALE;
@@ -262,10 +257,10 @@ function FestivalStageLive() {
     onNowPlaying: setCoachellaNowPlaying,
   });
 
-  const videoFoX = ox + S * (iframeX - ox);
-  const videoFoY = oy + S * (iframeY - oy) + pushY;
-  const videoFoW = iframeW * S;
-  const videoFoH = iframeH * S;
+  const videoFoX = ox + S * (IFRAME_X - ox);
+  const videoFoY = oy + S * (IFRAME_Y - oy) + pushY;
+  const videoFoW = IFRAME_W * S;
+  const videoFoH = IFRAME_H * S;
 
   return (
     <>
@@ -281,7 +276,8 @@ function FestivalStageLive() {
         <div
           {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
           style={{
-            width: iframeW,
+            width: IFRAME_W,
+            height: IFRAME_H,
             transform: `scale(${S})`,
             transformOrigin: 'top left',
             ...STAGE_VIDEO_WRAPPER_STYLE,
@@ -293,8 +289,8 @@ function FestivalStageLive() {
             vidKey={vidKey}
             title={video?.title}
             onIframeLoad={onIframeLoad}
-            width={iframeW}
-            height={iframeH}
+            width={IFRAME_W}
+            height={IFRAME_H}
           />
         </div>
       </foreignObject>

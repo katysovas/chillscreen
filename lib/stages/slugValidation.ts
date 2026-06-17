@@ -1,6 +1,6 @@
 import { checkBlocklist } from '@/lib/blocklist';
 import { VENUE_SLUGS } from '@/lib/venueSlugs';
-import { STAGE_CONFIG } from '@/lib/stages/config';
+import { STAGE_CONFIG, STAGE_NAME_FIELD_HINT } from '@/lib/stages/config';
 
 /** App routes and infrastructure slugs — never assignable to creators. */
 export const RESERVED_STAGE_SLUGS = new Set([
@@ -88,9 +88,8 @@ export function validateStageSlugMessage(slug: string): string | null {
 export function slugRejectMessage(reason: SlugRejectReason): string {
   switch (reason) {
     case 'format':
-      return 'Use lowercase letters, numbers, and hyphens (no leading/trailing hyphen).';
     case 'length':
-      return `Slug must be ${STAGE_CONFIG.SLUG_MIN_LENGTH}–${STAGE_CONFIG.SLUG_MAX_LENGTH} characters.`;
+      return STAGE_NAME_FIELD_HINT;
     case 'reserved':
       return 'That slug is reserved.';
     case 'profanity':

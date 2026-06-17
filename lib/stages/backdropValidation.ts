@@ -36,7 +36,7 @@ export function stageBackdropUploadHint(): string {
   } = STAGE_BACKDROP_LIMITS;
   const maxMb = maxBytes / (1024 * 1024);
     return `Landscape JPG, PNG, or WebP. Best at ${recommendedWidth}×${recommendedHeight}px. `
-    + `At least ${minWidth}×${minHeight}px, ${maxMb} MB max. Saved as optimized WebP.`;
+    + `At least ${minWidth}×${minHeight}px, ${maxMb} MB max.`;
 }
 
 export function validateBackdropMimeAndSize(

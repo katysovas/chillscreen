@@ -21,6 +21,7 @@ import {
 } from '@/lib/stageVideoLayout';
 import { CITY_MID_W, MID_F, midOriginForTile, midWidthForTile, nearMidTiles } from '@/lib/parallax';
 import { nearIsolatedMidTiles } from '@/lib/isolatedCity';
+import { isCreatorTemplateRoute } from '@/lib/venueSlugs';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
 import { SmallTownTile, SmallTownTerrain } from './town';
 import { useStageMidBundle } from './stageBundles/useStageMidBundle';
@@ -116,6 +117,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
       const w     = midWidthForTile(t);
       const scale = tileContentScale(t);
       const isCityTile = isolatedTileIndex != null && t === isolatedTileIndex;
+      const skipAtmo = isCityTile && deepLinkRoute != null && isCreatorTemplateRoute(deepLinkRoute);
 
       return (
         <>
@@ -125,10 +127,10 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
           </g>
           {kind === 'town' && <SmallTownTile tileIndex={t} tileWidth={w} hideTrees={hideTrees} />}
           {bundle?.NeighborOverflow?.({ tileIndex: t })}
-          <rect x={0} y={0} width={w} height={900} fill="url(#atmo)" />
+          {!skipAtmo && <rect x={0} y={0} width={w} height={900} fill="url(#atmo)" />}
         </>
       );
-    }, [isolatedTileIndex, bundle, tileProps, hideTrees]);
+    }, [isolatedTileIndex, bundle, tileProps, hideTrees, deepLinkRoute]);
 
     const renderMidForeground = useCallback((t: number) => {
       if (isolatedTileIndex == null || t !== isolatedTileIndex || !bundle?.CityTileForeground) {
