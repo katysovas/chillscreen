@@ -1,11 +1,5 @@
 'use client';
 
-import {
-  countFestieChatsInEvents,
-  FESTIE_EVENT_TYPES,
-  type FestieEventRow,
-} from '@/lib/festie/events';
-import { filterOwnerCentricRecapEvents, shouldShowSessionRecap, type FestieSessionRecap } from '@/lib/festie/sessionRecap';
 import { markLocalFestieAccount } from '@/lib/festie/localAccount';
 import { trackFestieSignedIn, trackFestieSignedUp } from '@/lib/analytics';
 import type { FestieCache, FestieOwner } from '@/lib/festie/types';
@@ -49,6 +43,10 @@ export async function fetchAuthMe(): Promise<AuthState> {
   };
 }
 
+export type LoginFestieResult = {
+  festie: FestieOwner;
+};
+
 export async function loginFestie(name: string, password: string): Promise<LoginFestieResult> {
   const res = await fetch('/api/auth/login', {
     ...fetchOpts,
@@ -62,13 +60,7 @@ export async function loginFestie(name: string, password: string): Promise<Login
   setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
   markLocalFestieAccount(festie.name);
   trackFestieSignedIn(festie);
-  const sessionRecap = (data.sessionRecap as FestieSessionRecap | null) ?? null;
-  return { festie, sessionRecap };
-}
-
-/** Mark owner return after viewing session recap (resets last_seen_at). */
-export async function acknowledgeFestieReturn(): Promise<void> {
-  await fetch('/api/festie/seen', { ...fetchOpts, method: 'POST' });
+  return { festie };
 }
 
 /** Mark the one-time post-signup help popup as dismissed. */
@@ -81,56 +73,6 @@ export async function dismissFestieHelp(): Promise<FestieOwner | null> {
     setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
   }
   return festie;
-}
-
-export async function fetchSessionRecapSince(
-  since: string,
-  festieName?: string,
-): Promise<FestieSessionRecap | null> {
-  try {
-    const data = await fetchFestieEvents(since);
-    const who = festieName?.trim() ?? '';
-    const events = who
-      ? filterOwnerCentricRecapEvents(data.events, who)
-      : data.events;
-    const recap: FestieSessionRecap = {
-      since: data.since,
-      until: new Date().toISOString(),
-      events,
-      coinsEarned: data.coinsEarned,
-      chatCount: countFestieChatsInEvents(events),
-      festieName: who || undefined,
-    };
-    return shouldShowSessionRecap(recap, who || undefined) ? recap : null;
-  } catch (err) {
-    console.warn('[festie] session recap fetch failed', err);
-    return null;
-  }
-}
-
-/** Recent activity for Life modal history — no minimum event threshold. */
-export async function fetchFestieHistorySince(
-  since: string,
-  festieName: string,
-): Promise<FestieSessionRecap> {
-  const data = await fetchFestieEvents(since);
-  const events = filterOwnerCentricRecapEvents(data.events, festieName);
-  return {
-    since: data.since,
-    until: new Date().toISOString(),
-    events,
-    coinsEarned: data.coinsEarned,
-    chatCount: countFestieChatsInEvents(events),
-    festieName,
-  };
-}
-
-/** Same window as the session recap popup — before last_seen_at is refreshed. */
-export function historySinceForFestie(
-  festie: { id: string; last_seen_at: string },
-  ackedSince?: string | null,
-): string {
-  return ackedSince ?? festie.last_seen_at;
 }
 
 export async function logoutFestie(): Promise<void> {
@@ -158,26 +100,6 @@ export type UpdateFestieBody = {
   email_opted_in?: boolean;
   llm_provider?: string;
 };
-
-export type FestieEventsResponse = {
-  since: string;
-  events: FestieEventRow[];
-  coinsEarned: number;
-  chatCount: number;
-};
-
-export type LoginFestieResult = {
-  festie: FestieOwner;
-  sessionRecap: FestieSessionRecap | null;
-};
-
-export async function fetchFestieEvents(since?: string): Promise<FestieEventsResponse> {
-  const qs = since ? `?since=${encodeURIComponent(since)}` : '';
-  const res = await fetch(`/api/festie/events${qs}`, { credentials: 'include' });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? res.statusText);
-  return data as FestieEventsResponse;
-}
 
 export async function fetchFestie(): Promise<FestieOwner | null> {
   const res = await fetch('/api/festie', { credentials: 'include' });

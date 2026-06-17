@@ -205,7 +205,7 @@ export function MobileGameControls({
               whiteSpace: 'nowrap',
             }}
           >
-            Create Your Stage
+            Create New Stage
           </Link>
         )}
 

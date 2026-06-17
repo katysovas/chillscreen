@@ -1,4 +1,5 @@
 import { ierror, iwarn } from '@/lib/internalDebug';
+import { stripNpcChatterDots } from '@/lib/messageFilter';
 import { NPC_LINE_MAX_TOKENS, NPC_LINE_MAX_WORDS, NPC_LINE_TEMPERATURE, NPC_LINE_TIMEOUT_MS } from './constants';
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
@@ -73,17 +74,19 @@ export function sanitizeLine(raw: string): string {
   const sentenceEnd = text.search(/[.!?](?:\s|$)/);
   const hasCompleteSentence = sentenceEnd !== -1;
   if (hasCompleteSentence) {
-    text = text.slice(0, sentenceEnd + 1).trim();
+    const endChar = text[sentenceEnd]!;
+    text = text.slice(0, sentenceEnd).trim();
+    if (endChar === '!' || endChar === '?') text += endChar;
   }
 
   // Never chop a punctuated sentence for the word cap — show the full line in chat.
-  if (hasCompleteSentence) return text;
+  if (hasCompleteSentence) return stripNpcChatterDots(text);
 
   const words = text.split(/\s+/).filter(Boolean);
   if (words.length <= NPC_LINE_MAX_WORDS) {
-    return words.join(' ');
+    return stripNpcChatterDots(words.join(' '));
   }
 
   // Model ran long without ending — keep a short whole-word prefix only as fallback.
-  return words.slice(0, NPC_LINE_MAX_WORDS).join(' ');
+  return stripNpcChatterDots(words.slice(0, NPC_LINE_MAX_WORDS).join(' '));
 }

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-15T18:09:27.575Z",
+  "updatedAt": "2026-06-17T21:27:23.108Z",
   "channels": {
     "cinema": {
       "label": "Chill Cinema",
@@ -356,8 +356,109 @@
       "source": "curated",
       "videos": [
         {
-          "id": "VJrd9doSRwA",
-          "title": "EDC Las Vegas 2026"
+          "id": "yUA0Ht2PdG0",
+          "title": "Pegassi Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 3455
+        },
+        {
+          "id": "l5wro3bMZWc",
+          "title": "Kaskade Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 4065
+        },
+        {
+          "id": "PaBcY8VTZZI",
+          "title": "Wooli Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 4105
+        },
+        {
+          "id": "NsmhG-ec6XI",
+          "title": "FISHER LIVE FROM EDC LAS VEGAS 2026",
+          "durationSec": 4179
+        },
+        {
+          "id": "-A-XIBMDgj0",
+          "title": "Subtronics Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 4194
+        },
+        {
+          "id": "OI02QgEA1Zw",
+          "title": "Above & Beyond: Live from EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 4459
+        },
+        {
+          "id": "zkT8FjfBjYI",
+          "title": "Porter Robinson Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 4122
+        },
+        {
+          "id": "3AQ_Srbe1lQ",
+          "title": "The Chainsmokers Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 4105
+        },
+        {
+          "id": "570KzEOT8oI",
+          "title": "Dom Dolla Live @ EDC Las Vegas, 2024 (circuitGROUNDS)",
+          "durationSec": 4051
+        },
+        {
+          "id": "kG0SVvz9e-g",
+          "title": "Tiësto Live at EDC Las Vegas 2026",
+          "durationSec": 5309
+        },
+        {
+          "id": "SXPdDTDBgAI",
+          "title": "ILLENIUM B2B SLANDER - EDC LAS VEGAS 2025 (Full Set, Volume Corrected)",
+          "durationSec": 4143
+        },
+        {
+          "id": "n-MhD_TdzN4",
+          "title": "Armin van Buuren live at EDC Las Vegas 2026",
+          "durationSec": 4461
+        },
+        {
+          "id": "kw_C3HE6VRY",
+          "title": "Steve Aoki Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 4135
+        },
+        {
+          "id": "UNtEX3GB6jU",
+          "title": "Hardwell - Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 4071
+        },
+        {
+          "id": "tpteTL5ycRo",
+          "title": "Seven Lions Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 4407
+        },
+        {
+          "id": "QpVM_g6PPs8",
+          "title": "RAY VOLPE @ EDC Las Vegas 2026 (Full Set)",
+          "durationSec": 3580
+        },
+        {
+          "id": "kM7iuhXXaZg",
+          "title": "KREAM Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 3561
+        },
+        {
+          "id": "JdCmzkt5xdo",
+          "title": "ISOKNOCK - 4EVR FINALE AT EDC LAS VEGAS 2025 (Full Live Set)",
+          "durationSec": 3706
+        },
+        {
+          "id": "xq-7nU66OmQ",
+          "title": "Griz B2B Wooli Live at EDC 2026",
+          "durationSec": 4087
+        },
+        {
+          "id": "jQLWYc2UrFY",
+          "title": "Westend Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 3552
+        },
+        {
+          "id": "qtmgGEKcS8E",
+          "title": "Alison Wonderland Live at EDC Las Vegas 2026 (Official Full Set)",
+          "durationSec": 3576
         }
       ]
     },

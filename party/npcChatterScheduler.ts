@@ -1,6 +1,6 @@
 import type * as Party from 'partykit/server';
 import { encode, type ServerMessage } from '../lib/multiplayer/protocol';
-import { filterChatMessage } from '../lib/messageFilter';
+import { filterChatMessage, stripNpcChatterDots } from '../lib/messageFilter';
 import { chatterAuthHeader } from '../lib/npcChatter/auth';
 import { chatterNpcIdsForRoom, matchNpcMention } from '../lib/npcRoster.server';
 import {
@@ -17,8 +17,20 @@ import {
   NPC_REPLY_DELAY_MAX_MS,
   NPC_REPLY_DELAY_MIN_MS,
   SOLO_NPC_ROOM_REPLIES_ENABLED,
+  STAGE_CHATTER_LINE_DELAY_MAX_MS,
+  STAGE_CHATTER_LINE_DELAY_MIN_MS,
+  STAGE_CHATTER_NPC_COOLDOWN_MS,
+  STAGE_CHATTER_NPC_MIN,
+  STAGE_CHATTER_PROMPT_LINES,
+  STAGE_CHATTER_TRIGGER_PROBABILITY,
+  STAGE_CHATTER_WAVE_COOLDOWN_MS,
+  STAGE_CHATTER_WAVE_DELAY_MAX_MS,
+  STAGE_CHATTER_WAVE_DELAY_MIN_MS,
+  STAGE_WAVE_DEBOUNCE_MAX_MS,
+  STAGE_WAVE_DEBOUNCE_MIN_MS,
   HOUSE_MODEL_DEFAULT,
   pickLineBudget,
+  pickStageChatterNpcCount,
 } from '../lib/npcChatter/constants';
 import { resolveModel } from '../lib/npcChatter/models';
 import { chatterApiBase, npcChatterApiUrl } from '../lib/npcChatter/apiBase';
@@ -35,6 +47,11 @@ import { stageSlugForRoom, streamContextForRoom } from '../lib/npcChatter/roomCo
 import type { StageSync } from '../lib/stageVideos';
 import { ierror, ilog, INTERNAL_DEBUG_HEADER, runWithInternalDebug } from '../lib/internalDebug';
 import { CHATTER_DEBUG_HEADER, runWithChatterDebug } from '../lib/chatterDebug';
+import { StageChatterStore } from './stageChatterStore';
+import {
+  shouldExcludeFromStageChatter,
+  type StageChatterMessage,
+} from '../lib/stageChatter/types';
 
 type NpcChatterLine = { npc: string; text: string };
 
@@ -55,9 +72,12 @@ export class NpcChatterScheduler {
   private convoHour = 0;
   private convosThisHour = 0;
   private activeConvo = false;
+  private activeStageWave = false;
   private schedulerOn = false;
   private chatterDisabled = false;
   private npcCooldown = new Map<string, number>();
+  private stageWaveCooldownUntil = 0;
+  private stageWaveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private lastPair: [string, string] | null = null;
   private npcWorldX = new Map<string, number>();
   private viewportWidth = 1200;
@@ -67,11 +87,38 @@ export class NpcChatterScheduler {
   private readonly roomStorage: Party.Room['storage'];
   private readonly env: Record<string, string | undefined>;
   private configLogged = false;
+  private readonly stageChatter: StageChatterStore;
 
   constructor(private deps: ChatterSchedulerDeps) {
     this.roomId = deps.room.id;
     this.roomStorage = deps.room.storage;
     this.env = deps.room.env as Record<string, string | undefined>;
+    this.stageChatter = new StageChatterStore(deps.room.storage);
+  }
+
+  async getStageChatterHistory(): Promise<StageChatterMessage[]> {
+    const history = await this.stageChatter.load();
+    return history.filter(m => !shouldExcludeFromStageChatter(m.sender, m.text));
+  }
+
+  private async persistAndBroadcastRoomChat(sender: string, text: string): Promise<boolean> {
+    const cleaned = sender.startsWith('npc:') ? stripNpcChatterDots(text) : text;
+    const { entry, added } = await this.stageChatter.append(sender, cleaned);
+    if (!added) return false;
+    this.deps.broadcast({ t: 'room-chat', sender, text: cleaned, ts: entry.ts });
+    return true;
+  }
+
+  private async persistAndBroadcastNpcLine(convoId: string, npc: string, text: string): Promise<boolean> {
+    const cleaned = stripNpcChatterDots(text);
+    const { entry, added } = await this.stageChatter.append(`npc:${npc}`, cleaned);
+    if (!added) return false;
+    this.deps.broadcast({ t: 'npc-line', convoId, npc, text: cleaned, ts: entry.ts });
+    return true;
+  }
+
+  private async broadcastRoomTyping(sender: string, typing: boolean) {
+    this.deps.broadcast({ t: 'room-typing', sender, typing });
   }
 
   private logConfigOnce() {
@@ -98,6 +145,11 @@ export class NpcChatterScheduler {
     if (disabled) {
       this.schedulerOn = false;
       this.activeConvo = false;
+      this.activeStageWave = false;
+      if (this.stageWaveDebounceTimer) {
+        clearTimeout(this.stageWaveDebounceTimer);
+        this.stageWaveDebounceTimer = null;
+      }
       void this.roomStorage.setAlarm(Date.now() + 86_400_000);
       return;
     }
@@ -119,6 +171,11 @@ export class NpcChatterScheduler {
   onLastPlayer() {
     this.schedulerOn = false;
     this.activeConvo = false;
+    this.activeStageWave = false;
+    if (this.stageWaveDebounceTimer) {
+      clearTimeout(this.stageWaveDebounceTimer);
+      this.stageWaveDebounceTimer = null;
+    }
     // Push alarm far out — empty room = zero LLM calls.
     void this.roomStorage.setAlarm(Date.now() + 86_400_000);
   }
@@ -159,8 +216,16 @@ export class NpcChatterScheduler {
   }
 
   handleRoomChat(sender: string, text: string) {
-    this.appendBuffer(sender, text);
-    this.deps.broadcast({ t: 'room-chat', sender, text });
+    if (shouldExcludeFromStageChatter(sender, text)) {
+      this.deps.broadcast({ t: 'room-chat', sender, text });
+    } else {
+      this.appendBuffer(sender, text);
+      void this.persistAndBroadcastRoomChat(sender, text);
+    }
+
+    if (!shouldExcludeFromStageChatter(sender, text)) {
+      this.scheduleStageChatterWave();
+    }
 
     if (!SOLO_NPC_ROOM_REPLIES_ENABLED || this.chatterDisabled) return;
 
@@ -177,6 +242,101 @@ export class NpcChatterScheduler {
       if (this.activeConvo) return;
       void this.runSingleReply(npcId, text);
     }, delay);
+  }
+
+  private scheduleStageChatterWave() {
+    if (this.chatterDisabled || this.activeConvo || this.activeStageWave) return;
+    if (Date.now() < this.stageWaveCooldownUntil) return;
+    if (this.stageWaveDebounceTimer) clearTimeout(this.stageWaveDebounceTimer);
+    this.stageWaveDebounceTimer = setTimeout(() => {
+      this.stageWaveDebounceTimer = null;
+      void this.runStageChatterWave();
+    }, jitterMs(STAGE_WAVE_DEBOUNCE_MIN_MS, STAGE_WAVE_DEBOUNCE_MAX_MS));
+  }
+
+  private pickStageChatterNpcs(excludeNpcId?: string): string[] {
+    const ids = this.positionedChatterNpcIds().filter(id => id !== excludeNpcId);
+    if (ids.length < STAGE_CHATTER_NPC_MIN) return [];
+
+    const recentNpcSpeakers = new Set(
+      this.chatBuffer
+        .slice(-STAGE_CHATTER_PROMPT_LINES)
+        .filter(line => line.sender.startsWith('npc:'))
+        .map(line => line.sender.slice(4)),
+    );
+
+    let pool = ids.filter(id => !recentNpcSpeakers.has(id));
+    if (pool.length < STAGE_CHATTER_NPC_MIN) pool = ids;
+
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(pickStageChatterNpcCount(), shuffled.length));
+  }
+
+  private touchStageNpcCooldown(npcId: string) {
+    this.npcCooldown.set(npcId, Date.now() + STAGE_CHATTER_NPC_COOLDOWN_MS);
+  }
+
+  private async runStageChatterWave() {
+    return runWithInternalDebug(this.deps.internalDebug(), async () => {
+      if (this.chatterDisabled || this.deps.playerCount() === 0) return;
+      if (this.activeConvo || this.activeStageWave) return;
+      if (Date.now() < this.stageWaveCooldownUntil) return;
+      if (Math.random() > STAGE_CHATTER_TRIGGER_PROBABILITY) return;
+
+      const recent = this.chatBuffer.slice(-STAGE_CHATTER_PROMPT_LINES);
+      if (recent.length === 0) return;
+
+      const lastSpeaker = recent[recent.length - 1]?.sender;
+      const excludeNpcId = lastSpeaker?.startsWith('npc:') ? lastSpeaker.slice(4) : undefined;
+      const participants = this.pickStageChatterNpcs(excludeNpcId);
+      if (participants.length < STAGE_CHATTER_NPC_MIN) return;
+
+      this.activeStageWave = true;
+      const { streamTitle, channelName } = this.streamCtx();
+
+      try {
+        await new Promise(r => setTimeout(
+          r,
+          jitterMs(STAGE_CHATTER_WAVE_DELAY_MIN_MS, STAGE_CHATTER_WAVE_DELAY_MAX_MS),
+        ));
+
+        for (let i = 0; i < participants.length; i++) {
+          if (this.deps.playerCount() === 0) break;
+          if (this.activeConvo) break;
+
+          const npcId = participants[i]!;
+          if (this.npcOnCooldown(npcId)) continue;
+
+          void this.broadcastRoomTyping(`npc:${npcId}`, true);
+          const lines = await this.fetchChatter({
+            mode: 'stage',
+            stage: stageSlugForRoom(this.roomId),
+            npc: npcId,
+            recentChat: this.chatBuffer.slice(-STAGE_CHATTER_PROMPT_LINES),
+            streamTitle,
+            channelName,
+          });
+          void this.broadcastRoomTyping(`npc:${npcId}`, false);
+
+          const line = lines?.[0];
+          if (!line?.text) continue;
+
+          this.touchStageNpcCooldown(npcId);
+          const sent = await this.persistAndBroadcastRoomChat(`npc:${line.npc}`, line.text);
+          if (sent) this.appendBuffer(`npc:${line.npc}`, line.text);
+
+          if (i < participants.length - 1) {
+            await new Promise(r => setTimeout(
+              r,
+              jitterMs(STAGE_CHATTER_LINE_DELAY_MIN_MS, STAGE_CHATTER_LINE_DELAY_MAX_MS),
+            ));
+          }
+        }
+      } finally {
+        this.activeStageWave = false;
+        this.stageWaveCooldownUntil = Date.now() + STAGE_CHATTER_WAVE_COOLDOWN_MS;
+      }
+    });
   }
 
   private npcOnCooldown(npcId: string): boolean {
@@ -317,8 +477,7 @@ export class NpcChatterScheduler {
       ierror('[npc-chatter] party single reply empty', { npcId, triggerText: triggerText.slice(0, 80) });
       return;
     }
-    this.deps.broadcast({ t: 'room-chat', sender: `npc:${line.npc}`, text: line.text });
-    this.appendBuffer(`npc:${line.npc}`, line.text);
+    await this.persistAndBroadcastRoomChat(`npc:${line.npc}`, line.text);
     });
   }
 
@@ -326,7 +485,7 @@ export class NpcChatterScheduler {
     return runWithInternalDebug(this.deps.internalDebug(), async () => {
     return runWithChatterDebug(this.deps.chatterDebug(), async () => {
     if (this.chatterDisabled || this.deps.playerCount() === 0) return;
-    if (this.activeConvo) return;
+    if (this.activeConvo || this.activeStageWave) return;
 
     const pair = this.pickNpcPair();
     if (!pair) return;
@@ -404,13 +563,8 @@ export class NpcChatterScheduler {
         return;
       }
       const line = lines[i]!;
-      this.deps.broadcast({
-        t: 'npc-line',
-        convoId,
-        npc: line.npc,
-        text: line.text,
-      });
-      this.appendBuffer(`npc:${line.npc}`, line.text);
+      const sent = await this.persistAndBroadcastNpcLine(convoId, line.npc, line.text);
+      if (sent) this.appendBuffer(`npc:${line.npc}`, line.text);
     }
 
     this.deps.broadcast({ t: 'npc-convo-end', convoId });
@@ -429,7 +583,7 @@ export class NpcChatterScheduler {
       return;
     }
 
-    if (!this.activeConvo && Math.random() < CONVO_PROBABILITY) {
+    if (!this.activeConvo && !this.activeStageWave && Math.random() < CONVO_PROBABILITY) {
       await this.runPairConvo();
     }
 

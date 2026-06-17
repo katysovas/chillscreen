@@ -23,7 +23,6 @@ type Props = {
   festie: FestieOwner;
   onUpdated?: (festie: FestieOwner) => void;
   inputId?: string;
-  variant?: 'recap' | 'panel';
 };
 
 export function festieNeedsNotifyEmail(festie: FestieOwner | null | undefined): boolean {
@@ -34,7 +33,6 @@ export function FestieNotifyEmailSignup({
   festie,
   onUpdated,
   inputId = 'festie-notify-email',
-  variant = 'panel',
 }: Props) {
   const preset = festiePresetById(festie.preset);
   const [email, setEmail] = useState(festie.notify_email ?? '');
@@ -65,39 +63,6 @@ export function FestieNotifyEmailSignup({
       setSaving(false);
     }
   };
-
-  if (variant === 'recap') {
-    return (
-      <div className="festie-recap-email-strip">
-        <p className="festie-recap-email-hint">
-          Get daily recaps — don&apos;t miss what happens while you&apos;re away
-        </p>
-        <div className="festie-recap-email-row">
-          <input
-            id={inputId}
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="Email for daily recaps"
-            className="festie-recap-email-input"
-            autoComplete="email"
-            aria-label="Email for daily recaps"
-          />
-          <button
-            type="button"
-            className="festie-recap-email-btn"
-            disabled={saving}
-            onClick={() => void saveEmailPrefs()}
-          >
-            {saving ? '…' : 'Notify me'}
-          </button>
-        </div>
-        {emailError && (
-          <p className="festie-recap-email-error">{emailError}</p>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div style={{ fontFamily: 'system-ui,sans-serif' }}>

@@ -1,9 +1,8 @@
 import { npcChatterLlmConfigured } from '@/lib/npcChatter/completeLine';
-import { generatePairConvo, generateSingleReply } from '@/lib/npcChatter/generate';
+import { generatePairConvo, generateSingleReply, generateStageChatterReply } from '@/lib/npcChatter/generate';
 import { verifyChatterRequest } from '@/lib/npcChatter/auth';
-import { clampLineBudget, clampTriggerText, sanitizeRecentChat } from '@/lib/npcChatter/validate';
+import { clampLineBudget, clampTriggerText, sanitizeRecentChat, sanitizeStageRecentChat } from '@/lib/npcChatter/validate';
 import { isChatterNpcAllowed } from '@/lib/npcRoster.server';
-import { logFestiePairChatter } from '@/lib/festie/logNpcChatter';
 import { HOUSE_MODEL_DEFAULT } from '@/lib/npcChatter/constants';
 import { activeDemoSeed } from '@/lib/npcChatter/demoSeed';
 import { ierror, runWithInternalDebug, internalDebugFromRequest } from '@/lib/internalDebug';
@@ -34,13 +33,22 @@ type ReplyBody = {
   channelName?: string;
 };
 
+type StageBody = {
+  mode: 'stage';
+  stage: string;
+  npc: string;
+  recentChat?: unknown;
+  streamTitle?: string | null;
+  channelName?: string;
+};
+
 export async function POST(req: Request) {
   const denied = verifyChatterRequest(req);
   if (denied) return denied;
 
   return runWithInternalDebug(internalDebugFromRequest(req), async () => {
   return runWithChatterDebug(chatterDebugFromRequest(req), async () => {
-  let body: PairBody | ReplyBody;
+  let body: PairBody | ReplyBody | StageBody;
   try {
     body = await req.json();
   } catch {
@@ -59,6 +67,26 @@ export async function POST(req: Request) {
     ? body.channelName.slice(0, 80)
     : 'the stage';
   const stage = typeof body.stage === 'string' ? body.stage.slice(0, 64) : '';
+
+  if (body.mode === 'stage') {
+    const npc = body.npc?.trim();
+    if (!npc || !stage || !(await isChatterNpcAllowed(npc))) {
+      return Response.json({ error: 'Invalid request' }, { status: 400 });
+    }
+    const line = await generateStageChatterReply({
+      stage,
+      npc,
+      recentChat: sanitizeStageRecentChat(body.recentChat),
+      streamTitle,
+      channelName,
+      houseModel,
+    });
+    if (!line) {
+      ierror('[npc-chatter] stage reply failed', { npc, stage });
+      return Response.json({ error: 'Generation failed' }, { status: 502 });
+    }
+    return Response.json({ lines: [line] });
+  }
 
   if (body.mode === 'reply') {
     const npc = body.npc?.trim();
@@ -120,8 +148,6 @@ export async function POST(req: Request) {
     });
     return Response.json({ error: 'Generation failed' }, { status: 502 });
   }
-
-  void logFestiePairChatter(npcA, npcB, lines);
 
   return Response.json({ lines });
   });

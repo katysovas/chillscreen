@@ -2,6 +2,7 @@ import { isChatterMuted } from '@/lib/chatterMuted';
 import type { EaselPaintingChatContext } from '@/lib/easel/chatContext';
 import { chatterDebugFetchHeaders } from '@/lib/chatterDebug';
 import { ilog, iwarn, ierror, internalDebugFetchHeaders } from '@/lib/internalDebug';
+import { stripNpcChatterDots } from '@/lib/messageFilter';
 import { NPC_TYPING_MS } from '@/lib/npcChatConstants';
 
 export type NpcChatRequest = {
@@ -62,7 +63,9 @@ export async function fetchNpcReply(
     return undefined;
   }
 
-  const reply = typeof data.reply === 'string' ? data.reply : undefined;
+  const reply = typeof data.reply === 'string'
+    ? stripNpcChatterDots(data.reply)
+    : undefined;
   if (!reply?.trim()) {
     iwarn('[npc-chat] API ok but empty reply — check OpenAI / festie LLM logs', {
       characterId: body.characterId,

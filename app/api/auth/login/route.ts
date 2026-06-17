@@ -3,7 +3,6 @@ import { verifyFestieLogin } from '@/lib/auth/db';
 import { setSessionCookie } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { getFestieByUserId, setFestieOwnerOnline, touchFestieSeen, toFestieOwner } from '@/lib/festie/db';
-import { buildFestieSessionRecap } from '@/lib/festie/sessionRecapApi';
 import { validateFestieName, validateFestiePassword } from '@/lib/festie/validation';
 
 export const dynamic = 'force-dynamic';
@@ -29,19 +28,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid name or password' }, { status: 401 });
     }
 
-    const festieBefore = await getFestieByUserId(userId);
-    const sessionEnd = new Date().toISOString();
-    const sessionRecap = festieBefore
-      ? await buildFestieSessionRecap(festieBefore.id, festieBefore.last_seen_at, sessionEnd)
-      : null;
-
     await touchFestieSeen(userId);
     await setFestieOwnerOnline(userId, true);
     const festie = await getFestieByUserId(userId);
     const res = NextResponse.json({
       ok: true,
       festie: festie ? toFestieOwner(festie) : null,
-      sessionRecap,
     });
     setSessionCookie(res, userId);
     return res;

@@ -1,4 +1,5 @@
 import type { CharacterDef } from '@/components/game/characters';
+import { stripNpcChatterDots } from '@/lib/messageFilter';
 import { getStageWorldSnapshot, type StageWorldEntry } from '@/lib/stageWorldSnapshot';
 import { isBuzNpc, BUZ_NPC_ID } from '@/lib/vendorShop';
 
@@ -74,7 +75,7 @@ function shortStage(stage: StageWorldEntry): StageWorldEntry {
 }
 
 function clampAmbientLine(line: string): string {
-  const s = line.replace(/\s+/g, ' ').trim();
+  const s = stripNpcChatterDots(line.replace(/\s+/g, ' ').trim());
   if (s.length <= AMBIENT_MAX_CHARS) return s;
   return `${s.slice(0, AMBIENT_MAX_CHARS - 1).trimEnd()}…`;
 }

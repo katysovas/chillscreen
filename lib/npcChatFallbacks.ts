@@ -24,5 +24,5 @@ export function pickFallbackGreeting(
         : '';
     return `₿ ${formatBitcoinUsd(bitcoinSnapshot.usd)}${change} — what's good?`;
   }
-  return `Hey! I'm ${npcDisplayNameForCharacter({ id: character.id, name: character.name, modelId: character.modelId })}.`;
+  return `Hey! I'm ${npcDisplayNameForCharacter({ id: character.id, name: character.name, modelId: character.modelId })}`;
 }

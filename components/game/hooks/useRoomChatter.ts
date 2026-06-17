@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { stripNpcChatterDots } from '@/lib/messageFilter';
 import { clearNpcConvoAnchor } from '@/lib/npcConvoAnchor';
 import { appendChatLine, createChatLine, type ChatLine, type KeyedChatLine } from '@/lib/chatLines';
 import { PLAYER_AMBIENT_VISIBLE_MS } from '@/lib/multiplayer/useMultiplayer';
@@ -107,7 +108,15 @@ export function useRoomChatter(
         base = { convoId, participants, lines: [] };
       }
       if (!base.participants.includes(npc)) return prev;
-      const line = createChatLine(text);
+      const cleaned = stripNpcChatterDots(text);
+      const last = base.lines[base.lines.length - 1];
+      if (
+        last?.speakerKey === npc
+        && stripNpcChatterDots(last.text).toLowerCase() === cleaned.toLowerCase()
+      ) {
+        return prev;
+      }
+      const line = createChatLine(cleaned);
       return {
         ...base,
         lines: [...base.lines, { ...line, speakerKey: npc }].slice(-6),

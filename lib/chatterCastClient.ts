@@ -5,6 +5,7 @@
 import CHARACTERS, { type CharacterDef } from '@/components/game/characters';
 import { formatNpcBrandedName, npcBrandFromModelId } from '@/lib/npcBrandedName';
 import { modelIdForGeneratedNpc } from '@/lib/npcGeneratedModels';
+import { FESTIE_NPC_ID_PREFIX, isFestieNpcId } from '@/lib/festie/toCharacterDef';
 
 export function wanderingCharacters(): CharacterDef[] {
   return CHARACTERS.filter(c => !c.stageAnchor);
@@ -28,6 +29,13 @@ export function npcChatLabelForId(npcId: string, fallbackName: string): string {
   if (ch) return npcChatLabel(ch);
   if (npcId.startsWith('gen-')) {
     return formatNpcBrandedName(fallbackName, { modelId: modelIdForGeneratedNpc(npcId) });
+  }
+  if (isFestieNpcId(npcId)) {
+    const name = fallbackName.trim();
+    if (name && !name.startsWith(FESTIE_NPC_ID_PREFIX)) {
+      return formatNpcBrandedName(name);
+    }
+    return 'Festie';
   }
   return formatNpcBrandedName(fallbackName);
 }

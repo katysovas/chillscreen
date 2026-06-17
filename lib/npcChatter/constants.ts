@@ -3,17 +3,75 @@ export const ALARM_MIN_MS = 15_000;
 export const ALARM_MAX_MS = 45_000;
 export const CONVO_PROBABILITY = 0.55;
 export const MAX_CONVOS_PER_ROOM_PER_HOUR = 30;
-export const LINE_PACING_MIN_MS = 3_000;
-export const LINE_PACING_MAX_MS = 6_000;
+export const LINE_PACING_MIN_MS = 3_500;
+export const LINE_PACING_MAX_MS = 7_000;
 export const FIRST_CONVO_DELAY_MIN_MS = 3_000;
 export const FIRST_CONVO_DELAY_MAX_MS = 7_000;
-export const NPC_REPLY_DELAY_MIN_MS = 2_000;
-export const NPC_REPLY_DELAY_MAX_MS = 5_000;
+export const NPC_REPLY_DELAY_MIN_MS = 3_000;
+export const NPC_REPLY_DELAY_MAX_MS = 7_000;
 export const NPC_REPLY_COOLDOWN_MS = 15_000;
 /** Solo NPC shouts / self-talk over room-chat — off; only pair convos run. */
 export const SOLO_NPC_ROOM_REPLIES_ENABLED = false;
 export const CHAT_BUFFER_SIZE = 20;
 export const PROMPT_WINDOW_LINES = 15;
+
+/** Stage chatter panel — NPCs react to the last few public lines. */
+export const STAGE_CHATTER_PROMPT_LINES = 5;
+export const STAGE_CHATTER_NPC_MIN = 2;
+export const STAGE_CHATTER_NPC_MAX = 3;
+export const STAGE_CHATTER_TRIGGER_PROBABILITY = 0.72;
+export const STAGE_WAVE_DEBOUNCE_MIN_MS = 4_000;
+export const STAGE_WAVE_DEBOUNCE_MAX_MS = 8_000;
+export const STAGE_CHATTER_WAVE_DELAY_MIN_MS = 2_500;
+export const STAGE_CHATTER_WAVE_DELAY_MAX_MS = 5_500;
+export const STAGE_CHATTER_LINE_DELAY_MIN_MS = 3_000;
+export const STAGE_CHATTER_LINE_DELAY_MAX_MS = 6_500;
+export const STAGE_CHATTER_WAVE_COOLDOWN_MS = 28_000;
+export const STAGE_CHATTER_NPC_COOLDOWN_MS = 20_000;
+/** Stage panel lines — 1–2 short sentences; can be just a few words. */
+export const STAGE_LINE_MAX_WORDS = 18;
+
+export const STAGE_CHATTER_INTENTS = [
+  'respond naturally to what was just said',
+  'add a quick take or side comment',
+  'ask a short follow-up question',
+  'ask what someone meant or push for details',
+  'push back or disagree',
+  'drop a dry joke or one-liner',
+] as const;
+
+export type StageChatterIntent = (typeof STAGE_CHATTER_INTENTS)[number];
+
+const STAGE_INTENT_POOL: StageChatterIntent[] = [
+  ...STAGE_CHATTER_INTENTS,
+  'ask a short follow-up question',
+  'ask a short follow-up question',
+  'ask what someone meant or push for details',
+];
+
+export function pickStageChatterIntent(): StageChatterIntent {
+  return STAGE_INTENT_POOL[Math.floor(Math.random() * STAGE_INTENT_POOL.length)]!;
+}
+
+/** Per-line nudge so NPCs don't all sound the same length. */
+export const LINE_LENGTH_HINTS = [
+  'length: ultra short — 2–5 words only ("bet", "no way", "wait what")',
+  'length: quick reaction — 3–6 words',
+  'length: one sharp question ending with ?',
+  'length: medium take — about 7–12 words',
+  'length: longer rant — 13–18 words if the thought needs it',
+  'length: tiny aside — 1–4 words is fine',
+  'length: ask something — short question, end with ?',
+] as const;
+
+export function pickLineLengthHint(): string {
+  return LINE_LENGTH_HINTS[Math.floor(Math.random() * LINE_LENGTH_HINTS.length)]!;
+}
+
+export function pickStageChatterNpcCount(): number {
+  return STAGE_CHATTER_NPC_MIN
+    + Math.floor(Math.random() * (STAGE_CHATTER_NPC_MAX - STAGE_CHATTER_NPC_MIN + 1));
+}
 
 export const SEED_STREAM_REACTIVE_PCT = 0.3;
 export const SEED_GENERATED_PCT = 0.65;
@@ -21,9 +79,9 @@ export const SEED_AMBIENT_PCT = 0.05;
 
 export const HOUSE_MODEL_DEFAULT = 'openai/gpt-4.1-nano';
 /** Target max words per NPC chatter line (prompt guidance — complete lines are never chopped for display). */
-export const NPC_LINE_MAX_WORDS = 10;
+export const NPC_LINE_MAX_WORDS = 18;
 /** Room for a short complete sentence without the model getting cut off mid-thought. */
-export const NPC_LINE_MAX_TOKENS = 40;
+export const NPC_LINE_MAX_TOKENS = 48;
 export const NPC_LINE_TIMEOUT_MS = 8_000;
 /** OpenRouter sampling — keep ≥0.9; 0.7 reads flat/agreeable. */
 export const NPC_LINE_TEMPERATURE = 0.95;

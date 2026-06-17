@@ -8,6 +8,7 @@
  */
 
 import type { FestiePublic } from '../festie/types';
+import type { StageChatterMessage } from '../stageChatter/types';
 import type { StageSync } from '../stageVideos';
 import type { EaselSessionSync, EaselSlotSync } from '../easel/types';
 import type { CreatorStageSyncPayload } from '../stages/stageSync';
@@ -70,6 +71,8 @@ export type ClientMessage =
   | { t: 'ambient-msg'; text: string }
   // Public room chat (also used for 1:1 lines — no private delivery).
   | { t: 'room-chat'; text: string }
+  // Stage chatter typing signal — visible to everyone in the room.
+  | { t: 'room-typing'; typing: boolean }
   // NPC 1:1 chat — broadcast so everyone sees the connect glow.
   | { t: 'npc-chat'; npcId: string; open: boolean }
   /** Throttled NPC snapshot for proximity chatter + follower sync. */
@@ -117,7 +120,11 @@ export type ServerMessage =
   | { t: 'chat-msg'; from: string; text: string }
   | { t: 'ambient'; from: string; text: string }
   /** Public room line — sender is `user:{name}` or `npc:{id}`. */
-  | { t: 'room-chat'; sender: string; text: string }
+  | { t: 'room-chat'; sender: string; text: string; ts?: number }
+  /** Stage chatter typing signal — sender is `user:{name}` or `npc:{id}`. */
+  | { t: 'room-typing'; sender: string; typing: boolean }
+  /** Scrollable stage chatter history (up to 2 days) — sent on connect. */
+  | { t: 'stage-chatter-history'; messages: StageChatterMessage[] }
   // Visible to the whole room — who is in a 1:1 conversation.
   | { t: 'chat-pair'; a: string; b: string; open: boolean }
   | { t: 'npc-chat'; from: string; npcId: string; open: boolean }
@@ -127,7 +134,7 @@ export type ServerMessage =
       participants: [string, string];
       meta?: NpcConvoMeta;
     }
-  | { t: 'npc-line'; convoId: string; npc: string; text: string }
+  | { t: 'npc-line'; convoId: string; npc: string; text: string; ts?: number }
   | { t: 'npc-convo-end'; convoId: string }
   | {
       t: 'npc-positions-sync';

@@ -5,8 +5,8 @@ import type { ChatTurn } from '@/lib/npcChat';
 
 export function pickFestieFallbackGreeting(festie: FestiePublic): string {
   const level = festie.attributes.chattiness;
-  if (level <= 3) return `hey — i'm ${festie.name}'s festie.`;
-  if (level >= 8) return `oh hey! ${festie.name} is around somewhere but i'm holding down the vibe.`;
+  if (level <= 3) return `hey — i'm ${festie.name}'s festie`;
+  if (level >= 8) return `oh hey! ${festie.name} is around somewhere but i'm holding down the vibe`;
   return `hey! i'm ${festie.name}'s festie — what's good?`;
 }
 
@@ -32,7 +32,7 @@ export function buildFestieGreetingMessages(
         conversationSeed,
       })}
 
-The player walked up to chat. Give a warm in-character greeting — one very short sentence (under 12 words if possible).`,
+The player walked up to chat. Give a warm in-character greeting — one very short sentence (under 12 words if possible). No period at the end.`,
     },
     {
       role: 'user',

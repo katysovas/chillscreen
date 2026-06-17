@@ -23,10 +23,8 @@ import {
 } from '@/lib/festie/validation';
 import { getPlayerName } from '@/lib/playerStorage';
 import { HelpFaqContent } from './HelpFaqContent';
-import { FestieHistoryPanel } from './FestieHistoryPanel';
-import type { FestieSessionRecap } from '@/lib/festie/sessionRecap';
 
-export type FestieSettingsTab = 'customize' | 'history' | 'access' | 'help' | 'contact';
+export type FestieSettingsTab = 'customize' | 'access' | 'help' | 'contact';
 
 function TabIconCustomize({ size = 16 }: { size?: number }) {
   return (
@@ -90,21 +88,6 @@ function TabIconContact({ size = 16 }: { size?: number }) {
   );
 }
 
-function TabIconHistory({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ display: 'block' }}>
-      <circle cx={12} cy={12} r={9} stroke="currentColor" strokeWidth={1.5} />
-      <path
-        d="M12 7v5l3 2"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function TabIconHelp({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ display: 'block' }}>
@@ -122,7 +105,6 @@ function TabIconHelp({ size = 16 }: { size?: number }) {
 
 const TAB_ICONS: Record<FestieSettingsTab, typeof TabIconCustomize> = {
   customize: TabIconCustomize,
-  history: TabIconHistory,
   access: TabIconAccess,
   help: TabIconHelp,
   contact: TabIconContact,
@@ -134,12 +116,10 @@ type Props = {
   ownerOnline?: boolean;
   refillFrom?: number | null;
   initialTab?: FestieSettingsTab;
-  sessionRecap?: FestieSessionRecap | null;
 };
 
 const TABS: { id: FestieSettingsTab; label: string }[] = [
   { id: 'customize', label: 'Customize' },
-  { id: 'history', label: 'History' },
   { id: 'access', label: 'Access' },
   { id: 'help', label: 'Help' },
   { id: 'contact', label: 'Contact' },
@@ -242,14 +222,13 @@ function PersonalityPicker({
   );
 }
 
-/** Festie settings — tabbed: customize, history, access, help, contact. */
+/** Festie settings — tabbed: customize, access, help, contact. */
 export function FestieSettingsModal({
   onClose,
   onUpdated,
   ownerOnline = true,
   refillFrom = null,
   initialTab = 'customize',
-  sessionRecap = null,
 }: Props) {
   const [tab, setTab] = useState<FestieSettingsTab>(initialTab);
   const [loading, setLoading] = useState(true);
@@ -397,7 +376,7 @@ export function FestieSettingsModal({
     && newPassword === confirmPassword
     && currentPassword.length > 0;
 
-  const needsFestie = tab === 'customize' || tab === 'access' || tab === 'history';
+  const needsFestie = tab === 'customize' || tab === 'access';
 
   const handleFestieUpdated = (updated: FestieOwner) => {
     setFestie(updated);
@@ -708,16 +687,6 @@ export function FestieSettingsModal({
                 {savingPassword ? 'Updating…' : 'Update password'}
               </button>
             </>
-          )}
-
-          {tab === 'history' && festie && (
-            <FestieHistoryPanel festie={festie} sessionRecap={sessionRecap} />
-          )}
-
-          {tab === 'history' && !loading && !festie && (
-            <p style={{ color: '#ff9d9d', fontFamily: 'system-ui,sans-serif', fontSize: 14 }}>
-              {loadError ?? 'Sign in to view history.'}
-            </p>
           )}
 
           {tab === 'help' && (

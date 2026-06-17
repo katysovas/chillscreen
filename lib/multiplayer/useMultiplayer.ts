@@ -19,6 +19,7 @@ import { applyServerStageSync } from '@/lib/stageClock';
 import { isChatterMuted } from '@/lib/chatterMuted';
 import { isChatterDebugMode } from '@/lib/chatterDebug';
 import { ilog, ierror, iwarn } from '@/lib/internalDebug';
+import type { StageChatterMessage } from '@/lib/stageChatter/types';
 
 /** What a remote avatar needs to render — kept in a ref, mutated without rerenders. */
 export type RemotePlayerState = {
@@ -56,13 +57,17 @@ type PeerEvents = {
   /** A peer dropped from the room entirely (disconnect / tab close). */
   onPeerLeft?: (peerId: string) => void;
   /** Public room line — sender is `user:{name}` or `npc:{id}`. */
-  onRoomChat?: (sender: string, text: string) => void;
+  onRoomChat?: (sender: string, text: string, ts?: number) => void;
+  /** Persisted stage chatter backlog (up to 2 days). */
+  onStageChatterHistory?: (messages: StageChatterMessage[]) => void;
+  /** Stage chatter typing signal — sender is `user:{name}` or `npc:{id}`. */
+  onRoomTyping?: (sender: string, typing: boolean) => void;
   onNpcConvoStart?: (
     convoId: string,
     participants: [string, string],
     meta?: NpcConvoMeta,
   ) => void;
-  onNpcLine?: (convoId: string, npc: string, text: string) => void;
+  onNpcLine?: (convoId: string, npc: string, text: string, ts?: number) => void;
   onNpcConvoEnd?: (convoId: string) => void;
 };
 
@@ -147,6 +152,7 @@ export type Multiplayer = {
   sendPeerMessage: (to: string, text: string) => void;
   sendAmbientMessage: (text: string) => void;
   sendRoomChat: (text: string) => void;
+  sendRoomTyping: (typing: boolean) => void;
   sendNpcChat: (npcId: string, open: boolean) => void;
   sendNpcPositions: (positions: { id: string; worldX: number; pct: number }[], viewportWidth: number) => void;
   sendEaselPainterReady: (npcId: string) => void;
@@ -405,7 +411,13 @@ export function useMultiplayer(opts: Options): Multiplayer {
           });
           break;
         case 'room-chat':
-          ev.onRoomChat?.(msg.sender, msg.text);
+          ev.onRoomChat?.(msg.sender, msg.text, msg.ts);
+          break;
+        case 'room-typing':
+          ev.onRoomTyping?.(msg.sender, msg.typing);
+          break;
+        case 'stage-chatter-history':
+          ev.onStageChatterHistory?.(msg.messages);
           break;
         case 'npc-convo-start':
           setNpcConvoPairs(prev => {
@@ -415,7 +427,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
           ev.onNpcConvoStart?.(msg.convoId, msg.participants, msg.meta);
           break;
         case 'npc-line':
-          ev.onNpcLine?.(msg.convoId, msg.npc, msg.text);
+          ev.onNpcLine?.(msg.convoId, msg.npc, msg.text, msg.ts);
           break;
         case 'npc-convo-end':
           setNpcConvoPairs(prev => prev.filter(p => p.convoId !== msg.convoId));
@@ -484,6 +496,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const sendPeerMessage = useCallback((to: string, text: string) => connectAndSend({ t: 'chat-msg', to, text }), [connectAndSend]);
   const sendAmbientMessage = useCallback((text: string) => connectAndSend({ t: 'ambient-msg', text }), [connectAndSend]);
   const sendRoomChat = useCallback((text: string) => connectAndSend({ t: 'room-chat', text }), [connectAndSend]);
+  const sendRoomTyping = useCallback((typing: boolean) => connectAndSend({ t: 'room-typing', typing }), [connectAndSend]);
   const sendNpcChat = useCallback(
     (npcId: string, open: boolean) => connectAndSend({ t: 'npc-chat', npcId, open }),
     [connectAndSend],
@@ -512,7 +525,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
     chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,
     isNpcLeader, npcSyncRef,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
-    sendAmbientMessage, sendRoomChat, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
+    sendAmbientMessage, sendRoomChat, sendRoomTyping, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
     sendCreatorStageSync, registerCreatorStageSyncHandler,
   };
 }

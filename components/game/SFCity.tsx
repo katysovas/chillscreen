@@ -29,29 +29,19 @@ import { GroundScoreLayer } from './GroundScoreLayer';
 import { purchaseVendorItemAsync } from '@/lib/vendorPurchase';
 import { festieLifeFill } from '@/lib/festie/config';
 import {
-  acknowledgeFestieReturn,
   dismissFestieHelp,
   fetchFestie,
-  fetchSessionRecapSince,
   logoutFestie,
 } from '@/lib/festie/client';
-import {
-  sampleSessionRecap,
-  shouldShowSessionRecap,
-  type FestieSessionRecap,
-} from '@/lib/festie/sessionRecap';
-import {
-  markSessionRecapAcked,
-  wasSessionRecapAcked,
-} from '@/lib/festie/sessionRecapStorage';
 import { persistFestieStageSlug } from '@/lib/festie/stage';
+import { festiePresetById } from '@/lib/festie/presets';
 import {
   markFestieLifeIntroSeen,
   markFestieLifeTabExitShown,
   shouldShowFestieLifeOnTabExit,
 } from '@/lib/festie/intro';
 import type { FestieOwner } from '@/lib/festie/types';
-import { festieNpcId, festiesToCharacterDefs, isFestieNpcId } from '@/lib/festie/toCharacterDef';
+import { festieIdFromNpcId, festieNpcId, festiesToCharacterDefs, isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import {
   getPlayerSession,
   hydratePlayerSession,
@@ -126,6 +116,9 @@ import { PlayerVariantGallery } from './PlayerVariantGallery';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { AMBIENT_CHAT_ENABLED } from '@/lib/ambientChatEnabled';
 import { useRoomChatter } from './hooks/useRoomChatter';
+import { shouldExcludeFromStageChatter } from '@/lib/stageChatter/types';
+import { useStageChatter } from './hooks/useStageChatter';
+import { StageChatterPanel } from './StageChatterPanel';
 import { npcChatLabelForId } from '@/lib/npcRoster';
 import { applyNpcDancing } from '@/lib/npcDancingRegistry';
 import { MobileGameControls } from './MobileGameControls';
@@ -146,7 +139,6 @@ import { HelpFaqModal } from './HelpFaqModal';
 import { SignOutConfirmModal } from './SignOutConfirmModal';
 import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
-import { FestieSessionRecapOverlay } from './FestieSessionRecapOverlay';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
 import { CreatorStageSettingsModal } from '@/components/create/CreatorStageSettingsModal';
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
@@ -202,9 +194,6 @@ const TEST_PLAYER_LOADOUT = {} as const;
 
 /** Auto-connect player + first NPC on load to preview chat connect glow (testing). */
 const TEST_CHAT_CONNECT_ON_LOAD = false;
-
-/** Preview session recap modal on load with sample events (testing). */
-const TEST_FESTIE_RECAP_ON_LOAD = false;
 
 /** Creator venue sky fills — keep in sync with lib/creatorVenueBackdrop.ts */
 const CHILL_FOREST_BG = '#D1EBD4';
@@ -476,10 +465,7 @@ export default function SFCity({
   const [profileReady, setProfileReady] = useState(false);
   /** undefined = not checked yet; null = signed in with no owned stage. */
   const [ownedStage, setOwnedStage] = useState<UserStagePublic | null | undefined>(undefined);
-  const [sessionRecapOpen, setSessionRecapOpen] = useState(false);
-  const [sessionRecap, setSessionRecap] = useState<FestieSessionRecap | null>(null);
   const lifeRefillFromRef = useRef<number | null>(null);
-  const recapNeedsAckRef = useRef(false);
   const broadcastProfileRef = useRef<(loadout: CharacterLoadout) => void>(() => {});
 
   const handleVendorPurchase = useCallback(async (itemId: string): Promise<boolean> => {
@@ -628,87 +614,9 @@ export default function SFCity({
     && !homePreview
     && !showWelcome
     && !showCityPicker
-    && !sessionRecapOpen
     && !settingsOpen
     && !lifeModalOpen,
   );
-
-  const openSessionRecap = useCallback((recap: FestieSessionRecap | null, needsAck: boolean, festieName?: string) => {
-    if (!shouldShowSessionRecap(recap, festieName)) return;
-    recapNeedsAckRef.current = needsAck;
-    setSessionRecap(recap);
-    setSessionRecapOpen(true);
-  }, []);
-
-  const checkSessionRecap = useCallback(async (
-    festie: FestieOwner,
-    needsAck: boolean,
-  ) => {
-    if (sessionRecapOpen) return;
-    if (wasSessionRecapAcked(festie.id, festie.last_seen_at)) return;
-
-    if (TEST_FESTIE_RECAP_ON_LOAD) {
-      openSessionRecap(sampleSessionRecap(festie.name), false, festie.name);
-      return;
-    }
-
-    const recap = await fetchSessionRecapSince(festie.last_seen_at, festie.name);
-    openSessionRecap(recap, needsAck, festie.name);
-  }, [sessionRecapOpen, openSessionRecap]);
-
-  const dismissSessionRecap = useCallback(() => {
-    const since = sessionRecap?.since;
-    const festieId = ownerFestie?.id;
-    setSessionRecapOpen(false);
-    if (since && festieId) markSessionRecapAcked(festieId, since);
-    if (recapNeedsAckRef.current) {
-      recapNeedsAckRef.current = false;
-      void acknowledgeFestieReturn()
-        .then(() => fetchFestie())
-        .then(festie => {
-          if (festie) setOwnerFestie(festie);
-        });
-    }
-  }, [sessionRecap, ownerFestie]);
-
-  useEffect(() => {
-    if (!profileReady || homePreview) return;
-    if (showWelcome || showCityPicker) return;
-    if (sessionRecapOpen) return;
-
-    if (TEST_FESTIE_RECAP_ON_LOAD) {
-      const name = ownerFestie?.name ?? playerName ?? 'Moonbeam';
-      openSessionRecap(sampleSessionRecap(name), false, name);
-      return;
-    }
-
-    if (!festieSignedIn || !ownerFestie) return;
-    void checkSessionRecap(ownerFestie, true);
-  }, [
-    profileReady,
-    homePreview,
-    showWelcome,
-    showCityPicker,
-    sessionRecapOpen,
-    festieSignedIn,
-    ownerFestie,
-    playerName,
-    checkSessionRecap,
-    openSessionRecap,
-  ]);
-
-  /** Tab close / return — same session cookie, no sign-out. */
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      if (!festieSignedIn || !ownerFestie) return;
-      if (showWelcomeRef.current || showCityPickerRef.current) return;
-      if (homePreview) return;
-      void checkSessionRecap(ownerFestie, true);
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [festieSignedIn, ownerFestie, checkSessionRecap, homePreview]);
 
   const toggleVendorShop = useCallback(() => {
     unlockPurchaseSound();
@@ -767,9 +675,11 @@ export default function SFCity({
   }, []);
 
   const chatterHandlersRef = useRef({
-    onRoomChat: (_sender: string, _text: string) => {},
+    onRoomChat: (_sender: string, _text: string, _ts?: number) => {},
+    onRoomTyping: (_sender: string, _typing: boolean) => {},
+    onStageChatterHistory: (_messages: import('@/lib/stageChatter/types').StageChatterMessage[]) => {},
     onNpcConvoStart: (_convoId: string, _participants: [string, string], _meta?: NpcConvoMeta) => {},
-    onNpcLine: (_convoId: string, _npc: string, _text: string) => {},
+    onNpcLine: (_convoId: string, _npc: string, _text: string, _ts?: number) => {},
     onNpcConvoEnd: (_convoId: string) => {},
   });
 
@@ -810,11 +720,14 @@ export default function SFCity({
       setPeerTyping(false);
       setPeerMessages(prev => appendChatLine(prev, text));
     },
-    onRoomChat: (sender, text) => chatterHandlersRef.current.onRoomChat(sender, text),
+    onRoomChat: (sender, text, ts) => chatterHandlersRef.current.onRoomChat(sender, text, ts),
+    onRoomTyping: (sender, typing) => chatterHandlersRef.current.onRoomTyping(sender, typing),
+    onStageChatterHistory: messages =>
+      chatterHandlersRef.current.onStageChatterHistory(messages),
     onNpcConvoStart: (convoId, participants, meta) =>
       chatterHandlersRef.current.onNpcConvoStart(convoId, participants, meta),
-    onNpcLine: (convoId, npc, text) =>
-      chatterHandlersRef.current.onNpcLine(convoId, npc, text),
+    onNpcLine: (convoId, npc, text, ts) =>
+      chatterHandlersRef.current.onNpcLine(convoId, npc, text, ts),
     onNpcConvoEnd: convoId => chatterHandlersRef.current.onNpcConvoEnd(convoId),
   });
   const mpRef = useRef(mp);
@@ -973,6 +886,71 @@ export default function SFCity({
   );
   const effectiveNpcCastRef = useRef(effectiveNpcCast);
   effectiveNpcCastRef.current = effectiveNpcCast;
+  const ownerFestieRef = useRef(ownerFestie);
+  ownerFestieRef.current = ownerFestie;
+
+  const resolveFestieNpcName = useCallback((npcId: string): string | null => {
+    if (!isFestieNpcId(npcId)) return null;
+    const festieId = festieIdFromNpcId(npcId);
+    if (!festieId) return null;
+    const owner = ownerFestieRef.current;
+    if (owner?.id === festieId) {
+      const name = owner.name?.trim();
+      if (name) return name;
+    }
+    const festie = mpRef.current?.festies.find(f => f.id === festieId);
+    return festie?.name?.trim() ?? null;
+  }, []);
+
+  const resolveStageChatterName = useCallback((sender: string) => {
+    if (sender.startsWith('user:')) return sender.slice(5);
+    if (sender.startsWith('npc:')) {
+      const npcId = sender.slice(4);
+      const cfg = effectiveNpcCastRef.current.find(c => c.id === npcId);
+      const festieName = resolveFestieNpcName(npcId);
+      if (festieName) return npcChatLabelForId(npcId, festieName);
+      if (cfg?.name) return npcChatLabelForId(npcId, cfg.name);
+      return npcChatLabelForId(npcId, 'Wanderer');
+    }
+    return sender;
+  }, [resolveFestieNpcName]);
+
+  const resolveStageChatterGlow = useCallback((sender: string) => {
+    if (sender.startsWith('npc:')) {
+      const npcId = sender.slice(4);
+      const cfg = effectiveNpcCastRef.current.find(c => c.id === npcId);
+      if (cfg?.balloonColor) return cfg.balloonColor;
+      if (isFestieNpcId(npcId)) {
+        const festieId = festieIdFromNpcId(npcId);
+        if (festieId) {
+          const festie = mpRef.current?.festies.find(f => f.id === festieId);
+          if (festie) {
+            const preset = festiePresetById(festie.preset);
+            return preset.balloonColor;
+          }
+          const owner = ownerFestieRef.current;
+          if (owner?.id === festieId) {
+            const preset = festiePresetById(owner.preset);
+            return preset.balloonColor;
+          }
+        }
+      }
+    }
+    if (sender.startsWith('user:')) {
+      const label = sender.slice(5);
+      const selfName = profileRef.current.name?.trim();
+      if (selfName && label === selfName) return profileRef.current.balloonColor;
+      const m = mpRef.current;
+      if (m?.selfId && (label === m.selfId || m.selfId.startsWith(label))) {
+        return profileRef.current.balloonColor;
+      }
+      for (const [, st] of m?.remoteStateRef.current ?? []) {
+        const n = st.name?.trim();
+        if (n && n === label) return st.balloonColor;
+      }
+    }
+    return undefined;
+  }, []);
 
   const festieDimNpcIds = useMemo(() => {
     const ids = new Set<string>();
@@ -985,6 +963,7 @@ export default function SFCity({
   const ownerOnline = festieSignedIn && Boolean(mp.selfId);
 
   const roomChatter = useRoomChatter(resolvePlayerId);
+  const stageChatter = useStageChatter();
 
   useEffect(() => {
     setNpcConvoReleaseListener(() => setConvoHoldTick(t => t + 1));
@@ -1003,7 +982,12 @@ export default function SFCity({
   const ownerFestieNpcId = ownerFestie?.id ? festieNpcId(ownerFestie.id) : null;
 
   chatterHandlersRef.current = {
-    onRoomChat: (sender, text) => {
+    onStageChatterHistory: messages => stageChatter.loadHistory(messages),
+    onRoomTyping: (sender, typing) => stageChatter.setTyping(sender, typing),
+    onRoomChat: (sender, text, ts) => {
+      if (!shouldExcludeFromStageChatter(sender, text)) {
+        stageChatter.appendMessage(sender, text, ts);
+      }
       if (sender.startsWith('npc:')) {
         const npcId = sender.slice(4);
         if (npcId === ownerFestieNpcId) {
@@ -1019,6 +1003,9 @@ export default function SFCity({
       roomChatter.handleRoomChat(sender, text);
     },
     onNpcConvoStart: (convoId, participants, _meta) => {
+      for (const npcId of participants) {
+        stageChatter.setTyping(`npc:${npcId}`, true);
+      }
       const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
       const isMobile = width <= 767;
       const snapOpts = isMobile
@@ -1044,8 +1031,14 @@ export default function SFCity({
 
       roomChatter.onNpcConvoStart(convoId, participants);
     },
-    onNpcLine: (convoId, npc, text) => {
+    onNpcLine: (convoId, npc, text, ts) => {
+      stageChatter.appendMessage(`npc:${npc}`, text, ts);
+      stageChatter.setTyping(`npc:${npc}`, false);
       const pair = mpRef.current?.npcConvoPairs.find(p => p.convoId === convoId);
+      if (pair) {
+        const otherNpc = pair.participants.find(id => id !== npc);
+        if (otherNpc) stageChatter.setTyping(`npc:${otherNpc}`, true);
+      }
       if (pair) {
         const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
         const isMobile = width <= 767;
@@ -1076,6 +1069,10 @@ export default function SFCity({
       roomChatter.handleNpcLine(convoId, npc, text, pair?.participants);
     },
     onNpcConvoEnd: (convoId) => {
+      const pair = mpRef.current?.npcConvoPairs.find(p => p.convoId === convoId);
+      for (const npcId of pair?.participants ?? []) {
+        stageChatter.setTyping(`npc:${npcId}`, false);
+      }
       roomChatter.onNpcConvoEnd(convoId);
       const stillActive = mpRef.current?.npcConvoPairs.some(p => p.convoId !== convoId);
       if (!stillActive) releaseNpcConvoSnap();
@@ -1571,6 +1568,23 @@ export default function SFCity({
     showPlayerAmbient(filtered.text);
     mpRef.current?.sendAmbientMessage(filtered.text);
   };
+
+  const handleStageChatterSend = useCallback((text: string) => {
+    const filtered = filterChatMessage(text);
+    if (!filtered.ok) return;
+    const label = playerName?.trim() || mpRef.current?.selfId?.slice(0, 8) || 'festie';
+    const sender = `user:${label}`;
+    stageChatter.setTyping(sender, false);
+    roomChatter.handleRoomChat(sender, filtered.text);
+    mpRef.current?.sendRoomChat(filtered.text);
+  }, [playerName, roomChatter, stageChatter.setTyping]);
+
+  const handleStageChatterTyping = useCallback((typing: boolean) => {
+    const label = playerName?.trim() || mpRef.current?.selfId?.slice(0, 8) || 'festie';
+    const sender = `user:${label}`;
+    stageChatter.setTyping(sender, typing);
+    mpRef.current?.sendRoomTyping(typing);
+  }, [playerName, stageChatter.setTyping]);
 
   const handleWelcomeEnter = (name: string, target: StagePickerTarget) => {
     saveSessionPlayerName(name);
@@ -2155,6 +2169,13 @@ export default function SFCity({
     greetingNpc !== null && isBuzNpc(effectiveNpcCast[greetingNpc]?.id ?? '');
   const showVendorPanel =
     vendorShopManualOpen || (showVendorShop && !vendorShopDismissed);
+  const showStageChatterPanel =
+    !homePreview
+    && !showWelcome
+    && !showCityPicker
+    && !stageSettingsOpen
+    && !showVendorPanel
+    && !isChatterDebugMode();
 
   useEffect(() => {
     if (!showVendorShop) setVendorShopDismissed(false);
@@ -2386,7 +2407,7 @@ export default function SFCity({
           />
         )}
 
-        {!homePreview && npcPairOverlay}
+        {!homePreview && mobileDevice && npcPairOverlay}
 
         {!homePreview && crowdVisualsReady && (TEST_PLAYER_VARIANT_GALLERY ? (
           <PlayerVariantGallery
@@ -2467,18 +2488,6 @@ export default function SFCity({
         />
       )}
 
-      {sessionRecapOpen && sessionRecap && ownerFestie && (
-        <FestieSessionRecapOverlay
-          festie={ownerFestie}
-          festieName={ownerFestie.name ?? playerName ?? 'Your festie'}
-          recap={sessionRecap}
-          isMobile={mobileDevice}
-          onFestieUpdated={festie => setOwnerFestie(festie)}
-          onDismiss={dismissSessionRecap}
-          forceShowEmailSignup={TEST_FESTIE_RECAP_ON_LOAD}
-        />
-      )}
-
       <BottomControlPanel
         worldOff={midScrollWorldOff}
         playerName={playerName}
@@ -2492,7 +2501,7 @@ export default function SFCity({
         }
         hidden={showWelcome || showCityPicker || stageSettingsOpen || isChatterDebugMode()}
         onConnectTap={mobileDevice ? () => connectNearRef.current?.() : undefined}
-        onOpenCityPicker={undefined}
+        onOpenCityPicker={() => setShowCityPicker(true)}
         onOpenStageSettings={
           isCreatorStageOwner ? () => setStageSettingsOpen(true) : undefined
         }
@@ -2542,8 +2551,18 @@ export default function SFCity({
           ownerOnline={ownerOnline}
           refillFrom={lifeRefillFromRef.current}
           initialTab={settingsInitialTab}
-          sessionRecap={sessionRecap}
           onUpdated={festie => setOwnerFestie(festie)}
+        />
+      )}
+
+      {showStageChatterPanel && (
+        <StageChatterPanel
+          messages={stageChatter.messages}
+          typingSenders={stageChatter.typingSenders}
+          resolveName={resolveStageChatterName}
+          resolveGlow={resolveStageChatterGlow}
+          onSend={handleStageChatterSend}
+          onTypingChange={handleStageChatterTyping}
         />
       )}
 
@@ -2593,8 +2612,7 @@ export default function SFCity({
               creatorStage?.slug ?? null,
             ) ?? { kind: 'venue', route: effectiveVenueRoute },
           }}
-          onAuthSuccess={(name, sessionRecap) => {
-            openSessionRecap(sessionRecap ?? null, false, name);
+          onAuthSuccess={name => {
             void hydratePlayerSession().then(profile => {
               setFestieSignedIn(profile.authenticated);
               if (profile.festie) setOwnerFestie(profile.festie);
@@ -2644,7 +2662,7 @@ export default function SFCity({
               whiteSpace: 'nowrap',
             }}
           >
-            Create Your Stage
+            Create New Stage
           </Link>
         )}
         {festieSignedIn && (
@@ -2697,7 +2715,7 @@ export default function SFCity({
           vendorShopOpen={vendorShopManualOpen}
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
-          onOpenStageSwap={undefined}
+          onOpenStageSwap={() => setShowCityPicker(true)}
           onOpenStageSettings={
             isCreatorStageOwner ? () => setStageSettingsOpen(true) : undefined
           }
@@ -2706,7 +2724,6 @@ export default function SFCity({
           ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}
           onToggleMute={() => setMuted(m => !m)}
           showMute={false}
-          showStageSwap={false}
           showCreateStage={showCreateStageButton}
         />
       )}

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Character from './Character';
 import { MobileStageCard } from './MobileStageCard';
 import { createFestie, loginFestie } from '@/lib/festie/client';
-import type { FestieSessionRecap } from '@/lib/festie/sessionRecap';
 import { resolveSignInDestination, type SignInFrom } from '@/lib/lastUsedStage';
 import {
   buildStagePickerOptions,
@@ -35,7 +34,7 @@ type Props = {
   pickStageOnly?: boolean;
   /** Sign-in redirect — stay on current stage, or last used from home. */
   signInFrom?: SignInFrom;
-  onAuthSuccess?: (name: string, sessionRecap?: FestieSessionRecap | null) => void;
+  onAuthSuccess?: (name: string) => void;
   onFestieCreated?: () => void;
   initialName?: string;
 };
@@ -272,8 +271,8 @@ export function WelcomePopup({
 
     try {
       if (authIntent === 'signin') {
-        const { festie, sessionRecap } = await loginFestie(draft.trim(), password);
-        onAuthSuccess?.(festie.name, sessionRecap);
+        const { festie } = await loginFestie(draft.trim(), password);
+        onAuthSuccess?.(festie.name);
         const target = resolveSignInDestination(signInFrom, festie.stage_slug);
         if (!target) {
           setError('No stage found — pick a stage from the homepage first.');

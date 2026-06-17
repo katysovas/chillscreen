@@ -1,5 +1,5 @@
 import type { RoomChatLine } from './prompts';
-import { CHAT_BUFFER_SIZE, PROMPT_WINDOW_LINES } from './constants';
+import { CHAT_BUFFER_SIZE, PROMPT_WINDOW_LINES, STAGE_CHATTER_PROMPT_LINES } from './constants';
 import { CHAT_MESSAGE_MAX_LEN } from '@/lib/messageFilter';
 
 const MAX_TRIGGER_LEN = 200;
@@ -22,6 +22,10 @@ export function sanitizeRecentChat(raw: unknown): RoomChatLine[] {
     })
     .filter((l): l is RoomChatLine => l !== null)
     .slice(-CHAT_BUFFER_SIZE);
+}
+
+export function sanitizeStageRecentChat(raw: unknown): RoomChatLine[] {
+  return sanitizeRecentChat(raw).slice(-STAGE_CHATTER_PROMPT_LINES);
 }
 
 export function clampLineBudget(n: number): number {

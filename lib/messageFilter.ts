@@ -58,9 +58,17 @@ export function scrubProfanity(text: string): string {
     .trim();
 }
 
+/** Remove sentence-ending periods — NPC chat voice never uses dots. Keeps ? ! and decimals (3.5). */
+export function stripNpcChatterDots(text: string): string {
+  return text
+    .replace(/(?<!\d)\.(?!\d)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Scrub profanity; return null if nothing usable remains. */
 export function sanitizeNpcLine(text: string, minLen = 3): string | null {
-  const scrubbed = scrubProfanity(text.trim());
+  const scrubbed = stripNpcChatterDots(scrubProfanity(text.trim()));
   if (scrubbed.length < minLen || hasProfanity(scrubbed)) return null;
   return scrubbed;
 }

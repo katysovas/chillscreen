@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** POST — PartyKit: owner left. Session cookie: ack recap while still in-game. */
+/** POST — PartyKit: owner left. Session cookie: refresh last_seen while still in-game. */
 export async function POST(request: Request) {
   if (!getDb()) {
     return NextResponse.json({ error: 'DATABASE_URL is not configured' }, { status: 503 });

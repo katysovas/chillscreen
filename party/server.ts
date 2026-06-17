@@ -103,6 +103,10 @@ export default class WhichStageServer implements Party.Server {
       npcLeaderId: this.npcLeaderId,
     };
     conn.send(encode(welcome));
+    void this.chatter.getStageChatterHistory().then(messages => {
+      if (messages.length === 0) return;
+      conn.send(encode({ t: 'stage-chatter-history', messages }));
+    });
     this.easels.syncToClient(msg => conn.send(encode(msg)));
   }
 
@@ -229,6 +233,15 @@ export default class WhichStageServer implements Party.Server {
         const player = this.players.get(sender.id);
         const label = player?.name?.trim() || sender.id.slice(0, 8);
         this.chatter.handleRoomChat(`user:${label}`, filtered.text);
+        break;
+      }
+      case 'room-typing': {
+        const player = this.players.get(sender.id);
+        const label = player?.name?.trim() || sender.id.slice(0, 8);
+        this.room.broadcast(
+          encode({ t: 'room-typing', sender: `user:${label}`, typing: msg.typing }),
+          [sender.id],
+        );
         break;
       }
       case 'ambient-msg': {

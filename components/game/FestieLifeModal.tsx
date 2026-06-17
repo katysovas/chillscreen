@@ -89,7 +89,6 @@ export function FestieLifeModal({
               festie={festie}
               onUpdated={onUpdated}
               inputId="festie-life-email"
-              variant="panel"
             />
           </div>
         )}

@@ -74,6 +74,7 @@ Rules for each seed:
 - no profanity, slurs, or curse words
 - no quotes, emoji, or name prefixes
 - max ~25 words
+- never end with a period or dot
 - do not copy headlines verbatim — rephrase as a take people would argue about
 
 Style examples:

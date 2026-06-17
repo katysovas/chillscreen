@@ -1,9 +1,11 @@
 import { ierror, ilog, iwarn } from '@/lib/internalDebug';
 import { activeDemoSeed } from '@/lib/npcChatter/demoSeed';
+import { isDuplicateNpcChatterText, roomLinesForNpcDedup } from '@/lib/npcChatter/dedup';
 import { sanitizeNpcLine } from '@/lib/messageFilter';
 import { resolveNpcRosterEntry } from '@/lib/npcRoster.server';
 import type { RoomChatLine } from './prompts';
-import { buildLineSystemPrompt, buildSingleReplySystemPrompt } from './prompts';
+import { buildLineSystemPrompt, buildSingleReplySystemPrompt, buildStageChatterSystemPrompt } from './prompts';
+import { pickStageChatterIntent, pickLineLengthHint, type StageChatterIntent } from './constants';
 import { resolveModel } from './models';
 import { completeNpcLine } from './completeLine';
 import type { ChatMessage } from './openrouter';
@@ -63,6 +65,7 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
       seed,
       isResponderB: !isA,
       openingStance: isA && isOpener ? openingStance : undefined,
+      lengthHint: pickLineLengthHint(),
     });
 
     const messages: ChatMessage[] = [{ role: 'system', content: system }];
@@ -78,8 +81,21 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
       ilog(`[npc-chatter] opener stance: ${openingStance}`);
     }
     ilog(`[npc-chatter] line ${i + 1}/${req.lineBudget} ${speaker.id} → ${model}`);
-    const raw = await completeNpcLine(model, messages, req.houseModel);
-    const text = raw ? sanitizeNpcLine(raw) : null;
+    const dedupLines = roomLinesForNpcDedup(speaker.id, req.recentChat, transcript);
+    let raw: string | null = null;
+    let text: string | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      raw = await completeNpcLine(model, messages, req.houseModel);
+      text = raw ? sanitizeNpcLine(raw) : null;
+      if (!text) break;
+      if (!isDuplicateNpcChatterText(speaker.id, text, dedupLines)) break;
+      iwarn('[npc-chatter] duplicate pair line skipped, retrying', {
+        speaker: speaker.id,
+        text: text.slice(0, 80),
+        attempt,
+      });
+      text = null;
+    }
     if (!text) {
       ierror('[npc-chatter] pair line failed', {
         speaker: speaker.id,
@@ -99,6 +115,59 @@ export async function generatePairConvo(req: PairConvoRequest): Promise<NpcChatt
   return lines;
 }
 
+export type StageChatterRequest = {
+  stage: string;
+  npc: string;
+  recentChat: RoomChatLine[];
+  streamTitle: string | null;
+  channelName: string;
+  houseModel: string;
+  intent?: StageChatterIntent;
+};
+
+export async function generateStageChatterReply(req: StageChatterRequest): Promise<NpcChatterLine | null> {
+  const npc = await resolveNpcRosterEntry(req.npc);
+  if (!npc) return null;
+
+  const intent = req.intent ?? pickStageChatterIntent();
+  const system = buildStageChatterSystemPrompt({
+    npc,
+    stage: req.stage,
+    streamTitle: req.streamTitle,
+    channelName: req.channelName,
+    recentChat: req.recentChat,
+    intent,
+    lengthHint: pickLineLengthHint(),
+  });
+
+  const model = resolveModel(npc.modelId, req.houseModel);
+  const dedupLines = roomLinesForNpcDedup(npc.id, req.recentChat);
+  let text: string | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const raw = await completeNpcLine(
+      model,
+      [{ role: 'system', content: system }],
+      req.houseModel,
+    );
+    const cleaned = raw ? sanitizeNpcLine(raw) : null;
+    if (!cleaned) break;
+    if (!isDuplicateNpcChatterText(npc.id, cleaned, dedupLines)) {
+      text = cleaned;
+      break;
+    }
+    iwarn('[npc-chatter] duplicate stage reply skipped, retrying', {
+      npc: req.npc,
+      text: cleaned.slice(0, 80),
+      attempt,
+    });
+  }
+  if (!text) {
+    ierror('[npc-chatter] stage reply generation failed', { npc: req.npc, model });
+    return null;
+  }
+  return { npc: npc.id, text };
+}
+
 export async function generateSingleReply(req: SingleReplyRequest): Promise<NpcChatterLine | null> {
   const npc = await resolveNpcRosterEntry(req.npc);
   if (!npc) return null;
@@ -110,18 +179,33 @@ export async function generateSingleReply(req: SingleReplyRequest): Promise<NpcC
     channelName: req.channelName,
     recentChat: req.recentChat,
     triggerText: req.triggerText,
+    lengthHint: pickLineLengthHint(),
   });
 
   const model = resolveModel(npc.modelId, req.houseModel);
-  const text = await completeNpcLine(
-    model,
-    [{ role: 'system', content: system }],
-    req.houseModel,
-  );
-  const cleaned = text ? sanitizeNpcLine(text) : null;
-  if (!cleaned) {
+  const dedupLines = roomLinesForNpcDedup(npc.id, req.recentChat);
+  let text: string | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const raw = await completeNpcLine(
+      model,
+      [{ role: 'system', content: system }],
+      req.houseModel,
+    );
+    const cleaned = raw ? sanitizeNpcLine(raw) : null;
+    if (!cleaned) break;
+    if (!isDuplicateNpcChatterText(npc.id, cleaned, dedupLines)) {
+      text = cleaned;
+      break;
+    }
+    iwarn('[npc-chatter] duplicate single reply skipped, retrying', {
+      npc: req.npc,
+      text: cleaned.slice(0, 80),
+      attempt,
+    });
+  }
+  if (!text) {
     ierror('[npc-chatter] single reply generation failed', { npc: req.npc, model });
     return null;
   }
-  return { npc: npc.id, text: cleaned };
+  return { npc: npc.id, text };
 }
