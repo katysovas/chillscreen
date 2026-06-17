@@ -13,6 +13,13 @@ export function streamChannelMarquee(stream: StageStream, maxLen = 34): string {
   return `${name.slice(0, maxLen - 1).trimEnd()}…`.toUpperCase();
 }
 
+/** Trim long labels with an ellipsis (preserves original casing). */
+export function truncateWithEllipsis(text: string, maxLen = 52): string {
+  const trimmed = text?.trim() ?? '';
+  if (!trimmed || trimmed.length <= maxLen) return trimmed;
+  return `${trimmed.slice(0, maxLen - 1).trimEnd()}…`;
+}
+
 /** Short uppercase strip for the on-stage marquee (video title). */
 export function streamTitleMarquee(stream: StageStream, maxLen = 34): string {
   const title = stream.title?.trim() ?? '';

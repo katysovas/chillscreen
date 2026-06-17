@@ -5,6 +5,7 @@ import {
   areLoadoutItemsReady,
   equippedLoadoutItemIds,
   getLoadoutRegistryVersion,
+  isLoadoutHandMounted,
   GlowstickAmbient,
   GLOWSTICK_AMBIENT_TWEAK,
   ConfettiAmbient,
@@ -291,7 +292,11 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     || (loadout ? hasConfettiEquipped(loadout) : false);
   const fireworksActive = loadout ? hasFireworksEquipped(loadout) : false;
 
-  if (!propsReady) return null;
+  const hasHandProp = propsReady && holdRight && (
+    effectiveLoadout?.hand
+      ? isLoadoutHandMounted(effectiveLoadout)
+      : Boolean(accessory)
+  );
 
   return (
     <div
@@ -310,7 +315,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
       }}>
         <div
           ref={wrapperRef}
-          className={`ch-wrapper${outfit ? ` ch-outfit-${outfit}` : ''}${spaceFloat ? ' ch-space-float' : ''}${!spaceFloat && walking ? ' ch-walking' : ''}${spaceFloat && walking ? ' ch-space-float-moving' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
+          className={`ch-wrapper${outfit ? ` ch-outfit-${outfit}` : ''}${hasHandProp ? ' ch-hand-prop' : ''}${spaceFloat ? ' ch-space-float' : ''}${!spaceFloat && walking ? ' ch-walking' : ''}${spaceFloat && walking ? ' ch-space-float-moving' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
         >
           <div className="ch-animal">
             {equipped
@@ -333,9 +338,9 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
                 <div className="ch-left-hand"><span /><span /></div>
                 <div className="ch-right-hand">
                   <span /><span />
-                  {equipped
+                  {propsReady && (equipped
                     ? renderLoadoutHand(equipped)
-                    : renderAccessorySlot('hand', accessory, balloonColor)}
+                    : renderAccessorySlot('hand', accessory, balloonColor))}
                 </div>
               </div>
               {equipped && renderLoadoutBottom(equipped)}

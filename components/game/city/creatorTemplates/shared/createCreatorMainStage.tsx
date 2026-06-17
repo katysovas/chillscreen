@@ -60,6 +60,38 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
   const spkCabId = `${C.idPrefix}-spk-cab`;
   const spkConeId = `${C.idPrefix}-spk-cone`;
 
+  // ---------------------------------------------------------------------------
+  // Animation CSS. All keyframes are stage-prefixed to avoid cross-tile
+  // collisions. Transform/opacity only — no SMIL, no paint-triggering props.
+  // The rotating beams get their own compositor layers (will-change) so the
+  // rotation composites instead of repainting the backdrop. Pausing: add the
+  // `${P}-paused` class to the root group (e.g. from an IntersectionObserver)
+  // to freeze every animation under it.
+  // ---------------------------------------------------------------------------
+  const P = C.idPrefix;
+  const animRoot = `${P}-stageAnim`;
+
+  const beamKeyframes = BEAMS.map(
+    (b, i) =>
+      `@keyframes ${P}-beam${i}{0%,100%{transform:rotate(${b.a1}deg)}50%{transform:rotate(${b.a2}deg)}}`,
+  ).join('');
+
+  const STAGE_ANIM_CSS = `
+.${P}-spin{transform-box:fill-box;transform-origin:center top;will-change:transform}
+.${P}-ctr{transform-box:fill-box;transform-origin:center;will-change:transform,opacity}
+.${P}-paused *{animation-play-state:paused!important}
+${beamKeyframes}
+@keyframes ${P}-beamFade{0%,100%{opacity:.12}50%{opacity:.34}}
+@keyframes ${P}-haze{0%,100%{opacity:.65}50%{opacity:1}}
+@keyframes ${P}-lens{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes ${P}-twinkle{0%,100%{opacity:0}50%{opacity:1}}
+@keyframes ${P}-dash{0%,100%{opacity:.5}50%{opacity:.95}}
+@keyframes ${P}-border{0%,100%{opacity:.55}50%{opacity:.85}}
+@keyframes ${P}-screenPulse{0%,100%{transform:scale(.9);opacity:.7}50%{transform:scale(1.06);opacity:1}}
+@keyframes ${P}-spkTopPulse{0%,100%{opacity:.26}50%{opacity:.96}}
+@media (prefers-reduced-motion: reduce){.${animRoot} *{animation:none!important}}
+`;
+
   function CreatorStageShell({ idleScreen = true }: StageShellProps) {
     const deck = GND;
     const creator = useOptionalCreatorStage();
@@ -70,8 +102,9 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
 
     return (
       <>
-        <g transform={`translate(0, ${pushY})`}>
+        <g className={animRoot} transform={`translate(0, ${pushY})`}>
           <g transform={`translate(${ox},${oy}) scale(${S}) translate(${-ox},${-oy})`}>
+            <style>{STAGE_ANIM_CSS}</style>
             <defs>
               <radialGradient id={hazeId} cx="50%" cy="28%" r="65%">
                 <stop offset="0%" stopColor={C.WHICH_NEON.cyan} stopOpacity={0.14} />
@@ -111,9 +144,14 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
               </radialGradient>
             </defs>
 
-            <ellipse cx={cx} cy={deck - 120} rx={rigW * 0.55} ry={140} fill={`url(#${hazeId})`} opacity={0.85}>
-              <animate attributeName="opacity" values="0.65;1;0.65" dur="7s" repeatCount="indefinite" />
-            </ellipse>
+            <ellipse
+              cx={cx}
+              cy={deck - 120}
+              rx={rigW * 0.55}
+              ry={140}
+              fill={`url(#${hazeId})`}
+              style={{ animation: `${P}-haze 7s ease-in-out infinite` }}
+            />
 
             {[cx - 210, cx + 210].map((tx, i) => (
               <CreatorSpeakerTower
@@ -123,35 +161,32 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
                 coneGradId={spkConeId}
                 strokeColor={isChill ? 'rgba(46,61,69,0.55)' : 'rgba(56,245,176,.22)'}
                 accentColor={C.WHICH_NEON.green}
+                topPulseClass={isCinema ? `${P}-spkTopPulse` : undefined}
+                topPulseAnim={isCinema ? `${P}-spkTopPulse 2.8s ease-in-out infinite` : undefined}
+                topPulseDelay={isCinema ? `${i * 1.4}s` : undefined}
               />
             ))}
 
+            {/* Light beams: no mixBlendMode (was recompositing the whole backdrop
+                every frame). Rotation + fade are CSS transform/opacity now, and
+                each beam is promoted to its own layer via the `${P}-spin` class. */}
             {BEAMS.map((b, i) => (
               <g key={i} transform={`translate(${b.x},${trussY + 14})`}>
                 <polygon
+                  className={`${P}-spin`}
                   points="-28,200 0,0 28,200"
                   fill={`url(#${beamId})`}
-                  opacity={0.35}
-                  style={{ mixBlendMode: 'screen' }}
-                >
-                  <animateTransform
-                    attributeName="transform"
-                    type="rotate"
-                    values={`${b.a1} 0 0;${b.a2} 0 0;${b.a1} 0 0`}
-                    dur={`${b.dur}s`}
-                    repeatCount="indefinite"
-                  />
-                  <animate attributeName="opacity" values="0.12;0.48;0.12" dur={`${b.dur * 0.65}s`} repeatCount="indefinite" />
-                </polygon>
-                <polygon points="-14,200 0,0 14,200" fill={b.c} opacity={0.28} style={{ mixBlendMode: 'screen' }}>
-                  <animateTransform
-                    attributeName="transform"
-                    type="rotate"
-                    values={`${b.a1} 0 0;${b.a2} 0 0;${b.a1} 0 0`}
-                    dur={`${b.dur}s`}
-                    repeatCount="indefinite"
-                  />
-                </polygon>
+                  style={{
+                    animation: `${P}-beam${i} ${b.dur}s ease-in-out infinite, ${P}-beamFade ${(b.dur * 0.65).toFixed(2)}s ease-in-out infinite`,
+                  }}
+                />
+                <polygon
+                  className={`${P}-spin`}
+                  points="-14,200 0,0 14,200"
+                  fill={b.c}
+                  opacity={0.32}
+                  style={{ animation: `${P}-beam${i} ${b.dur}s ease-in-out infinite` }}
+                />
               </g>
             ))}
 
@@ -189,14 +224,23 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
             )}
             {LENS_COLORS.map((col, i) => {
               const lx = cx - rigW / 2 + 36 + i * ((rigW - 72) / (LENS_COLORS.length - 1));
+              const lensDur = (2 + i * 0.35).toFixed(2);
               return (
                 <g key={i}>
                   {isChill && (
                     <circle cx={lx} cy={trussY + 11} r={9} fill="none" stroke="rgba(46,61,69,0.5)" strokeWidth={1} />
                   )}
-                  <circle cx={lx} cy={trussY + 11} r={7} fill={col} filter={`url(#${glowId})`} opacity={0.9}>
-                    <animate attributeName="opacity" values="1;0.45;1" dur={`${2 + i * 0.35}s`} repeatCount="indefinite" />
-                  </circle>
+                  {/* Static pre-blurred halo: filter runs ONCE, never re-runs while
+                      animating (was the per-frame paint cost on the old lenses). */}
+                  <circle cx={lx} cy={trussY + 11} r={7} fill={col} filter={`url(#${glowId})`} opacity={0.5} />
+                  {/* Sharp core carries the flicker via opacity only — no filter. */}
+                  <circle
+                    cx={lx}
+                    cy={trussY + 11}
+                    r={7}
+                    fill={col}
+                    style={{ animation: `${P}-lens ${lensDur}s ease-in-out infinite` }}
+                  />
                   <circle cx={lx} cy={trussY + 11} r={3.5} fill="#fff" opacity={0.85} />
                 </g>
               );
@@ -248,6 +292,10 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
               stroke={isChill ? 'rgba(46,61,69,0.65)' : C.WHICH_NEON.edge}
               strokeWidth={2}
             />
+            {/* Screen frame glow: was cycling `stroke` color (a paint property,
+                full repaint every frame). Now a single green border with an
+                opacity pulse. If you want the rainbow back without paint, stack
+                cyan/magenta rects and cross-fade their opacity. */}
             <rect
               x={scrX - 4}
               y={scrY - 4}
@@ -257,12 +305,9 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
               fill="none"
               stroke={C.WHICH_NEON.green}
               strokeWidth={1.5}
-              opacity={isChill ? 0.55 : 0.75}
-            >
-              {!isChill && (
-                <animate attributeName="stroke" values={`${C.WHICH_NEON.green};${C.WHICH_NEON.cyan};${C.WHICH_NEON.magenta};${C.WHICH_NEON.green}`} dur="6s" repeatCount="indefinite" />
-              )}
-            </rect>
+              opacity={isChill ? 0.55 : undefined}
+              style={!isChill ? { animation: `${P}-border 6s ease-in-out infinite` } : undefined}
+            />
             <rect x={scrX} y={scrY} width={scrW} height={scrH} rx={6} fill="#020a07" stroke="#1b2a22" strokeWidth={2} />
 
             {idleScreen && (
@@ -285,10 +330,18 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
                     fill="rgba(255,255,255,.08)"
                   />
                 ))}
-                <circle cx={cx} cy={scrY + scrH / 2} r={36} fill="none" stroke={C.WHICH_NEON.green} strokeWidth={2} opacity={0.85}>
-                  <animate attributeName="r" values="32;38;32" dur="2.4s" repeatCount="indefinite" />
-                  <animate attributeName="opacity" values="0.7;1;0.7" dur="2.4s" repeatCount="indefinite" />
-                </circle>
+                {/* Idle play ring: was animating `r` (geometry → repaint). Now a
+                    transform scale + opacity pulse around the circle's center. */}
+                <circle
+                  className={`${P}-ctr`}
+                  cx={cx}
+                  cy={scrY + scrH / 2}
+                  r={36}
+                  fill="none"
+                  stroke={C.WHICH_NEON.green}
+                  strokeWidth={2}
+                  style={{ animation: `${P}-screenPulse 2.4s ease-in-out infinite` }}
+                />
                 <polygon
                   points={`${cx + 8},${scrY + scrH / 2 - 14} ${cx + 8},${scrY + scrH / 2 + 14} ${cx + 28},${scrY + scrH / 2}`}
                   fill={C.WHICH_NEON.green}
@@ -306,10 +359,8 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
               stroke={C.WHICH_NEON.green}
               strokeWidth={2}
               strokeDasharray="4 22"
-              opacity={0.75}
-            >
-              <animate attributeName="opacity" values="0.5;0.95;0.5" dur="3s" repeatCount="indefinite" />
-            </line>
+              style={{ animation: `${P}-dash 3s ease-in-out infinite` }}
+            />
 
             <path
               d={`M${cx - rigW / 2 - 40},${deck + 18}
@@ -321,6 +372,8 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
                 L${cx + rigW / 2 + 40},${deck + 28} L${cx - rigW / 2 - 40},${deck + 36} Z`}
               fill="#010604"
             />
+            {/* Footlight twinkle: opacity-only CSS, staggered so they don't blink
+                in lockstep. */}
             {Array.from({ length: 14 }, (_, i) => (
               <circle
                 key={i}
@@ -328,10 +381,11 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
                 cy={deck + 10 + (i % 3) * 5}
                 r={2.2}
                 fill="#bdfff0"
-                opacity={0.8}
-              >
-                <animate attributeName="opacity" values="0;1;0" dur={`${2.3 + (i % 5) * 0.3}s`} repeatCount="indefinite" />
-              </circle>
+                style={{
+                  animation: `${P}-twinkle ${(2.3 + (i % 5) * 0.3).toFixed(2)}s ease-in-out infinite`,
+                  animationDelay: `${((i % 5) * 0.4).toFixed(2)}s`,
+                }}
+              />
             ))}
           </g>
         </g>

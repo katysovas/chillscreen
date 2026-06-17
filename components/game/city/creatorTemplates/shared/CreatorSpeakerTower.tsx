@@ -11,6 +11,10 @@ type Props = {
   coneGradId: string;
   strokeColor: string;
   accentColor: string;
+  /** Optional — very light opacity pulse on the top driver only. */
+  topPulseClass?: string;
+  topPulseAnim?: string;
+  topPulseDelay?: string;
 };
 
 /** Stacked PA cabinet with visible drivers (creator stage side towers). */
@@ -20,7 +24,11 @@ export function CreatorSpeakerTower({
   coneGradId,
   strokeColor,
   accentColor,
+  topPulseClass,
+  topPulseAnim,
+  topPulseDelay,
 }: Props) {
+  const topPulse = Boolean(topPulseClass && topPulseAnim);
   const towerH = (SECTIONS - 1) * CELL_PITCH + CELL_H;
   const ringR = CONE_R + 2;
 
@@ -100,13 +108,18 @@ export function CreatorSpeakerTower({
             />
             <circle cx={TOWER_CX} cy={cy} r={CONE_R * 0.2} fill="#243830" />
             <circle
+              className={topPulse && j === 0 ? topPulseClass : undefined}
               cx={TOWER_CX}
               cy={cy}
               r={ringR + 0.5}
               fill="none"
               stroke={accentColor}
               strokeWidth={0.6}
-              opacity={0.35}
+              opacity={topPulse && j === 0 ? undefined : 0.35}
+              style={topPulse && j === 0 ? {
+                animation: topPulseAnim,
+                animationDelay: topPulseDelay,
+              } : undefined}
             />
           </g>
         );

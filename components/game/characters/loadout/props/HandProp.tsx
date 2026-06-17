@@ -3,6 +3,7 @@ import { LightsaberAccessory } from '../../accessories/lightsaber/accessory';
 import { MicrophoneAccessory } from '../../accessories/microphone/accessory';
 import { PirateSwordAccessory } from '../../pirate/accessory';
 import type { LoadoutRenderCtx } from '../types';
+import { handPropRotateStyle } from './handPropRotateStyle';
 
 const BOOMBOX_SRC = '/images/props/hands_boombox.svg';
 const BALLOONS_SRC = '/images/props/hands_balloons.svg';
@@ -53,255 +54,140 @@ export function HandProp({ variant, ctx }: HandPropProps) {
       return <PirateSwordAccessory />;
     case 'boombox':
       return (
-        <div className="ch-lo-boombox">
-          <img
-            src={BOOMBOX_SRC}
-            alt=""
-            className="ch-lo-boombox-img"
-            draggable={false}
-          />
+        <div className="ch-lo-boombox" style={handPropRotateStyle('boombox')}>
+          <img src={BOOMBOX_SRC} alt="" className="ch-lo-boombox-img" draggable={false} />
         </div>
       );
     case 'balloons':
       return (
-        <div className="ch-lo-balloons">
-          <img
-            src={BALLOONS_SRC}
-            alt=""
-            className="ch-lo-balloons-img"
-            draggable={false}
-          />
+        <div className="ch-lo-balloons" style={handPropRotateStyle('balloons')}>
+          <img src={BALLOONS_SRC} alt="" className="ch-lo-balloons-img" draggable={false} />
         </div>
       );
     case 'balloons2':
       return (
-        <div className="ch-lo-balloons-2">
-          <img
-            src={BALLOONS_2_SRC}
-            alt=""
-            className="ch-lo-balloons-2-img"
-            draggable={false}
-          />
+        <div className="ch-lo-balloons-2" style={handPropRotateStyle('balloons2')}>
+          <img src={BALLOONS_2_SRC} alt="" className="ch-lo-balloons-2-img" draggable={false} />
         </div>
       );
     case 'hotdog':
       return (
-        <div className="ch-lo-hotdog">
-          <img
-            src={HOTDOG_SRC}
-            alt=""
-            className="ch-lo-hotdog-img"
-            draggable={false}
-          />
+        <div className="ch-lo-hotdog" style={handPropRotateStyle('hotdog')}>
+          <img src={HOTDOG_SRC} alt="" className="ch-lo-hotdog-img" draggable={false} />
         </div>
       );
     case 'donut':
       return (
-        <div className="ch-lo-donut">
-          <img
-            src={DONUT_SRC}
-            alt=""
-            className="ch-lo-donut-img"
-            draggable={false}
-          />
+        <div className="ch-lo-donut" style={handPropRotateStyle('donut')}>
+          <img src={DONUT_SRC} alt="" className="ch-lo-donut-img" draggable={false} />
         </div>
       );
     case 'fries':
       return (
-        <div className="ch-lo-fries">
-          <img
-            src={FRIES_SRC}
-            alt=""
-            className="ch-lo-fries-img"
-            draggable={false}
-          />
+        <div className="ch-lo-fries" style={handPropRotateStyle('fries')}>
+          <img src={FRIES_SRC} alt="" className="ch-lo-fries-img" draggable={false} />
         </div>
       );
     case 'pizza':
       return (
-        <div className="ch-lo-pizza">
-          <img
-            src={PIZZA_SRC}
-            alt=""
-            className="ch-lo-pizza-img"
-            draggable={false}
-          />
+        <div className="ch-lo-pizza" style={handPropRotateStyle('pizza')}>
+          <img src={PIZZA_SRC} alt="" className="ch-lo-pizza-img" draggable={false} />
         </div>
       );
     case 'tacos':
       return (
-        <div className="ch-lo-tacos">
-          <img
-            src={TACOS_SRC}
-            alt=""
-            className="ch-lo-tacos-img"
-            draggable={false}
-          />
+        <div className="ch-lo-tacos" style={handPropRotateStyle('tacos')}>
+          <img src={TACOS_SRC} alt="" className="ch-lo-tacos-img" draggable={false} />
         </div>
       );
     case 'popcorn':
       return (
-        <div className="ch-lo-popcorn">
-          <img
-            src={POPCORN_SRC}
-            alt=""
-            className="ch-lo-popcorn-img"
-            draggable={false}
-          />
+        <div className="ch-lo-popcorn" style={handPropRotateStyle('popcorn')}>
+          <img src={POPCORN_SRC} alt="" className="ch-lo-popcorn-img" draggable={false} />
         </div>
       );
     case 'lollipop':
       return (
-        <div className="ch-lo-lollipop">
-          <img
-            src={LOLLIPOP_SRC}
-            alt=""
-            className="ch-lo-lollipop-img"
-            draggable={false}
-          />
+        <div className="ch-lo-lollipop" style={handPropRotateStyle('lollipop')}>
+          <img src={LOLLIPOP_SRC} alt="" className="ch-lo-lollipop-img" draggable={false} />
         </div>
       );
     case 'martini':
       return (
-        <div className="ch-lo-martini">
-          <img
-            src={MARTINI_SRC}
-            alt=""
-            className="ch-lo-martini-img"
-            draggable={false}
-          />
+        <div className="ch-lo-martini" style={handPropRotateStyle('martini')}>
+          <img src={MARTINI_SRC} alt="" className="ch-lo-martini-img" draggable={false} />
         </div>
       );
     case 'lemonade':
       return (
-        <div className="ch-lo-lemonade">
-          <img
-            src={LEMONADE_SRC}
-            alt=""
-            className="ch-lo-lemonade-img"
-            draggable={false}
-          />
+        <div className="ch-lo-lemonade" style={handPropRotateStyle('lemonade')}>
+          <img src={LEMONADE_SRC} alt="" className="ch-lo-lemonade-img" draggable={false} />
         </div>
       );
     case 'beer':
       return (
-        <div className="ch-lo-beer">
-          <img
-            src={BEER_SRC}
-            alt=""
-            className="ch-lo-beer-img"
-            draggable={false}
-          />
+        <div className="ch-lo-beer" style={handPropRotateStyle('beer')}>
+          <img src={BEER_SRC} alt="" className="ch-lo-beer-img" draggable={false} />
         </div>
       );
     case 'bottle':
       return (
-        <div className="ch-lo-bottle">
-          <img
-            src={BOTTLE_SRC}
-            alt=""
-            className="ch-lo-bottle-img"
-            draggable={false}
-          />
+        <div className="ch-lo-bottle" style={handPropRotateStyle('bottle')}>
+          <img src={BOTTLE_SRC} alt="" className="ch-lo-bottle-img" draggable={false} />
         </div>
       );
     case 'water':
       return (
-        <div className="ch-lo-water">
-          <img
-            src={WATER_SRC}
-            alt=""
-            className="ch-lo-water-img"
-            draggable={false}
-          />
+        <div className="ch-lo-water" style={handPropRotateStyle('water')}>
+          <img src={WATER_SRC} alt="" className="ch-lo-water-img" draggable={false} />
         </div>
       );
     case 'juice':
       return (
-        <div className="ch-lo-juice">
-          <img
-            src={JUICE_SRC}
-            alt=""
-            className="ch-lo-juice-img"
-            draggable={false}
-          />
+        <div className="ch-lo-juice" style={handPropRotateStyle('juice')}>
+          <img src={JUICE_SRC} alt="" className="ch-lo-juice-img" draggable={false} />
         </div>
       );
     case 'coffee':
       return (
-        <div className="ch-lo-coffee">
-          <img
-            src={COFFEE_SRC}
-            alt=""
-            className="ch-lo-coffee-img"
-            draggable={false}
-          />
+        <div className="ch-lo-coffee" style={handPropRotateStyle('coffee')}>
+          <img src={COFFEE_SRC} alt="" className="ch-lo-coffee-img" draggable={false} />
         </div>
       );
     case 'glowsticks':
       return (
-        <div className="ch-lo-glowsticks">
-          <img
-            src={GLOWSTICKS_SRC}
-            alt=""
-            className="ch-lo-glowsticks-img"
-            draggable={false}
-          />
+        <div className="ch-lo-glowsticks" style={handPropRotateStyle('glowsticks')}>
+          <img src={GLOWSTICKS_SRC} alt="" className="ch-lo-glowsticks-img" draggable={false} />
         </div>
       );
     case 'confetti':
       return (
-        <div className="ch-lo-confetti">
-          <img
-            src={CONFETTI_SRC}
-            alt=""
-            className="ch-lo-confetti-img"
-            draggable={false}
-          />
+        <div className="ch-lo-confetti" style={handPropRotateStyle('confetti')}>
+          <img src={CONFETTI_SRC} alt="" className="ch-lo-confetti-img" draggable={false} />
         </div>
       );
     case 'fireworks':
       return (
-        <div className="ch-lo-fireworks">
-          <img
-            src={FIREWORKS_SRC}
-            alt=""
-            className="ch-lo-fireworks-img"
-            draggable={false}
-          />
+        <div className="ch-lo-fireworks" style={handPropRotateStyle('fireworks')}>
+          <img src={FIREWORKS_SRC} alt="" className="ch-lo-fireworks-img" draggable={false} />
         </div>
       );
     case 'sticker':
       return (
-        <div className="ch-lo-sticker">
-          <img
-            src={STICKER_SRC}
-            alt=""
-            className="ch-lo-sticker-img"
-            draggable={false}
-          />
+        <div className="ch-lo-sticker" style={handPropRotateStyle('sticker')}>
+          <img src={STICKER_SRC} alt="" className="ch-lo-sticker-img" draggable={false} />
         </div>
       );
     case 'totem':
       return (
-        <div className="ch-lo-totem">
-          <img
-            src={TOTEM_SRC}
-            alt=""
-            className="ch-lo-totem-img"
-            draggable={false}
-          />
+        <div className="ch-lo-totem" style={handPropRotateStyle('totem')}>
+          <img src={TOTEM_SRC} alt="" className="ch-lo-totem-img" draggable={false} />
         </div>
       );
     case 'brush':
       return (
-        <div className="ch-lo-brush">
-          <img
-            src={BRUSH_SRC}
-            alt=""
-            className="ch-lo-brush-img"
-            draggable={false}
-          />
+        <div className="ch-lo-brush" style={handPropRotateStyle('brush')}>
+          <img src={BRUSH_SRC} alt="" className="ch-lo-brush-img" draggable={false} />
         </div>
       );
   }

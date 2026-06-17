@@ -5,6 +5,7 @@ import { useCreatorStageControls } from '@/lib/stages/CreatorStageContext';
 import { STAGE_CONFIG } from '@/lib/stages/config';
 import { reorderStageStreams } from '@/lib/stages/lineup';
 import { parseStageStreams, updateUserStage } from '@/lib/stages/client';
+import { truncateWithEllipsis } from '@/lib/stages/streamLabel';
 import type { StageStream } from '@/lib/stages/types';
 import type { StageStreamPasteMode } from '@/lib/stages/parseStream';
 
@@ -384,6 +385,7 @@ export function CreatorStageLineupPanel() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
+              minWidth: 0,
               padding: '8px 8px 8px 10px',
               borderRadius: 8,
               border: i === stage.nowPlayingIndex
@@ -422,8 +424,9 @@ export function CreatorStageLineupPanel() {
               height={33}
               style={{ borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
             />
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
               <div
+                title={s.title}
                 style={{
                   color: '#fff',
                   fontSize: 12,
@@ -432,10 +435,11 @@ export function CreatorStageLineupPanel() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {s.title}
+                {truncateWithEllipsis(s.title, 48)}
               </div>
               {s.channelTitle && (
                 <div
+                  title={s.channelTitle}
                   style={{
                     marginTop: 2,
                     fontSize: 10,
@@ -445,7 +449,7 @@ export function CreatorStageLineupPanel() {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {s.channelTitle}
+                  {truncateWithEllipsis(s.channelTitle, 40)}
                 </div>
               )}
             </div>

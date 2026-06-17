@@ -45,6 +45,11 @@ export const SHARED_CHARACTER_STYLES = `
   .ch-walking .ch-legs span:before{animation:ch-foot-a .36s ease-in-out infinite!important;transform-origin:center top;}
   .ch-walking .ch-legs span:first-child:before{animation:ch-foot-b .36s ease-in-out infinite!important;transform-origin:center top;}
   .ch-walking .ch-right-hand{animation-duration:.36s!important;animation-delay:0s!important;}
+  .ch-hand-prop:not(.ch-walking):not(.ch-space-float) .ch-right-hand{
+    animation:none!important;
+    transform:rotate(-47deg)!important;
+    top:70px!important;
+  }
   .ch-space-float .ch-animal{animation:ch-space-float-bob 5.2s ease-in-out infinite!important;}
   .ch-space-float .ch-legs span,.ch-space-float .ch-legs span:first-child{
     animation:ch-space-float-legs 5.2s ease-in-out infinite!important;

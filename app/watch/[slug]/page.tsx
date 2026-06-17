@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import { CharacterStylesTag } from '@/components/game/CharacterStylesTag';
 import { UserStageShell } from '@/components/create/UserStageShell';
 import { getUserStagePublicBySlug } from '@/lib/stages/db';
 import { getDb } from '@/lib/db';
@@ -49,6 +50,7 @@ export default async function WatchPage({ params }: WatchPageProps) {
 
   return (
     <>
+      <CharacterStylesTag />
       <JsonLd data={creatorStageGraphJsonLd(userStage)} />
       <Suspense fallback={null}>
         <UserStageShell stage={userStage} />

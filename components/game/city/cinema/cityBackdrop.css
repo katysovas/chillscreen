@@ -8,16 +8,22 @@
   isolation: isolate;
 }
 
-/* ── Blend wash (z-index 1) — twirl + 128 BPM hue pulse ── */
+/* ── Rainbow wash (z-index 1) — static blur, transform-only twirl ──
+   Ambient only: slowly rotates so colors drift under the city, but animates NO
+   filter. The blur + baseline grade are baked in once; the twirl just
+   composites the cached texture.
+   Box is 300% (down from 500%); offsets keep the pivot at container center.
+   Coverage rule if a dark wedge shows at the spin extremes: side must beat
+   (container diagonal ÷ min scale 0.9) — bump % and recompute offset as
+   50% − 0.6 × width. */
 .city-backdrop__blend {
   position: absolute;
   z-index: 1;
-  top: -250%;
-  left: -250%;
-  width: 500%;
-  height: 500%;
+  top: -130%;
+  left: -130%;
+  width: 300%;
+  height: 300%;
   transform-origin: 60% 60%;
-  /* Festival palette — gets blurred + hue-rotated at runtime so exact stops don't matter */
   background: conic-gradient(
     from 0deg,
     #9b3fff,
@@ -28,12 +34,17 @@
     #4a8fd4,
     #9b3fff
   );
-  animation:
-    city-backdrop-twirl 50s infinite linear,
-    city-backdrop-glow 0.46875s infinite ease-in-out;
+  filter: blur(10px);
+  will-change: transform;
+  animation: city-backdrop-twirl 50s infinite linear;
 }
 
-/* ── Skyline / upload (z-index 2) — hard-light + vignette ── */
+/* ── Skyline / upload (z-index 2) — hard-light + the beat blink ──
+   The blink lives HERE now: a cheap, pointwise color pulse (brightness /
+   contrast / hue) on the image itself at 128 BPM. No blur, viewport-sized, so
+   it's cheap — the image visibly comes alive on the beat, blended hard-light
+   over the drifting rainbow. (The old version pulsed these on the giant blurred
+   rainbow; moving them onto the image keeps the look and drops the cost.) */
 .city-backdrop__city {
   position: absolute;
   z-index: 2;
@@ -42,6 +53,7 @@
   width: 100%;
   height: 100%;
   mix-blend-mode: hard-light;
+  animation: city-backdrop-glow 1.875s infinite ease-in-out;
 }
 
 .city-backdrop__city img {
@@ -62,6 +74,7 @@
 .city-backdrop__vignette {
   position: absolute;
   inset: 0;
+  z-index: 3;
   box-shadow: inset 0 0 300px #000;
   pointer-events: none;
 }
@@ -72,16 +85,20 @@
   100% { transform: rotate(360deg) scale(1.1); }
 }
 
+/* Beat blink. Tune the brightness swing (0.8 → 1.3) for how hard it pops.
+   Drop the hue-rotate if it tints the photo's own colors in a way you dislike. */
 @keyframes city-backdrop-glow {
-  0% { filter: hue-rotate(0deg) brightness(0.75) contrast(1.4) blur(10px); }
-  40% { filter: hue-rotate(-45deg) brightness(1) contrast(1.2) blur(10px); }
-  100% { filter: hue-rotate(0deg) brightness(0.75) contrast(1.4) blur(10px); }
+  0%, 100% { filter: brightness(0.8) contrast(1.05); }
+  40% { filter: brightness(1.3) contrast(1.2) hue-rotate(-20deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .city-backdrop__blend {
     animation: none;
-    filter: hue-rotate(-20deg) brightness(0.8) contrast(1.3) blur(10px);
     transform: rotate(45deg) scale(1);
+  }
+  .city-backdrop__city {
+    animation: none;
+    filter: brightness(0.9) contrast(1.1);
   }
 }
