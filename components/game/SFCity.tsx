@@ -117,6 +117,7 @@ import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { AMBIENT_CHAT_ENABLED } from '@/lib/ambientChatEnabled';
 import { useRoomChatter } from './hooks/useRoomChatter';
 import { shouldExcludeFromStageChatter } from '@/lib/stageChatter/types';
+import { isNpcStageChatterSender } from '@/lib/stageChatter/preferences';
 import { useStageChatter } from './hooks/useStageChatter';
 import { StageChatterPanel } from './StageChatterPanel';
 import { npcChatLabelForId } from '@/lib/npcRoster';
@@ -1011,11 +1012,12 @@ export default function SFCity({
 
   chatterHandlersRef.current = {
     onStageChatterHistory: messages => stageChatter.loadHistory(messages),
-    onRoomTyping: (sender, typing) => stageChatter.setTyping(sender, typing),
-    onRoomChat: (sender, text, ts) => {
-      if (!shouldExcludeFromStageChatter(sender, text)) {
-        stageChatter.appendMessage(sender, text, ts);
+    onRoomTyping: (sender, typing) => {
+      if (!isNpcStageChatterSender(sender)) {
+        stageChatter.setTyping(sender, typing);
       }
+    },
+    onRoomChat: (sender, text, ts) => {
       if (sender.startsWith('npc:')) {
         const npcId = sender.slice(4);
         roomChatter.handleNpcShout(npcId, text);
@@ -1027,6 +1029,9 @@ export default function SFCity({
           });
         }
         return;
+      }
+      if (!shouldExcludeFromStageChatter(sender, text)) {
+        stageChatter.appendMessage(sender, text, ts);
       }
       if (skipRoomChatEcho(sender)) return;
       roomChatter.handleRoomChat(sender, text);
@@ -2695,7 +2700,7 @@ export default function SFCity({
               backdropFilter: 'blur(4px)',
               borderRadius: 7,
               padding: '7px 12px',
-              color: 'rgba(255,255,255,.78)',
+              color: 'rgba(255,255,255,.55)',
               fontSize: 10,
               letterSpacing: 1.8,
               textTransform: 'uppercase',

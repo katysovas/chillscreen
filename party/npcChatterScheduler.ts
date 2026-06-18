@@ -117,11 +117,25 @@ export class NpcChatterScheduler {
     return history.filter(m => !shouldExcludeFromStageChatter(m.sender, m.text));
   }
 
+  private broadcastSoloNpcLine(npcId: string, text: string): void {
+    const cleaned = stripNpcChatterDots(text);
+    if (!cleaned.trim()) return;
+    this.deps.broadcast({
+      t: 'room-chat',
+      sender: `npc:${npcId}`,
+      text: cleaned,
+      ts: Date.now(),
+    });
+  }
+
   private async persistAndBroadcastRoomChat(sender: string, text: string): Promise<boolean> {
-    const cleaned = sender.startsWith('npc:') ? stripNpcChatterDots(text) : text;
-    const { entry, added } = await this.stageChatter.append(sender, cleaned);
+    if (sender.startsWith('npc:')) {
+      this.broadcastSoloNpcLine(sender.slice(4), text);
+      return true;
+    }
+    const { entry, added } = await this.stageChatter.append(sender, text);
     if (!added) return false;
-    this.deps.broadcast({ t: 'room-chat', sender, text: cleaned, ts: entry.ts });
+    this.deps.broadcast({ t: 'room-chat', sender, text, ts: entry.ts });
     return true;
   }
 
