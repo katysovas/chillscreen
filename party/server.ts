@@ -494,6 +494,8 @@ export default class WhichStageServer implements Party.Server {
     if (!stageSlug) return [];
 
     const params = new URLSearchParams({ stage_slug: stageSlug });
+    const online = this.onlineUserIds();
+    if (online.length > 0) params.set('online', online.join(','));
 
     const env = this.room.env as Record<string, string | undefined>;
     try {

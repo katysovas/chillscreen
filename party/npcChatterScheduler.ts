@@ -54,6 +54,8 @@ import {
   pickAmbientCheerLine,
 } from '../lib/npcAmbientChat';
 import {
+  FESTIE_DESCRIBE_SHOUTOUT_FIRST_MAX_MS,
+  FESTIE_DESCRIBE_SHOUTOUT_FIRST_MIN_MS,
   FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MAX_MS,
   FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MIN_MS,
   FESTIE_SHOUTOUT_COOLDOWN_MS,
@@ -100,6 +102,7 @@ export class NpcChatterScheduler {
   private nextAmbientCheerAt = 0;
   private nextFestieDescribeShoutoutAt = 0;
   private festieShoutoutCooldown = new Map<string, number>();
+  private festieShoutoutFirstPending = true;
   private readonly stageChatter: StageChatterStore;
 
   constructor(private deps: ChatterSchedulerDeps) {
@@ -178,7 +181,7 @@ export class NpcChatterScheduler {
     if (this.schedulerOn) return;
     this.schedulerOn = true;
     this.scheduleNextAmbientCheer();
-    this.scheduleNextFestieDescribeShoutout();
+    this.scheduleNextFestieDescribeShoutout(true);
     const delay = jitterMs(FIRST_CONVO_DELAY_MIN_MS, FIRST_CONVO_DELAY_MAX_MS);
     void this.roomStorage.setAlarm(Date.now() + delay);
   }
@@ -368,9 +371,16 @@ export class NpcChatterScheduler {
       + jitterMs(AMBIENT_CHEER_INTERVAL_MIN_MS, AMBIENT_CHEER_INTERVAL_MAX_MS);
   }
 
-  private scheduleNextFestieDescribeShoutout() {
-    this.nextFestieDescribeShoutoutAt = Date.now()
-      + jitterMs(FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MIN_MS, FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MAX_MS);
+  private scheduleNextFestieDescribeShoutout(first = false) {
+    const useFirst = first && this.festieShoutoutFirstPending;
+    const min = useFirst
+      ? FESTIE_DESCRIBE_SHOUTOUT_FIRST_MIN_MS
+      : FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MIN_MS;
+    const max = useFirst
+      ? FESTIE_DESCRIBE_SHOUTOUT_FIRST_MAX_MS
+      : FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MAX_MS;
+    if (useFirst) this.festieShoutoutFirstPending = false;
+    this.nextFestieDescribeShoutoutAt = Date.now() + jitterMs(min, max);
   }
 
   private festieShoutoutOnCooldown(npcId: string): boolean {
@@ -386,7 +396,7 @@ export class NpcChatterScheduler {
     const ids = festieChatterNpcIds().filter(id => {
       if (!positioned.has(id)) return false;
       const entry = getNpcRosterEntry(id);
-      return entry?.ownerOnStage && entry.describeNotes?.trim();
+      return Boolean(entry?.describeNotes?.trim() && entry.ownerOnStage);
     });
     if (ids.length === 0) return null;
     const available = ids.filter(id => !this.festieShoutoutOnCooldown(id));
@@ -396,7 +406,7 @@ export class NpcChatterScheduler {
 
   private async runFestieDescribeShoutout() {
     if (this.chatterDisabled || this.deps.playerCount() === 0) return;
-    if (this.activeConvo || this.activeStageWave) return;
+    if (this.activeConvo) return;
 
     const npcId = this.pickFestieDescribeShoutoutNpc();
     if (!npcId) return;

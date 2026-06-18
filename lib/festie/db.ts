@@ -216,24 +216,42 @@ export async function countAllFestiesByStage(): Promise<Record<string, number>> 
   return out;
 }
 
-/** Active festies for a stage (dim window). Online owners stay on stage for NPC chatter. */
+/** Active festies for a stage (dim window), plus any signed-in owners currently in the room. */
 export async function listActiveFestiesForStage(
   stageSlug: string,
-  _excludeUserIds: string[] = [],
+  onlineUserIds: string[] = [],
 ): Promise<FestiePublic[]> {
   const sql = requireDb();
-  const rows = await sql`
-    SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online
-    FROM festies
-    WHERE stage_slug = ${stageSlug}
-      AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
-    ORDER BY last_seen_at DESC
-  `;
+  const online = new Set(onlineUserIds);
+  const rows = online.size > 0
+    ? await sql`
+        SELECT id, user_id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online
+        FROM festies
+        WHERE last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
+          AND (
+            stage_slug = ${stageSlug}
+            OR user_id = ANY(${[...online]}::uuid[])
+          )
+        ORDER BY last_seen_at DESC
+      `
+    : await sql`
+        SELECT id, user_id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online
+        FROM festies
+        WHERE stage_slug = ${stageSlug}
+          AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
+        ORDER BY last_seen_at DESC
+      `;
 
-  return rows.map(r => {
-    const row = rowToFestie({ ...r, user_id: '', last_chat_at: null, created_at: '' });
-    return toFestiePublic(row);
-  });
+  const byId = new Map<string, FestiePublic>();
+  for (const r of rows) {
+    const row = rowToFestie({ ...r, last_chat_at: null, created_at: '' });
+    const onStage = online.has(row.user_id) || row.owner_online;
+    byId.set(row.id, {
+      ...toFestiePublic(row),
+      owner_on_stage: onStage,
+    });
+  }
+  return [...byId.values()];
 }
 
 export async function touchFestieSeen(userId: string): Promise<void> {

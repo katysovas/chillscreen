@@ -882,8 +882,7 @@ export default function SFCity({
   const syncedStageFesties = useMemo((): FestiePublic[] => {
     const list = [...mp.festies];
     const online = festieSignedIn && Boolean(mp.selfId);
-    const stageSlug = venueSlugForRoute(effectiveVenueRoute);
-    if (!online || !ownerFestie || ownerFestie.stage_slug !== stageSlug) return list;
+    if (!online || !ownerFestie) return list;
     const enriched: FestiePublic = { ...ownerFestie, owner_on_stage: true };
     const idx = list.findIndex(f => f.id === ownerFestie.id);
     if (idx >= 0) {
@@ -891,7 +890,7 @@ export default function SFCity({
       return list;
     }
     return [...list, enriched];
-  }, [mp.festies, mp.selfId, festieSignedIn, ownerFestie, effectiveVenueRoute]);
+  }, [mp.festies, mp.selfId, festieSignedIn, ownerFestie]);
 
   const effectiveNpcCast = useMemo(() => {
     const compareCast = drawModelCompareCast();

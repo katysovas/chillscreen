@@ -1,7 +1,10 @@
 import { stripNpcChatterDots } from '@/lib/messageFilter';
 import type { FestiePublic } from '@/lib/festie/types';
 
-/** Owner festie ambient shout cadence — short asides every 1–3 min. */
+/** First shout after joining — sooner so owners notice it working. */
+export const FESTIE_DESCRIBE_SHOUTOUT_FIRST_MIN_MS = 25_000;
+export const FESTIE_DESCRIBE_SHOUTOUT_FIRST_MAX_MS = 50_000;
+/** Steady-state cadence after the first shout. */
 export const FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MIN_MS = 60_000;
 export const FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MAX_MS = 180_000;
 export const FESTIE_SHOUTOUT_COOLDOWN_MS = 90_000;

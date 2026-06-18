@@ -43,7 +43,9 @@ export async function resolveNpcRosterEntry(id: string): Promise<NpcRosterEntry 
     if (!festieId) return undefined;
     const row = await getFestieById(festieId);
     if (!row) return undefined;
-    return festieToRosterEntry(toFestiePublic(row));
+    const entry = festieToRosterEntry(toFestiePublic(row));
+    festieChatterRoster.set(entry.id, entry);
+    return entry;
   }
 
   return getNpcRosterEntry(id);
