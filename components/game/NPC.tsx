@@ -5,7 +5,7 @@ import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
 import { CHAR_BOTTOM, crowdDepthOffsetPx, crowdDepthZIndex } from './groundLayout';
-import { AttachedChatEmojiBubble, screenXToBubbleSide } from './ChatBubble';
+import { AttachedChatEmojiIndicator, screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import {
   crowdSpawnWorldX,
@@ -789,7 +789,7 @@ function NPC({
                 side={bubbleSide}
               />
             ) : showChattingBubble ? (
-              <AttachedChatEmojiBubble side={bubbleSide} showTail />
+              <AttachedChatEmojiIndicator />
             ) : showPublicBubble ? (
               <NpcChatOverlay
                 name={name}

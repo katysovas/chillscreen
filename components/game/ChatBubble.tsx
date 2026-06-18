@@ -224,29 +224,19 @@ export function AttachedTypingBubble({
   );
 }
 
-/** Compact chatting indicator — emoji only, no speaker label. */
-export function AttachedChatEmojiBubble({
-  side = 'left',
-  showTail = true,
-  emoji = '💬',
-  tailAlign = 'edge',
-}: {
-  side?: BubbleSide;
-  showTail?: boolean;
-  emoji?: string;
-  tailAlign?: 'edge' | 'center' | 'speaker' | 'easel';
-}) {
+/** Chatting indicator — emoji only, no bubble shell. */
+export function AttachedChatEmojiIndicator({ emoji = '💬' }: { emoji?: string }) {
   return (
     <div
-      className="game-chat-bubble game-chat-bubble-stacked"
       style={{
-        ...bubbleShell,
-        padding: '5px 9px',
+        fontSize: 17,
+        lineHeight: 1,
         animation: 'chat-in-left 0.22s ease-out both',
+        filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.35))',
       }}
+      aria-hidden
     >
-      <div style={{ fontSize: 17, lineHeight: 1 }} aria-hidden>{emoji}</div>
-      {showTail && <div style={bubbleTailStyle(side, tailAlign)} />}
+      {emoji}
     </div>
   );
 }
