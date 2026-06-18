@@ -1,11 +1,12 @@
 import { cityTileIndex } from '@/lib/spawn';
 import { isForestTile, isSilentDiscoTile, isSouthernCaliforniaTile, isTentarooTile, isVegasTile } from '@/lib/worldTiles';
-import { cinemaMidX, coachellaMidX, concertMidX, deepSpaceMidX, edcMidX, whichStageMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
+import { cinemaMidX, concertMidX, deepSpaceMidX, edcMidX, whichStageMidX, MID_PARALLAX, VIEW_CENTER_X, type VenueKind } from '@/lib/venues';
 import { midOriginForTile } from '@/lib/worldTileGeometry';
 import { WHICH_STAGE_MID_X } from '@/components/game/city/tentaroo/constants';
 import { FOREST_STAGE_MID_X } from '@/components/game/city/forest/constants';
 import { CINEMA_STATIC_MID_X } from '@/components/game/city/sf/constants';
 import { EDC_STATIC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
+import { COACHELLA_STATIC_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
 import { SF_CONCERT_MID_X } from '@/components/game/city/sf/constants';
 import { SEATTLE_CONCERT_MID_X } from '@/components/game/city/seattle/constants';
 import { SILENT_DISCO_STAGE_MID_X } from '@/components/game/city/silent-disco/constants';
@@ -30,9 +31,7 @@ export function worldOffForVenueRoute(route: VenueRoute): number {
   switch (route) {
     case 'coachella': {
       const tile = cityTileIndex('coachella');
-      const midX = coachellaMidX(tile);
-      if (midX == null) throw new Error('coachella midX missing');
-      return worldOffCenteringMidX(tile, midX);
+      return worldOffCenteringMidX(tile, COACHELLA_STATIC_STAGE_MID_X);
     }
     case 'edc': {
       const tile = cityTileIndex('vegas');

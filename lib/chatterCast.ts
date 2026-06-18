@@ -18,6 +18,10 @@ export type NpcRosterEntry = {
   personalityNotes: string;
   /** Festie user settings or future NPC profile tags — drives topic-specific voice rules. */
   topics?: string[];
+  /** Live owner on stage — eligible for describe-note ambient shoutouts. */
+  ownerOnStage?: boolean;
+  /** Raw owner describe field — used for short ambient shoutouts. */
+  describeNotes?: string | null;
 };
 
 /** Wandering cast — excludes stage vendors (Buz carts). */

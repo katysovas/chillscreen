@@ -9,6 +9,7 @@ async function openRouterRequest(
   messages: ChatMessage[],
   apiKey: string,
   signal: AbortSignal,
+  maxTokens = NPC_LINE_MAX_TOKENS,
 ): Promise<string | null> {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -21,7 +22,7 @@ async function openRouterRequest(
     body: JSON.stringify({
       model,
       messages,
-      max_tokens: NPC_LINE_MAX_TOKENS,
+      max_tokens: maxTokens,
       temperature: NPC_LINE_TEMPERATURE,
     }),
     signal,
@@ -45,14 +46,15 @@ export async function openRouterComplete(
   messages: ChatMessage[],
   apiKey: string,
   fallbackModel?: string,
+  maxTokens = NPC_LINE_MAX_TOKENS,
 ): Promise<string | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), NPC_LINE_TIMEOUT_MS);
   try {
-    const text = await openRouterRequest(model, messages, apiKey, controller.signal);
+    const text = await openRouterRequest(model, messages, apiKey, controller.signal, maxTokens);
     if (text || !fallbackModel || fallbackModel === model) return text;
     iwarn('[openrouter] retrying with fallback', model, '→', fallbackModel);
-    return openRouterRequest(fallbackModel, messages, apiKey, controller.signal);
+    return openRouterRequest(fallbackModel, messages, apiKey, controller.signal, maxTokens);
   } catch (err) {
     ierror('[openrouter] failed', err);
     return null;

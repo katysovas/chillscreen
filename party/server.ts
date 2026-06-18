@@ -41,7 +41,7 @@ export default class WhichStageServer implements Party.Server {
   private humansOnlyPlayers = new Set<string>();
   /** Players who joined with `?debug=true` — demo seed only while any remain. */
   private chatterDebugPlayers = new Set<string>();
-  /** connId → signed-in user id (for hiding that owner's offline festie). */
+  /** connId → signed-in user id (for festie presence / seen debounce). */
   private connUserIds = new Map<string, string>();
   /** Debounced last_seen_at when owner disconnects (userId → timer). */
   private festieSeenTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -331,6 +331,10 @@ export default class WhichStageServer implements Party.Server {
       case 'creator-stage-sync':
         this.room.broadcast(encode({ t: 'creator-stage-sync', stage: msg.stage }), [sender.id]);
         break;
+
+      case 'festie-refresh':
+        void this.broadcastFestiesSync();
+        break;
     }
   }
 
@@ -490,8 +494,6 @@ export default class WhichStageServer implements Party.Server {
     if (!stageSlug) return [];
 
     const params = new URLSearchParams({ stage_slug: stageSlug });
-    const exclude = this.onlineUserIds();
-    if (exclude.length > 0) params.set('exclude', exclude.join(','));
 
     const env = this.room.env as Record<string, string | undefined>;
     try {

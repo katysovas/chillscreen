@@ -41,7 +41,7 @@ import {
   npcPairInAnyPlayerView,
   type PlayerViewSnapshot,
 } from '../lib/npcProximity';
-import { getNpcRosterEntry } from '../lib/npcRoster.server';
+import { getNpcRosterEntry, festieChatterNpcIds } from '../lib/npcRoster.server';
 import type { RoomChatLine } from '../lib/npcChatter/prompts';
 import { stageSlugForRoom, streamContextForRoom } from '../lib/npcChatter/roomContext';
 import type { StageSync } from '../lib/stageVideos';
@@ -53,6 +53,11 @@ import {
   AMBIENT_CHEER_INTERVAL_MIN_MS,
   pickAmbientCheerLine,
 } from '../lib/npcAmbientChat';
+import {
+  FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MAX_MS,
+  FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MIN_MS,
+  FESTIE_SHOUTOUT_COOLDOWN_MS,
+} from '../lib/festie/describeShoutouts';
 import {
   shouldExcludeFromStageChatter,
   type StageChatterMessage,
@@ -93,6 +98,8 @@ export class NpcChatterScheduler {
   private readonly env: Record<string, string | undefined>;
   private configLogged = false;
   private nextAmbientCheerAt = 0;
+  private nextFestieDescribeShoutoutAt = 0;
+  private festieShoutoutCooldown = new Map<string, number>();
   private readonly stageChatter: StageChatterStore;
 
   constructor(private deps: ChatterSchedulerDeps) {
@@ -171,6 +178,7 @@ export class NpcChatterScheduler {
     if (this.schedulerOn) return;
     this.schedulerOn = true;
     this.scheduleNextAmbientCheer();
+    this.scheduleNextFestieDescribeShoutout();
     const delay = jitterMs(FIRST_CONVO_DELAY_MIN_MS, FIRST_CONVO_DELAY_MAX_MS);
     void this.roomStorage.setAlarm(Date.now() + delay);
   }
@@ -358,6 +366,55 @@ export class NpcChatterScheduler {
   private scheduleNextAmbientCheer() {
     this.nextAmbientCheerAt = Date.now()
       + jitterMs(AMBIENT_CHEER_INTERVAL_MIN_MS, AMBIENT_CHEER_INTERVAL_MAX_MS);
+  }
+
+  private scheduleNextFestieDescribeShoutout() {
+    this.nextFestieDescribeShoutoutAt = Date.now()
+      + jitterMs(FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MIN_MS, FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MAX_MS);
+  }
+
+  private festieShoutoutOnCooldown(npcId: string): boolean {
+    return Date.now() < (this.festieShoutoutCooldown.get(npcId) ?? 0);
+  }
+
+  private touchFestieShoutoutCooldown(npcId: string) {
+    this.festieShoutoutCooldown.set(npcId, Date.now() + FESTIE_SHOUTOUT_COOLDOWN_MS);
+  }
+
+  private pickFestieDescribeShoutoutNpc(): string | null {
+    const positioned = new Set(this.positionedChatterNpcIds());
+    const ids = festieChatterNpcIds().filter(id => {
+      if (!positioned.has(id)) return false;
+      const entry = getNpcRosterEntry(id);
+      return entry?.ownerOnStage && entry.describeNotes?.trim();
+    });
+    if (ids.length === 0) return null;
+    const available = ids.filter(id => !this.festieShoutoutOnCooldown(id));
+    const pool = available.length > 0 ? available : ids;
+    return pool[Math.floor(Math.random() * pool.length)]!;
+  }
+
+  private async runFestieDescribeShoutout() {
+    if (this.chatterDisabled || this.deps.playerCount() === 0) return;
+    if (this.activeConvo || this.activeStageWave) return;
+
+    const npcId = this.pickFestieDescribeShoutoutNpc();
+    if (!npcId) return;
+
+    void this.broadcastRoomTyping(`npc:${npcId}`, true);
+    const lines = await this.fetchChatter({
+      mode: 'festie-shoutout',
+      stage: stageSlugForRoom(this.roomId),
+      npc: npcId,
+    });
+    void this.broadcastRoomTyping(`npc:${npcId}`, false);
+
+    const line = lines?.[0];
+    if (!line?.text) return;
+
+    this.touchFestieShoutoutCooldown(npcId);
+    const sent = await this.persistAndBroadcastRoomChat(`npc:${line.npc}`, line.text);
+    if (sent) this.appendBuffer(`npc:${line.npc}`, line.text);
   }
 
   private async runAmbientCheer() {
@@ -614,6 +671,11 @@ export class NpcChatterScheduler {
     if (Date.now() >= this.nextAmbientCheerAt) {
       await this.runAmbientCheer();
       this.scheduleNextAmbientCheer();
+    }
+
+    if (Date.now() >= this.nextFestieDescribeShoutoutAt) {
+      await this.runFestieDescribeShoutout();
+      this.scheduleNextFestieDescribeShoutout();
     }
 
     if (!this.activeConvo && !this.activeStageWave && Math.random() < CONVO_PROBABILITY) {

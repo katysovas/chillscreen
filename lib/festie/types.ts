@@ -38,6 +38,8 @@ export type FestiePublic = {
   llm_provider: FestieLlmProvider;
   last_seen_at: string;
   tier: 'live' | 'dim' | 'gone';
+  /** True when the festie's human is signed in on this stage right now. */
+  owner_on_stage?: boolean;
 };
 
 /** Signed-in owner view — includes email recap prefs (never on stage sync). */

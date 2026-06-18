@@ -136,7 +136,7 @@ export type Multiplayer = {
   remoteNpcChats: RemoteNpcChat[];
   /** Active NPC↔NPC conversations (for connect glow). */
   npcConvoPairs: NpcConvoPair[];
-  /** Offline festies on this stage (owner excluded while online). */
+  /** Festies on this stage — includes online owners for live NPC chatter. */
   festies: FestiePublic[];
   /** Ambient NPC easel session — null until first watcher in room. */
   easelSession: EaselSessionSync | null;
@@ -162,6 +162,7 @@ export type Multiplayer = {
   registerCreatorStageSyncHandler: (
     handler: ((stage: CreatorStageSyncPayload) => void) | null,
   ) => void;
+  requestFestiesSync: () => void;
 };
 
 /**
@@ -522,6 +523,10 @@ export function useMultiplayer(opts: Options): Multiplayer {
     (stage: CreatorStageSyncPayload) => connectAndSend({ t: 'creator-stage-sync', stage }),
     [connectAndSend],
   );
+  const requestFestiesSync = useCallback(
+    () => connectAndSend({ t: 'festie-refresh' }),
+    [connectAndSend],
+  );
   const registerCreatorStageSyncHandler = useCallback(
     (handler: ((stage: CreatorStageSyncPayload) => void) | null) => {
       creatorStageSyncHandlerRef.current = handler;
@@ -534,6 +539,6 @@ export function useMultiplayer(opts: Options): Multiplayer {
     isNpcLeader, npcSyncRef,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
     sendAmbientMessage, sendRoomChat, sendRoomTyping, sendHumansOnlyChatter, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
-    sendCreatorStageSync, registerCreatorStageSyncHandler,
+    sendCreatorStageSync, registerCreatorStageSyncHandler, requestFestiesSync,
   };
 }

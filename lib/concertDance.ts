@@ -20,9 +20,10 @@ import {
   VIEW_WIDTH,
 } from './venues';
 import { midOriginForTile } from './worldTileGeometry';
-import { COACHELLA_STAGE_HALF } from '@/components/game/city/sandiego/constants';
+import { isSouthernCaliforniaTile } from '@/lib/worldTiles';
 import { CINEMA_STATIC_MID_X } from '@/components/game/city/sf/constants';
 import { EDC_STAGE_HALF, EDC_STATIC_STAGE_HALF, EDC_STATIC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
+import { COACHELLA_STAGE_HALF, COACHELLA_STATIC_STAGE_HALF, COACHELLA_STATIC_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
 import { WHICH_STAGE_HALF } from '@/components/game/city/tentaroo/constants';
 import { FOREST_STAGE_HALF } from '@/components/game/city/forest/constants';
 import { SILENT_DISCO_STAGE_HALF } from '@/components/game/city/silent-disco/constants';
@@ -67,7 +68,13 @@ export function liveConcertMidWorldX(worldOff: number): number | null {
 }
 
 export function liveCoachellaMidWorldX(worldOff: number): number | null {
-  return liveVenueMidWorldX(worldOff, coachellaLiveTile, coachellaMidX, COACHELLA_STAGE_HALF);
+  const primary = liveVenueMidWorldX(worldOff, coachellaLiveTile, coachellaMidX, COACHELLA_STAGE_HALF);
+  if (primary != null) return primary;
+  const vx = midVxFromWorldOff(worldOff);
+  const tile = cityTileIndex('san_diego');
+  if (!isSouthernCaliforniaTile(tile)) return null;
+  if (!isVenueInView(vx, tile, COACHELLA_STATIC_STAGE_MID_X, COACHELLA_STATIC_STAGE_HALF)) return null;
+  return midOriginForTile(tile) + COACHELLA_STATIC_STAGE_MID_X;
 }
 
 export function liveEdcMidWorldX(worldOff: number): number | null {

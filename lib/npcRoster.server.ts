@@ -36,18 +36,17 @@ export function getNpcRosterEntry(id: string): NpcRosterEntry | undefined {
   return festieChatterRoster.get(id) ?? getStaticNpcRosterEntry(id);
 }
 
-/** DB fallback for API routes when festie roster cache is empty. */
+/** DB fallback for API routes when festie roster cache is empty or notes changed. */
 export async function resolveNpcRosterEntry(id: string): Promise<NpcRosterEntry | undefined> {
-  const cached = getNpcRosterEntry(id);
-  if (cached) return cached;
+  if (isFestieNpcId(id)) {
+    const festieId = festieIdFromNpcId(id);
+    if (!festieId) return undefined;
+    const row = await getFestieById(festieId);
+    if (!row) return undefined;
+    return festieToRosterEntry(toFestiePublic(row));
+  }
 
-  if (!isFestieNpcId(id)) return undefined;
-  const festieId = festieIdFromNpcId(id);
-  if (!festieId) return undefined;
-
-  const row = await getFestieById(festieId);
-  if (!row) return undefined;
-  return festieToRosterEntry(toFestiePublic(row));
+  return getNpcRosterEntry(id);
 }
 
 export function isChatterNpc(id: string): boolean {

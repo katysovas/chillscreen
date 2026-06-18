@@ -14,6 +14,8 @@ export function festieToRosterEntry(festie: FestiePublic): NpcRosterEntry {
     modelId,
     modelDisplayName: npcBrandFromModelId(modelId),
     personalityNotes: festiePersonalityNotesForNpcChatter(festie),
+    ownerOnStage: festie.owner_on_stage,
+    describeNotes: festie.personality_notes?.trim() || null,
   };
 }
 

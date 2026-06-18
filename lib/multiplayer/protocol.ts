@@ -59,7 +59,7 @@ export type ClientMessage =
       humansOnlyChatter?: boolean;
       /** From `?debug=true` — demo seed only, internal QA. */
       chatterDebug?: boolean;
-      /** Signed-in account id — hides that user's offline festie NPC while online. */
+      /** Signed-in account id — marks festie owner_on_stage for live NPC chatter. */
       userId?: string;
     }
   | { t: 'move'; worldX: number; facing: Facing; walking: boolean }
@@ -88,7 +88,9 @@ export type ClientMessage =
   /** Painting NPC reached the easel — starts the watched drawing clock. */
   | { t: 'easel-painter-ready'; npcId: string }
   /** Owner lineup / now-playing change — relayed to everyone in the creator room. */
-  | { t: 'creator-stage-sync'; stage: CreatorStageSyncPayload };
+  | { t: 'creator-stage-sync'; stage: CreatorStageSyncPayload }
+  /** Ask the room to refresh festie roster (e.g. after describe-notes save). */
+  | { t: 'festie-refresh' };
 
 /** Debug metadata for NPC↔NPC pair convos. */
 export type NpcConvoMeta = {

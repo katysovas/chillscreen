@@ -40,7 +40,7 @@ import {
   markFestieLifeTabExitShown,
   shouldShowFestieLifeOnTabExit,
 } from '@/lib/festie/intro';
-import type { FestieOwner } from '@/lib/festie/types';
+import type { FestieOwner, FestiePublic } from '@/lib/festie/types';
 import { festieIdFromNpcId, festieNpcId, festiesToCharacterDefs, isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import {
   getPlayerSession,
@@ -879,13 +879,27 @@ export default function SFCity({
     return subscribeEaselPainterReady(syncBlockZones);
   }, [activeEaselSession, easelStageSlug, easelLayoutRoute, chatNpcDrawings]);
 
+  const syncedStageFesties = useMemo((): FestiePublic[] => {
+    const list = [...mp.festies];
+    const online = festieSignedIn && Boolean(mp.selfId);
+    const stageSlug = venueSlugForRoute(effectiveVenueRoute);
+    if (!online || !ownerFestie || ownerFestie.stage_slug !== stageSlug) return list;
+    const enriched: FestiePublic = { ...ownerFestie, owner_on_stage: true };
+    const idx = list.findIndex(f => f.id === ownerFestie.id);
+    if (idx >= 0) {
+      list[idx] = enriched;
+      return list;
+    }
+    return [...list, enriched];
+  }, [mp.festies, mp.selfId, festieSignedIn, ownerFestie, effectiveVenueRoute]);
+
   const effectiveNpcCast = useMemo(() => {
     const compareCast = drawModelCompareCast();
     if (compareCast) return compareCast;
 
     const base = [
       ...npcCast,
-      ...festiesToCharacterDefs(mp.festies, effectiveVenueRoute),
+      ...festiesToCharacterDefs(syncedStageFesties, effectiveVenueRoute),
     ];
     if (!easelSessionEnabled) return base;
     if (!easelCastReady && !TEST_EASEL_ON_LOAD) return base;
@@ -894,7 +908,7 @@ export default function SFCity({
       easelChannel,
       activePainterNpcIds(activeEaselSession),
     );
-  }, [npcCast, mp.festies, effectiveVenueRoute, easelCastReady, activeEaselSession, easelSessionEnabled, easelChannel]);
+  }, [npcCast, syncedStageFesties, effectiveVenueRoute, easelCastReady, activeEaselSession, easelSessionEnabled, easelChannel]);
   const effectiveNpcCastKey = useMemo(
     () => effectiveNpcCast.map(c => c.id).join('\0'),
     [effectiveNpcCast],
@@ -2559,7 +2573,10 @@ export default function SFCity({
             setLifeModalOpen(false);
             lifeRefillFromRef.current = null;
           }}
-          onUpdated={festie => setOwnerFestie(festie)}
+          onUpdated={festie => {
+            setOwnerFestie(festie);
+            mpRef.current?.requestFestiesSync();
+          }}
         />
       )}
 
@@ -2569,7 +2586,10 @@ export default function SFCity({
           ownerOnline={ownerOnline}
           refillFrom={lifeRefillFromRef.current}
           initialTab={settingsInitialTab}
-          onUpdated={festie => setOwnerFestie(festie)}
+          onUpdated={festie => {
+            setOwnerFestie(festie);
+            mpRef.current?.requestFestiesSync();
+          }}
           ownedStage={ownedStage ?? null}
         />
       )}

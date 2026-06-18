@@ -6,6 +6,9 @@ import {
   COACHELLA_STAGE_PUSH_Y,
   COACHELLA_STAGE_SCALE,
   COACHELLA_STAGE_MID_X,
+  COACHELLA_STATIC_STAGE_MID_X,
+  COACHELLA_STATIC_STAGE_PUSH_Y,
+  COACHELLA_STATIC_STAGE_SCALE,
   FEST_COLORS,
   SD_GND,
 } from './constants';
@@ -19,6 +22,32 @@ export { COACHELLA_STAGE_MID_X };
 const STAGE_L = 2010;
 const STAGE_R = 2440;
 const STAGE_TOP = 404;
+const STAGE_CENTER_X = (STAGE_L + STAGE_R) / 2;
+
+type FestivalStageLayout = {
+  midX?: number;
+  scale?: number;
+  pushY?: number;
+};
+
+function stageShiftX(midX?: number): number {
+  if (midX == null) return 0;
+  return midX - STAGE_CENTER_X;
+}
+
+function stageLayout(staticViewport: boolean): Required<FestivalStageLayout> {
+  return staticViewport
+    ? {
+      midX: COACHELLA_STATIC_STAGE_MID_X,
+      scale: COACHELLA_STATIC_STAGE_SCALE,
+      pushY: COACHELLA_STATIC_STAGE_PUSH_Y,
+    }
+    : {
+      midX: COACHELLA_STAGE_MID_X,
+      scale: COACHELLA_STAGE_SCALE,
+      pushY: COACHELLA_STAGE_PUSH_Y,
+    };
+}
 
 /** LED wall aperture — shared by shell art and live iframe placement. */
 const SCREEN_X = STAGE_L + 54;
@@ -75,7 +104,7 @@ function TrussLights() {
   );
 }
 
-type FestivalStageShellProps = {
+type FestivalStageShellProps = FestivalStageLayout & {
   /** Dark LED fill + scanlines when no video is mounted. */
   idleScreen?: boolean;
   /** Live mode renders the lights separately, above the video. */
@@ -86,6 +115,9 @@ type FestivalStageShellProps = {
 function FestivalStageShell({
   idleScreen = true,
   hideLights = false,
+  midX = COACHELLA_STAGE_MID_X,
+  scale = COACHELLA_STAGE_SCALE,
+  pushY = COACHELLA_STAGE_PUSH_Y,
 }: FestivalStageShellProps) {
   const L = STAGE_L;
   const R = STAGE_R;
@@ -93,8 +125,8 @@ function FestivalStageShell({
   const deck = SD_GND;
   const ox = COACHELLA_STAGE_MID_X;
   const oy = deck;
-  const midX = (L + R) / 2;
-  const pushY = COACHELLA_STAGE_PUSH_Y;
+  const centerX = (L + R) / 2;
+  const shiftX = stageShiftX(midX);
 
   const lattice = (x: number, y: number, w: number, h: number) => {
     const lines: ReactElement[] = [];
@@ -119,8 +151,9 @@ function FestivalStageShell({
 
   return (
     <>
-      <g transform={`translate(0, ${pushY})`}>
-        <g transform={`translate(${ox},${oy}) scale(${COACHELLA_STAGE_SCALE}) translate(${-ox},${-oy})`}>
+      <g transform={`translate(${shiftX}, 0)`}>
+        <g transform={`translate(0, ${pushY})`}>
+          <g transform={`translate(${ox},${oy}) scale(${scale}) translate(${-ox},${-oy})`}>
           <defs>
             <linearGradient id="sdc-roof" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#33333d" />
@@ -231,10 +264,11 @@ function FestivalStageShell({
           ))}
 
           <rect x={L - 26} y={deck - 6} width={R - L + 72} height={12} fill="#1a1a22" />
-          <ellipse cx={midX} cy={deck - 6} rx={(R - L) / 2} ry={22} fill="rgba(240,168,64,.18)"
+          <ellipse cx={centerX} cy={deck - 6} rx={(R - L) / 2} ry={22} fill="rgba(240,168,64,.18)"
             style={{ animation: 'sdc-glow 5s ease-in-out infinite' }} />
 
           {!hideLights && <TrussLights />}
+          </g>
         </g>
       </g>
     </>
@@ -242,12 +276,13 @@ function FestivalStageShell({
 }
 
 /** Live Coachella — shell + synchronized YouTube player. */
-function FestivalStageLive() {
+function FestivalStageLive(layout: FestivalStageLayout) {
+  const { midX, scale, pushY } = { ...stageLayout(false), ...layout };
   const deck = SD_GND;
   const ox = COACHELLA_STAGE_MID_X;
   const oy = deck;
-  const S = COACHELLA_STAGE_SCALE;
-  const pushY = COACHELLA_STAGE_PUSH_Y;
+  const S = scale;
+  const shiftX = stageShiftX(midX);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { video, src, vidKey, onIframeLoad } = useStagePlayer({
@@ -257,14 +292,14 @@ function FestivalStageLive() {
     onNowPlaying: setCoachellaNowPlaying,
   });
 
-  const videoFoX = ox + S * (IFRAME_X - ox);
+  const videoFoX = shiftX + ox + S * (IFRAME_X - ox);
   const videoFoY = oy + S * (IFRAME_Y - oy) + pushY;
   const videoFoW = IFRAME_W * S;
   const videoFoH = IFRAME_H * S;
 
   return (
     <>
-      <FestivalStageShell idleScreen={false} hideLights />
+      <FestivalStageShell idleScreen={false} hideLights midX={midX} scale={scale} pushY={pushY} />
       <foreignObject
         x={videoFoX}
         y={videoFoY}
@@ -295,9 +330,11 @@ function FestivalStageLive() {
         </div>
       </foreignObject>
       {/* Lights re-rendered above the video so the cones glow over the screen. */}
-      <g transform={`translate(0, ${pushY})`} pointerEvents="none">
-        <g transform={`translate(${ox},${oy}) scale(${S}) translate(${-ox},${-oy})`}>
-          <TrussLights />
+      <g transform={`translate(${shiftX}, 0)`} pointerEvents="none">
+        <g transform={`translate(0, ${pushY})`}>
+          <g transform={`translate(${ox},${oy}) scale(${S}) translate(${-ox},${-oy})`}>
+            <TrussLights />
+          </g>
         </g>
       </g>
     </>
@@ -305,7 +342,14 @@ function FestivalStageLive() {
 }
 
 /** Coachella main stage — truss portal, LED wall with YouTube when live. */
-export function FestivalStage({ live = false }: { live?: boolean }) {
-  if (!live) return <FestivalStageShell />;
-  return <FestivalStageLive />;
+export function FestivalStage({
+  live = false,
+  staticViewport = false,
+}: {
+  live?: boolean;
+  staticViewport?: boolean;
+}) {
+  const layout = stageLayout(staticViewport);
+  if (!live) return <FestivalStageShell {...layout} />;
+  return <FestivalStageLive {...layout} />;
 }

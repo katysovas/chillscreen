@@ -14,6 +14,7 @@ async function openAiDirectComplete(
   model: string,
   messages: ChatMessage[],
   apiKey: string,
+  maxTokens = NPC_LINE_MAX_TOKENS,
 ): Promise<string | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), NPC_LINE_TIMEOUT_MS);
@@ -27,7 +28,7 @@ async function openAiDirectComplete(
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: NPC_LINE_MAX_TOKENS,
+        max_tokens: maxTokens,
         temperature: NPC_LINE_TEMPERATURE,
       }),
       signal: controller.signal,
@@ -57,10 +58,11 @@ export async function completeNpcLine(
   model: string,
   messages: ChatMessage[],
   fallbackModel?: string,
+  maxTokens = NPC_LINE_MAX_TOKENS,
 ): Promise<string | null> {
   const openRouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (openRouterKey) {
-    const text = await openRouterComplete(model, messages, openRouterKey, fallbackModel);
+    const text = await openRouterComplete(model, messages, openRouterKey, fallbackModel, maxTokens);
     if (text) return text;
   } else {
     iwarn('[npc-chatter] OPENROUTER_API_KEY missing — trying OpenAI direct', model);
@@ -77,11 +79,16 @@ export async function completeNpcLine(
   }
 
   const direct = openAiDirectModel(model);
-  const text = await openAiDirectComplete(direct, messages, openAiKey);
+  const text = await openAiDirectComplete(direct, messages, openAiKey, maxTokens);
   if (text) return text;
 
   if (fallbackModel && fallbackModel !== model) {
-    const fallbackText = await openAiDirectComplete(openAiDirectModel(fallbackModel), messages, openAiKey);
+    const fallbackText = await openAiDirectComplete(
+      openAiDirectModel(fallbackModel),
+      messages,
+      openAiKey,
+      maxTokens,
+    );
     if (fallbackText) return fallbackText;
   }
 

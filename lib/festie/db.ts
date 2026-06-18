@@ -72,6 +72,7 @@ export function toFestiePublic(row: FestieRow): FestiePublic {
     llm_provider: row.llm_provider,
     last_seen_at: row.last_seen_at,
     tier: festieTier(new Date(row.last_seen_at)),
+    owner_on_stage: row.owner_online,
   };
 }
 
@@ -215,28 +216,19 @@ export async function countAllFestiesByStage(): Promise<Record<string, number>> 
   return out;
 }
 
-/** Active festies for a stage (dim window), excluding given online user ids. */
+/** Active festies for a stage (dim window). Online owners stay on stage for NPC chatter. */
 export async function listActiveFestiesForStage(
   stageSlug: string,
-  excludeUserIds: string[] = [],
+  _excludeUserIds: string[] = [],
 ): Promise<FestiePublic[]> {
   const sql = requireDb();
-  const rows = excludeUserIds.length > 0
-    ? await sql`
-        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at
-        FROM festies
-        WHERE stage_slug = ${stageSlug}
-          AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
-          AND user_id <> ALL(${excludeUserIds}::uuid[])
-        ORDER BY last_seen_at DESC
-      `
-    : await sql`
-        SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at
-        FROM festies
-        WHERE stage_slug = ${stageSlug}
-          AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
-        ORDER BY last_seen_at DESC
-      `;
+  const rows = await sql`
+    SELECT id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online
+    FROM festies
+    WHERE stage_slug = ${stageSlug}
+      AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
+    ORDER BY last_seen_at DESC
+  `;
 
   return rows.map(r => {
     const row = rowToFestie({ ...r, user_id: '', last_chat_at: null, created_at: '' });

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** GET — offline festies for a stage (PartyKit). Excludes online owners by user id. */
+/** GET — festies for a stage (PartyKit). Includes online owners for live NPC chatter. */
 export async function GET(req: Request) {
   const denied = verifyChatterRequest(req);
   if (denied) return denied;

@@ -3,6 +3,12 @@ import { activeDemoSeed } from '@/lib/npcChatter/demoSeed';
 import { isDuplicateNpcChatterText, roomLinesForNpcDedup } from '@/lib/npcChatter/dedup';
 import { sanitizeNpcLine } from '@/lib/messageFilter';
 import { resolveNpcRosterEntry } from '@/lib/npcRoster.server';
+import {
+  clampFestieDescribeShoutout,
+  fallbackFestieDescribeShoutout,
+  buildFestieDescribeShoutoutPrompt,
+  FESTIE_SHOUTOUT_MAX_TOKENS,
+} from '@/lib/festie/describeShoutouts';
 import type { RoomChatLine } from './prompts';
 import { buildLineSystemPrompt, buildSingleReplySystemPrompt, buildStageChatterSystemPrompt } from './prompts';
 import { pickStageChatterIntent, pickLineLengthHint, type StageChatterIntent } from './constants';
@@ -124,6 +130,39 @@ export type StageChatterRequest = {
   houseModel: string;
   intent?: StageChatterIntent;
 };
+
+export type FestieShoutoutRequest = {
+  mode: 'festie-shoutout';
+  stage: string;
+  npc: string;
+  houseModel: string;
+};
+
+export async function generateFestieDescribeShoutout(
+  req: FestieShoutoutRequest,
+): Promise<NpcChatterLine | null> {
+  const npc = await resolveNpcRosterEntry(req.npc);
+  if (!npc?.ownerOnStage || !npc.describeNotes?.trim()) return null;
+
+  const system = buildFestieDescribeShoutoutPrompt({
+    festieName: npc.displayName,
+    describeNotes: npc.describeNotes,
+    stage: req.stage,
+  });
+
+  const model = resolveModel(npc.modelId, req.houseModel);
+  const raw = await completeNpcLine(
+    model,
+    [{ role: 'system', content: system }],
+    req.houseModel,
+    FESTIE_SHOUTOUT_MAX_TOKENS,
+  );
+  const text = raw
+    ? clampFestieDescribeShoutout(raw)
+    : fallbackFestieDescribeShoutout(npc.describeNotes);
+  if (!text) return null;
+  return { npc: npc.id, text };
+}
 
 export async function generateStageChatterReply(req: StageChatterRequest): Promise<NpcChatterLine | null> {
   const npc = await resolveNpcRosterEntry(req.npc);

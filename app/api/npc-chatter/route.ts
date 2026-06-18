@@ -1,5 +1,5 @@
 import { npcChatterLlmConfigured } from '@/lib/npcChatter/completeLine';
-import { generatePairConvo, generateSingleReply, generateStageChatterReply } from '@/lib/npcChatter/generate';
+import { generatePairConvo, generateSingleReply, generateStageChatterReply, generateFestieDescribeShoutout } from '@/lib/npcChatter/generate';
 import { verifyChatterRequest } from '@/lib/npcChatter/auth';
 import { clampLineBudget, clampTriggerText, sanitizeRecentChat, sanitizeStageRecentChat } from '@/lib/npcChatter/validate';
 import { isChatterNpcAllowed } from '@/lib/npcRoster.server';
@@ -42,17 +42,43 @@ type StageBody = {
   channelName?: string;
 };
 
+type FestieShoutoutBody = {
+  mode: 'festie-shoutout';
+  stage: string;
+  npc: string;
+};
+
 export async function POST(req: Request) {
   const denied = verifyChatterRequest(req);
   if (denied) return denied;
 
   return runWithInternalDebug(internalDebugFromRequest(req), async () => {
   return runWithChatterDebug(chatterDebugFromRequest(req), async () => {
-  let body: PairBody | ReplyBody | StageBody;
+  let body: PairBody | ReplyBody | StageBody | FestieShoutoutBody;
   try {
     body = await req.json();
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const houseModel = process.env.HOUSE_MODEL?.trim() || HOUSE_MODEL_DEFAULT;
+  const stage = typeof body.stage === 'string' ? body.stage.slice(0, 64) : '';
+
+  if (body.mode === 'festie-shoutout') {
+    const npc = body.npc?.trim();
+    if (!npc || !stage || !(await isChatterNpcAllowed(npc))) {
+      return Response.json({ error: 'Invalid request' }, { status: 400 });
+    }
+    const line = await generateFestieDescribeShoutout({
+      mode: 'festie-shoutout',
+      stage,
+      npc,
+      houseModel,
+    });
+    if (!line) {
+      return Response.json({ error: 'Generation failed' }, { status: 502 });
+    }
+    return Response.json({ lines: [line] });
   }
 
   if (!npcChatterLlmConfigured()) {
@@ -60,13 +86,11 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Service unavailable' }, { status: 503 });
   }
 
-  const houseModel = process.env.HOUSE_MODEL?.trim() || HOUSE_MODEL_DEFAULT;
   const recentChat = sanitizeRecentChat(body.recentChat);
   const streamTitle = typeof body.streamTitle === 'string' ? body.streamTitle.slice(0, 200) : null;
   const channelName = typeof body.channelName === 'string'
     ? body.channelName.slice(0, 80)
     : 'the stage';
-  const stage = typeof body.stage === 'string' ? body.stage.slice(0, 64) : '';
 
   if (body.mode === 'stage') {
     const npc = body.npc?.trim();
