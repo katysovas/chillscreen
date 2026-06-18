@@ -29,6 +29,7 @@ import {
   subscribeLoadoutRegistry,
 } from '../loadout';
 import type { CharacterLoadout } from '../loadout';
+import { isPaintingBrushLoadout } from '@/lib/easel/brushLoadout';
 import { getForcedHatId, subscribeDressCode } from '@/lib/dressCode';
 import {
   accessoryHoldSide,
@@ -297,6 +298,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
       ? isLoadoutHandMounted(effectiveLoadout)
       : Boolean(accessory)
   );
+  const paintingBrush = isPaintingBrushLoadout(effectiveLoadout ?? undefined);
 
   return (
     <div
@@ -315,7 +317,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
       }}>
         <div
           ref={wrapperRef}
-          className={`ch-wrapper${outfit ? ` ch-outfit-${outfit}` : ''}${hasHandProp ? ' ch-hand-prop' : ''}${spaceFloat ? ' ch-space-float' : ''}${!spaceFloat && walking ? ' ch-walking' : ''}${spaceFloat && walking ? ' ch-space-float-moving' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
+          className={`ch-wrapper${outfit ? ` ch-outfit-${outfit}` : ''}${hasHandProp ? ' ch-hand-prop' : ''}${paintingBrush ? ' ch-painting-brush' : ''}${spaceFloat ? ' ch-space-float' : ''}${!spaceFloat && walking ? ' ch-walking' : ''}${spaceFloat && walking ? ' ch-space-float-moving' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
         >
           <div className="ch-animal">
             {equipped

@@ -11,6 +11,11 @@ import {
   type ServerMessage,
 } from '../lib/multiplayer/protocol';
 import { diffNpcPositions, type NpcPositionSync } from '../lib/npcPositionSync';
+import {
+  normalizeNpcLeaderCapability,
+  pickNpcLeaderId,
+  type NpcLeaderCapability,
+} from '../lib/npcLeaderCapability';
 import { chatterApiBase } from '../lib/npcChatter/apiBase';
 import { chatterAuthHeader } from '../lib/npcChatter/auth';
 import { venueSlugFromRoomId } from '../lib/npcChatter/roomContext';
@@ -49,6 +54,8 @@ export default class WhichStageServer implements Party.Server {
   private festiesSyncTimer: ReturnType<typeof setTimeout> | null = null;
   /** Connection id whose local NPC sim is authoritative for the room. */
   private npcLeaderId: string | null = null;
+  /** Join-reported device scores — used to elect the NPC sim leader. */
+  private playerCapabilities = new Map<string, NpcLeaderCapability>();
   /** Latest leader snapshot — replayed to late joiners. */
   private lastNpcPositionsSync: Extract<ServerMessage, { t: 'npc-positions-sync' }> | null = null;
   /** Coalesce move fan-out per sender (~10 Hz cap). */
@@ -102,7 +109,7 @@ export default class WhichStageServer implements Party.Server {
     const playlists = await resolveStagePlaylists(this.room.env.YOUTUBE_API_KEY as string | undefined);
     this.stageSync = { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists };
     const festies = await this.fetchFesties();
-    this.ensureNpcLeader();
+    this.electNpcLeader();
     const welcome: ServerMessage = {
       t: 'welcome',
       selfId: conn.id,
@@ -173,8 +180,12 @@ export default class WhichStageServer implements Party.Server {
         if (msg.chatterDebug) {
           this.chatterDebugPlayers.add(sender.id);
         }
+        this.playerCapabilities.set(
+          sender.id,
+          normalizeNpcLeaderCapability(msg.capability),
+        );
         const leaderBefore = this.npcLeaderId;
-        this.ensureNpcLeader();
+        this.electNpcLeader();
         this.broadcastExcept(sender.id, { t: 'joined', player });
         if (this.npcLeaderId !== leaderBefore) {
           this.broadcastNpcLeader();
@@ -292,11 +303,7 @@ export default class WhichStageServer implements Party.Server {
         break;
       }
       case 'npc-positions': {
-        if (sender.id !== this.npcLeaderId) {
-          if (this.npcLeaderId != null) break;
-          this.npcLeaderId = sender.id;
-          this.broadcastNpcLeader();
-        }
+        if (sender.id !== this.npcLeaderId) break;
         this.chatter.updateNpcPositions(msg.positions, msg.viewportWidth, sender.id);
         const delta = diffNpcPositions(
           msg.positions as NpcPositionSync[],
@@ -364,6 +371,7 @@ export default class WhichStageServer implements Party.Server {
     const wasLeader = conn.id === this.npcLeaderId;
     const userId = this.connUserIds.get(conn.id);
     this.connUserIds.delete(conn.id);
+    this.playerCapabilities.delete(conn.id);
     this.clearMoveRelay(conn.id);
     if (this.players.delete(conn.id)) {
       this.chatter.clearPlayerViewport(conn.id);
@@ -382,8 +390,7 @@ export default class WhichStageServer implements Party.Server {
       this.chatter.onLastPlayer();
       void this.easels.onLastPlayer();
     } else if (wasLeader) {
-      this.npcLeaderId = null;
-      this.ensureNpcLeader();
+      this.electNpcLeader();
       this.broadcastNpcLeader();
     }
   }
@@ -465,13 +472,13 @@ export default class WhichStageServer implements Party.Server {
     return [...map.values()];
   }
 
-  private ensureNpcLeader(): string | null {
-    if (this.npcLeaderId && this.players.has(this.npcLeaderId)) {
-      return this.npcLeaderId;
-    }
-    const next = this.players.keys().next().value as string | undefined;
-    this.npcLeaderId = next ?? null;
-    return this.npcLeaderId;
+  private electNpcLeader(): void {
+    const next = pickNpcLeaderId(
+      [...this.players.keys()],
+      this.playerCapabilities,
+      this.npcLeaderId,
+    );
+    this.npcLeaderId = next;
   }
 
   private broadcastNpcLeader() {

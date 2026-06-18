@@ -186,7 +186,7 @@ export function HandProp({ variant, ctx }: HandPropProps) {
       );
     case 'brush':
       return (
-        <div className="ch-lo-brush" style={handPropRotateStyle('brush')}>
+        <div className="ch-lo-brush">
           <img src={BRUSH_SRC} alt="" className="ch-lo-brush-img" draggable={false} />
         </div>
       );

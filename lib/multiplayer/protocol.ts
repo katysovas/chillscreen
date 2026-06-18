@@ -12,6 +12,7 @@ import type { StageChatterMessage } from '../stageChatter/types';
 import type { StageSync } from '../stageVideos';
 import type { EaselSessionSync, EaselSlotSync } from '../easel/types';
 import type { CreatorStageSyncPayload } from '../stages/stageSync';
+import type { NpcLeaderCapability } from '../npcLeaderCapability';
 
 export type Facing = 'left' | 'right';
 
@@ -61,6 +62,8 @@ export type ClientMessage =
       chatterDebug?: boolean;
       /** Signed-in account id — marks festie owner_on_stage for live NPC chatter. */
       userId?: string;
+      /** Device capability — server picks the strongest NPC sim leader. */
+      capability?: NpcLeaderCapability;
     }
   | { t: 'move'; worldX: number; facing: Facing; walking: boolean }
   | { t: 'profile'; profile: PlayerProfile }
@@ -111,7 +114,7 @@ export type ServerMessage =
       serverNow: number;
       stage: StageSync;
       festies?: FestiePublic[];
-      /** Connection id running local NPC sim — positions relay from this client. */
+      /** Connection id with the strongest device — runs local NPC sim for the room. */
       npcLeaderId?: string | null;
     }
   | { t: 'festies-sync'; festies: FestiePublic[] }

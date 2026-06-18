@@ -11,3 +11,7 @@ export function easelHandLoadout(
   if (!useBrush) return base;
   return { ...(base ?? {}), hand: EASEL_HAND_BRUSH_ID };
 }
+
+export function isPaintingBrushLoadout(loadout?: CharacterLoadout): boolean {
+  return loadout?.hand === EASEL_HAND_BRUSH_ID;
+}

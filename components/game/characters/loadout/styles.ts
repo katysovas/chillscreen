@@ -94,8 +94,25 @@ export const LOADOUT_STYLES = `
   .ch-lo-tacos-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-popcorn{position:absolute;left:-109px;top:4px;width:220px;height:138px;transform:rotate(70deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
   .ch-lo-popcorn-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
-  .ch-right-hand .ch-lo-brush{position:absolute;left:-2px;top:-100px;width:120px;height:120px;transform:rotate(180deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-right-hand .ch-lo-brush{position:absolute;left:-2px;top:-100px;width:120px;height:120px;transform-origin:50% 88%;z-index:12;pointer-events:none;}
   .ch-lo-brush-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  /* Easel painting — arm reach + brush stroke (ch-painting-brush on wrapper) */
+  .ch-painting-brush:not(.ch-walking):not(.ch-space-float) .ch-right-hand{
+    animation:ch-painting-hand 1.6s ease-in-out infinite!important;
+    top:70px!important;
+  }
+  @keyframes ch-painting-hand{
+    0%,100%{transform:rotate(-47deg);}
+    40%{transform:rotate(-66deg);}
+    65%{transform:rotate(-38deg);}
+  }
+  .ch-painting-brush .ch-lo-brush{animation:ch-brush-stroke 1.5s ease-in-out infinite;}
+  @keyframes ch-brush-stroke{
+    0%,100%{transform:rotate(170deg);}
+    28%{transform:rotate(198deg) translate(-3px,4px);}
+    52%{transform:rotate(176deg) translate(1px,2px);}
+    78%{transform:rotate(206deg) translate(-2px,3px);}
+  }
   .ch-right-hand .ch-lo-lollipop{position:absolute;left:-18px;top:-260px;width:182px;height:260px;transform:rotate(110deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
   .ch-lo-lollipop-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-martini{position:absolute;left:-99px;top:-22px;width:220px;height:138px;transform:rotate(40deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}

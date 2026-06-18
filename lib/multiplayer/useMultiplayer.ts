@@ -22,6 +22,11 @@ import { getHumansOnlyStageChatter } from '@/lib/stageChatter/preferences';
 import { isChatterDebugMode } from '@/lib/chatterDebug';
 import { ilog, ierror, iwarn } from '@/lib/internalDebug';
 import type { StageChatterMessage } from '@/lib/stageChatter/types';
+import type { NpcLeaderCapability } from '@/lib/npcLeaderCapability';
+import {
+  awaitNpcLeaderCapability,
+  prepareNpcLeaderCapability,
+} from '@/lib/npcLeaderCapabilityClient';
 
 /** What a remote avatar needs to render — kept in a ref, mutated without rerenders. */
 export type RemotePlayerState = {
@@ -185,6 +190,8 @@ export function useMultiplayer(opts: Options): Multiplayer {
   /** Messages sent before the socket handshake completes. */
   const pendingSendRef = useRef<object[]>([]);
   const creatorStageSyncHandlerRef = useRef<((stage: CreatorStageSyncPayload) => void) | null>(null);
+  const capabilityRef = useRef<NpcLeaderCapability | null>(null);
+  const capabilityPendingRef = useRef<Promise<void> | null>(null);
 
   const [selfId, setSelfId] = useState<string | null>(null);
   const selfIdRef = useRef<string | null>(null);
@@ -234,6 +241,11 @@ export function useMultiplayer(opts: Options): Multiplayer {
   useEffect(() => {
     if (!shouldConnect) return;
 
+    capabilityRef.current = null;
+    capabilityPendingRef.current = prepareNpcLeaderCapability().then(cap => {
+      capabilityRef.current = cap;
+    });
+
     const host = partyKitHost();
     const socket = new PartySocket({ host, room: opts.roomId });
     socketRef.current = socket;
@@ -242,7 +254,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
       ilog('[partykit] debug mode — connecting to', host, 'room', opts.roomId);
     }
 
-    const announceJoin = () => {
+    const announceJoin = (capability: NpcLeaderCapability) => {
       const last = lastMoveRef.current;
       const profile = pendingProfileRef.current
         ?? profileRef.current
@@ -257,12 +269,14 @@ export function useMultiplayer(opts: Options): Multiplayer {
         humansOnlyChatter?: boolean;
         chatterDebug?: boolean;
         userId?: string;
+        capability: NpcLeaderCapability;
       } = {
         t: 'join',
         profile,
         worldX: last?.worldX ?? spawnWorldXWithJitter(spawnRef.current ?? 0),
         facing: last?.facing ?? 'right',
         walking: last?.walking ?? false,
+        capability,
       };
       if (isChatterMuted()) join.chatterMuted = true;
       if (getHumansOnlyStageChatter()) join.humansOnlyChatter = true;
@@ -282,12 +296,20 @@ export function useMultiplayer(opts: Options): Multiplayer {
       if (last) sendNow({ t: 'move', ...last });
     };
 
+    let joinCancelled = false;
+
     const onOpen = () => {
       setConnected(true);
-      announceJoin();
-      // Catch profile/loadout that landed while the handshake was in flight.
-      flushProfile();
-      flushPending();
+      void (async () => {
+        const capability = await awaitNpcLeaderCapability(
+          capabilityRef,
+          capabilityPendingRef.current,
+        );
+        if (joinCancelled) return;
+        announceJoin(capability);
+        flushProfile();
+        flushPending();
+      })();
     };
 
     const onClose = (e: CloseEvent) => {
@@ -469,6 +491,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
     socket.addEventListener('message', onMessage);
 
     return () => {
+      joinCancelled = true;
       socket.removeEventListener('open', onOpen);
       socket.removeEventListener('close', onClose);
       socket.removeEventListener('error', onError);
