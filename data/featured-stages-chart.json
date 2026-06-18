@@ -1,0 +1,87 @@
+{
+  "tabs": [
+    {
+      "id": "featured",
+      "label": "Featured",
+      "entries": [
+        {
+          "rank": 1,
+          "previousRank": 1,
+          "name": "Las Vegas",
+          "subtitle": "Neon, lasers, and bass with the Strip at your back",
+          "thumbnail": "/images/homepage/edc.webp",
+          "target": { "kind": "venue", "route": "edc" }
+        },
+        {
+          "rank": 2,
+          "previousRank": 2,
+          "name": "Silent Disco",
+          "subtitle": "Headsets on, dance till the sun comes up",
+          "thumbnail": "/images/homepage/silentdisco.webp",
+          "target": { "kind": "venue", "route": "silent-disco" }
+        },
+        {
+          "rank": 3,
+          "previousRank": 3,
+          "name": "The Forest",
+          "subtitle": "Get lost in the woods — Electric Forest vibes",
+          "thumbnail": "/images/homepage/forest.webp",
+          "target": { "kind": "venue", "route": "forest" }
+        },
+        {
+          "rank": 4,
+          "previousRank": 5,
+          "name": "Deep Space",
+          "subtitle": "Drift through the cosmos when the night goes deep",
+          "thumbnail": "/images/homepage/space.webp",
+          "target": { "kind": "venue", "route": "deep-space" }
+        },
+        {
+          "rank": 5,
+          "previousRank": 5,
+          "name": "The Desert",
+          "subtitle": "Golden-hour main-stage energy out in the desert",
+          "thumbnail": "/images/homepage/thedesert.webp",
+          "target": { "kind": "venue", "route": "coachella" }
+        },
+        {
+          "rank": 6,
+          "previousRank": 6,
+          "name": "The Farm",
+          "subtitle": "Camp out in the fields where the music never stops",
+          "thumbnail": "/images/homepage/thefarm.webp",
+          "target": { "kind": "venue", "route": "tentaroo" }
+        },
+        {
+          "rank": 7,
+          "previousRank": 7,
+          "name": "Hulaween",
+          "subtitle": "Full sets from Suwannee — Hula family hangout",
+          "thumbnail": "/images/homepage/hula.webp",
+          "target": { "kind": "venue", "route": "hula" }
+        },
+        {
+          "rank": 8,
+          "previousRank": 8,
+          "name": "San Francisco",
+          "subtitle": "Nonstop sets, SF style — Outside Lands energy",
+          "thumbnail": "/images/homepage/sf.webp",
+          "target": { "kind": "venue", "route": "outside-hands" }
+        },
+        {
+          "rank": 9,
+          "previousRank": 9,
+          "name": "Chill Cinema",
+          "subtitle": "Take a breather with chill sets under the skyline",
+          "thumbnail": "/images/homepage/cinema.webp",
+          "target": { "kind": "venue", "route": "cinema" }
+        },
+        {
+          "rank": 10,
+          "previousRank": 12,
+          "target": { "kind": "creator", "slug": "dead-company" }
+        }
+      ]
+    }
+  ]
+}

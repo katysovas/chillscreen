@@ -8,8 +8,8 @@ import { SITE_NAME, TWITTER_HANDLE, TWITTER_URL } from '@/lib/site';
 
 const TRANSPARENT_LOGO_PATH = '/images/logos/logo_transparent.png';
 import type { StagePickerTarget } from '@/lib/stagePickerOptions';
-import { LANDING_FAQ, LANDING_TRENDING_JOIN_LABEL, buildTrendingStageRows, type TrendingStageRow } from './landingData';
-import { fetchFeaturedStages } from '@/lib/stages/client';
+import { LANDING_FAQ, LANDING_TRENDING_JOIN_LABEL } from './landingData';
+import { FeaturedStagesChart } from '@/components/stages/FeaturedStagesChart';
 import { LANDING_HERO } from './landingHeroCopy';
 import { LandingHeroCanvas } from './LandingHeroCanvas';
 import { LandingHeroCta } from './LandingHeroCta';
@@ -30,40 +30,6 @@ type Props = {
   onStageEnter: (target: StagePickerTarget) => void;
   onSignIn: () => void;
 };
-
-function ArrowIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path
-        d="M3 8h10M9 4l4 4-4 4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-/*
-function PlayIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
-      <path d="M4 2.5l10 5.5-10 5.5V2.5z" fill="white" />
-    </svg>
-  );
-}
-
-function PhotoIcon() {
-  return (
-    <svg className="img-icon" width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="3" width="18" height="18" rx="2" stroke="white" strokeWidth="1" />
-      <circle cx="8.5" cy="8.5" r="1.5" fill="white" />
-      <path d="M21 15l-5-5L5 21" stroke="white" strokeWidth="1" />
-    </svg>
-  );
-}
-*/
 
 function SpeakerSvg() {
   return (
@@ -106,26 +72,6 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
   const navRef = useRef<HTMLElement>(null);
   const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [contactError, setContactError] = useState('');
-  const [trendingStages, setTrendingStages] = useState<TrendingStageRow[]>(() =>
-    buildTrendingStageRows([]),
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchFeaturedStages()
-      .then(stages => {
-        if (!cancelled) {
-          setTrendingStages(buildTrendingStageRows(stages, { randomOrder: true }));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setTrendingStages(buildTrendingStageRows([], { randomOrder: true }));
-        }
-      });
-    return () => { cancelled = true; };
-  }, []);
-
   useEffect(() => {
     const container = starsRef.current;
     if (!container) return;
@@ -297,62 +243,20 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
             <p className="stages-eyebrow">Trending Now</p>
             <h2 className="stages-title">Join a stage</h2>
             <div className="stages-subrow">
-              <p className="stages-subtitle">Or create your own stage</p>
+              <p className="stages-subtitle">Or create your own</p>
               <Link href="/create" className="stages-create-btn">
                 Create stage
               </Link>
             </div>
           </header>
 
-          <div className="trending-table" role="table" aria-label="Trending stages">
-            <div className="trending-table-head" role="row">
-              <span className="trending-col trending-col--thumb" role="columnheader" aria-hidden />
-              <span className="trending-col trending-col--name" role="columnheader">Stage</span>
-              <span className="trending-col trending-col--action" role="columnheader" aria-hidden />
-            </div>
-            {trendingStages.map(stage => (
-              <div key={stage.id} className="trending-row" role="row">
-                <div className="trending-col trending-col--thumb" role="cell">
-                  <div className="trending-thumb">
-                    {stage.thumbnail ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={stage.thumbnail}
-                        alt=""
-                        loading="lazy"
-                        onError={e => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <span className="trending-thumb-fallback" aria-hidden />
-                    )}
-                  </div>
-                </div>
-                <div className="trending-col trending-col--name" role="cell">
-                  <p className="trending-label">
-                    <span>{stage.name}</span>
-                    {stage.description && (
-                      <>
-                        <span aria-hidden> — </span>
-                        <span>{stage.description}</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-                <div className="trending-col trending-col--action" role="cell">
-                  <button
-                    type="button"
-                    className="trending-join-btn"
-                    onClick={() => onStageEnter(stage.target)}
-                  >
-                    {LANDING_TRENDING_JOIN_LABEL}
-                    <ArrowIcon />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <FeaturedStagesChart
+            variant="page"
+            showHeader={false}
+            showJoinAction
+            joinLabel={LANDING_TRENDING_JOIN_LABEL}
+            onSelect={onStageEnter}
+          />
         </div>
       </section>
 

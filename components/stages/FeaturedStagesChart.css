@@ -1,0 +1,264 @@
+.featured-stages-chart {
+  --fsc-text: #f0ede6;
+  --fsc-muted: rgba(240, 237, 230, 0.48);
+  --fsc-edge: rgba(255, 255, 255, 0.09);
+  --fsc-row-bg: rgba(255, 255, 255, 0.03);
+  --fsc-row-hover: rgba(255, 255, 255, 0.055);
+  --fsc-accent: #ffb347;
+  --fsc-accent-dim: rgba(230, 126, 34, 0.14);
+  --fsc-up: #6eed9a;
+  --fsc-down: #ff6b6b;
+  --fsc-display: Georgia, 'Times New Roman', serif;
+  --fsc-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--fsc-text);
+  font-family: var(--fsc-display);
+}
+
+.featured-stages-chart--modal {
+  --fsc-text: #fff;
+  --fsc-muted: rgba(255, 255, 255, 0.5);
+  --fsc-edge: rgba(255, 255, 255, 0.1);
+  --fsc-row-bg: rgba(255, 255, 255, 0.04);
+  --fsc-row-hover: rgba(255, 255, 255, 0.07);
+}
+
+.featured-stages-chart__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.featured-stages-chart__title-block {
+  min-width: 0;
+}
+
+.featured-stages-chart__eyebrow {
+  margin: 0 0 4px;
+  font-family: var(--fsc-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fsc-muted);
+}
+
+.featured-stages-chart__title {
+  margin: 0;
+  font-family: var(--fsc-display);
+  font-weight: 800;
+  font-size: clamp(22px, 3.2vw, 30px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.featured-stages-chart__tabs {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.featured-stages-chart__tab {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--fsc-edge);
+  background: transparent;
+  color: var(--fsc-muted);
+  font-family: var(--fsc-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: default;
+}
+
+.featured-stages-chart__tab--active {
+  border-color: rgba(230, 126, 34, 0.45);
+  background: var(--fsc-accent-dim);
+  color: var(--fsc-accent);
+}
+
+.featured-stages-chart__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.featured-stages-chart--scrollable .featured-stages-chart__body {
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.featured-stages-chart__row {
+  display: grid;
+  grid-template-columns: 36px 52px minmax(0, 1fr) auto 28px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--fsc-edge);
+  background: var(--fsc-row-bg);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+  font: inherit;
+}
+
+.featured-stages-chart__row--no-action {
+  grid-template-columns: 36px 52px minmax(0, 1fr) 28px;
+}
+
+.featured-stages-chart__row:hover {
+  background: var(--fsc-row-hover);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.featured-stages-chart__row--selected {
+  border-color: rgba(230, 126, 34, 0.55);
+  background: rgba(230, 126, 34, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(230, 126, 34, 0.15);
+}
+
+.featured-stages-chart__row--current:not(.featured-stages-chart__row--selected) {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.featured-stages-chart__rank {
+  font-family: var(--fsc-mono);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--fsc-text);
+  line-height: 1;
+}
+
+.featured-stages-chart__row:nth-child(-n + 3) .featured-stages-chart__rank {
+  font-size: 17px;
+  color: var(--fsc-accent);
+}
+
+.featured-stages-chart__move {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.featured-stages-chart__move--up {
+  color: var(--fsc-up);
+}
+
+.featured-stages-chart__move--down {
+  color: var(--fsc-down);
+}
+
+.featured-stages-chart__move--same {
+  color: rgba(255, 255, 255, 0.22);
+  font-family: var(--fsc-mono);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.featured-stages-chart__thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+
+.featured-stages-chart__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.featured-stages-chart__info {
+  min-width: 0;
+}
+
+.featured-stages-chart__name {
+  margin: 0;
+  font-family: var(--fsc-display);
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.25;
+  color: var(--fsc-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.featured-stages-chart__subtitle {
+  margin: 3px 0 0;
+  font-family: system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--fsc-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.featured-stages-chart__join {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(230, 126, 34, 0.45);
+  background: var(--fsc-accent-dim);
+  color: var(--fsc-accent);
+  font-family: var(--fsc-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.featured-stages-chart__join:hover {
+  background: rgba(230, 126, 34, 0.24);
+  border-color: rgba(230, 126, 34, 0.65);
+  color: #ffc876;
+}
+
+@media (max-width: 640px) {
+  .featured-stages-chart__row,
+  .featured-stages-chart__row--no-action {
+    grid-template-columns: 32px 44px minmax(0, 1fr) 22px;
+    gap: 8px;
+    padding: 9px 10px;
+  }
+
+  .featured-stages-chart__row:has(.featured-stages-chart__join) {
+    grid-template-columns: 32px 44px minmax(0, 1fr) 22px;
+  }
+
+  .featured-stages-chart__join {
+    display: none;
+  }
+
+  .featured-stages-chart__thumb {
+    width: 44px;
+    height: 44px;
+  }
+
+  .featured-stages-chart__name {
+    font-size: 13px;
+  }
+
+  .featured-stages-chart__subtitle {
+    font-size: 10px;
+  }
+}

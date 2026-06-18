@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { fetchFeaturedStages } from '@/lib/stages/client';
 import {
-  buildStagePickerOptions,
   currentStagePickerTarget,
   stagePickerTargetId,
   type StagePickerTarget,
 } from '@/lib/stagePickerOptions';
-import { MobileStageCard } from './MobileStageCard';
+import { FeaturedStagesChart } from '@/components/stages/FeaturedStagesChart';
+import { chartEntryId, getFeaturedStagesChartTab } from '@/lib/stages/featuredStagesChart';
 import {
   isValidPlayerName,
   sanitizePlayerNameInput,
@@ -50,25 +49,9 @@ export function StagePicker({
     () => currentStagePickerTarget(initialRoute, creatorSlug),
     [initialRoute, creatorSlug],
   );
-  const [pickedId, setPickedId] = useState<string | null>(
-    currentTarget ? stagePickerTargetId(currentTarget) : null,
-  );
-  const [featuredStages, setFeaturedStages] = useState<Awaited<ReturnType<typeof fetchFeaturedStages>>>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchFeaturedStages()
-      .then(stages => {
-        if (!cancelled) setFeaturedStages(stages);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
-
-  const options = useMemo(
-    () => buildStagePickerOptions(featuredStages),
-    [featuredStages],
-  );
+  const currentId = currentTarget ? stagePickerTargetId(currentTarget) : null;
+  const [pickedId, setPickedId] = useState<string | null>(currentId);
+  const chartEntries = useMemo(() => getFeaturedStagesChartTab().entries, []);
 
   const validName = !requireName || isValidPlayerName(draft);
   const isSwap = variant === 'swap';
@@ -77,15 +60,20 @@ export function StagePicker({
     if (initialName) setDraft(initialName);
   }, [initialName]);
 
-  const picked = options.find(o => o.id === pickedId) ?? null;
-  const sameAsCurrent = picked != null && currentTarget != null
-    && stagePickerTargetId(picked.target) === stagePickerTargetId(currentTarget);
+  const pickedTarget = useMemo(() => {
+    if (!pickedId) return null;
+    const entry = chartEntries.find(e => chartEntryId(e) === pickedId);
+    return entry?.target ?? null;
+  }, [chartEntries, pickedId]);
+
+  const sameAsCurrent = pickedTarget != null && currentTarget != null
+    && stagePickerTargetId(pickedTarget) === stagePickerTargetId(currentTarget);
 
   const submit = () => {
     const name = draft.trim();
     if (requireName && !isValidPlayerName(name)) return;
-    if (!picked) return;
-    onEnter(name, picked.target);
+    if (!pickedTarget) return;
+    onEnter(name, pickedTarget);
   };
 
   return (
@@ -138,7 +126,7 @@ export function StagePicker({
           border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 22,
           padding: '28px 20px 24px',
-          maxWidth: 400,
+          maxWidth: 560,
           width: '100%',
           fontFamily: "Georgia,'Times New Roman',serif",
           boxShadow: '0 24px 64px rgba(0,0,0,0.65)',
@@ -177,42 +165,32 @@ export function StagePicker({
           style={{ display: 'block', height: 40, margin: '0 auto 14px', objectFit: 'contain' }}
         />
 
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', textAlign: 'center', marginBottom: 6 }}>
-          {isSwap ? 'Change stage' : 'Pick your stage'}
-        </div>
-        <p
-          style={{
-            margin: '0 0 20px',
-            fontSize: 14,
-            lineHeight: 1.55,
-            color: 'rgba(255,255,255,0.62)',
-            textAlign: 'center',
-            fontFamily: 'system-ui,sans-serif',
-          }}
-        >
-          {isSwap
-            ? ''
-            : 'Choose a city to explore. Watch live shows and chat with friends.'}
-        </p>
+        {!isSwap && (
+          <>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', textAlign: 'center', marginBottom: 6 }}>
+              Pick your stage
+            </div>
+            <p
+              style={{
+                margin: '0 0 16px',
+                fontSize: 14,
+                lineHeight: 1.55,
+                color: 'rgba(255,255,255,0.62)',
+                textAlign: 'center',
+                fontFamily: 'system-ui,sans-serif',
+              }}
+            >
+              Choose a city to explore. Watch live shows and chat with friends.
+            </p>
+          </>
+        )}
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 10,
-            marginBottom: requireName ? 18 : 20,
-          }}
-        >
-          {options.map(option => (
-            <MobileStageCard
-              key={option.id}
-              title={option.title}
-              tagline={option.tagline}
-              selected={pickedId === option.id}
-              onSelect={() => setPickedId(option.id)}
-            />
-          ))}
-        </div>
+        <FeaturedStagesChart
+          variant="modal"
+          selectedId={pickedId}
+          currentId={currentId}
+          onSelect={target => setPickedId(stagePickerTargetId(target))}
+        />
 
         {requireName && (
           <>
@@ -223,7 +201,7 @@ export function StagePicker({
                 letterSpacing: 1.2,
                 textTransform: 'uppercase',
                 color: 'rgba(255,255,255,0.45)',
-                marginBottom: 8,
+                margin: '18px 0 8px',
                 fontFamily: 'system-ui,sans-serif',
               }}
             >
@@ -256,23 +234,24 @@ export function StagePicker({
 
         <button
           type="button"
-          disabled={!validName || !picked || (isSwap && sameAsCurrent)}
+          disabled={!validName || !pickedTarget || (isSwap && sameAsCurrent)}
           onClick={submit}
           style={{
             width: '100%',
+            marginTop: requireName ? 0 : 18,
             padding: '14px 16px',
             borderRadius: 14,
             border: 'none',
-            background: validName && picked && !(isSwap && sameAsCurrent)
+            background: validName && pickedTarget && !(isSwap && sameAsCurrent)
               ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
               : 'rgba(255,255,255,0.08)',
-            color: validName && picked && !(isSwap && sameAsCurrent)
+            color: validName && pickedTarget && !(isSwap && sameAsCurrent)
               ? '#fff'
               : 'rgba(255,255,255,0.35)',
             fontSize: 15,
             fontWeight: 700,
             fontFamily: 'system-ui,sans-serif',
-            cursor: validName && picked && !(isSwap && sameAsCurrent) ? 'pointer' : 'not-allowed',
+            cursor: validName && pickedTarget && !(isSwap && sameAsCurrent) ? 'pointer' : 'not-allowed',
           }}
         >
           {isSwap ? 'Go' : 'Enter the show'}

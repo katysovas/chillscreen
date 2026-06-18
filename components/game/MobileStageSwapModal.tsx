@@ -1,15 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { MobileStageCard } from './MobileStageCard';
+import { useMemo, useState } from 'react';
 import {
-  buildStagePickerOptions,
   currentStagePickerTarget,
   stagePickerTargetId,
   stageTargetsEqual,
   type StagePickerTarget,
 } from '@/lib/stagePickerOptions';
-import { fetchFeaturedStages } from '@/lib/stages/client';
+import { FeaturedStagesChart } from '@/components/stages/FeaturedStagesChart';
+import { chartEntryId, getFeaturedStagesChartTab } from '@/lib/stages/featuredStagesChart';
 import type { VenueRoute } from '@/lib/venueRoutes';
 
 type Props = {
@@ -26,45 +25,34 @@ export function MobileStageSwapModal({
   onSwap,
   onClose,
 }: Props) {
-  const [featuredStages, setFeaturedStages] = useState<Awaited<ReturnType<typeof fetchFeaturedStages>>>([]);
   const currentTarget = useMemo(
     () => currentStagePickerTarget(currentRoute, currentCreatorSlug),
     [currentRoute, currentCreatorSlug],
   );
-  const [pickedId, setPickedId] = useState<string | null>(
-    currentTarget ? stagePickerTargetId(currentTarget) : null,
-  );
+  const currentId = currentTarget ? stagePickerTargetId(currentTarget) : null;
+  const [pickedId, setPickedId] = useState<string | null>(currentId);
+  const chartEntries = useMemo(() => getFeaturedStagesChartTab().entries, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    void fetchFeaturedStages()
-      .then(stages => {
-        if (!cancelled) setFeaturedStages(stages);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
+  const pickedTarget = useMemo(() => {
+    if (!pickedId) return null;
+    const entry = chartEntries.find(e => chartEntryId(e) === pickedId);
+    return entry?.target ?? null;
+  }, [chartEntries, pickedId]);
 
-  const options = useMemo(
-    () => buildStagePickerOptions(featuredStages),
-    [featuredStages],
-  );
-
-  const picked = options.find(o => o.id === pickedId) ?? null;
-  const canSwap = picked != null
+  const canSwap = pickedTarget != null
     && currentTarget != null
-    && !stageTargetsEqual(picked.target, currentTarget);
+    && !stageTargetsEqual(pickedTarget, currentTarget);
 
   const submit = () => {
-    if (!canSwap || !picked) return;
-    onSwap(picked.target);
+    if (!canSwap || !pickedTarget) return;
+    onSwap(pickedTarget);
   };
 
   return (
     <div
       role="dialog"
       aria-modal
-      aria-labelledby="mobile-stage-swap-title"
+      aria-labelledby="mobile-stage-swap-chart-title"
       onClick={onClose}
       style={{
         position: 'fixed',
@@ -87,7 +75,7 @@ export function MobileStageSwapModal({
           border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 22,
           padding: '24px 20px 20px',
-          maxWidth: 400,
+          maxWidth: 560,
           width: '100%',
           fontFamily: "Georgia,'Times New Roman',serif",
           boxShadow: '0 24px 64px rgba(0,0,0,0.65)',
@@ -117,31 +105,12 @@ export function MobileStageSwapModal({
           ×
         </button>
 
-        <div
-          id="mobile-stage-swap-title"
-          style={{ fontSize: 20, fontWeight: 700, color: '#fff', textAlign: 'center', marginBottom: 6 }}
-        >
-          Change stage
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 10,
-            marginBottom: 16,
-          }}
-        >
-          {options.map(option => (
-            <MobileStageCard
-              key={option.id}
-              title={option.title}
-              tagline={option.tagline}
-              selected={pickedId === option.id}
-              onSelect={() => setPickedId(option.id)}
-            />
-          ))}
-        </div>
+        <FeaturedStagesChart
+          variant="modal"
+          selectedId={pickedId}
+          currentId={currentId}
+          onSelect={target => setPickedId(stagePickerTargetId(target))}
+        />
 
         <button
           type="button"
@@ -149,6 +118,7 @@ export function MobileStageSwapModal({
           onClick={submit}
           style={{
             width: '100%',
+            marginTop: 16,
             padding: '14px 16px',
             borderRadius: 14,
             border: 'none',
