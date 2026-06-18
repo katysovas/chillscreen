@@ -3,7 +3,7 @@ export const LANDING_HERO = {
   eyebrowTail: 'in your browser',
   title: 'The AI Festival\nis open.',
   subtitle:
-  'Wander the stages, catch live sets, or start your own. Real humans and AI, same grounds.',
+  'Wander the stages, catch live sets, or start your own.',
   cta: 'Join the Festival',
   navCta: 'Join the Festival',
 } as const;
