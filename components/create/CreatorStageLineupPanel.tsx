@@ -1,10 +1,17 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useCreatorStageControls } from '@/lib/stages/CreatorStageContext';
 import { STAGE_CONFIG } from '@/lib/stages/config';
 import { reorderStageStreams } from '@/lib/stages/lineup';
-import { parseStageStreams, updateUserStage } from '@/lib/stages/client';
+import {
+  parseStageStreams,
+  searchStageYoutubeVideos,
+  stageStreamFromYoutubeSearch,
+  updateUserStage,
+  type YoutubeSearchResult,
+} from '@/lib/stages/client';
+import { formatDurationSec } from '@/lib/stagePlaylistUtils';
 import { truncateWithEllipsis } from '@/lib/stages/streamLabel';
 import type { StageStream } from '@/lib/stages/types';
 import type { StageStreamPasteMode } from '@/lib/stages/parseStream';
@@ -15,10 +22,20 @@ export function CreatorStageLineupPanel() {
   const [error, setError] = useState<string | null>(null);
   const [streamInput, setStreamInput] = useState('');
   const [bulkInput, setBulkInput] = useState('');
+  const [videoSearchQuery, setVideoSearchQuery] = useState('');
+  const [videoSearchResults, setVideoSearchResults] = useState<YoutubeSearchResult[]>([]);
+  const [videoSearchLoading, setVideoSearchLoading] = useState(false);
+  const [videoSearchError, setVideoSearchError] = useState<string | null>(null);
+  const [videoSearchQuotaExceeded, setVideoSearchQuotaExceeded] = useState(false);
   const [streamPasteMode, setStreamPasteMode] = useState<StageStreamPasteMode>('video');
   const [streamHint, setStreamHint] = useState<string | null>(null);
   const [streamParsing, setStreamParsing] = useState(false);
   const [playNowIndex, setPlayNowIndex] = useState<number | null>(null);
+
+  const lineupVideoIds = useMemo(
+    () => new Set(ctx?.stage.streams.map(s => s.videoId) ?? []),
+    [ctx?.stage.streams],
+  );
 
   if (!ctx?.isOwner) return null;
 
@@ -43,6 +60,56 @@ export function CreatorStageLineupPanel() {
       setError(err instanceof Error ? err.message : 'Could not update shuffle setting');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const addVideoFromSearch = async (result: YoutubeSearchResult) => {
+    if (busy || streamParsing) return;
+    if (lineupVideoIds.has(result.id)) {
+      setError('That video is already in your lineup.');
+      return;
+    }
+    const stream = stageStreamFromYoutubeSearch(result);
+    if (!stream) {
+      setError('That video cannot be embedded on stage.');
+      return;
+    }
+    if (stage.streams.length >= STAGE_CONFIG.MAX_STREAMS) {
+      setError(`Maximum ${STAGE_CONFIG.MAX_STREAMS} streams.`);
+      return;
+    }
+    setError(null);
+    setStreamHint(null);
+    setStreamParsing(true);
+    try {
+      await persistStreams([...stage.streams, stream]);
+      setStreamHint(`Added “${stream.title}”.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add video');
+    } finally {
+      setStreamParsing(false);
+    }
+  };
+
+  const runVideoSearch = async () => {
+    const q = videoSearchQuery.trim();
+    if (!q || videoSearchLoading || busy) return;
+    setVideoSearchLoading(true);
+    setVideoSearchError(null);
+    setVideoSearchQuotaExceeded(false);
+    setVideoSearchResults([]);
+    try {
+      const { results } = await searchStageYoutubeVideos(q, 20);
+      setVideoSearchResults(results);
+      if (!results.length) {
+        setVideoSearchError('No embeddable videos found — try another search.');
+      }
+    } catch (err) {
+      const quota = Boolean((err as Error & { quotaExceeded?: boolean }).quotaExceeded);
+      setVideoSearchQuotaExceeded(quota);
+      setVideoSearchError(err instanceof Error ? err.message : 'Search failed');
+    } finally {
+      setVideoSearchLoading(false);
     }
   };
 
@@ -234,10 +301,10 @@ export function CreatorStageLineupPanel() {
 
       <div role="tablist" aria-label="Paste mode" style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
         {([
-          { mode: 'video' as const, label: 'Video' },
+          { mode: 'video' as const, label: 'Search' },
           { mode: 'playlist' as const, label: 'Playlist' },
           { mode: 'channel' as const, label: 'Channel' },
-          { mode: 'bulk' as const, label: 'Bulk' },
+          { mode: 'bulk' as const, label: 'Paste Links' },
         ]).map(({ mode, label }) => {
           const active = streamPasteMode === mode;
           return (
@@ -315,6 +382,150 @@ export function CreatorStageLineupPanel() {
             {streamParsing ? 'Importing…' : 'Import all'}
           </button>
         </div>
+      ) : streamPasteMode === 'video' ? (
+        <div style={{ marginBottom: 10 }}>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              void runVideoSearch();
+            }}
+            style={{ display: 'flex', gap: 8, marginBottom: 8 }}
+          >
+            <input
+              value={videoSearchQuery}
+              onChange={e => setVideoSearchQuery(e.target.value)}
+              disabled={busy}
+              placeholder="e.g. hulaween full set"
+              spellCheck={false}
+              style={{
+                flex: 1,
+                borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.06)',
+                color: '#fff',
+                padding: '8px 10px',
+                fontSize: 12,
+              }}
+            />
+            <button
+              type="submit"
+              disabled={videoSearchLoading || busy || !videoSearchQuery.trim()}
+              style={{
+                borderRadius: 8,
+                padding: '0 14px',
+                fontSize: 12,
+                fontWeight: 700,
+                border: 'none',
+                background: 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
+                color: '#fff',
+                cursor: videoSearchLoading || busy ? 'wait' : 'pointer',
+                opacity: videoSearchLoading || busy || !videoSearchQuery.trim() ? 0.5 : 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {videoSearchLoading ? '…' : 'Search'}
+            </button>
+          </form>
+
+          {videoSearchError && (
+            <p style={{
+              margin: '0 0 8px',
+              fontSize: 11,
+              lineHeight: 1.45,
+              color: videoSearchQuotaExceeded ? '#fde68a' : '#ff9d9d',
+            }}
+            >
+              {videoSearchError}
+            </p>
+          )}
+
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            maxHeight: 220,
+            overflowY: 'auto',
+            scrollbarWidth: 'thin',
+          }}
+          >
+            {videoSearchResults.map(result => {
+              const added = lineupVideoIds.has(result.id);
+              const canAdd = stageStreamFromYoutubeSearch(result) != null;
+              return (
+                <div
+                  key={result.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    background: 'rgba(255,255,255,0.04)',
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={result.thumbnailUrl}
+                    alt=""
+                    width={56}
+                    height={32}
+                    style={{ borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontWeight: 600,
+                      fontSize: 11,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      color: 'rgba(255,255,255,0.92)',
+                    }}
+                    >
+                      {result.title}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                      {result.channelTitle && <span>{result.channelTitle} · </span>}
+                      {formatDurationSec(result.durationSec)}
+                      {!canAdd && <span style={{ color: '#fbbf24' }}> · cannot embed</span>}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={added || !canAdd || busy || streamParsing || stage.streams.length >= STAGE_CONFIG.MAX_STREAMS}
+                    onClick={() => void addVideoFromSearch(result)}
+                    style={{
+                      borderRadius: 6,
+                      padding: '6px 10px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      border: 'none',
+                      background: added || !canAdd
+                        ? 'rgba(255,255,255,0.1)'
+                        : 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
+                      color: added || !canAdd ? 'rgba(255,255,255,0.35)' : '#fff',
+                      cursor: added || !canAdd || busy ? 'default' : 'pointer',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {added ? 'Added' : 'Add'}
+                  </button>
+                </div>
+              );
+            })}
+            {!videoSearchLoading && videoSearchResults.length === 0 && !videoSearchError && (
+              <p style={{
+                margin: 0,
+                fontSize: 11,
+                color: 'rgba(255,255,255,0.45)',
+                textAlign: 'center',
+                padding: '10px 0',
+              }}
+              >
+                Search results appear here.
+              </p>
+            )}
+          </div>
+        </div>
       ) : (
         <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
           <input
@@ -322,11 +533,9 @@ export function CreatorStageLineupPanel() {
             onChange={e => setStreamInput(e.target.value)}
             disabled={busy}
             placeholder={
-              streamPasteMode === 'video'
-                ? 'YouTube video URL'
-                : streamPasteMode === 'playlist'
-                  ? 'Playlist URL'
-                  : 'Channel URL or @handle'
+              streamPasteMode === 'playlist'
+                ? 'Playlist URL'
+                : 'Channel URL or @handle'
             }
             onKeyDown={e => { if (e.key === 'Enter') void addStream(); }}
             style={{
@@ -356,7 +565,7 @@ export function CreatorStageLineupPanel() {
               whiteSpace: 'nowrap',
             }}
           >
-            {streamParsing ? '…' : streamPasteMode === 'video' ? 'Add' : 'Import'}
+            {streamParsing ? '…' : 'Import'}
           </button>
         </div>
       )}

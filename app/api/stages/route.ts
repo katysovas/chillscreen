@@ -16,7 +16,6 @@ import {
   validateFestiePassword,
   validatePersonalityNotes,
 } from '@/lib/festie/validation';
-import { deductPlayerCoinsDb } from '@/lib/player/db';
 import { STAGE_CONFIG } from '@/lib/stages/config';
 import {
   insertUserStage,
@@ -49,7 +48,7 @@ function parseSky(raw: unknown): SkyPeriod | undefined {
   return undefined;
 }
 
-/** POST — atomic create: festie + account + stage + coin deduction. */
+/** POST — atomic create: festie + account + stage. */
 export async function POST(req: Request) {
   if (!getDb()) {
     return NextResponse.json({ error: 'DATABASE_URL is not configured' }, { status: 503 });
@@ -131,16 +130,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
       }
 
-      const coins = await deductPlayerCoinsDb(sessionUserId, STAGE_CONFIG.CREATION_COIN_COST);
-      if (coins == null) {
-        return NextResponse.json(
-          {
-            error: `Not enough coins — creating a stage costs ${STAGE_CONFIG.CREATION_COIN_COST} coins.`,
-          },
-          { status: 402 },
-        );
-      }
-
       const updatedFestie = await updateFestie(sessionUserId, { stage_slug: slug });
       if (!updatedFestie) {
         return NextResponse.json({ error: 'Festie not found' }, { status: 404 });
@@ -163,7 +152,6 @@ export async function POST(req: Request) {
       return NextResponse.json({
         stage: toUserStagePublic(row),
         festie: toFestieOwner(updatedFestie),
-        coins,
       }, { status: 201 });
     }
 
@@ -204,16 +192,6 @@ export async function POST(req: Request) {
       stage_slug: slug,
     });
 
-    const coins = await deductPlayerCoinsDb(festie.user_id, STAGE_CONFIG.CREATION_COIN_COST);
-    if (coins == null) {
-      return NextResponse.json(
-        {
-          error: `Not enough coins — creating a stage costs ${STAGE_CONFIG.CREATION_COIN_COST} coins.`,
-        },
-        { status: 402 },
-      );
-    }
-
     const row = await insertUserStage({
       slug,
       displayName,
@@ -231,7 +209,6 @@ export async function POST(req: Request) {
     const res = NextResponse.json({
       stage: toUserStagePublic(row),
       festie: toFestieOwner(festie),
-      coins,
     }, { status: 201 });
     setSessionCookie(res, festie.user_id);
     return res;

@@ -31,6 +31,8 @@ type Props = {
   onSend: (text: string) => void;
   onTypingChange?: (typing: boolean) => void;
   onHumansOnlyChange?: (enabled: boolean) => void;
+  stageName?: string;
+  stageDescription?: string | null;
   hidden?: boolean;
 };
 
@@ -71,6 +73,8 @@ export function StageChatterPanel({
   onSend,
   onTypingChange,
   onHumansOnlyChange,
+  stageName,
+  stageDescription,
   hidden = false,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -151,6 +155,15 @@ export function StageChatterPanel({
     })),
     [visibleTypingSenders, resolveGlow, resolveName],
   );
+
+  const welcomeMessage = useMemo(() => {
+    const name = stageName?.trim();
+    if (!name) return null;
+    const description = stageDescription?.trim();
+    return description
+      ? `Welcome to ${name} — ${description}`
+      : `Welcome to ${name}`;
+  }, [stageDescription, stageName]);
 
   useEffect(() => () => {
     if (typingHideTimerRef.current) clearTimeout(typingHideTimerRef.current);
@@ -320,10 +333,10 @@ export function StageChatterPanel({
               fontSize: 11,
               lineHeight: 1.5,
               color: 'rgba(255, 255, 255, 0.38)',
-              textAlign: 'center',
+              textAlign: 'left',
             }}
           >
-            {humansOnly ? 'No player chat yet…' : 'The stage is quiet..'}
+            {welcomeMessage ?? 'Welcome to the stage.'}
           </p>
         ) : (
           rows.map(msg => (

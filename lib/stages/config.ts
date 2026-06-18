@@ -14,8 +14,6 @@ export const STAGE_CONFIG = {
   RECLAIM_WINDOW_MS: 90 * 24 * 60 * 60 * 1000,
   /** Max streams in a lineup. */
   MAX_STREAMS: 100,
-  /** Coin cost to publish a stage (TBD — adjust here). */
-  CREATION_COIN_COST: 100,
   /** Slug length bounds. */
   SLUG_MIN_LENGTH: 3,
   SLUG_MAX_LENGTH: 32,

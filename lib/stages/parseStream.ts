@@ -8,6 +8,7 @@ import {
   parseYoutubePlaylistId,
   parseYoutubeVideoId,
 } from '@/lib/youtubeApi';
+import type { YoutubeAdminSearchResult } from '@/lib/youtubeApi';
 import type { StageStream } from '@/lib/stages/types';
 
 export type StageStreamPasteMode = 'video' | 'playlist' | 'channel' | 'bulk';
@@ -399,4 +400,17 @@ export async function enrichStreamsChannelTitles(streams: StageStream[]): Promis
     const channel = channelByVideoId.get(s.videoId);
     return channel ? { ...s, channelTitle: channel } : s;
   });
+}
+
+/** Convert a YouTube search hit into a lineup stream (null if not stage-ready). */
+export function stageStreamFromYoutubeSearch(r: YoutubeAdminSearchResult): StageStream | null {
+  if (!r.embeddable || !r.durationSec) return null;
+  return {
+    url: `https://www.youtube.com/watch?v=${r.id}`,
+    videoId: r.id,
+    title: r.title,
+    channelTitle: r.channelTitle,
+    thumbnail: r.thumbnailUrl,
+    durationSec: r.durationSec,
+  };
 }

@@ -23,7 +23,7 @@ type Props = {
   columns?: number;
   /** Scroll area height — defaults taller when upload tile is shown. */
   maxHeight?: number;
-  /** Last grid tile — opens custom backdrop upload (settings modal). */
+  /** First grid tile — opens custom backdrop upload (settings modal). */
   onUploadClick?: () => void;
   uploadLabel?: string;
 };
@@ -56,6 +56,75 @@ export function StageSceneGallery({
     });
   };
 
+  const uploadTile = onUploadClick ? (
+    <button
+      key="upload"
+      type="button"
+      disabled={disabled}
+      title={uploadLabel}
+      aria-label={uploadLabel}
+      onClick={onUploadClick}
+      style={{
+        borderRadius: 10,
+        padding: 0,
+        overflow: 'hidden',
+        border: customCityBackdrop
+          ? '2px solid rgba(126,184,255,0.85)'
+          : '1px dashed rgba(126,184,255,0.45)',
+        background: customCityBackdrop
+          ? 'rgba(126,184,255,0.12)'
+          : 'rgba(126,184,255,0.06)',
+        color: customCityBackdrop ? '#dcecff' : 'rgba(184,217,255,0.9)',
+        cursor: disabled ? 'wait' : 'pointer',
+        textAlign: 'center',
+        boxShadow: customCityBackdrop ? '0 0 0 1px rgba(126,184,255,0.2)' : 'none',
+      }}
+    >
+      {customCityBackdrop && backdropUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={backdropUrl}
+          alt=""
+          draggable={false}
+          style={{
+            display: 'block',
+            width: '100%',
+            height: thumbH,
+            objectFit: 'cover',
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: thumbH,
+            fontSize: 28,
+            fontWeight: 300,
+            lineHeight: 1,
+            color: 'rgba(184,217,255,0.75)',
+          }}
+          aria-hidden
+        >
+          +
+        </div>
+      )}
+      <div style={{
+        padding: compact ? '5px 4px' : '6px 4px',
+        fontSize: compact ? 10 : 11,
+        fontWeight: 600,
+        lineHeight: 1.25,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+      }}
+      >
+        {customCityBackdrop ? 'Custom' : uploadLabel}
+      </div>
+    </button>
+  ) : null;
+
   return (
     <div>
       <div
@@ -75,6 +144,7 @@ export function StageSceneGallery({
           scrollbarWidth: 'thin',
         }}
       >
+        {uploadTile}
         {STAGE_GALLERY_OPTIONS.map(option => {
           const active = galleryOptionMatches(option, preset, backdropUrl);
           return (
@@ -127,73 +197,6 @@ export function StageSceneGallery({
             </button>
           );
         })}
-        {onUploadClick && (
-          <button
-            type="button"
-            disabled={disabled}
-            title={uploadLabel}
-            aria-label={uploadLabel}
-            onClick={onUploadClick}
-            style={{
-              borderRadius: 10,
-              padding: 0,
-              overflow: 'hidden',
-              border: customCityBackdrop
-                ? '2px solid rgba(126,184,255,0.85)'
-                : '1px dashed rgba(126,184,255,0.45)',
-              background: customCityBackdrop
-                ? 'rgba(126,184,255,0.12)'
-                : 'rgba(126,184,255,0.06)',
-              color: customCityBackdrop ? '#dcecff' : 'rgba(184,217,255,0.9)',
-              cursor: disabled ? 'wait' : 'pointer',
-              textAlign: 'center',
-              boxShadow: customCityBackdrop ? '0 0 0 1px rgba(126,184,255,0.2)' : 'none',
-            }}
-          >
-            {customCityBackdrop && backdropUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={backdropUrl}
-                alt=""
-                draggable={false}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  height: thumbH,
-                  objectFit: 'cover',
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: thumbH,
-                  fontSize: 28,
-                  fontWeight: 300,
-                  lineHeight: 1,
-                  color: 'rgba(184,217,255,0.75)',
-                }}
-                aria-hidden
-              >
-                +
-              </div>
-            )}
-            <div style={{
-              padding: compact ? '5px 4px' : '6px 4px',
-              fontSize: compact ? 10 : 11,
-              fontWeight: 600,
-              lineHeight: 1.25,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-            >
-              {customCityBackdrop ? 'Custom' : uploadLabel}
-            </div>
-          </button>
-        )}
       </div>
 
       {customCityBackdrop && !onUploadClick && (

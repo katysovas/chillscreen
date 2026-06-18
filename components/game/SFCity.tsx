@@ -124,6 +124,7 @@ import { applyNpcDancing } from '@/lib/npcDancingRegistry';
 import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
+import { venueSeoForRoute } from '@/lib/venueSeo';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { CITY_BACKDROP_FILL } from './city/cinema/constants';
 import { FOREST_BACKDROP_FILL } from './city/forest/constants';
@@ -241,6 +242,19 @@ export default function SFCity({
   const effectiveVenueRoute = creatorStage
     ? venueRouteForUserStage(creatorStage)
     : venueRoute;
+  const stageChatterWelcome = useMemo(() => {
+    if (creatorStage) {
+      return {
+        stageName: creatorStage.displayName,
+        stageDescription: creatorStage.description ?? null,
+      };
+    }
+    const seo = venueSeoForRoute(effectiveVenueRoute);
+    return {
+      stageName: seo.title,
+      stageDescription: seo.description,
+    };
+  }, [creatorStage, effectiveVenueRoute]);
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
   const isCreatorChill = effectiveVenueRoute === 'creator-chill';
   const isCreatorCinema = effectiveVenueRoute === 'creator-cinema' || effectiveVenueRoute === 'hula';
@@ -1488,7 +1502,7 @@ export default function SFCity({
     showPlayerAmbient(message);
     mpRef.current?.sendAmbientMessage(message);
     try {
-      const found = new Audio('/audio/found.wav');
+      const found = new Audio('/audio/found.mp3');
       found.volume = SFX_VOLUME;
       void found.play().catch(() => {});
     } catch { /* ignore */ }
@@ -2570,6 +2584,8 @@ export default function SFCity({
           onSend={handleStageChatterSend}
           onTypingChange={handleStageChatterTyping}
           onHumansOnlyChange={handleStageChatterHumansOnly}
+          stageName={stageChatterWelcome.stageName}
+          stageDescription={stageChatterWelcome.stageDescription}
         />
       )}
 

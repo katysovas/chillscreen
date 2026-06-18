@@ -1,5 +1,6 @@
 import type { UserStagePublic, StageStream, StagePresetId, FeaturedStageSummary } from '@/lib/stages/types';
 import type { StageStreamPasteMode } from '@/lib/stages/parseStream';
+import { stageStreamFromYoutubeSearch } from '@/lib/stages/parseStream';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
 import type { FestieOwner } from '@/lib/festie/types';
 
@@ -17,6 +18,37 @@ export type ParseStreamsBulkResult =
   | { ok: false; reason: string; message: string };
 
 export type ParseStageStreamsResult = ParseStreamResult | ParseStreamsBulkResult;
+
+export type YoutubeSearchResult = {
+  id: string;
+  title: string;
+  thumbnailUrl: string;
+  channelTitle?: string;
+  embeddable: boolean;
+  durationSec: number | null;
+};
+
+export async function searchStageYoutubeVideos(
+  query: string,
+  max = 20,
+): Promise<{ results: YoutubeSearchResult[]; quotaExceeded?: boolean }> {
+  const res = await fetch(
+    `/api/stages/youtube-search?q=${encodeURIComponent(query)}&max=${max}`,
+  );
+  const data = await res.json() as {
+    results?: YoutubeSearchResult[];
+    error?: string;
+    quotaExceeded?: boolean;
+  };
+  if (!res.ok) {
+    const err = new Error(data.error ?? 'Search failed');
+    (err as Error & { quotaExceeded?: boolean }).quotaExceeded = data.quotaExceeded;
+    throw err;
+  }
+  return { results: data.results ?? [] };
+}
+
+export { stageStreamFromYoutubeSearch };
 
 export async function checkStageSlug(slug: string): Promise<SlugCheckResult> {
   const res = await fetch(`/api/stages/check-slug?slug=${encodeURIComponent(slug)}`);
@@ -83,7 +115,6 @@ export type CreateStagePayload = {
 export type CreateStageResponse = {
   stage: UserStagePublic;
   festie: FestieOwner;
-  coins: number;
 };
 
 export async function createUserStage(payload: CreateStagePayload): Promise<CreateStageResponse> {

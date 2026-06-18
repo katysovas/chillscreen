@@ -18,8 +18,12 @@ import {
   checkStageSlug,
   createUserStage,
   parseStageStreams,
+  searchStageYoutubeVideos,
+  stageStreamFromYoutubeSearch,
   uploadStageBackdrop,
+  type YoutubeSearchResult,
 } from '@/lib/stages/client';
+import { formatDurationSec } from '@/lib/stagePlaylistUtils';
 import {
   stageBackdropUploadHint,
   validateBackdropFileForUpload,
@@ -50,7 +54,7 @@ import { getPlayerSession, hydratePlayerSession } from '@/lib/player/session';
 
 const TOTAL_STEPS = 4;
 const MODAL_WIDTH_AUTH = 520;
-const MODAL_WIDTH_SETUP = 720;
+const MODAL_WIDTH_SETUP = 960;
 
 const INPUT: React.CSSProperties = {
   width: '100%',
@@ -175,6 +179,36 @@ const PRIMARY_BTN: React.CSSProperties = {
   transition: 'background 0.2s, color 0.2s, box-shadow 0.2s',
 };
 
+const BACK_BTN: React.CSSProperties = {
+  borderRadius: 12,
+  padding: '12px 18px',
+  fontSize: 15,
+  fontWeight: 600,
+  border: '1px solid rgba(255,255,255,0.18)',
+  background: 'rgba(255,255,255,0.08)',
+  color: 'rgba(255,255,255,0.88)',
+  fontFamily: 'system-ui,sans-serif',
+  cursor: 'pointer',
+  flexShrink: 0,
+};
+
+function StepNavRow({
+  onBack,
+  children,
+}: {
+  onBack: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: 'flex', gap: 12, marginTop: 24, alignItems: 'stretch' }}>
+      <button type="button" onClick={onBack} style={BACK_BTN}>
+        ← Back
+      </button>
+      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+    </div>
+  );
+}
+
 function parseInviteEmails(raw: string): string[] {
   return raw
     .split(/[\n,;]+/)
@@ -205,10 +239,10 @@ function StreamPasteTabs({
       }}
     >
       {([
-        { mode: 'video' as const, label: 'Video' },
+        { mode: 'video' as const, label: 'Search' },
         { mode: 'playlist' as const, label: 'Playlist' },
         { mode: 'channel' as const, label: 'Channel' },
-        { mode: 'bulk' as const, label: 'Bulk' },
+        { mode: 'bulk' as const, label: 'Paste Links' },
       ]).map(({ mode: tabMode, label }) => {
         const active = mode === tabMode;
         return (
@@ -395,6 +429,11 @@ export function CreateStageWizard() {
   const [loading, setLoading] = useState(false);
   const [streamInput, setStreamInput] = useState('');
   const [bulkInput, setBulkInput] = useState('');
+  const [videoSearchQuery, setVideoSearchQuery] = useState('');
+  const [videoSearchResults, setVideoSearchResults] = useState<YoutubeSearchResult[]>([]);
+  const [videoSearchLoading, setVideoSearchLoading] = useState(false);
+  const [videoSearchError, setVideoSearchError] = useState<string | null>(null);
+  const [videoSearchQuotaExceeded, setVideoSearchQuotaExceeded] = useState(false);
   const [streamPasteMode, setStreamPasteMode] = useState<StageStreamPasteMode>('video');
   const [streamParsing, setStreamParsing] = useState(false);
   const [streamHint, setStreamHint] = useState<string | null>(null);
@@ -499,6 +538,16 @@ export function CreateStageWizard() {
     setStep(2);
   };
 
+  const handleBackStep = () => {
+    setError(null);
+    setStreamHint(null);
+    if (step <= 1) {
+      router.back();
+      return;
+    }
+    setStep(s => s - 1);
+  };
+
   const submitStep1 = async () => {
     if (signedInFestie) {
       advancePastAuth();
@@ -575,6 +624,51 @@ export function CreateStageWizard() {
   };
 
   const stageDisplayLabel = draft.stageName.trim() || 'your stage';
+  const lineupVideoIds = useMemo(
+    () => new Set(draft.streams.map(s => s.videoId)),
+    [draft.streams],
+  );
+
+  const addVideoFromSearch = (result: YoutubeSearchResult) => {
+    if (lineupVideoIds.has(result.id)) {
+      setError('That video is already in your lineup.');
+      return;
+    }
+    const stream = stageStreamFromYoutubeSearch(result);
+    if (!stream) {
+      setError('That video cannot be embedded on stage.');
+      return;
+    }
+    if (draft.streams.length >= STAGE_CONFIG.MAX_STREAMS) {
+      setError(`Maximum ${STAGE_CONFIG.MAX_STREAMS} streams.`);
+      return;
+    }
+    setError(null);
+    setDraft(d => ({ ...d, streams: [...d.streams, stream] }));
+    setStreamHint(`Added “${stream.title}”.`);
+  };
+
+  const runVideoSearch = async () => {
+    const q = videoSearchQuery.trim();
+    if (!q || videoSearchLoading) return;
+    setVideoSearchLoading(true);
+    setVideoSearchError(null);
+    setVideoSearchQuotaExceeded(false);
+    setVideoSearchResults([]);
+    try {
+      const { results } = await searchStageYoutubeVideos(q, 20);
+      setVideoSearchResults(results);
+      if (!results.length) {
+        setVideoSearchError('No embeddable videos found — try another search.');
+      }
+    } catch (err) {
+      const quota = Boolean((err as Error & { quotaExceeded?: boolean }).quotaExceeded);
+      setVideoSearchQuotaExceeded(quota);
+      setVideoSearchError(err instanceof Error ? err.message : 'Search failed');
+    } finally {
+      setVideoSearchLoading(false);
+    }
+  };
 
   const addStream = async () => {
     const url = streamInput.trim();
@@ -961,27 +1055,28 @@ export function CreateStageWizard() {
                 </p>
               )}
 
-              <button
-                type="button"
-                onClick={() => void submitStep1()}
-                disabled={!canAdvance() || loading}
-                style={{
-                  ...PRIMARY_BTN,
-                  marginTop: 16,
-                  cursor: canAdvance() && !loading ? 'pointer' : 'default',
-                  background: primaryBtnBg(canAdvance() && !loading),
-                  color: canAdvance() && !loading ? '#fff' : 'rgba(255,255,255,0.3)',
-                  boxShadow: primaryBtnShadow(canAdvance() && !loading),
-                }}
-              >
-                {loading
-                  ? (isCreate ? 'Continuing…' : 'Signing in…')
-                  : signedInFestie
-                    ? 'Continue →'
-                    : isCreate
+              <StepNavRow onBack={handleBackStep}>
+                <button
+                  type="button"
+                  onClick={() => void submitStep1()}
+                  disabled={!canAdvance() || loading}
+                  style={{
+                    ...PRIMARY_BTN,
+                    cursor: canAdvance() && !loading ? 'pointer' : 'default',
+                    background: primaryBtnBg(canAdvance() && !loading),
+                    color: canAdvance() && !loading ? '#fff' : 'rgba(255,255,255,0.3)',
+                    boxShadow: primaryBtnShadow(canAdvance() && !loading),
+                  }}
+                >
+                  {loading
+                    ? (isCreate ? 'Continuing…' : 'Signing in…')
+                    : signedInFestie
                       ? 'Continue →'
-                      : 'Sign in →'}
-              </button>
+                      : isCreate
+                        ? 'Continue →'
+                        : 'Sign in →'}
+                </button>
+              </StepNavRow>
                 </>
               )}
             </>
@@ -989,138 +1084,165 @@ export function CreateStageWizard() {
 
           {displayStep === 2 && (
             <>
-              <h1 style={STEP_TITLE}>
-                Set up your stage
-              </h1>
-              
-              <label style={LABEL}>Stage name</label>
-              <input
-                style={{
-                  ...INPUT,
-                  border: stageFieldInvalid
-                    ? '1px solid rgba(255,107,107,0.55)'
-                    : INPUT.border,
-                }}
-                value={draft.stageName}
-                onChange={e => handleStageNameChange(e.target.value)}
-                onBlur={() => setStageNameTouched(true)}
-                placeholder="Sunset Rooftop"
-                autoFocus
-                spellCheck={false}
-                maxLength={STAGE_CONFIG.DISPLAY_NAME_MAX_LENGTH}
-              />
-              <p style={{
-                margin: '6px 0 0',
-                fontSize: 11,
-                color: stageFieldInvalid ? '#ff6b6b' : 'rgba(255,255,255,0.45)',
-                fontFamily: 'system-ui,sans-serif',
-              }}
-              >
-                {stageFieldHint}
-              </p>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: mobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1.05fr)',
+                gap: mobile ? 24 : 32,
+                alignItems: 'start',
+              }}>
+                <h1 style={{ ...STEP_TITLE, textAlign: 'left', margin: mobile ? '0 0 4px' : '0 0 20px' }}>
+                  Set up your stage
+                </h1>
+                {!mobile && (
+                  <h1 style={{ ...STEP_TITLE, textAlign: 'left', margin: '0 0 20px' }}>
+                    Choose your scene
+                  </h1>
+                )}
+              </div>
 
-              <label style={{ ...LABEL, marginTop: 20 }}>Short description</label>
-              <textarea
-                style={{
-                  ...INPUT,
-                  resize: 'vertical',
-                  minHeight: 72,
-                  lineHeight: 1.45,
-                  border: stageDescriptionInvalid
-                    ? '1px solid rgba(255,107,107,0.55)'
-                    : INPUT.border,
-                }}
-                value={draft.stageDescription}
-                onChange={e => setDraft(d => ({
-                  ...d,
-                  stageDescription: limitStageDescriptionInput(e.target.value),
-                }))}
-                onBlur={() => setStageDescriptionTouched(true)}
-                placeholder="Late-night rooftop sets with friends."
-                spellCheck
-                maxLength={STAGE_CONFIG.DESCRIPTION_MAX_LENGTH}
-              />
-              <p style={{
-                margin: '6px 0 0',
-                fontSize: 11,
-                color: stageDescriptionInvalid ? '#ff6b6b' : 'rgba(255,255,255,0.45)',
-                fontFamily: 'system-ui,sans-serif',
-              }}
-              >
-                {stageDescriptionInvalid ? stageDescriptionError : STAGE_DESCRIPTION_FIELD_HINT}
-              </p>
-              {slugStatus === 'checking' && (
-                <p style={{
-                  margin: '10px 0 0',
-                  fontSize: 12,
-                  fontFamily: 'system-ui,sans-serif',
-                  color: 'rgba(255,255,255,0.55)',
-                }}
-                >
-                  Checking…
-                </p>
-              )}
-              {slugMessage && slugStatus === 'bad' && !stageFieldInvalid && (
-                <p style={{
-                  margin: '10px 0 0',
-                  fontSize: 12,
-                  fontFamily: 'system-ui,sans-serif',
-                  color: '#ff6b6b',
-                }}
-                >
-                  {slugMessage}
-                </p>
-              )}
-              {slugMessage && slugStatus === 'ok' && (
-                <p style={{
-                  margin: '10px 0 0',
-                  fontSize: 12,
-                  fontFamily: 'system-ui,sans-serif',
-                  color: '#6fcf97',
-                }}
-                >
-                  {slugMessage}
-                </p>
-              )}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: mobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1.05fr)',
+                gap: mobile ? 24 : 32,
+                alignItems: 'start',
+              }}>
+                <div style={{ minWidth: 0 }}>
+                  <label style={LABEL}>Stage name</label>
+                  <input
+                    style={{
+                      ...INPUT,
+                      border: stageFieldInvalid
+                        ? '1px solid rgba(255,107,107,0.55)'
+                        : INPUT.border,
+                    }}
+                    value={draft.stageName}
+                    onChange={e => handleStageNameChange(e.target.value)}
+                    onBlur={() => setStageNameTouched(true)}
+                    placeholder="Sunset Rooftop"
+                    autoFocus
+                    spellCheck={false}
+                    maxLength={STAGE_CONFIG.DISPLAY_NAME_MAX_LENGTH}
+                  />
+                  <p style={{
+                    margin: '6px 0 0',
+                    fontSize: 11,
+                    color: stageFieldInvalid ? '#ff6b6b' : 'rgba(255,255,255,0.45)',
+                    fontFamily: 'system-ui,sans-serif',
+                  }}
+                  >
+                    {stageFieldHint}
+                  </p>
 
-              <label style={{ ...LABEL, marginTop: 24 }}>Choose your scene</label>
-              
-              <StageSceneGallery
-                compact
-                columns={mobile ? 2 : 4}
-                preset={draft.preset}
-                backdropUrl={draft.backdropUrl}
-                disabled={loading}
-                onChange={handleGalleryChange}
-                onUploadClick={() => backdropFileRef.current?.click()}
-                uploadLabel="Upload image"
-              />
-              <input
-                ref={backdropFileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                hidden
-                onChange={e => void handleBackdropPick(e.target.files?.[0])}
-              />
-              <p style={{
-                margin: '8px 0 0',
-                fontSize: 11,
-                lineHeight: 1.4,
-                color: 'rgba(255,255,255,0.45)',
-                fontFamily: 'system-ui,sans-serif',
-              }}
-              >
-                {stageBackdropUploadHint()}
-              </p>
+                  <label style={{ ...LABEL, marginTop: 20 }}>Short description</label>
+                  <textarea
+                    style={{
+                      ...INPUT,
+                      resize: 'vertical',
+                      minHeight: 96,
+                      lineHeight: 1.45,
+                      border: stageDescriptionInvalid
+                        ? '1px solid rgba(255,107,107,0.55)'
+                        : INPUT.border,
+                    }}
+                    value={draft.stageDescription}
+                    onChange={e => setDraft(d => ({
+                      ...d,
+                      stageDescription: limitStageDescriptionInput(e.target.value),
+                    }))}
+                    onBlur={() => setStageDescriptionTouched(true)}
+                    placeholder="Late-night rooftop sets with friends."
+                    spellCheck
+                    maxLength={STAGE_CONFIG.DESCRIPTION_MAX_LENGTH}
+                  />
+                  <p style={{
+                    margin: '6px 0 0',
+                    fontSize: 11,
+                    color: stageDescriptionInvalid ? '#ff6b6b' : 'rgba(255,255,255,0.45)',
+                    fontFamily: 'system-ui,sans-serif',
+                  }}
+                  >
+                    {stageDescriptionInvalid ? stageDescriptionError : STAGE_DESCRIPTION_FIELD_HINT}
+                  </p>
+                  {slugStatus === 'checking' && (
+                    <p style={{
+                      margin: '10px 0 0',
+                      fontSize: 12,
+                      fontFamily: 'system-ui,sans-serif',
+                      color: 'rgba(255,255,255,0.55)',
+                    }}
+                    >
+                      Checking…
+                    </p>
+                  )}
+                  {slugMessage && slugStatus === 'bad' && !stageFieldInvalid && (
+                    <p style={{
+                      margin: '10px 0 0',
+                      fontSize: 12,
+                      fontFamily: 'system-ui,sans-serif',
+                      color: '#ff6b6b',
+                    }}
+                    >
+                      {slugMessage}
+                    </p>
+                  )}
+                  {slugMessage && slugStatus === 'ok' && (
+                    <p style={{
+                      margin: '10px 0 0',
+                      fontSize: 12,
+                      fontFamily: 'system-ui,sans-serif',
+                      color: '#6fcf97',
+                    }}
+                    >
+                      {slugMessage}
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  {mobile && (
+                    <h1 style={{ ...STEP_TITLE, textAlign: 'left', margin: '0 0 12px' }}>
+                      Choose your scene
+                    </h1>
+                  )}
+                  <StageSceneGallery
+                    compact
+                    columns={mobile ? 2 : 3}
+                    maxHeight={mobile ? 280 : 360}
+                    preset={draft.preset}
+                    backdropUrl={draft.backdropUrl}
+                    disabled={loading}
+                    onChange={handleGalleryChange}
+                    onUploadClick={() => backdropFileRef.current?.click()}
+                    uploadLabel="Upload image"
+                  />
+                  <input
+                    ref={backdropFileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    hidden
+                    onChange={e => void handleBackdropPick(e.target.files?.[0])}
+                  />
+                  <p style={{
+                    margin: '8px 0 0',
+                    fontSize: 11,
+                    lineHeight: 1.4,
+                    color: 'rgba(255,255,255,0.45)',
+                    fontFamily: 'system-ui,sans-serif',
+                  }}
+                  >
+                    {stageBackdropUploadHint()}
+                  </p>
+                </div>
+              </div>
             </>
           )}
 
           {displayStep === 3 && (
             <>
-              <h1 style={STEP_TITLE}>
+              <h1 style={{ ...STEP_TITLE, textAlign: 'left' }}>
                 Who&apos;s playing at {stageDisplayLabel}?
               </h1>
-              <p style={STEP_SUB}>
+              <p style={{ ...STEP_SUB, textAlign: 'left' }}>
                 Add YouTube videos, playlists, or channels.
               </p>
 
@@ -1139,7 +1261,7 @@ export function CreateStageWizard() {
                 fontFamily: 'system-ui,sans-serif',
               }}
               >
-                {streamPasteMode === 'video' && 'Paste your YouTube video link.'}
+                {streamPasteMode === 'video' && 'Search YouTube and add videos to your lineup.'}
                 {streamPasteMode === 'playlist' && 'Paste a playlist link — we import embeddable videos (up to your lineup limit).'}
                 {streamPasteMode === 'channel' && 'Paste a channel link or @handle — we import recent uploads.'}
                 {streamPasteMode === 'bulk' && 'Paste one YouTube link per line — duplicates are skipped automatically.'}
@@ -1181,6 +1303,135 @@ export function CreateStageWizard() {
                     {streamParsing ? 'Importing…' : 'Import all'}
                   </button>
                 </div>
+              ) : streamPasteMode === 'video' ? (
+                <div style={{ marginBottom: 12 }}>
+                  <form
+                    onSubmit={e => {
+                      e.preventDefault();
+                      void runVideoSearch();
+                    }}
+                    style={{ display: 'flex', gap: 8, marginBottom: 10 }}
+                  >
+                    <input
+                      style={{ ...INPUT, flex: 1 }}
+                      value={videoSearchQuery}
+                      onChange={e => setVideoSearchQuery(e.target.value)}
+                      placeholder="e.g. hulaween full set"
+                      spellCheck={false}
+                    />
+                    <button
+                      type="submit"
+                      disabled={videoSearchLoading || !videoSearchQuery.trim()}
+                      style={{
+                        borderRadius: 12,
+                        padding: '0 16px',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        border: 'none',
+                        background: 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
+                        color: '#fff',
+                        cursor: videoSearchLoading ? 'wait' : 'pointer',
+                        opacity: videoSearchLoading || !videoSearchQuery.trim() ? 0.5 : 1,
+                        fontFamily: 'system-ui,sans-serif',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {videoSearchLoading ? '…' : 'Search'}
+                    </button>
+                  </form>
+
+                  {videoSearchError && (
+                    <p style={{
+                      margin: '0 0 10px',
+                      fontSize: 12,
+                      lineHeight: 1.45,
+                      color: videoSearchQuotaExceeded ? '#fde68a' : '#ff9d9d',
+                      fontFamily: 'system-ui,sans-serif',
+                    }}
+                    >
+                      {videoSearchError}
+                    </p>
+                  )}
+
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    maxHeight: 280,
+                    overflowY: 'auto',
+                    marginBottom: 12,
+                    scrollbarWidth: 'thin',
+                  }}
+                  >
+                    {videoSearchResults.map(result => {
+                      const added = lineupVideoIds.has(result.id);
+                      const canAdd = stageStreamFromYoutubeSearch(result) != null;
+                      return (
+                        <div
+                          key={result.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 10px',
+                            borderRadius: 10,
+                            background: 'rgba(255,255,255,0.05)',
+                            fontFamily: 'system-ui,sans-serif',
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={result.thumbnailUrl}
+                            alt=""
+                            width={72}
+                            height={40}
+                            style={{ borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontWeight: 600,
+                              fontSize: 13,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              color: 'rgba(255,255,255,0.92)',
+                            }}
+                            >
+                              {result.title}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                              {result.channelTitle && <span>{result.channelTitle} · </span>}
+                              {formatDurationSec(result.durationSec)}
+                              {!canAdd && <span style={{ color: '#fbbf24' }}> · cannot embed</span>}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={added || !canAdd || draft.streams.length >= STAGE_CONFIG.MAX_STREAMS}
+                            onClick={() => addVideoFromSearch(result)}
+                            style={{
+                              borderRadius: 10,
+                              padding: '8px 12px',
+                              fontSize: 12,
+                              fontWeight: 700,
+                              border: 'none',
+                              background: added || !canAdd
+                                ? 'rgba(255,255,255,0.1)'
+                                : 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
+                              color: added || !canAdd ? 'rgba(255,255,255,0.35)' : '#fff',
+                              cursor: added || !canAdd ? 'default' : 'pointer',
+                              flexShrink: 0,
+                              fontFamily: 'system-ui,sans-serif',
+                            }}
+                          >
+                            {added ? 'Added' : 'Add'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    
+                  </div>
+                </div>
               ) : (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                   <input
@@ -1188,11 +1439,9 @@ export function CreateStageWizard() {
                     value={streamInput}
                     onChange={e => setStreamInput(e.target.value)}
                     placeholder={
-                      streamPasteMode === 'video'
-                        ? 'https://youtube.com/watch?v=…'
-                        : streamPasteMode === 'playlist'
-                          ? 'https://youtube.com/playlist?list=…'
-                          : 'https://youtube.com/@channel'
+                      streamPasteMode === 'playlist'
+                        ? 'https://youtube.com/playlist?list=…'
+                        : 'https://youtube.com/@channel'
                     }
                     onKeyDown={e => { if (e.key === 'Enter') void addStream(); }}
                   />
@@ -1214,7 +1463,7 @@ export function CreateStageWizard() {
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    {streamParsing ? '…' : streamPasteMode === 'video' ? 'Add' : 'Import'}
+                    {streamParsing ? '…' : streamPasteMode === 'playlist' ? 'Import' : 'Import'}
                   </button>
                 </div>
               )}
@@ -1396,51 +1645,53 @@ export function CreateStageWizard() {
           )}
 
           {displayStep === 2 && (
-            <button
-              type="button"
-              disabled={!canAdvance() || loading}
-              onClick={() => {
-                setError(null);
-                setStep(3);
-              }}
-              style={{
-                ...PRIMARY_BTN,
-                marginTop: 24,
-                cursor: canAdvance() && !loading ? 'pointer' : 'default',
-                background: canAdvance() && !loading
-                  ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
-                  : 'rgba(255,255,255,0.1)',
-                color: canAdvance() ? '#fff' : 'rgba(255,255,255,0.35)',
-              }}
-            >
-              Continue →
-            </button>
+            <StepNavRow onBack={handleBackStep}>
+              <button
+                type="button"
+                disabled={!canAdvance() || loading}
+                onClick={() => {
+                  setError(null);
+                  setStep(3);
+                }}
+                style={{
+                  ...PRIMARY_BTN,
+                  cursor: canAdvance() && !loading ? 'pointer' : 'default',
+                  background: canAdvance() && !loading
+                    ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
+                    : 'rgba(255,255,255,0.1)',
+                  color: canAdvance() ? '#fff' : 'rgba(255,255,255,0.35)',
+                }}
+              >
+                Continue →
+              </button>
+            </StepNavRow>
           )}
 
           {displayStep === 3 && (
-            <button
-              type="button"
-              disabled={!canAdvance() || loading}
-              onClick={() => {
-                setError(null);
-                setStep(4);
-              }}
-              style={{
-                ...PRIMARY_BTN,
-                marginTop: 24,
-                cursor: canAdvance() && !loading ? 'pointer' : 'default',
-                background: canAdvance() && !loading
-                  ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
-                  : 'rgba(255,255,255,0.1)',
-                color: canAdvance() ? '#fff' : 'rgba(255,255,255,0.35)',
-              }}
-            >
-              Continue →
-            </button>
+            <StepNavRow onBack={handleBackStep}>
+              <button
+                type="button"
+                disabled={!canAdvance() || loading}
+                onClick={() => {
+                  setError(null);
+                  setStep(4);
+                }}
+                style={{
+                  ...PRIMARY_BTN,
+                  cursor: canAdvance() && !loading ? 'pointer' : 'default',
+                  background: canAdvance() && !loading
+                    ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
+                    : 'rgba(255,255,255,0.1)',
+                  color: canAdvance() ? '#fff' : 'rgba(255,255,255,0.35)',
+                }}
+              >
+                Continue →
+              </button>
+            </StepNavRow>
           )}
 
           {displayStep === 4 && (
-            <div style={{ marginTop: 24 }}>
+            <StepNavRow onBack={handleBackStep}>
               <button
                 type="button"
                 disabled={loading}
@@ -1459,7 +1710,7 @@ export function CreateStageWizard() {
               >
                 {loading ? 'Creating…' : 'Create stage'}
               </button>
-            </div>
+            </StepNavRow>
           )}
             </>
           )}
