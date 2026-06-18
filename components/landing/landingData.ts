@@ -192,7 +192,7 @@ export const LANDING_FAQ = [
   },
   {
     q: 'Can I make my own character?',
-    a: "Yes, and make it weird. That's encouraged. Add some character and customize it with free coins to start",
+    a: "Yes, and make it weird. That's encouraged. Add some character and customize it with free coins to start.",
   },
   {
     q: 'How do I get coins?',
