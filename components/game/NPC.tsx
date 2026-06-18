@@ -24,7 +24,7 @@ import {
   worldXBlocksEaselCanvas,
 } from '@/lib/easel/canvasBlocking';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
-import { setNpcMovementTick, getNpcSyncedScreenPct, isNpcNetworkFollowMode } from '@/lib/npcMovementRegistry';
+import { setNpcMovementTick, getNpcSyncedWorldX, isNpcNetworkFollowMode } from '@/lib/npcMovementRegistry';
 import { setNpcDancingToggle } from '@/lib/npcDancingRegistry';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
 import {
@@ -612,18 +612,28 @@ function NPC({
         }
       }
 
-      const syncedPct = isNpcNetworkFollowMode() ? getNpcSyncedScreenPct(index) : undefined;
+      const syncedWorldX = isNpcNetworkFollowMode() ? getNpcSyncedWorldX(index) : undefined;
       if (
-        syncedPct != null
-        && Number.isFinite(syncedPct)
+        syncedWorldX != null
+        && Number.isFinite(syncedWorldX)
         && !heldForConvo
         && !pausedRef.current
         && easelPaintingSlotRef.current == null
       ) {
-        worldXRef.current = screenPctToWorldX(syncedPct, off, width);
-        targetWorldRef.current = worldXRef.current;
-        stateRef.current = 'idle';
-        applyWalking(false);
+        const cur = worldXRef.current;
+        const diff = syncedWorldX - cur;
+        const step = Math.max((personality.speed / 100) * width * 0.9, 2.5);
+        if (Math.abs(diff) <= step) {
+          worldXRef.current = syncedWorldX;
+          applyWalking(false);
+          stateRef.current = 'idle';
+        } else {
+          worldXRef.current += diff > 0 ? step : -step;
+          applyFacing(diff > 0 ? 'right' : 'left');
+          applyWalking(true);
+          stateRef.current = 'wandering';
+        }
+        targetWorldRef.current = syncedWorldX;
       } else if (!heldForConvo && !pausedRef.current && stateRef.current === 'wandering') {
         const target = targetWorldRef.current;
         const cur    = worldXRef.current;
@@ -664,7 +674,7 @@ function NPC({
       }
 
       if (
-        syncedPct == null
+        syncedWorldX == null
         && !heldForConvo
         && !pausedRef.current
         && easelPaintingSlotRef.current == null

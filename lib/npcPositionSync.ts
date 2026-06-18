@@ -2,8 +2,7 @@
 
 export type NpcPositionSync = { id: string; worldX: number; pct: number };
 
-const PCT_DELTA = 0.12;
-const WORLD_DELTA = 4;
+const WORLD_DELTA = 1.25;
 export const NPC_SYNC_MAX_PER_PACKET = 48;
 
 /** Positions that moved enough since the last relay to warrant a packet. */
@@ -18,11 +17,7 @@ export function diffNpcPositions(
 
   for (const p of incoming) {
     const old = prevMap.get(p.id);
-    if (
-      !old
-      || Math.abs(old.pct - p.pct) >= PCT_DELTA
-      || Math.abs(old.worldX - p.worldX) >= WORLD_DELTA
-    ) {
+    if (!old || Math.abs(old.worldX - p.worldX) >= WORLD_DELTA) {
       changed.push(p);
     }
   }
@@ -37,9 +32,9 @@ export function diffNpcPositions(
 /** Merge a delta snapshot into the follower map (do not clear missing ids). */
 export function mergeNpcSyncMap(
   sync: Map<string, number>,
-  positions: Pick<NpcPositionSync, 'id' | 'pct'>[],
+  positions: Pick<NpcPositionSync, 'id' | 'worldX'>[],
 ): void {
   for (const p of positions) {
-    if (p.id && Number.isFinite(p.pct)) sync.set(p.id, p.pct);
+    if (p.id && Number.isFinite(p.worldX)) sync.set(p.id, p.worldX);
   }
 }

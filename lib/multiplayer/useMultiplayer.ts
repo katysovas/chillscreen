@@ -5,6 +5,7 @@ import PartySocket from 'partysocket';
 import type { FestiePublic } from '@/lib/festie/types';
 import type { CreatorStageSyncPayload } from '@/lib/stages/stageSync';
 import { mergeNpcSyncMap } from '@/lib/npcPositionSync';
+import { spawnWorldXWithJitter } from '@/lib/playerSpawn';
 import {
   chatPairKey,
   decodeServer,
@@ -143,7 +144,6 @@ export type Multiplayer = {
   /** True when this client runs local NPC AI and relays positions. */
   isNpcLeader: boolean;
   /** Latest NPC world-x from the room leader (id → worldX). */
-  /** Leader screen-% per NPC id — followers convert with local scroll + width. */
   npcSyncRef: React.RefObject<Map<string, number>>;
   sendMove: (worldX: number, facing: Facing, walking: boolean) => void;
   sendProfile: (profile: PlayerProfile) => void;
@@ -260,7 +260,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
       } = {
         t: 'join',
         profile,
-        worldX: last?.worldX ?? spawnRef.current ?? 0,
+        worldX: last?.worldX ?? spawnWorldXWithJitter(spawnRef.current ?? 0),
         facing: last?.facing ?? 'right',
         walking: last?.walking ?? false,
       };
@@ -451,10 +451,12 @@ export function useMultiplayer(opts: Options): Multiplayer {
           mergeNpcSyncMap(npcSyncRef.current, msg.positions);
           break;
         }
-        case 'npc-leader':
-          setIsNpcLeader(!msg.leaderId || msg.leaderId === selfIdRef.current);
-          if (!msg.leaderId) npcSyncRef.current.clear();
+        case 'npc-leader': {
+          const isLeader = !msg.leaderId || msg.leaderId === selfIdRef.current;
+          setIsNpcLeader(isLeader);
+          if (isLeader || !msg.leaderId) npcSyncRef.current.clear();
           break;
+        }
         case 'creator-stage-sync':
           creatorStageSyncHandlerRef.current?.(msg.stage);
           break;

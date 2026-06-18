@@ -85,6 +85,7 @@ import { fetchNpcReplyWithTyping } from '@/lib/npcChatClient';
 import { getCinemaNowPlaying, subscribeCinemaNowPlaying } from '@/lib/cinemaNow';
 import { getConcertNowPlaying, subscribeConcertNowPlaying } from '@/lib/concertNowPlaying';
 import { gameWorldOffRef, playerWorldXRef } from '@/lib/gameWorldRef';
+import { sessionSpawnJitterPx } from '@/lib/playerSpawn';
 import {
   moveBroadcastFrameInterval,
   moveBroadcastWorldEpsilon,
@@ -160,10 +161,10 @@ import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsMod
 import { CreatorStageLineupModal } from '@/components/create/CreatorStageSettingsModal';
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import {
-  clearNpcSyncedScreenPcts,
+  clearNpcSyncedWorldX,
   runAllNpcMovementTicks,
   setNpcNetworkFollowMode,
-  setNpcSyncedScreenPct,
+  setNpcSyncedWorldX,
 } from '@/lib/npcMovementRegistry';
 import { runAllWorldPositionTicks } from '@/lib/worldPositionTicks';
 import { StageEaselsLayer, stageSlugFromVenueRoute } from './easel/StageEaselsLayer';
@@ -310,7 +311,12 @@ export default function SFCity({
     ? stageWorldOffForRoute(effectiveVenueRoute)
     : spawnOverride;
   const spawnWorldOff = Math.max(cityBounds.min, Math.min(cityBounds.max, rawSpawn));
-  const worldRef        = useRef(spawnWorldOff);
+  const spawnJitterPx = sessionSpawnJitterPx();
+  const initialPlayerWorldX = Math.max(
+    cityBounds.min,
+    Math.min(cityBounds.max, spawnWorldOff + spawnJitterPx),
+  );
+  const worldRef        = useRef(isStaticCityView ? spawnWorldOff : initialPlayerWorldX);
   const playerCharRef   = useRef<HTMLDivElement>(null);
   const isStaticCityViewRef = useRef(isStaticCityView);
   isStaticCityViewRef.current = isStaticCityView;
@@ -775,7 +781,7 @@ export default function SFCity({
   useEffect(() => {
     const follow = mp.connected && mp.selfId != null && !mp.isNpcLeader;
     setNpcNetworkFollowMode(follow);
-    if (!follow) clearNpcSyncedScreenPcts();
+    if (!follow) clearNpcSyncedWorldX();
   }, [mp.connected, mp.selfId, mp.isNpcLeader]);
 
   useEffect(() => {
@@ -1346,15 +1352,16 @@ export default function SFCity({
   }, [chatDraft, peerChatId, sendPeerTyping]);
 
   useLayoutEffect(() => {
-    worldRef.current = spawnWorldOff;
-    playerWorldXRef.current = spawnWorldOff;
-    setMidScrollWorldOff(spawnWorldOff);
-    setGndScrollWorldOff(spawnWorldOff);
-    gameWorldOffRef.current = spawnWorldOff;
+    const cameraX = isStaticCityView ? spawnWorldOff : initialPlayerWorldX;
+    worldRef.current = cameraX;
+    playerWorldXRef.current = initialPlayerWorldX;
+    setMidScrollWorldOff(cameraX);
+    setGndScrollWorldOff(cameraX);
+    gameWorldOffRef.current = cameraX;
     lastStaticViewBoxKeyRef.current = null;
-    updateViewBoxes(spawnWorldOff, { force: true });
-    lastMidScrollTileRef.current = midScrollTile(spawnWorldOff);
-    lastGndScrollTileRef.current = gndScrollTile(spawnWorldOff);
+    updateViewBoxes(cameraX, { force: true });
+    lastMidScrollTileRef.current = midScrollTile(cameraX);
+    lastGndScrollTileRef.current = gndScrollTile(cameraX);
     if (isStaticCityView && playerCharRef.current) {
       playerCharRef.current.style.left = '50%';
     }
@@ -2046,10 +2053,10 @@ export default function SFCity({
     const broadcastNpcPositions = () => {
       if (!isNpcLeaderRef.current || !mpRef.current?.connected || !mpRef.current?.selfId) return;
       const now = Date.now();
-      if (now - lastNpcPosSendRef.current <= 500) return;
+      if (now - lastNpcPosSendRef.current <= 66) return;
       lastNpcPosSendRef.current = now;
       const width = window.innerWidth;
-      const off = worldRef.current;
+      const off = staticView ? playerWorldXRef.current : worldRef.current;
       const positions = effectiveNpcCastRef.current
         .map((cfg, i) => {
           const worldX = npcWorldXRefs.current[i]!;
@@ -2072,8 +2079,8 @@ export default function SFCity({
       const ownerId = ownerFestieNpcIdRef.current;
       for (let i = 0; i < cast.length; i++) {
         if (autopilotOnRef.current && ownerId && cast[i]!.id === ownerId) continue;
-        const pct = sync.get(cast[i]!.id);
-        setNpcSyncedScreenPct(i, pct != null && Number.isFinite(pct) ? pct : null);
+        const worldX = sync.get(cast[i]!.id);
+        setNpcSyncedWorldX(i, worldX != null && Number.isFinite(worldX) ? worldX : null);
       }
     };
 
@@ -2148,7 +2155,7 @@ export default function SFCity({
       }
       applyNetworkNpcPositions();
       runAllNpcMovementTicks(
-        worldRef.current,
+        staticView ? playerWorldXRef.current : worldRef.current,
         window.innerWidth,
         npcWorldXRefs.current,
       );
@@ -2280,10 +2287,11 @@ export default function SFCity({
           let bestDist = Infinity;
           if (Date.now() > disconnectUntil.current) {
             const playerWx = playerWorldX();
+            const cameraOff = staticView ? playerWorldXRef.current : worldRef.current;
             for (let i = 0; i < npcWorldXRefs.current.length; i++) {
               const wx = npcWorldXRefs.current[i];
               if (!Number.isFinite(wx)) continue;
-              const screenPct = worldXToScreenPct(wx, worldRef.current, width);
+              const screenPct = worldXToScreenPct(wx, cameraOff, width);
               const distPx    = Math.abs(wx - playerWx);
               if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx && distPx < bestDist) {
                 bestDist = distPx; nextNpc = i; nextPeer = null;
@@ -2292,7 +2300,7 @@ export default function SFCity({
             const roster = mpRef.current?.remoteStateRef.current;
             if (roster) {
               for (const [pid, st] of roster) {
-                const screenPct = worldXToScreenPct(st.worldX, worldRef.current, width);
+                const screenPct = worldXToScreenPct(st.worldX, cameraOff, width);
                 const distPx    = Math.abs(st.worldX - playerWx);
                 if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx && distPx < bestDist) {
                   bestDist = distPx; nextPeer = pid; nextNpc = null;

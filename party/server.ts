@@ -378,6 +378,7 @@ export default class WhichStageServer implements Party.Server {
     }
     if (this.players.size === 0) {
       this.npcLeaderId = null;
+      this.lastNpcPositionsSync = null;
       this.chatter.onLastPlayer();
       void this.easels.onLastPlayer();
     } else if (wasLeader) {
