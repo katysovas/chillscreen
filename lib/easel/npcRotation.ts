@@ -1,8 +1,11 @@
 import { requireDb } from '@/lib/db';
-import { stageChannelForRoute } from '@/lib/isolatedCity';
 import type { StageChannel } from '@/lib/stageVideos';
-import { parseVenueSlug } from '@/lib/venueSlugs';
+import type { VenueRoute } from '@/lib/venueSlugs';
 import { easelStageLookupSlugs, normalizeEaselStage } from './stageKey';
+import {
+  easelChannelForStageSlug,
+  easelChannelForStageSlugSync,
+} from './stageChannel';
 import {
   easelNpcIdForName,
   easelNpcIdsForChannel,
@@ -14,14 +17,33 @@ export { easelNpcIdForName, easelNpcIdsForChannel, npcSlug };
 /** @deprecated use easelNpcIdsForChannel('cinema') */
 export const CINEMA_EASEL_NPC_IDS = easelNpcIdsForChannel('cinema');
 
-export function easelNpcIdsForStage(stageSlug: string): string[] {
-  const route = parseVenueSlug(stageSlug);
-  if (!route) return [];
-  return easelNpcIdsForChannel(stageChannelForRoute(route));
+export async function easelNpcIdsForStage(stageSlug: string): Promise<string[]> {
+  const channel = await easelChannelForStageSlug(stageSlug);
+  return easelNpcIdsForChannel(channel);
 }
 
-export function isEaselPainterForStage(npcId: string, stageSlug: string): boolean {
-  return easelNpcIdsForStage(stageSlug).includes(npcId);
+/** Client-side when layout route is already known (creator stages). */
+export function easelNpcIdsForStageSync(
+  stageSlug: string,
+  layoutRoute?: VenueRoute | null,
+): string[] {
+  const channel = easelChannelForStageSlugSync(stageSlug, layoutRoute);
+  return easelNpcIdsForChannel(channel);
+}
+
+export async function isEaselPainterForStage(
+  npcId: string,
+  stageSlug: string,
+): Promise<boolean> {
+  return (await easelNpcIdsForStage(stageSlug)).includes(npcId);
+}
+
+export function isEaselPainterForStageSync(
+  npcId: string,
+  stageSlug: string,
+  layoutRoute?: VenueRoute | null,
+): boolean {
+  return easelNpcIdsForStageSync(stageSlug, layoutRoute).includes(npcId);
 }
 
 export function isEaselPainterForChannel(npcId: string, channel: StageChannel): boolean {
@@ -51,7 +73,7 @@ export async function pickNextEaselNpc(
   excludeNpc?: string,
 ): Promise<string> {
   const stageKey = normalizeEaselStage(stage);
-  const ids = easelNpcIdsForStage(stageKey);
+  const ids = await easelNpcIdsForStage(stageKey);
   if (ids.length === 0) return excludeNpc ?? 'gen-cinema-vanessa';
 
   const painted = await npcsWhoPaintedOnStage(stageKey);

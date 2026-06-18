@@ -826,11 +826,11 @@ export default function SFCity({
 
   useEffect(() => {
     if (!easelSessionEnabled || partyDrivesEasel || TEST_DRAW_MODEL_COMPARE) return;
-    if (!mp.connected && !TEST_EASEL_ON_LOAD) return;
+    if (!easelUserActive) return;
     void ensureEaselSession(easelStageSlug).then(slots => {
       if (slots.length > 0) notifyEaselUpdated();
     });
-  }, [easelSessionEnabled, easelStageSlug, mp.connected, partyDrivesEasel]);
+  }, [easelSessionEnabled, easelStageSlug, easelUserActive, partyDrivesEasel]);
 
   useEffect(() => {
     if (!easelSessionEnabled) {

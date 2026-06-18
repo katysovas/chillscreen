@@ -10,6 +10,7 @@ import { EMPTY_STAGE_SYNC } from '@/lib/stageSyncCore';
 import { parseVenueSlug } from '@/lib/venueSlugs';
 import rawStagePlaylists from '@/data/stage-playlists.json';
 import { fetchEaselDrawingHistory } from './drawingHistory';
+import { easelChannelForStageSlug } from './stageChannel';
 import { CHANNEL_NPC_POOL, vibeForChannelNpc } from './stageNpcPool';
 
 export type EaselDrawingContext = {
@@ -65,8 +66,7 @@ export async function buildEaselDrawingContext(
   const npcName = ch?.name ?? npcId.split('-').pop() ?? npcId;
   const modelId = resolveDrawingModelId(npcId);
 
-  const route = parseVenueSlug(stageSlug);
-  const channel = route ? stageChannelForRoute(route) : 'cinema';
+  const channel = await easelChannelForStageSlug(stageSlug);
   const channelName = channelLabel(channel);
   const streamTitle = streamTitleForStage(stageSlug);
   const seedPick = pickConversationSeed(streamTitle, channelName, getBundledSeedPools(stageSlug));

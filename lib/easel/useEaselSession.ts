@@ -79,7 +79,7 @@ export function useEaselSession(
       return;
     }
     let cancelled = false;
-    void fetchLocalEaselSession(stageSlug, { ensure: ensureOnLoad }).then(session => {
+    void fetchLocalEaselSession(stageSlug, { ensure: true }).then(session => {
       if (!cancelled && session) setLocalSession(session);
     });
     return () => { cancelled = true; };
