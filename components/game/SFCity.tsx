@@ -2236,6 +2236,8 @@ export default function SFCity({
             const playerWx = playerWorldX();
             const off = cameraOff();
             for (let i = 0; i < npcWorldXRefs.current.length; i++) {
+              const npcId = effectiveNpcCastRef.current[i]?.id;
+              if (npcId && npcId === ownerFestieNpcIdRef.current) continue;
               const wx = npcWorldXRefs.current[i];
               if (!Number.isFinite(wx)) continue;
               const screenPct = worldXToScreenPct(wx, off, width);
@@ -2749,6 +2751,7 @@ export default function SFCity({
         venueRoute={effectiveVenueRoute}
         connectName={
           !inConversation && nearNpc !== null
+            && effectiveNpcCast[nearNpc]?.id !== ownerFestieNpcId
             ? npcChatLabel(effectiveNpcCast[nearNpc]!.id, effectiveNpcCast[nearNpc]!.name)
             : !inConversation && nearPeer !== null
               ? nearPeerName
