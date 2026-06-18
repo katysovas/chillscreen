@@ -7,6 +7,7 @@ import {
   chatPairKey,
   decodeClient,
   encode,
+  type PlayerMoveSync,
   type PlayerState,
   type ServerMessage,
 } from '../lib/multiplayer/protocol';
@@ -58,15 +59,11 @@ export default class WhichStageServer implements Party.Server {
   private playerCapabilities = new Map<string, NpcLeaderCapability>();
   /** Latest leader snapshot — replayed to late joiners. */
   private lastNpcPositionsSync: Extract<ServerMessage, { t: 'npc-positions-sync' }> | null = null;
-  /** Coalesce move fan-out per sender (~10 Hz cap). */
-  private moveRelayPending = new Map<string, {
-    worldX: number;
-    facing: Facing;
-    walking: boolean;
-    timer: ReturnType<typeof setTimeout> | null;
-  }>();
+  /** Moves to include in the next batched tick (~10 Hz room-wide fan-out). */
+  private moveBatchPending = new Map<string, { worldX: number; facing: Facing; walking: boolean }>();
   private moveRelayLastSent = new Map<string, { worldX: number; facing: Facing; walking: boolean }>();
-  private static readonly MOVE_RELAY_MS = 100;
+  private moveTickTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly MOVE_TICK_MS = 100;
   private stageSync: StageSync | null = null;
   private chatter: NpcChatterScheduler;
   private easels: EaselScheduler;
@@ -205,7 +202,7 @@ export default class WhichStageServer implements Party.Server {
         player.worldX = msg.worldX;
         player.facing = msg.facing;
         player.walking = msg.walking;
-        this.scheduleMoveRelay(sender.id, msg.worldX, msg.facing, msg.walking);
+        this.queueMoveRelay(sender.id, msg.worldX, msg.facing, msg.walking);
         break;
       }
 
@@ -387,6 +384,7 @@ export default class WhichStageServer implements Party.Server {
     if (this.players.size === 0) {
       this.npcLeaderId = null;
       this.lastNpcPositionsSync = null;
+      this.stopMoveTick();
       this.chatter.onLastPlayer();
       void this.easels.onLastPlayer();
     } else if (wasLeader) {
@@ -407,29 +405,37 @@ export default class WhichStageServer implements Party.Server {
     this.room.broadcast(encode(msg), [exceptId]);
   }
 
-  private scheduleMoveRelay(
+  private queueMoveRelay(
     id: string,
     worldX: number,
     facing: Facing,
     walking: boolean,
   ) {
-    let pending = this.moveRelayPending.get(id);
-    if (!pending) {
-      pending = { worldX, facing, walking, timer: null };
-      this.moveRelayPending.set(id, pending);
-    } else {
-      pending.worldX = worldX;
-      pending.facing = facing;
-      pending.walking = walking;
+    if (this.players.size <= 1) return;
+    this.moveBatchPending.set(id, { worldX, facing, walking });
+    this.ensureMoveTick();
+  }
+
+  private ensureMoveTick() {
+    if (this.moveTickTimer != null) return;
+    this.moveTickTimer = setTimeout(() => {
+      this.moveTickTimer = null;
+      this.flushMoveBatch();
+    }, WhichStageServer.MOVE_TICK_MS);
+  }
+
+  private flushMoveBatch() {
+    if (this.moveBatchPending.size === 0 || this.players.size <= 1) {
+      this.moveBatchPending.clear();
+      return;
     }
 
-    if (pending.timer != null) return;
+    const pending = this.moveBatchPending;
+    this.moveBatchPending = new Map();
 
-    pending.timer = setTimeout(() => {
-      pending!.timer = null;
-      const latest = this.moveRelayPending.get(id);
-      if (!latest) return;
-
+    const moves: PlayerMoveSync[] = [];
+    for (const [id, latest] of pending) {
+      if (!this.players.has(id)) continue;
       const last = this.moveRelayLastSent.get(id);
       if (
         last
@@ -437,28 +443,30 @@ export default class WhichStageServer implements Party.Server {
         && last.walking === latest.walking
         && Math.abs(last.worldX - latest.worldX) < 0.5
       ) {
-        return;
+        continue;
       }
+      this.moveRelayLastSent.set(id, { ...latest });
+      moves.push({ id, ...latest });
+    }
 
-      this.moveRelayLastSent.set(id, {
-        worldX: latest.worldX,
-        facing: latest.facing,
-        walking: latest.walking,
-      });
-      this.broadcastExcept(id, {
-        t: 'moved',
-        id,
-        worldX: latest.worldX,
-        facing: latest.facing,
-        walking: latest.walking,
-      });
-    }, WhichStageServer.MOVE_RELAY_MS);
+    if (moves.length > 0) {
+      this.room.broadcast(encode({ t: 'moves-batch', moves }));
+    }
+
+    if (this.moveBatchPending.size > 0) this.ensureMoveTick();
+  }
+
+  private stopMoveTick() {
+    if (this.moveTickTimer) {
+      clearTimeout(this.moveTickTimer);
+      this.moveTickTimer = null;
+    }
+    this.moveBatchPending.clear();
+    this.moveRelayLastSent.clear();
   }
 
   private clearMoveRelay(id: string) {
-    const pending = this.moveRelayPending.get(id);
-    if (pending?.timer) clearTimeout(pending.timer);
-    this.moveRelayPending.delete(id);
+    this.moveBatchPending.delete(id);
     this.moveRelayLastSent.delete(id);
   }
 

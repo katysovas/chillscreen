@@ -390,9 +390,17 @@ export function useMultiplayer(opts: Options): Multiplayer {
           ev.onPeerLeft?.(msg.id);
           break;
         }
-        case 'moved': {
-          const p = roster.get(msg.id);
-          if (p) { p.worldX = msg.worldX; p.facing = msg.facing; p.walking = msg.walking; }
+        case 'moved':
+        case 'moves-batch': {
+          const updates = msg.t === 'moves-batch' ? msg.moves : [msg];
+          for (const m of updates) {
+            const p = roster.get(m.id);
+            if (p) {
+              p.worldX = m.worldX;
+              p.facing = m.facing;
+              p.walking = m.walking;
+            }
+          }
           break;
         }
         case 'profile': {

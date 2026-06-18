@@ -16,6 +16,14 @@ import type { NpcLeaderCapability } from '../npcLeaderCapability';
 
 export type Facing = 'left' | 'right';
 
+/** One player position in a batched move tick. */
+export type PlayerMoveSync = {
+  id: string;
+  worldX: number;
+  facing: Facing;
+  walking: boolean;
+};
+
 /** The single shared room everyone joins for now. */
 export const ROOM_ID = 'whichstage-global';
 
@@ -120,7 +128,10 @@ export type ServerMessage =
   | { t: 'festies-sync'; festies: FestiePublic[] }
   | { t: 'joined'; player: PlayerState }
   | { t: 'left'; id: string }
+  /** @deprecated Single-player relay — server sends `moves-batch` instead. */
   | { t: 'moved'; id: string; worldX: number; facing: Facing; walking: boolean }
+  /** All player moves collected in one ~100ms tick — one fan-out per room. */
+  | { t: 'moves-batch'; moves: PlayerMoveSync[] }
   | { t: 'profile'; id: string; profile: PlayerProfile }
   // Mirror of the addressed chat messages, tagged with the sender id.
   | { t: 'chat-open'; from: string }
