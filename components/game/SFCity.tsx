@@ -11,7 +11,7 @@ import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/paralla
 import { scheduleIdleCallback } from '@/lib/scheduleIdleCallback';
 import { setAudioMuted } from '@/lib/audioMute';
 import { playChatInviteBeep } from '@/lib/playChatInviteBeep';
-import { SFX_VOLUME } from '@/lib/sfxVolume';
+import { playFoundSound } from '@/lib/playFoundSound';
 import { npcCastForVenue } from '@/lib/npcCast';
 import { ambientSeedForRoute } from '@/lib/ambientSeed';
 import SFCityCrowdLayer from './SFCityCrowdLayer';
@@ -141,7 +141,7 @@ import { SignOutConfirmModal } from './SignOutConfirmModal';
 import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
-import { CreatorStageSettingsModal } from '@/components/create/CreatorStageSettingsModal';
+import { CreatorStageLineupModal } from '@/components/create/CreatorStageSettingsModal';
 import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import {
   clearNpcSyncedScreenPcts,
@@ -235,7 +235,7 @@ export default function SFCity({
     () => typeof window !== 'undefined' && isMobileLoungeDevice(),
   );
   const [showCityPicker, setShowCityPicker] = useState(false);
-  const [stageSettingsOpen, setStageSettingsOpen] = useState(false);
+  const [stageLineupOpen, setStageLineupOpen] = useState(false);
   const showCityPickerRef = useRef(false);
   const connectNearRef = useRef<(() => void) | null>(null);
 
@@ -1005,6 +1005,7 @@ export default function SFCity({
       }
       if (sender.startsWith('npc:')) {
         const npcId = sender.slice(4);
+        roomChatter.handleNpcShout(npcId, text);
         if (npcId === ownerFestieNpcId) {
           const cfg = effectiveNpcCast.find(c => c.id === npcId);
           trackAmbientNpcChatter(npcId, text, 'solo', {
@@ -1501,11 +1502,7 @@ export default function SFCity({
     const message = `Ground Score! ${value} Coins!`;
     showPlayerAmbient(message);
     mpRef.current?.sendAmbientMessage(message);
-    try {
-      const found = new Audio('/audio/found.mp3');
-      found.volume = SFX_VOLUME;
-      void found.play().catch(() => {});
-    } catch { /* ignore */ }
+    playFoundSound();
     // Celebrate — same jump as the keyboard/mobile triggers.
     if (!jumpingRef.current) {
       jumpingRef.current = true;
@@ -2192,7 +2189,7 @@ export default function SFCity({
     !homePreview
     && !showWelcome
     && !showCityPicker
-    && !stageSettingsOpen
+    && !stageLineupOpen
     && !showVendorPanel
     && !isChatterDebugMode();
 
@@ -2423,6 +2420,7 @@ export default function SFCity({
             peerMessages={peerMessages}
             isPlayerChatConnected={isPlayerChatConnected}
             playerMessages={roomChatter.playerMessages}
+            npcPublicMessages={roomChatter.npcMessages}
           />
         )}
 
@@ -2519,11 +2517,11 @@ export default function SFCity({
               ? nearPeerName
               : null
         }
-        hidden={showWelcome || showCityPicker || stageSettingsOpen || isChatterDebugMode()}
+        hidden={showWelcome || showCityPicker || stageLineupOpen || isChatterDebugMode()}
         onConnectTap={mobileDevice ? () => connectNearRef.current?.() : undefined}
         onOpenCityPicker={() => setShowCityPicker(true)}
         onOpenStageSettings={
-          isCreatorStageOwner ? () => setStageSettingsOpen(true) : undefined
+          isCreatorStageOwner ? () => setStageLineupOpen(true) : undefined
         }
         showStageSettings={isCreatorStageOwner}
         creatorStageSlug={creatorStage?.slug ?? null}
@@ -2533,8 +2531,8 @@ export default function SFCity({
         isMobile={mobileDevice}
       />
 
-      {stageSettingsOpen && isCreatorStageOwner && (
-        <CreatorStageSettingsModal onClose={() => setStageSettingsOpen(false)} />
+      {stageLineupOpen && isCreatorStageOwner && (
+        <CreatorStageLineupModal onClose={() => setStageLineupOpen(false)} />
       )}
 
       {showHelpPopup && (
@@ -2572,6 +2570,7 @@ export default function SFCity({
           refillFrom={lifeRefillFromRef.current}
           initialTab={settingsInitialTab}
           onUpdated={festie => setOwnerFestie(festie)}
+          ownedStage={ownedStage ?? null}
         />
       )}
 
@@ -2586,6 +2585,7 @@ export default function SFCity({
           onHumansOnlyChange={handleStageChatterHumansOnly}
           stageName={stageChatterWelcome.stageName}
           stageDescription={stageChatterWelcome.stageDescription}
+          isStageOwner={isCreatorStageOwner}
         />
       )}
 
@@ -2732,7 +2732,7 @@ export default function SFCity({
         />
       )}
 
-      {!showWelcome && !showCityPicker && !stageSettingsOpen && !isChatterDebugMode() && (
+      {!showWelcome && !showCityPicker && !stageLineupOpen && !isChatterDebugMode() && (
         <MobileGameControls
           muted={muted}
           vendorShopOpen={vendorShopManualOpen}
@@ -2740,7 +2740,7 @@ export default function SFCity({
           onVendorShopWarm={warmVendorShop}
           onOpenStageSwap={() => setShowCityPicker(true)}
           onOpenStageSettings={
-            isCreatorStageOwner ? () => setStageSettingsOpen(true) : undefined
+            isCreatorStageOwner ? () => setStageLineupOpen(true) : undefined
           }
           showStageSettings={isCreatorStageOwner}
           onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}

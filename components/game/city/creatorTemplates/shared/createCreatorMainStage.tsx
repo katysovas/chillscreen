@@ -6,16 +6,38 @@ import { useOptionalCreatorStage } from '@/lib/stages/CreatorStageContext';
 import { nowPlayingStream } from '@/lib/stages/runtime';
 import { streamChannelMarquee, streamTitleMarquee } from '@/lib/stages/streamLabel';
 import { useStagePlayer } from '../../../useStagePlayer';
+import type { StageVideo } from '@/lib/stageVideos';
 import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../../StageVideoFrame';
 import { stageChannelForRoute } from '@/lib/isolatedCity';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { stageChannelForVenueKind } from '@/lib/venues';
+import type { UserStagePublic } from '@/lib/stages/types';
 import type { CreatorStageConstants } from './types';
 import { CreatorSpeakerTower } from './CreatorSpeakerTower';
 
 type StageShellProps = {
   idleScreen?: boolean;
+  artistMarquee?: string | null;
 };
+
+function artistMarqueeForPlayback(
+  creator: UserStagePublic | null | undefined,
+  video: StageVideo | undefined,
+  isCinema: boolean,
+): string | null {
+  const stream = creator ? nowPlayingStream(creator) : null;
+  if (stream) {
+    return isCinema ? streamTitleMarquee(stream) : streamChannelMarquee(stream);
+  }
+  if (!video?.title?.trim()) return null;
+  return streamTitleMarquee({
+    url: `https://www.youtube.com/watch?v=${video.id}`,
+    videoId: video.id,
+    title: video.title,
+    thumbnail: '',
+    durationSec: video.durationSec ?? null,
+  });
+}
 
 export function createCreatorMainStage(C: CreatorStageConstants) {
   const GND = C.TENTAROO_GND;
@@ -94,13 +116,10 @@ ${beamKeyframes}
 @media (prefers-reduced-motion: reduce){.${animRoot} *{animation:none!important}}
 `;
 
-  function CreatorStageShell({ idleScreen = true }: StageShellProps) {
+  function CreatorStageShell({ idleScreen = true, artistMarquee: artistMarqueeProp }: StageShellProps) {
     const deck = GND;
     const creator = useOptionalCreatorStage();
-    const stream = creator ? nowPlayingStream(creator) : null;
-    const artistMarquee = stream
-      ? (isCinema ? streamTitleMarquee(stream) : streamChannelMarquee(stream))
-      : null;
+    const artistMarquee = artistMarqueeProp ?? artistMarqueeForPlayback(creator, undefined, isCinema);
 
     return (
       <>
@@ -399,12 +418,14 @@ ${beamKeyframes}
 
   function CreatorStageLive({ playbackRoute }: { playbackRoute?: VenueRoute }) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const creator = useOptionalCreatorStage();
     const channel = playbackRoute ? stageChannelForRoute(playbackRoute) : DEFAULT_PLAYBACK_CHANNEL;
     const { video, src, vidKey, onIframeLoad } = useStagePlayer({
       live: true,
       channel,
       iframeRef,
     });
+    const artistMarquee = artistMarqueeForPlayback(creator, video, isCinema);
 
     const videoFoX = ox + S * (scrX - ox);
     const videoFoY = oy + S * (scrY - oy) + pushY;
@@ -413,7 +434,7 @@ ${beamKeyframes}
 
     return (
       <>
-        <CreatorStageShell idleScreen={false} />
+        <CreatorStageShell idleScreen={false} artistMarquee={artistMarquee} />
         <foreignObject
           x={videoFoX}
           y={videoFoY}

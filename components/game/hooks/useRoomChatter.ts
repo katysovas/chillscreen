@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { stripNpcChatterDots } from '@/lib/messageFilter';
 import { clearNpcConvoAnchor } from '@/lib/npcConvoAnchor';
 import { appendChatLine, createChatLine, type ChatLine, type KeyedChatLine } from '@/lib/chatLines';
+import { AMBIENT_VISIBLE_MS, AMBIENT_VISIBLE_JITTER_MS } from '@/lib/npcAmbientChat';
 import { PLAYER_AMBIENT_VISIBLE_MS } from '@/lib/multiplayer/useMultiplayer';
 
 /** Keep pair-chat bubbles on screen after the server ends the convo. */
@@ -24,6 +25,7 @@ export type RoomChatterState = {
   npcConvo: NpcConvoState | null;
   isNpcInConvo: (npcId: string) => boolean;
   handleRoomChat: (sender: string, text: string) => void;
+  handleNpcShout: (npcId: string, text: string) => void;
   handleNpcLine: (
     convoId: string,
     npc: string,
@@ -85,6 +87,28 @@ export function useRoomChatter(
       });
     });
   }, [scheduleHide]);
+
+  const appendNpcShout = useCallback((npcId: string, text: string) => {
+    setNpcMessages(prev => {
+      const next = new Map(prev);
+      next.set(npcId, appendChatLine(prev.get(npcId) ?? [], text));
+      return next;
+    });
+    const visibleMs = AMBIENT_VISIBLE_MS + Math.random() * AMBIENT_VISIBLE_JITTER_MS;
+    scheduleHide(`npc:${npcId}`, visibleMs, () => {
+      setNpcMessages(prev => {
+        if (!prev.has(npcId)) return prev;
+        const next = new Map(prev);
+        next.delete(npcId);
+        return next;
+      });
+    });
+  }, [scheduleHide]);
+
+  const handleNpcShout = useCallback((npcId: string, text: string) => {
+    if (npcConvo?.participants.includes(npcId)) return;
+    appendNpcShout(npcId, stripNpcChatterDots(text));
+  }, [appendNpcShout, npcConvo]);
 
   const handleRoomChat = useCallback((sender: string, text: string) => {
     const parsed = parseSender(sender);
@@ -152,6 +176,7 @@ export function useRoomChatter(
     npcConvo,
     isNpcInConvo,
     handleRoomChat,
+    handleNpcShout,
     handleNpcLine,
     onNpcConvoStart,
     onNpcConvoEnd,

@@ -46,6 +46,7 @@ type SFCityCrowdLayerProps = {
   peerMessages: ChatLine[];
   isPlayerChatConnected: (playerId: string) => boolean;
   playerMessages: Map<string, ChatLine[]>;
+  npcPublicMessages: Map<string, ChatLine[]>;
 };
 
 function SFCityCrowdLayer({
@@ -72,6 +73,7 @@ function SFCityCrowdLayer({
   peerMessages,
   isPlayerChatConnected,
   playerMessages,
+  npcPublicMessages,
 }: SFCityCrowdLayerProps) {
   const handleEaselStationed = useCallback(
     (npcId: string) => onEaselStationed(npcId),
@@ -132,6 +134,7 @@ function SFCityCrowdLayer({
               npcTyping,
               messages: npcMessages,
             } : undefined}
+            publicMessages={npcPublicMessages.get(cfg.id)}
             spaceFloat={spaceFloat}
           />
         );

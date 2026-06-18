@@ -98,6 +98,8 @@ type NPCProps = NPCConfig & {
     npcTyping: boolean;
     messages: ChatLine[];
   };
+  /** Solo public shouts (ambient cheers, etc.). */
+  publicMessages?: ChatLine[];
   /** Deep Space — zero-G float visuals instead of walk cycle. */
   spaceFloat?: boolean;
 };
@@ -141,7 +143,8 @@ function NPC({
   easelPaintingLabel,
   chatPromptDrawingLabel,
   chatPromptCanvasWorldX,
-  paused, greeting, chatConnected = false, dimmed = false, greetFacing, greetingChat,
+  paused, greeting, chatConnected = false, dimmed = false, greetFacing,   greetingChat,
+  publicMessages,
   spaceFloat = false,
 }: NPCProps) {
   const depthY = useMemo(() => crowdDepthOffsetPx(characterId), [characterId]);
@@ -667,6 +670,9 @@ function NPC({
   const showPaintingBubble = promptDrawing
     ? Boolean(chatPromptDrawingLabel)
     : easelStationed && Boolean(easelPaintingLabel);
+  const showPublicBubble = Boolean(
+    publicMessages?.length && !greeting && !showPaintingBubble,
+  );
   /** Easel canvas anchors at CHAR_BOTTOM — painters must match, not use crowd depth. */
   const effectiveDepthY = showPaintingBubble || easelStationed || easelPaintingSlot != null || chatPromptCanvasWorldX != null ? 0 : depthY;
   const bubbleSide = showPaintingBubble
@@ -715,6 +721,13 @@ function NPC({
                 tailAlign="edge"
                 faded
               />
+            ) : showPublicBubble ? (
+              <NpcChatOverlay
+                name={name}
+                npcTyping={false}
+                messages={publicMessages!}
+                side={bubbleSide}
+              />
             ) : undefined
           }
         />
@@ -762,6 +775,7 @@ function areNpcPropsEqual(prev: NPCProps, next: NPCProps): boolean {
     && prev.dimmed === next.dimmed
     && prev.greetFacing === next.greetFacing
     && prev.spaceFloat === next.spaceFloat
+    && prev.publicMessages === next.publicMessages
     && greetingChatEqual(prev.greetingChat, next.greetingChat);
 }
 

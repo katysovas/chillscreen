@@ -1,22 +1,9 @@
 import { formatNpcBrandedName, npcBrandFromModelId } from '@/lib/npcBrandedName';
 import type { NpcRosterEntry } from '@/lib/chatterCast';
+import { festiePersonalityNotesForNpcChatter } from '@/lib/festie/describeNotes';
 import { festieModelIdForProvider } from '@/lib/festie/llmProviders';
-import { formatFestieTopics } from '@/lib/festie/presets';
 import { festieNpcId } from '@/lib/festie/toCharacterDef';
 import type { FestiePublic } from '@/lib/festie/types';
-
-function festieChatterPersonality(festie: FestiePublic): string {
-  const parts = [
-    `${festie.name} is a festival-goer's AI festie — wandering the stage while they're away.`,
-  ];
-  if (festie.personality_notes?.trim()) {
-    parts.push(festie.personality_notes.trim());
-  }
-  if (festie.topics.length > 0) {
-    parts.push(`Into: ${formatFestieTopics(festie.topics)}.`);
-  }
-  return parts.join(' ');
-}
 
 /** Roster entry for ambient NPC pair chatter — not gated by festie life tier. */
 export function festieToRosterEntry(festie: FestiePublic): NpcRosterEntry {
@@ -26,8 +13,7 @@ export function festieToRosterEntry(festie: FestiePublic): NpcRosterEntry {
     displayName: festie.name,
     modelId,
     modelDisplayName: npcBrandFromModelId(modelId),
-    personalityNotes: festieChatterPersonality(festie),
-    topics: festie.topics,
+    personalityNotes: festiePersonalityNotesForNpcChatter(festie),
   };
 }
 

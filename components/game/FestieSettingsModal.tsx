@@ -1,30 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { CreatorStageScenePanel } from '@/components/create/CreatorStageScenePanel';
 import { fetchFestie, updateFestie, updatePassword } from '@/lib/festie/client';
-import {
-  attributeToLevel,
-  levelToAttribute,
-  PERSONALITY_TRAITS,
-  type PersonalityLevel,
-  type PersonalityTraitKey,
-} from '@/lib/festie/personalityLevels';
-import {
-  FESTIE_LLM_PROVIDER_OPTIONS,
-  type FestieLlmProvider,
-} from '@/lib/festie/llmProviders';
-import { FESTIE_TOPIC_OPTIONS, FESTIE_TOPICS } from '@/lib/festie/presets';
+import { CreatorStageProvider, useCreatorStageControls } from '@/lib/stages/CreatorStageContext';
+import type { UserStagePublic } from '@/lib/stages/types';
 import { FestieLifeHeader } from './FestieLifeHeader';
 import type { FestieOwner } from '@/lib/festie/types';
 import { Z_MODAL_NESTED } from '@/lib/zLayers';
 import {
   isValidFestiePassword,
   validateFestiePassword,
+  validatePersonalityNotes,
 } from '@/lib/festie/validation';
+import { getPlayerSession } from '@/lib/player/session';
 import { getPlayerName } from '@/lib/playerStorage';
 import { HelpFaqContent } from './HelpFaqContent';
 
-export type FestieSettingsTab = 'customize' | 'access' | 'help' | 'contact';
+export type FestieSettingsTab = 'customize' | 'stage' | 'access' | 'help' | 'contact';
 
 function TabIconCustomize({ size = 16 }: { size?: number }) {
   return (
@@ -88,6 +81,19 @@ function TabIconContact({ size = 16 }: { size?: number }) {
   );
 }
 
+function TabIconStage({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ display: 'block' }}>
+      <path d="M4 7h16" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <circle cx={9} cy={7} r={2} stroke="currentColor" strokeWidth={1.5} />
+      <path d="M4 12h16" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <circle cx={15} cy={12} r={2} stroke="currentColor" strokeWidth={1.5} />
+      <path d="M4 17h16" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <circle cx={11} cy={17} r={2} stroke="currentColor" strokeWidth={1.5} />
+    </svg>
+  );
+}
+
 function TabIconHelp({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ display: 'block' }}>
@@ -105,6 +111,7 @@ function TabIconHelp({ size = 16 }: { size?: number }) {
 
 const TAB_ICONS: Record<FestieSettingsTab, typeof TabIconCustomize> = {
   customize: TabIconCustomize,
+  stage: TabIconStage,
   access: TabIconAccess,
   help: TabIconHelp,
   contact: TabIconContact,
@@ -116,14 +123,45 @@ type Props = {
   ownerOnline?: boolean;
   refillFrom?: number | null;
   initialTab?: FestieSettingsTab;
+  /** Signed-in viewer's creator stage, when they have one. */
+  ownedStage?: UserStagePublic | null;
 };
 
-const TABS: { id: FestieSettingsTab; label: string }[] = [
+function FestieStageSettingsSection({ ownedStage }: { ownedStage: UserStagePublic }) {
+  const creatorCtx = useCreatorStageControls();
+  if (creatorCtx?.isOwner) {
+    return <CreatorStageScenePanel />;
+  }
+
+  const session = getPlayerSession();
+  if (!session.authenticated || session.userId !== ownedStage.ownerId) {
+    return null;
+  }
+
+  return (
+    <CreatorStageProvider
+      initialStage={ownedStage}
+      ownerUserId={ownedStage.ownerId}
+      currentUserId={session.userId}
+      authenticated={session.authenticated}
+      sessionReady={session.hydrated}
+    >
+      <CreatorStageScenePanel />
+    </CreatorStageProvider>
+  );
+}
+
+const BASE_TABS: { id: FestieSettingsTab; label: string }[] = [
   { id: 'customize', label: 'Customize' },
+  { id: 'stage', label: 'Stage' },
   { id: 'access', label: 'Access' },
   { id: 'help', label: 'Help' },
   { id: 'contact', label: 'Contact' },
 ];
+
+function visibleSettingsTabs(ownedStage: UserStagePublic | null | undefined) {
+  return BASE_TABS.filter(t => t.id !== 'stage' || Boolean(ownedStage));
+}
 
 const LABEL: React.CSSProperties = {
   display: 'block',
@@ -159,69 +197,6 @@ const BTN: React.CSSProperties = {
   fontFamily: 'system-ui,sans-serif',
 };
 
-function PersonalityPicker({
-  traitKey,
-  level,
-  onChange,
-}: {
-  traitKey: PersonalityTraitKey;
-  level: PersonalityLevel;
-  onChange: (level: PersonalityLevel) => void;
-}) {
-  const trait = PERSONALITY_TRAITS.find(t => t.key === traitKey)!;
-  return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '72px 1fr',
-      gap: 10,
-      alignItems: 'center',
-      marginBottom: 10,
-    }}>
-      <span style={{
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.5)',
-        fontFamily: 'system-ui,sans-serif',
-        fontWeight: 500,
-      }}>
-        {trait.label}
-      </span>
-      <div style={{
-        display: 'flex',
-        gap: 4,
-        padding: 3,
-        borderRadius: 10,
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.08)',
-      }}>
-        {trait.options.map(opt => {
-          const selected = level === opt.level;
-          return (
-            <button
-              key={opt.level}
-              type="button"
-              title={opt.hint}
-              onClick={() => onChange(opt.level)}
-              style={{
-                ...BTN,
-                flex: 1,
-                padding: '7px 4px',
-                fontSize: 12,
-                fontWeight: selected ? 600 : 500,
-                borderRadius: 7,
-                background: selected ? 'rgba(230,126,34,0.35)' : 'transparent',
-                color: selected ? '#fff' : 'rgba(255,255,255,0.45)',
-                cursor: 'pointer',
-              }}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 /** Festie settings — tabbed: customize, access, help, contact. */
 export function FestieSettingsModal({
   onClose,
@@ -229,18 +204,18 @@ export function FestieSettingsModal({
   ownerOnline = true,
   refillFrom = null,
   initialTab = 'customize',
+  ownedStage = null,
 }: Props) {
-  const [tab, setTab] = useState<FestieSettingsTab>(initialTab);
+  const tabs = useMemo(() => visibleSettingsTabs(ownedStage), [ownedStage]);
+  const [tab, setTab] = useState<FestieSettingsTab>(() => {
+    if (initialTab === 'stage' && !ownedStage) return 'customize';
+    return tabs.some(t => t.id === initialTab) ? initialTab : 'customize';
+  });
   const [loading, setLoading] = useState(true);
   const [festie, setFestie] = useState<FestieOwner | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [energyLevel, setEnergyLevel] = useState<PersonalityLevel>(2);
-  const [friendlinessLevel, setFriendlinessLevel] = useState<PersonalityLevel>(2);
-  const [chattinessLevel, setChattinessLevel] = useState<PersonalityLevel>(2);
-  const [topics, setTopics] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
-  const [llmProvider, setLlmProvider] = useState<FestieLlmProvider>('openai');
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -257,8 +232,15 @@ export function FestieSettingsModal({
   const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [contactError, setContactError] = useState('');
   useEffect(() => {
-    setTab(initialTab);
-  }, [initialTab]);
+    const next = initialTab === 'stage' && !ownedStage
+      ? 'customize'
+      : initialTab;
+    setTab(next);
+  }, [initialTab, ownedStage]);
+
+  useEffect(() => {
+    if (tab === 'stage' && !ownedStage) setTab('customize');
+  }, [tab, ownedStage]);
 
   useEffect(() => {
     void (async () => {
@@ -269,12 +251,7 @@ export function FestieSettingsModal({
           return;
         }
         setFestie(row);
-        setEnergyLevel(attributeToLevel(row.attributes.energy));
-        setFriendlinessLevel(attributeToLevel(row.attributes.friendliness));
-        setChattinessLevel(attributeToLevel(row.attributes.chattiness));
-        setTopics(row.topics.filter(t => (FESTIE_TOPICS as readonly string[]).includes(t)));
         setNotes(row.personality_notes ?? '');
-        setLlmProvider(row.llm_provider);
       } catch {
         setLoadError('Could not load festie settings.');
       } finally {
@@ -283,27 +260,18 @@ export function FestieSettingsModal({
     })();
   }, []);
 
-  const toggleTopic = (topic: string) => {
-    setTopics(prev => {
-      if (prev.includes(topic)) return prev.filter(t => t !== topic);
-      if (prev.length >= 3) return prev;
-      return [...prev, topic];
-    });
-  };
-
   const saveFestie = async () => {
     setSavingFestie(true);
     setFestieError(null);
+    const notesErr = validatePersonalityNotes(notes);
+    if (notesErr) {
+      setFestieError(notesErr);
+      setSavingFestie(false);
+      return;
+    }
     try {
       const updated = await updateFestie({
-        attributes: {
-          energy: levelToAttribute(energyLevel),
-          friendliness: levelToAttribute(friendlinessLevel),
-          chattiness: levelToAttribute(chattinessLevel),
-        },
-        topics,
         personality_notes: notes.trim() || null,
-        llm_provider: llmProvider,
       });
       setFestie(updated);
       onUpdated?.(updated);
@@ -377,11 +345,6 @@ export function FestieSettingsModal({
     && currentPassword.length > 0;
 
   const needsFestie = tab === 'customize' || tab === 'access';
-
-  const handleFestieUpdated = (updated: FestieOwner) => {
-    setFestie(updated);
-    onUpdated?.(updated);
-  };
 
   return (
     <div
@@ -470,7 +433,7 @@ export function FestieSettingsModal({
           aria-label="Settings sections"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+            gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
             gap: 3,
             margin: '0 16px 12px',
             padding: 3,
@@ -479,7 +442,7 @@ export function FestieSettingsModal({
             flexShrink: 0,
           }}
         >
-          {TABS.map(t => {
+          {tabs.map(t => {
             const Icon = TAB_ICONS[t.id];
             const active = tab === t.id;
             return (
@@ -536,68 +499,22 @@ export function FestieSettingsModal({
 
           {tab === 'customize' && festie && (
             <>
-              <div style={{ marginBottom: 16 }}>
-                <span style={{ ...LABEL, marginBottom: 10 }}>Personality</span>
-                <PersonalityPicker traitKey="energy" level={energyLevel} onChange={setEnergyLevel} />
-                <PersonalityPicker traitKey="friendliness" level={friendlinessLevel} onChange={setFriendlinessLevel} />
-                <PersonalityPicker traitKey="chattiness" level={chattinessLevel} onChange={setChattinessLevel} />
-              </div>
-
-              <span style={LABEL}>AI model</span>
+              <span style={LABEL}>Describe {festie.name}</span>
               <p style={{
-                margin: '0 0 8px',
-                fontSize: 13,
+                margin: '0 0 10px',
+                fontSize: 12,
                 color: 'rgba(255,255,255,0.45)',
                 fontFamily: 'system-ui,sans-serif',
                 lineHeight: 1.45,
-              }}>
-                Which LLM powers your festie when chatting with seeds on stage.
+              }}
+              >
+                Used for conversations when you sign off.
               </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                {FESTIE_LLM_PROVIDER_OPTIONS.map(opt => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => setLlmProvider(opt.id)}
-                    style={{
-                      ...BTN,
-                      padding: '5px 10px',
-                      fontSize: 12,
-                      background: llmProvider === opt.id ? '#e67e22' : 'rgba(255,255,255,0.08)',
-                      color: '#fff',
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              <span style={LABEL}>Topics (up to 3)</span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                {FESTIE_TOPIC_OPTIONS.map(({ id, label }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => toggleTopic(id)}
-                    style={{
-                      ...BTN,
-                      padding: '5px 10px',
-                      fontSize: 12,
-                      background: topics.includes(id) ? '#e67e22' : 'rgba(255,255,255,0.08)',
-                      color: '#fff',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <span style={LABEL}>Notes</span>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value.slice(0, 280))}
-                placeholder="How should your festie act when you're away? (optional)"
-                rows={3}
+                placeholder="e.g. Loves deep house, always hyping the crowd, terrible at small talk."
+                rows={4}
                 style={{ ...INPUT, resize: 'vertical', marginBottom: 14 }}
               />
 
@@ -620,9 +537,13 @@ export function FestieSettingsModal({
                   cursor: savingFestie ? 'default' : 'pointer',
                 }}
               >
-                {savingFestie ? 'Saving…' : 'Save festie settings'}
+                {savingFestie ? 'Saving…' : 'Save'}
               </button>
             </>
+          )}
+
+          {tab === 'stage' && ownedStage && (
+            <FestieStageSettingsSection ownedStage={ownedStage} />
           )}
 
           {tab === 'access' && !loading && !festie && (

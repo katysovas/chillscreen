@@ -1,7 +1,8 @@
 import type { CharacterDef } from '@/components/game/characters';
 import type { Personality } from '@/components/game/NPC';
+import { festiePersonalityNotesForNpcChatter } from '@/lib/festie/describeNotes';
 import { festieModelIdForProvider } from '@/lib/festie/llmProviders';
-import { festiePresetById, formatFestieTopics } from '@/lib/festie/presets';
+import { festiePresetById } from '@/lib/festie/presets';
 import type { FestieAttributes, FestiePublic } from '@/lib/festie/types';
 import { stageAnchorForRoute } from '@/lib/isolatedCity';
 import type { VenueRoute } from '@/lib/venueSlugs';
@@ -35,19 +36,6 @@ function attributesToPersonality(attrs: FestieAttributes): Personality {
   };
 }
 
-function festiePersonalityNotes(festie: FestiePublic): string {
-  const parts = [
-    `${festie.name} is a festival-goer's AI festie — wandering the stage while they're away.`,
-  ];
-  if (festie.personality_notes?.trim()) {
-    parts.push(festie.personality_notes.trim());
-  }
-  if (festie.topics.length > 0) {
-    parts.push(`Into: ${formatFestieTopics(festie.topics)}.`);
-  }
-  return parts.join(' ');
-}
-
 /** Map a synced offline festie into the same shape as ambient NPCs. */
 export function festieToCharacterDef(
   festie: FestiePublic,
@@ -68,7 +56,7 @@ export function festieToCharacterDef(
     entryDelay: 2_000 + index * 1_500,
     stageCrowd: anchor ?? undefined,
     personality: attributesToPersonality(festie.attributes),
-    personalityNotes: festiePersonalityNotes(festie),
+    personalityNotes: festiePersonalityNotesForNpcChatter(festie),
     modelId: festieModelIdForProvider(festie.llm_provider),
   };
 }

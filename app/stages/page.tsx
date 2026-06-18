@@ -50,7 +50,7 @@ export default function StagesIndexPage() {
         </h1>
         <p style={{ margin: '0 0 32px', fontSize: 15, color: 'rgba(255,255,255,0.58)' }}>
           Pick a stage, walk the grounds, watch synchronized live sets with other players, and create an
-          AI festival buddy that keeps vibing when you leave. Every venue is free in your browser — no
+          AI festival buddy that keeps vibing when you leave. 
           download.
         </p>
 

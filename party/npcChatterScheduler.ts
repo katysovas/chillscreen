@@ -49,6 +49,11 @@ import { ierror, ilog, INTERNAL_DEBUG_HEADER, runWithInternalDebug } from '../li
 import { CHATTER_DEBUG_HEADER, runWithChatterDebug } from '../lib/chatterDebug';
 import { StageChatterStore } from './stageChatterStore';
 import {
+  AMBIENT_CHEER_INTERVAL_MAX_MS,
+  AMBIENT_CHEER_INTERVAL_MIN_MS,
+  pickAmbientCheerLine,
+} from '../lib/npcAmbientChat';
+import {
   shouldExcludeFromStageChatter,
   type StageChatterMessage,
 } from '../lib/stageChatter/types';
@@ -87,6 +92,7 @@ export class NpcChatterScheduler {
   private readonly roomStorage: Party.Room['storage'];
   private readonly env: Record<string, string | undefined>;
   private configLogged = false;
+  private nextAmbientCheerAt = 0;
   private readonly stageChatter: StageChatterStore;
 
   constructor(private deps: ChatterSchedulerDeps) {
@@ -164,6 +170,7 @@ export class NpcChatterScheduler {
     if (this.chatterDisabled) return;
     if (this.schedulerOn) return;
     this.schedulerOn = true;
+    this.scheduleNextAmbientCheer();
     const delay = jitterMs(FIRST_CONVO_DELAY_MIN_MS, FIRST_CONVO_DELAY_MAX_MS);
     void this.roomStorage.setAlarm(Date.now() + delay);
   }
@@ -346,6 +353,27 @@ export class NpcChatterScheduler {
 
   private touchNpcCooldown(npcId: string) {
     this.npcCooldown.set(npcId, Date.now() + NPC_REPLY_COOLDOWN_MS);
+  }
+
+  private scheduleNextAmbientCheer() {
+    this.nextAmbientCheerAt = Date.now()
+      + jitterMs(AMBIENT_CHEER_INTERVAL_MIN_MS, AMBIENT_CHEER_INTERVAL_MAX_MS);
+  }
+
+  private async runAmbientCheer() {
+    if (this.chatterDisabled || this.deps.playerCount() === 0) return;
+    if (this.activeConvo || this.activeStageWave) return;
+
+    const ids = this.positionedChatterNpcIds();
+    if (ids.length === 0) return;
+
+    const available = ids.filter(id => !this.npcOnCooldown(id));
+    const pool = available.length > 0 ? available : ids;
+    const npcId = pool[Math.floor(Math.random() * pool.length)]!;
+    const line = pickAmbientCheerLine();
+
+    const sent = await this.persistAndBroadcastRoomChat(`npc:${npcId}`, line);
+    if (sent) this.appendBuffer(`npc:${npcId}`, line);
   }
 
   private bumpHourlyCap(): boolean {
@@ -581,6 +609,11 @@ export class NpcChatterScheduler {
     if (this.chatterDisabled || !this.schedulerOn) {
       void this.roomStorage.setAlarm(Date.now() + 86_400_000);
       return;
+    }
+
+    if (Date.now() >= this.nextAmbientCheerAt) {
+      await this.runAmbientCheer();
+      this.scheduleNextAmbientCheer();
     }
 
     if (!this.activeConvo && !this.activeStageWave && Math.random() < CONVO_PROBABILITY) {

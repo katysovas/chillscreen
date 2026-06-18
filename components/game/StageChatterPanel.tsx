@@ -33,6 +33,7 @@ type Props = {
   onHumansOnlyChange?: (enabled: boolean) => void;
   stageName?: string;
   stageDescription?: string | null;
+  isStageOwner?: boolean;
   hidden?: boolean;
 };
 
@@ -75,6 +76,7 @@ export function StageChatterPanel({
   onHumansOnlyChange,
   stageName,
   stageDescription,
+  isStageOwner = false,
   hidden = false,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -159,11 +161,14 @@ export function StageChatterPanel({
   const welcomeMessage = useMemo(() => {
     const name = stageName?.trim();
     if (!name) return null;
+    if (isStageOwner) {
+      return `Welcome to ${name}! Customize your stage in Settings, or manage the lineup from the icon below.`;
+    }
     const description = stageDescription?.trim();
     return description
       ? `Welcome to ${name} — ${description}`
       : `Welcome to ${name}`;
-  }, [stageDescription, stageName]);
+  }, [isStageOwner, stageDescription, stageName]);
 
   useEffect(() => () => {
     if (typingHideTimerRef.current) clearTimeout(typingHideTimerRef.current);
@@ -179,7 +184,7 @@ export function StageChatterPanel({
       style={{
         position: 'absolute',
         right: 14,
-        top: 50,
+        top: 20,
         zIndex: Z_CONTROLS,
         width: 280,
         height: expanded ? 800 : 'auto',

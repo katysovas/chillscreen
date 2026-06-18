@@ -4,14 +4,10 @@ import type { FestiePublic } from '@/lib/festie/types';
 import type { ChatTurn } from '@/lib/npcChat';
 
 export function pickFestieFallbackGreeting(festie: FestiePublic): string {
-  const level = festie.attributes.chattiness;
-  if (level <= 3) return `hey — i'm ${festie.name}'s festie`;
-  if (level >= 8) return `oh hey! ${festie.name} is around somewhere but i'm holding down the vibe`;
-  return `hey! i'm ${festie.name}'s festie — what's good?`;
+  return `hey — i'm ${festie.name}'s festie`;
 }
 
-export function pickFestieFallbackReply(festie: FestiePublic): string {
-  if (festie.attributes.chattiness <= 3) return 'mm — say that again?';
+export function pickFestieFallbackReply(_festie: FestiePublic): string {
   return 'lost the thread — what were we on?';
 }
 

@@ -185,7 +185,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
     title: 'Hulaween',
     metaTitle: 'Hulaween Stage — Live Sets & AI Festies',
     description:
-      'Hula family hangout on WhichStage. Watch synchronized Hulaween festival sets, chat with players, and leave an AI festie on stage when you go.',
+      'Hula family hangout.',
     longDescription:
       'The Hulaween stage on WhichStage streams full festival sets from Suwannee — String Cheese, Pretty Lights, Zeds Dead, CloZee, and more — synchronized for everyone in the room. ' +
       'Walk the grounds, shout to the crowd, and deploy an AI festie who keeps vibing while you\'re away.',

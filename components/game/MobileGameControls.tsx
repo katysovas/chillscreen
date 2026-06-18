@@ -11,7 +11,7 @@ type Props = {
   onToggleVendorShop?: () => void;
   onVendorShopWarm?: () => void;
   onOpenStageSwap?: () => void;
-  /** Stage owner only — opens tabbed stage settings modal. */
+  /** Stage owner only — opens lineup modal. */
   showStageSettings?: boolean;
   onOpenStageSettings?: () => void;
   onOpenAmbientChat?: () => void;
@@ -147,8 +147,8 @@ export function MobileGameControls({
           <button
             type="button"
             className="mobile-controls-stage-settings mobile-controls-action-btn"
-            aria-label="Stage settings"
-            title="Stage settings"
+            aria-label="Lineup"
+            title="Lineup"
             onPointerDown={e => e.preventDefault()}
             onClick={() => {
               trackMobileControl('stage_settings');

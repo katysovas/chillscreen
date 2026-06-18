@@ -16,7 +16,7 @@ const TALKED_OUT_LINES = [
 ];
 
 function pickTalkedOutLine(festie: FestieRow): string {
-  const idx = festie.attributes.chattiness % TALKED_OUT_LINES.length;
+  const idx = festie.name.length % TALKED_OUT_LINES.length;
   return TALKED_OUT_LINES[idx] ?? TALKED_OUT_LINES[0]!;
 }
 

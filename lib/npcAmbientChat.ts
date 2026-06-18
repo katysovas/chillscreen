@@ -9,6 +9,24 @@ export const AMBIENT_VISIBLE_JITTER_MS = 2_000;
 export const AMBIENT_INTERVAL_MIN_MS = 10_000;
 export const AMBIENT_INTERVAL_MAX_MS = 22_000;
 
+/** Canned crowd cheers — server posts one every 2–5 min (stage chat + NPC bubble). */
+export const AMBIENT_CHEER_INTERVAL_MIN_MS = 120_000;
+export const AMBIENT_CHEER_INTERVAL_MAX_MS = 300_000;
+
+export const NPC_AMBIENT_CHEER_LINES = [
+  'cheers',
+  'salud',
+  'send it',
+  'boom',
+  'f^# yea',
+  "let's gooo!",
+  'chug',
+  'send the boys',
+  'drink up',
+  'here we go',
+  'noice',
+] as const;
+
 /** Per-NPC ambient timing overrides. */
 const NPC_AMBIENT_INTERVAL: Partial<Record<string, { minMs: number; maxMs: number }>> = {
   [BUZ_NPC_ID]: { minMs: 9_000, maxMs: 16_000 },
@@ -506,6 +524,10 @@ function pickBuzAmbientMumble(): string {
   const snapshot = getStageWorldSnapshot();
   const stage = pickStage(snapshot);
   return pickStageMumble({ id: BUZ_NPC_ID } as CharacterDef, stage);
+}
+
+export function pickAmbientCheerLine(): string {
+  return pick([...NPC_AMBIENT_CHEER_LINES]);
 }
 
 export function pickAmbientMumble(character: CharacterDef): string {

@@ -22,7 +22,7 @@ type BottomControlPanelProps = {
   onVendorShopWarm?: () => void;
   /** Opens the city / stage picker (desktop + in-game). */
   onOpenCityPicker?: () => void;
-  /** Stage owner only — opens tabbed stage settings modal. */
+  /** Stage owner only — opens lineup modal. */
   showStageSettings?: boolean;
   onOpenStageSettings?: () => void;
   /** User-created stage slug — invite links use /watch/{slug}. */
@@ -340,8 +340,8 @@ export function BottomControlPanel({
           <button
             type="button"
             onClick={onOpenStageSettings}
-            aria-label="Stage settings"
-            title="Stage settings"
+            aria-label="Lineup"
+            title="Lineup"
             style={{
               ...ghostBtn,
               padding: '8px 14px',
