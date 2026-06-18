@@ -28,7 +28,7 @@ export function buildFestieGreetingMessages(
         conversationSeed,
       })}
 
-The player walked up to chat. Give a warm in-character greeting — one very short sentence (under 12 words if possible). No period at the end.`,
+The player walked up to chat. Give a warm in-character greeting — one tiny line (under 8 words if possible). No period at the end.`,
     },
     {
       role: 'user',

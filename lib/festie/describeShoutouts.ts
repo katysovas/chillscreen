@@ -2,12 +2,12 @@ import { stripNpcChatterDots } from '@/lib/messageFilter';
 import type { FestiePublic } from '@/lib/festie/types';
 
 /** First shout after joining — sooner so owners notice it working. */
-export const FESTIE_DESCRIBE_SHOUTOUT_FIRST_MIN_MS = 25_000;
-export const FESTIE_DESCRIBE_SHOUTOUT_FIRST_MAX_MS = 50_000;
+export const FESTIE_DESCRIBE_SHOUTOUT_FIRST_MIN_MS = 40_000;
+export const FESTIE_DESCRIBE_SHOUTOUT_FIRST_MAX_MS = 80_000;
 /** Steady-state cadence after the first shout. */
-export const FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MIN_MS = 60_000;
-export const FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MAX_MS = 180_000;
-export const FESTIE_SHOUTOUT_COOLDOWN_MS = 90_000;
+export const FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MIN_MS = 90_000;
+export const FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MAX_MS = 240_000;
+export const FESTIE_SHOUTOUT_COOLDOWN_MS = 120_000;
 export const FESTIE_SHOUTOUT_MAX_WORDS = 4;
 export const FESTIE_SHOUTOUT_MAX_TOKENS = 16;
 

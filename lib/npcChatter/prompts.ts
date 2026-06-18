@@ -35,9 +35,10 @@ function topicKnowledgeRule(topics: string[] | undefined): string {
 function voiceRules(extra = '', topics?: string[], lengthHint?: string): string {
   return [
     'Voice rules (viral quote-tweet energy — screenshot-worthy):',
-    `- one line only — 1–2 short sentences ok. hard cap ${NPC_LINE_MAX_WORDS} words.`,
-    '- VARY LENGTH every line — mix micro-replies (2–5 words), medium takes (~8–12), and occasional longer rants (up to 18). never make every line the same size.',
+    `- one line only — usually 2–8 words; hard cap ${NPC_LINE_MAX_WORDS} words.`,
+    '- default SHORT — micro-replies, one-liners, quick ? questions. longer takes (9–12 words) are rare spice, not the norm.',
     lengthHint ? `- ${lengthHint}` : '',
+    '- one thought per line — no compound sentences, no semicolons, no "and also".',
     '- questions are good — ask follow-ups, challenge a take, wonder out loud. end with ? when you are actually asking (~1 in 3–4 lines in a convo is fine).',
     '- finish the thought cleanly — never end with a period or dot; no trailing clauses, no cut-off endings.',
     '- write like a late-night group chat after the headliner — lowercase, casual, slang is fine.',
@@ -53,21 +54,14 @@ function voiceRules(extra = '', topics?: string[], lengthHint?: string): string 
     '- never explain or summarize the topic back. react like you already have a take locked in.',
     '- do not reuse phrases already in the transcript — never repeat an exact line from recent chatter.',
     '',
-    'good: "did you hear they cut the sunrise set for some soundcloud dj"',
-    'good: "why is nobody talking about that filthy drop at 4am"',
-    'good: "bonnaroo mud years are the only years that count"',
-    'good: "lost my festie bestie at the rail and gained three new ones"',
-    'good: "his drops been washed since X and yall know it"',
-    'good: "vip is paying extra to watch from farther away"',
-    'good: "front rail at noon for a 9pm set is npc behavior"',
-    'good: "that b2b ended three friendships in my camp"',
-    'good: "woke up in someone elses tent again no notes"',
-    'good: "the kandi trade lasted longer than the relationship"',
     'good: "wait who booked them for sunset"',
-    'good: "thats interesting, what do you think?"',
     'good: "why would anyone rail that early"',
     'good: "bet"',
-    'good: "security took my totem like it wasnt the best set design there"',
+    'good: "vip is a scam"',
+    'good: "that drop was filthy"',
+    'good: "front rail at noon?"',
+    'good: "lost my festie bestie"',
+    'good: "security took my totem"',
     'bad: "yeah extreme weather is concerning for outdoor festivals" (too polite, sounds like a press release)',
     'bad: "scarlet fire hits different; man i miss 77" (semicolon, two thoughts)',
     'bad: "festivals have pros and cons" (hedging, no take)',
@@ -132,11 +126,11 @@ export function buildLineSystemPrompt(opts: {
   }
 
   if (isCloser) {
-    parts.push('wrap it up — one short punchy final line (under 10 words), screenshot-worthy.');
+    parts.push('wrap it up — one tiny punchy final line (under 6 words), screenshot-worthy.');
   }
 
   parts.push(
-    `Reply with one chat line (${NPC_LINE_MAX_WORDS} words max). Vary length vs your last lines. Questions with ? are fine. No quotes, no name prefix, no special characters, no period at the end.`,
+    `Reply with one chat line (${NPC_LINE_MAX_WORDS} words max). Prefer 2–6 words. Questions with ? are fine. No quotes, no name prefix, no special characters, no period at the end.`,
   );
 
   return parts.filter(Boolean).join('\n\n');
@@ -152,9 +146,9 @@ function stageVoiceRules(intent: StageChatterIntent, topics?: string[], lengthHi
   return [
     'Stage chatter voice (group chat sidebar — fast, casual, readable):',
     `- your job: ${intent}.`,
-    '- length should vary line to line — 1–4 word reactions are great; so are longer 12–18 word takes. do not make every message the same size.',
+    '- default tiny — 1–6 words. 7–12 only when the thought truly needs it.',
     lengthHint ? `- ${lengthHint}` : '',
-    '- 1–2 short sentences max. a few words is fine ("sure", "agreed", "what happened?", "k", "bet", "deadass", "explain?").',
+    '- one burst only — no compound sentences ("sure", "agreed", "what happened?", "k", "bet", "deadass", "explain?").',
     `- never exceed ${STAGE_LINE_MAX_WORDS} words total.`,
     '- questions welcome — if your job is to ask, end with ?. otherwise mix statements and questions naturally.',
     '- lowercase, chatty, internet-casual. react to the latest lines — do not recap them.',
@@ -188,7 +182,7 @@ export function buildStageChatterSystemPrompt(opts: {
     streamNote,
     `Recent stage chatter (newest last):\n${formatStageRecentChat(recentChat)}`,
     stageVoiceRules(intent, npc.topics, lengthHint),
-    `Write your next stage chatter line only (${STAGE_LINE_MAX_WORDS} words max, 1–2 sentences). Vary length. Questions with ? are fine. No period at the end.`,
+    `Write your next stage chatter line only (${STAGE_LINE_MAX_WORDS} words max). Prefer 2–6 words. Questions with ? are fine. No period at the end.`,
   ].filter(Boolean).join('\n\n');
 }
 
@@ -214,6 +208,6 @@ export function buildSingleReplySystemPrompt(opts: {
     INJECTION_GUARD,
     voiceRules('', npc.topics, lengthHint),
     `Someone in the room said something that caught your ear: "${triggerText}"`,
-    `Reply with one chat line (${NPC_LINE_MAX_WORDS} words max). Vary length. Questions with ? are fine. No quotes, no name prefix, no special characters, no period at the end.`,
+    `Reply with one chat line (${NPC_LINE_MAX_WORDS} words max). Prefer 2–6 words. Questions with ? are fine. No quotes, no name prefix, no special characters, no period at the end.`,
   ].join('\n\n');
 }

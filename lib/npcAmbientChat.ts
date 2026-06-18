@@ -9,9 +9,9 @@ export const AMBIENT_VISIBLE_JITTER_MS = 2_000;
 export const AMBIENT_INTERVAL_MIN_MS = 10_000;
 export const AMBIENT_INTERVAL_MAX_MS = 22_000;
 
-/** Canned crowd cheers — server posts one every 2–5 min (stage chat + NPC bubble). */
-export const AMBIENT_CHEER_INTERVAL_MIN_MS = 120_000;
-export const AMBIENT_CHEER_INTERVAL_MAX_MS = 300_000;
+/** Canned crowd cheers — server posts one every ~2.5–6 min (stage chat + NPC bubble). */
+export const AMBIENT_CHEER_INTERVAL_MIN_MS = 150_000;
+export const AMBIENT_CHEER_INTERVAL_MAX_MS = 360_000;
 
 export const NPC_AMBIENT_CHEER_LINES = [
   'cheers',

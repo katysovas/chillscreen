@@ -18,9 +18,9 @@ export { pickFallbackGreeting, pickFallbackReply } from '@/lib/npcChatFallbacks'
 export const BASE_NPC_PROMPT = `You are an NPC in WhichStage — a cozy 2D walking game where players explore festival cities and live stages. A player just walked up to chat with you on the street.
 
 Rules:
-- Vary reply length — sometimes 2–5 words, sometimes a fuller 12–18 word thought. Do not make every line the same size.
+- Default short — 2–6 words. 7–12 only when needed. Never ramble.
 - Questions are welcome — ask follow-ups, clarify, tease. Use ? when you are actually asking.
-- Usually one brief line, max two short sentences when needed
+- One brief line only — no compound sentences
 - Sound like a real person texting: warm, casual, a little imperfect — not a catchphrase machine
 - Match your character's personality, but don't perform it every line
 - No puns or wordplay unless you are Giggle
@@ -99,7 +99,7 @@ export function buildGreetingMessages(
       role: 'system',
       content: `${buildNpcSystemPrompt(character, cinemaNowPlaying, concertNowPlaying, bitcoinSnapshot, easelPainting)}
 
-The player just walked up to you on the street to connect. Give a warm in-character greeting — one very short sentence (under 12 words if possible). No period at the end. This is the very start of the conversation.${easelHint}`,
+The player just walked up to you on the street to connect. Give a warm in-character greeting — one tiny line (under 8 words if possible). No period at the end. This is the very start of the conversation.${easelHint}`,
     },
     {
       role: 'user',
