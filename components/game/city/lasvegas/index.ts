@@ -1,5 +1,4 @@
 export { VegasScene } from './VegasScene';
-export { LasVegasTile } from './LasVegasTile';
 export { LasVegasSkyline } from './LasVegasSkyline';
 export { LasVegasSign } from './LasVegasSign';
 export { EDCStage } from './EDCStage';

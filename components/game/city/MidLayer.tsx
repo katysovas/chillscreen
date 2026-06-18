@@ -19,7 +19,7 @@ import {
   CINEMA_SCALE,
   CINEMA_WIDTH,
 } from '@/lib/stageVideoLayout';
-import { CITY_MID_W, MID_F, midOriginForTile, midWidthForTile, nearMidTiles } from '@/lib/parallax';
+import { CITY_MID_W, MID_F, midOriginForTile, midWidthForTile } from '@/lib/parallax';
 import { nearIsolatedMidTiles } from '@/lib/isolatedCity';
 import { isCreatorTemplateRoute } from '@/lib/venueSlugs';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
@@ -60,9 +60,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
     creatorBackdropUrl = null,
   }, ref) {
     const vx = worldOff * MID_F;
-    const nearTiles = isolatedTileIndex != null
-      ? nearIsolatedMidTiles(isolatedTileIndex, deepLinkRoute)
-      : nearMidTiles;
+    const nearTiles = nearIsolatedMidTiles(isolatedTileIndex!, deepLinkRoute);
 
     const bundle = useStageMidBundle(
       isolatedTileIndex != null ? deepLinkRoute : undefined,

@@ -26,6 +26,8 @@ export function isStaticCityTemplateRoute(route: VenueRoute): boolean {
     || route === 'tentaroo'
     || route === 'outside-hands'
     || route === 'cinema'
+    || route === 'deep-space'
+    || route === 'creator-chill'
     || route === 'coachella'
     || route === 'edc'
     || route === 'seattle-concerts';

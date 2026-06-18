@@ -8,14 +8,12 @@ import {
   cityWorldOffBounds,
   nextCityRoute,
   prevCityRoute,
-  SIGN_EDGE_INSET_PX,
   staticCitySignGroundX,
 } from '@/lib/isolatedCity';
 import { ArrowSignBoard } from './city/ArrowSignBoard';
 import { PARALLAX_LAYER_BASE } from './city/shared/parallaxLayerStyle';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
-import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { Z_PLAYER_CHARACTER } from '@/lib/zLayers';
 import { CITY_GRASS_DROP_Y } from '@/components/game/city/cinema/constants';
 import { FOREST_GRASS_DROP_Y } from '@/components/game/city/forest/constants';
@@ -64,8 +62,7 @@ const EDGE_SIGN_FULL = {
   halfH: 30,
   tipLen: 26,
   fontSize: 13,
-  pulseInner: 60,
-  pulseOuter: 108,
+  pulseR: 60,
   shadowRx: 88,
   shadowRy: 8,
 } as const;
@@ -78,11 +75,35 @@ const EDGE_SIGN_COMPACT = {
   halfH: 23,
   tipLen: 20,
   fontSize: 10,
-  pulseInner: 44,
-  pulseOuter: 78,
+  pulseR: 44,
   shadowRx: 66,
   shadowRy: 6,
 } as const;
+
+/** Shared sign motion — CSS transform/opacity only (compositor-friendly, no SMIL). */
+const EDGE_SIGN_MOTION_CSS = `
+  @keyframes edge-sign-bob {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -7px, 0); }
+  }
+  @keyframes edge-sign-pulse {
+    0% { transform: scale(1); opacity: 0.55; }
+    100% { transform: scale(1.78); opacity: 0; }
+  }
+  .edge-sign-board {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: edge-sign-bob 2.4s ease-in-out infinite;
+  }
+  .edge-sign-pulse {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: edge-sign-pulse 2.4s ease-out infinite;
+  }
+  .edge-sign-pulse--delay {
+    animation-delay: 1.2s;
+  }
+`;
 
 /** Wooden signpost with one chevron wing — same art as the old junction signs. */
 function EdgeSign({ x, y, dir, route, onGo, compact = false }: EdgeSignProps) {
@@ -106,16 +127,26 @@ function EdgeSign({ x, y, dir, route, onGo, compact = false }: EdgeSignProps) {
         pointerEvents="none"
       />
 
-      {/* Expanding pulse rings — visual only */}
-      <g pointerEvents="none">
-        <circle cx={0} cy={boardCy} fill="none" stroke={accent} strokeWidth={3}>
-          <animate attributeName="r" values={`${m.pulseInner};${m.pulseOuter}`} dur="1.8s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.85;0" dur="1.8s" repeatCount="indefinite" />
-        </circle>
-        <circle cx={0} cy={boardCy} fill="none" stroke={accent} strokeWidth={3}>
-          <animate attributeName="r" values={`${m.pulseInner};${m.pulseOuter}`} dur="1.8s" begin="0.9s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.85;0" dur="1.8s" begin="0.9s" repeatCount="indefinite" />
-        </circle>
+      {/* Accent pulse — CSS only (replaces per-circle SMIL r/opacity) */}
+      <g transform={`translate(0,${boardCy})`} pointerEvents="none">
+        <circle
+          className="edge-sign-pulse"
+          cx={0}
+          cy={0}
+          r={m.pulseR}
+          fill="none"
+          stroke={accent}
+          strokeWidth={3}
+        />
+        <circle
+          className="edge-sign-pulse edge-sign-pulse--delay"
+          cx={0}
+          cy={0}
+          r={m.pulseR}
+          fill="none"
+          stroke={accent}
+          strokeWidth={3}
+        />
       </g>
 
       <g
@@ -124,7 +155,6 @@ function EdgeSign({ x, y, dir, route, onGo, compact = false }: EdgeSignProps) {
         role="link"
         aria-label={label}
       >
-        {/* Post */}
         <rect x={-postW / 2} y={-postH} width={postW} height={postH} rx={2} fill="#5c4636" />
         <rect x={-postW / 2 + 1} y={-postH} width={postW - 2} height={postH - 2} rx={1.5} fill="#8a6b4f" />
         <line x1={0} y1={-postH + 6} x2={0} y2={-4} stroke="#6b5344" strokeWidth={1} opacity={0.45} />
@@ -180,13 +210,10 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
     const bounds = cityWorldOffBounds(route);
     const prev = prevCityRoute(route);
     const next = nextCityRoute(route);
-    const staticSigns = isStaticCityTemplateRoute(route);
     const cameraOff = bounds.min;
-    const edgeSigns = staticSigns
-      ? staticCitySignGroundX(cameraOff, viewport.w, viewport.h)
-      : null;
-    const leftX = edgeSigns ? edgeSigns.leftX : bounds.min + SIGN_EDGE_INSET_PX;
-    const rightX = edgeSigns ? edgeSigns.rightX : bounds.max + VIEW_W - SIGN_EDGE_INSET_PX;
+    const edgeSigns = staticCitySignGroundX(cameraOff, viewport.w, viewport.h);
+    const leftX = edgeSigns.leftX;
+    const rightX = edgeSigns.rightX;
     const grassDropY = route === 'silent-disco'
       ? SILENT_DISCO_GRASS_DROP_Y
       : route === 'forest'
@@ -200,7 +227,9 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
               : route === 'edc'
                 ? VEGAS_GRASS_DROP_Y
                 : CITY_GRASS_DROP_Y;
-    const signY = staticSigns ? SIGN_Y + grassDropY : SIGN_Y;
+    const signY = SIGN_Y + grassDropY;
+
+    const showNavSigns = route !== 'deep-space';
 
     const goTo = (target: VenueRoute) => {
       router.push(`/${venueSlugForRoute(target)}`);
@@ -216,25 +245,17 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
         preserveAspectRatio="xMidYMid slice"
         style={{
           ...PARALLAX_LAYER_BASE,
-          zIndex: staticSigns ? Z_PLAYER_CHARACTER + 1 : 25,
+          zIndex: Z_PLAYER_CHARACTER + 1,
           pointerEvents: 'none',
           opacity: active ? 1 : 0,
           transition: 'opacity 0.3s ease',
         }}
       >
-        <style>{`
-          @keyframes edge-sign-bob {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-7px); }
-          }
-          .edge-sign-board {
-            animation: edge-sign-bob 1.6s ease-in-out infinite;
-          }
-        `}</style>
-        {active && (
+        <style>{EDGE_SIGN_MOTION_CSS}</style>
+        {active && showNavSigns && (
           <>
-            <EdgeSign x={leftX} y={signY} dir="left" route={prev} onGo={() => goTo(prev)} compact={staticSigns} />
-            <EdgeSign x={rightX} y={signY} dir="right" route={next} onGo={() => goTo(next)} compact={staticSigns} />
+            <EdgeSign x={leftX} y={signY} dir="left" route={prev} onGo={() => goTo(prev)} compact />
+            <EdgeSign x={rightX} y={signY} dir="right" route={next} onGo={() => goTo(next)} compact />
           </>
         )}
       </svg>

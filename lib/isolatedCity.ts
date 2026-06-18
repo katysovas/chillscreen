@@ -5,9 +5,10 @@ import type { StageAnchorKind } from '@/lib/stageAnchor';
 import { cityTileIndex } from '@/lib/spawn';
 import type { VenueRoute } from '@/lib/venueSlugs';
 import { screenPctToWorldX } from '@/lib/gameWorldRef';
-import { isCreatorTemplateRoute, isStaticCityTemplateRoute, venueSlugForRoute } from '@/lib/venueSlugs';
+import { isCreatorTemplateRoute, venueSlugForRoute } from '@/lib/venueSlugs';
 import { worldOffForVenueRoute } from '@/lib/venueRoutes';
-import { deepSpaceMidX, MID_PARALLAX, VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
+import { VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
+import { nearGndTiles } from '@/lib/worldTileGeometry';
 
 /**
  * Distance from the viewport edge at which nav signs are planted (shared with
@@ -37,7 +38,6 @@ export function visibleGroundViewBoxSlice(
   const vbLeft = VIEW_CENTER_X - vbWidth / 2;
   return { vbLeft, vbWidth, scale };
 }
-import { midOriginForTile, midWidthForTile, nearGndTiles, TOWN_MID_W } from '@/lib/worldTileGeometry';
 
 /** West-to-east picker order — used for edge navigation and city select. */
 export const ISOLATED_CITY_ORDER: VenueRoute[] = MOBILE_LOUNGE_STAGES.map(s => s.route);
@@ -70,69 +70,10 @@ export function partyRoomIdForRoute(route: VenueRoute): string {
   return `whichstage-${venueSlugForRoute(route)}`;
 }
 
-function fullCityWorldOffBounds(route: VenueRoute): { min: number; max: number } {
-  const tile = cityTileForRoute(route);
-  const origin = midOriginForTile(tile);
-  const width = midWidthForTile(tile);
-  return {
-    min: (origin - TOWN_MID_W) / MID_PARALLAX,
-    max: (origin + width + TOWN_MID_W - VIEW_WIDTH) / MID_PARALLAX,
-  };
-}
-
-/** Deep Space shares the SF tile — keep walk range tight around the stage. */
-function deepSpaceWorldOffBounds(): { min: number; max: number } {
-  const route = 'deep-space' as const;
-  const tile = cityTileForRoute(route);
-  const midX = deepSpaceMidX(tile);
-  if (midX == null) throw new Error('deep-space midX missing');
-
-  const full = fullCityWorldOffBounds(route);
-  const centerWorldOff = (midOriginForTile(tile) + midX - VIEW_CENTER_X) / MID_PARALLAX;
-
-  const westMidPx = 420;
-  const eastMidPx = 320;
-
-  return {
-    min: Math.max(full.min, centerWorldOff - westMidPx / MID_PARALLAX),
-    max: Math.min(full.max, centerWorldOff + eastMidPx / MID_PARALLAX),
-  };
-}
-
-/**
- * Walk bounds for creator templates.
- *
- * Start from the single mid tile (backdrop edges flush with viewport edges),
- * then extend each side by `VIEW_CENTER_X − SIGN_EDGE_INSET_PX` (700 − 260 = 440)
- * so the character — fixed at screen centre (700px) — can walk far enough that
- * the nav signs land at screen x≈260 / x≈1140, exactly like every normal city.
- *
- * Signs use these same bounds (see CityNavSigns), so they sit at the walk edges
- * and stay clickable. The 440-unit overshoot reveals ~154 mid-SVG units beyond
- * the tile on each side, covered by the backdrop bleed in CityBackdropLayer.
- */
-function creatorTemplateWorldOffBounds(route: VenueRoute): { min: number; max: number } {
-  const tile = cityTileForRoute(route);
-  const origin = midOriginForTile(tile);
-  const width = midWidthForTile(tile);
-  const full = fullCityWorldOffBounds(route);
-  const tileMin = Math.max(full.min, origin / MID_PARALLAX);
-  const tileMax = Math.min(full.max, (origin + width - VIEW_WIDTH) / MID_PARALLAX);
-  const signReach = VIEW_CENTER_X - SIGN_EDGE_INSET_PX; // 440
-  return {
-    min: tileMin - signReach,
-    max: tileMax + signReach,
-  };
-}
-
+/** Fixed camera — player walks across the screen at every venue. */
 export function cityWorldOffBounds(route: VenueRoute): { min: number; max: number } {
-  if (route === 'deep-space') return deepSpaceWorldOffBounds();
-  if (isStaticCityTemplateRoute(route)) {
-    const off = worldOffForVenueRoute(route);
-    return { min: off, max: off };
-  }
-  if (isCreatorTemplateRoute(route)) return creatorTemplateWorldOffBounds(route);
-  return fullCityWorldOffBounds(route);
+  const off = worldOffForVenueRoute(route);
+  return { min: off, max: off };
 }
 
 /** Walk range for the local player when the camera is fixed (screen-edge bounds). */
@@ -179,17 +120,9 @@ export function stageWorldOffForRoute(route: VenueRoute): number {
  */
 export function nearIsolatedMidTiles(
   tileIndex: number,
-  route?: VenueRoute,
+  _route?: VenueRoute,
 ): (vx: number) => number[] {
-  // Deep Space + static viewport stages — single mid tile (no flanking town/stage art).
-  if (
-    route === 'deep-space'
-    || (route && isCreatorTemplateRoute(route))
-    || (route && isStaticCityTemplateRoute(route))
-  ) {
-    return () => [tileIndex];
-  }
-  return () => [tileIndex - 1, tileIndex, tileIndex + 1];
+  return () => [tileIndex];
 }
 
 /**
