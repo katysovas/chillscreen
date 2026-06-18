@@ -1,6 +1,6 @@
 import {
   EASEL_DISPLAY_WIDTH,
-  EASEL_NPC_BODY_PX,
+  EASEL_NPC_HALF_WIDTH_PX,
   easelNpcStandWorldXForCanvas,
 } from './layout';
 
@@ -18,7 +18,7 @@ export function easelCanvasBlockBand(canvasWorldX: number): { minX: number; maxX
   const halfCanvas = EASEL_DISPLAY_WIDTH / 2;
   const standX = easelNpcStandWorldXForCanvas(canvasWorldX);
   return {
-    minX: standX - EASEL_NPC_BODY_PX * 0.35,
+    minX: standX - EASEL_NPC_HALF_WIDTH_PX * 0.35,
     maxX: canvasWorldX + halfCanvas + 52,
   };
 }

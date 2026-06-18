@@ -457,6 +457,10 @@ export default function SFCity({
   const [npcMessages,   setNpcMessages]   = useState<ChatLine[]>([]);
   const [npcTyping,     setNpcTyping]     = useState(false);
   const [convoHoldTick, setConvoHoldTick] = useState(0);
+  const [activePairChatNpcIds, setActivePairChatNpcIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const pairParticipantsRef = useRef(new Map<string, [string, string]>());
   const [chatHistory,   setChatHistory]   = useState<ChatTurn[]>([]);
   const [chatSendTick,  setChatSendTick]  = useState(0);
   const [chatNpcDrawings, setChatNpcDrawings] = useState<ChatNpcDrawingSession[]>([]);
@@ -883,12 +887,13 @@ export default function SFCity({
   useEffect(() => {
     const syncBlockZones = () => {
       const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const cameraOff = gameWorldOffRef.current;
       const zones: { canvasWorldX: number; painterNpcId: string }[] = [];
 
       for (const slot of activeEaselSession?.slots ?? []) {
         if (slot.status !== 'painting' || !isEaselPainterReady(slot.npc)) continue;
         zones.push({
-          canvasWorldX: easelSlotWorldX(slot.slot, easelStageSlug, width, easelLayoutRoute),
+          canvasWorldX: easelSlotWorldX(slot.slot, easelStageSlug, width, easelLayoutRoute, cameraOff),
           painterNpcId: slot.npc,
         });
       }
@@ -1131,6 +1136,18 @@ export default function SFCity({
   }, [autopilotOn, ownerFestieNpcId, roomChatter.handleNpcShout]);
 
   useEffect(() => {
+    if (mp.npcConvoPairs.length === 0) return;
+    setActivePairChatNpcIds(prev => {
+      const next = new Set(prev);
+      for (const pair of mp.npcConvoPairs) {
+        pairParticipantsRef.current.set(pair.convoId, pair.participants);
+        for (const id of pair.participants) next.add(id);
+      }
+      return next.size === prev.size ? prev : next;
+    });
+  }, [mp.npcConvoPairs]);
+
+  useEffect(() => {
     setNpcConvoReleaseListener(() => setConvoHoldTick(t => t + 1));
     return () => setNpcConvoReleaseListener(null);
   }, []);
@@ -1171,6 +1188,12 @@ export default function SFCity({
       roomChatter.handleRoomChat(sender, text);
     },
     onNpcConvoStart: (convoId, participants, _meta) => {
+      pairParticipantsRef.current.set(convoId, participants);
+      setActivePairChatNpcIds(prev => {
+        const next = new Set(prev);
+        for (const id of participants) next.add(id);
+        return next;
+      });
       for (const npcId of participants) {
         stageChatter.setTyping(`npc:${npcId}`, true);
       }
@@ -1237,8 +1260,17 @@ export default function SFCity({
       roomChatter.handleNpcLine(convoId, npc, text, pair?.participants);
     },
     onNpcConvoEnd: (convoId) => {
-      const pair = mpRef.current?.npcConvoPairs.find(p => p.convoId === convoId);
-      for (const npcId of pair?.participants ?? []) {
+      const participants = pairParticipantsRef.current.get(convoId)
+        ?? mpRef.current?.npcConvoPairs.find(p => p.convoId === convoId)?.participants;
+      pairParticipantsRef.current.delete(convoId);
+      if (participants) {
+        setActivePairChatNpcIds(prev => {
+          const next = new Set(prev);
+          for (const id of participants) next.delete(id);
+          return next;
+        });
+      }
+      for (const npcId of participants ?? []) {
         stageChatter.setTyping(`npc:${npcId}`, false);
       }
       roomChatter.onNpcConvoEnd(convoId);
@@ -2439,8 +2471,8 @@ export default function SFCity({
   }, [mp.selfId, mp.chatPairs, mp.remoteNpcChats, inConversation, peerChatId]);
 
   const isNpcInPairConvo = useCallback((npcId: string) => {
-    return mp.npcConvoPairs.some(p => p.participants.includes(npcId));
-  }, [mp.npcConvoPairs]);
+    return activePairChatNpcIds.has(npcId);
+  }, [activePairChatNpcIds]);
 
   const isNpcChatConnected = useCallback((npcIndex: number, npcId: string) => {
     if (activeChatDrawingForNpc(chatNpcDrawings, npcId)) return false;

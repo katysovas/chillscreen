@@ -46,7 +46,7 @@ function EaselSlotLayer({
       const el = outerRef.current;
       if (!el) return;
 
-      const worldX = easelSlotWorldX(slot.slot, stageSlug, width, layoutRoute);
+      const worldX = easelSlotWorldX(slot.slot, stageSlug, width, layoutRoute, off);
       const pct = worldXToScreenPct(worldX, off, width);
       const px = Math.round((pct / 100) * width);
       el.style.transform = `translateX(${px}px) translateX(-50%)`;

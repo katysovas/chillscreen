@@ -192,11 +192,11 @@ function NPC({
   easelLayoutRouteRef.current = easelLayoutRoute;
   chatPromptCanvasWorldXRef.current = chatPromptCanvasWorldX;
 
-  const resolveEaselStandWorldX = (width: number): number | undefined => {
+  const resolveEaselStandWorldX = (width: number, cameraOff: number): number | undefined => {
     const slot = easelPaintingSlotRef.current;
     const slug = easelStageSlugRef.current;
     if (slot == null || !slug) return undefined;
-    return easelNpcStandWorldX(slot, slug, width, easelLayoutRouteRef.current);
+    return easelNpcStandWorldX(slot, slug, width, easelLayoutRouteRef.current, cameraOff);
   };
 
   const resolvePromptStandWorldX = (): number | undefined => {
@@ -451,7 +451,13 @@ function NPC({
 
   useEffect(() => {
     if (!active || easelPaintingSlot == null || !easelStageSlug) return;
-    const standX = easelNpcStandWorldX(easelPaintingSlot, easelStageSlug, vw(), easelLayoutRoute);
+    const standX = easelNpcStandWorldX(
+      easelPaintingSlot,
+      easelStageSlug,
+      vw(),
+      easelLayoutRoute,
+      gameWorldOffRef.current,
+    );
     stationAtEasel(standX);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, easelPaintingSlot, easelStageSlug, easelLayoutRoute]);
@@ -581,7 +587,7 @@ function NPC({
       }
 
       const standX = easelPaintingSlotRef.current != null
-        ? resolveEaselStandWorldX(width)
+        ? resolveEaselStandWorldX(width, off)
         : resolvePromptStandWorldX();
       if (standX != null && !heldForConvo) {
         worldXRef.current = standX;
@@ -614,13 +620,15 @@ function NPC({
         }
       }
 
+      const atEasel = standX != null;
+
       const syncedWorldX = isNpcNetworkFollowMode() ? getNpcSyncedWorldX(index) : undefined;
       if (
         syncedWorldX != null
         && Number.isFinite(syncedWorldX)
         && !heldForConvo
         && !pausedRef.current
-        && easelPaintingSlotRef.current == null
+        && !atEasel
       ) {
         const cur = worldXRef.current;
         const diff = syncedWorldX - cur;
@@ -636,7 +644,7 @@ function NPC({
           stateRef.current = 'wandering';
         }
         targetWorldRef.current = syncedWorldX;
-      } else if (!heldForConvo && !pausedRef.current && stateRef.current === 'wandering') {
+      } else if (!heldForConvo && !pausedRef.current && !atEasel && stateRef.current === 'wandering') {
         const target = targetWorldRef.current;
         const cur    = worldXRef.current;
         const diff   = target - cur;
@@ -751,12 +759,27 @@ function NPC({
         position: 'absolute',
         bottom: CHAR_BOTTOM,
         transform: `translateY(${effectiveDepthY}px)`,
-        zIndex: greeting ? Z_CHAT_CHARACTER : showPaintingBubble ? depthZ + 1 : depthZ,
+        zIndex: greeting ? Z_CHAT_CHARACTER : showPaintingBubble ? depthZ + 1 : showChattingBubble ? depthZ + 2 : depthZ,
         opacity: dimmed ? 0.6 : 1,
         filter: dimmed ? 'brightness(0.85)' : undefined,
         transition: 'opacity 0.4s ease, filter 0.4s ease',
       }}
     >
+      {showChattingBubble && (
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: '100%',
+            marginBottom: 8,
+            transform: 'translateX(-50%)',
+            zIndex: 42,
+            pointerEvents: 'none',
+          }}
+        >
+          <AttachedChatEmojiIndicator />
+        </div>
+      )}
       <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
         <Character
           ref={characterRef}
@@ -790,8 +813,6 @@ function NPC({
                 messages={greetingChat.messages}
                 side={bubbleSide}
               />
-            ) : showChattingBubble ? (
-              <AttachedChatEmojiIndicator />
             ) : showPublicBubble ? (
               <NpcChatOverlay
                 name={name}

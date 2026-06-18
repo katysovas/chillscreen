@@ -42,6 +42,16 @@ export function easelSlotAnchorWorldX(
   return easelSlotAnchorWorldXForRoute(slot, route, viewportWidth);
 }
 
+/** Easel slot world-x for a live camera offset — keeps slots at fixed screen %. */
+export function easelSlotAnchorWorldXForCamera(
+  slot: number,
+  cameraWorldOff: number,
+  viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200,
+): number {
+  const screenPct = easelSlotScreenPct(slot);
+  return groundWorldXAtVenueScreenPct(cameraWorldOff, screenPct, viewportWidth);
+}
+
 export function easelSlotAnchorWorldXForRoute(
   slot: number,
   route: VenueRoute,

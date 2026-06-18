@@ -7,11 +7,12 @@ export function easelStationWorldXForNpc(
   session: EaselSessionSync | null,
   stageSlug: string,
   width?: number,
+  cameraWorldOff?: number,
 ): number | undefined {
   if (!session) return undefined;
   const slot = session.slots.find(s => s.npc === npcId && s.status === 'painting');
   if (!slot) return undefined;
-  return easelNpcStandWorldX(slot.slot, stageSlug, width);
+  return easelNpcStandWorldX(slot.slot, stageSlug, width, undefined, cameraWorldOff);
 }
 
 /** @deprecated use easelStationWorldXForNpc */
