@@ -14,6 +14,7 @@ type PendingCommand = { func: string; args: unknown[] };
 
 const readyIframes = new WeakSet<HTMLIFrameElement>();
 const pendingCommands = new WeakMap<HTMLIFrameElement, PendingCommand[]>();
+const readyListeners = new WeakMap<HTMLIFrameElement, Set<() => void>>();
 let readyListenerOn = false;
 
 function targetOrigin(iframe: HTMLIFrameElement): string {
@@ -56,6 +57,11 @@ function markYouTubeReady(iframe: HTMLIFrameElement) {
   if (readyIframes.has(iframe)) return;
   readyIframes.add(iframe);
   flushPending(iframe);
+  const listeners = readyListeners.get(iframe);
+  if (listeners) {
+    readyListeners.delete(iframe);
+    for (const cb of listeners) cb();
+  }
 }
 
 function onYouTubeReadyMessage(e: MessageEvent) {
@@ -93,6 +99,28 @@ function postCommandImmediate(
     JSON.stringify({ event: 'command', func, args }),
     targetOrigin(iframe),
   );
+}
+
+/** Run once after the iframe widget fires `onReady` (pageload unmute retries). */
+export function onYouTubePlayerReady(
+  iframe: HTMLIFrameElement,
+  callback: () => void,
+): () => void {
+  if (readyIframes.has(iframe)) {
+    queueMicrotask(callback);
+    return () => {};
+  }
+  let listeners = readyListeners.get(iframe);
+  if (!listeners) {
+    listeners = new Set();
+    readyListeners.set(iframe, listeners);
+  }
+  listeners.add(callback);
+  sendListening(iframe);
+  return () => {
+    listeners?.delete(callback);
+    if (listeners?.size === 0) readyListeners.delete(iframe);
+  };
 }
 
 /** Post a command — queued until the iframe fires `onReady`. */
@@ -183,9 +211,11 @@ export function applyYouTubeAudio(
     postCommand(iframe, 'mute');
     return;
   }
-  // iOS Safari ignores unMute unless it runs synchronously during a user gesture.
-  // Skip queueing — gesture nudges retry until the iframe is ready.
-  if (!readyIframes.has(iframe)) return;
+  if (!readyIframes.has(iframe)) {
+    // Timers often fire before onReady — retry unmute when the widget is ready.
+    onYouTubePlayerReady(iframe, () => applyYouTubeAudio(iframe, siteMuted));
+    return;
+  }
   postCommandImmediate(iframe, 'unMute');
   postCommandImmediate(iframe, 'setVolume', [55]);
 }
@@ -215,4 +245,5 @@ export function resetYouTubePlayerState(iframe: HTMLIFrameElement | null) {
   if (!iframe) return;
   readyIframes.delete(iframe);
   pendingCommands.delete(iframe);
+  readyListeners.delete(iframe);
 }

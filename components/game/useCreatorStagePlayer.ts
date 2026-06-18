@@ -10,6 +10,7 @@ import { registerStagePlayerNudge, registerStagePlayerPlayingListener } from '@/
 import {
   applyYouTubeAudio,
   nudgeYouTubePlayback,
+  onYouTubePlayerReady,
   primeYouTubePlayback,
   resetYouTubePlayerState,
   scheduleYouTubePlaybackKicks,
@@ -165,10 +166,11 @@ export function useCreatorStagePlayer({
     if (!iframe || !live || !src) return;
     resetYouTubePlayerState(iframe);
     primeYouTubePlayback(iframe);
+    onYouTubePlayerReady(iframe, () => applyAudio(iframe));
     kickCancelRef.current?.();
     kickCancelRef.current = scheduleYouTubePlaybackKicks(iframe);
     for (const id of audioTimersRef.current) window.clearTimeout(id);
-    audioTimersRef.current = [300, 800, 2000, 4000, 6000].map(ms =>
+    audioTimersRef.current = [300, 800, 2000, 4000, 6000, 10_000, 12_000].map(ms =>
       window.setTimeout(() => applyAudio(iframe), ms),
     );
   }, [iframeRef, applyAudio, live, src]);

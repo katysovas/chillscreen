@@ -9,6 +9,7 @@ import { registerStagePlayerNudge, registerStagePlayerPlayingListener } from '@/
 import {
   applyYouTubeAudio,
   nudgeYouTubePlayback,
+  onYouTubePlayerReady,
   primeYouTubePlayback,
   resetYouTubePlayerState,
   scheduleYouTubePlaybackKicks,
@@ -174,9 +175,10 @@ function useSyncedStagePlayer({
     if (!iframe || !live || !src) return;
     resetYouTubePlayerState(iframe);
     primeYouTubePlayback(iframe);
+    onYouTubePlayerReady(iframe, () => applyAudio(iframe));
     kickCancelRef.current?.();
     kickCancelRef.current = scheduleYouTubePlaybackKicks(iframe);
-    for (const ms of [300, 800, 2000, 4000, 6000]) {
+    for (const ms of [300, 800, 2000, 4000, 6000, 10_000, 12_000]) {
       window.setTimeout(() => applyAudio(iframe), ms);
     }
   }, [iframeRef, applyAudio, live, src]);
