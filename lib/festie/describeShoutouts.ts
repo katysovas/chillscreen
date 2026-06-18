@@ -13,7 +13,7 @@ export const FESTIE_SHOUTOUT_MAX_TOKENS = 16;
 
 export function festieHasDescribeShoutoutNotes(festie: FestiePublic): boolean {
   if (!festie.personality_notes?.trim()) return false;
-  return festie.control_mode === 'ai' || Boolean(festie.owner_on_stage);
+  return festie.control_mode === 'ai';
 }
 
 /** Clamp model output to 1–4 words for ambient bubbles. */

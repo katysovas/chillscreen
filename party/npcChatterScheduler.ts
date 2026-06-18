@@ -287,7 +287,9 @@ export class NpcChatterScheduler {
   }
 
   private pickStageChatterNpcs(excludeNpcId?: string): string[] {
-    const ids = this.positionedChatterNpcIds().filter(id => id !== excludeNpcId);
+    const ids = this.positionedChatterNpcIds().filter(
+      id => id !== excludeNpcId && this.festieAutopilotChatterEligible(id),
+    );
     if (ids.length < STAGE_CHATTER_NPC_MIN) return [];
 
     const recentNpcSpeakers = new Set(
@@ -405,12 +407,17 @@ export class NpcChatterScheduler {
     this.festieShoutoutCooldown.set(npcId, Date.now() + FESTIE_SHOUTOUT_COOLDOWN_MS);
   }
 
+  private festieAutopilotChatterEligible(npcId: string): boolean {
+    if (!isFestieNpcId(npcId)) return true;
+    return Boolean(getNpcRosterEntry(npcId)?.autopilotActive);
+  }
+
   private pickFestieDescribeShoutoutNpc(): string | null {
     const positioned = new Set(this.positionedChatterNpcIds());
     const ids = festieChatterNpcIds().filter(id => {
       if (!positioned.has(id)) return false;
       const entry = getNpcRosterEntry(id);
-      return Boolean(entry?.describeNotes?.trim() && (entry.ownerOnStage || entry.autopilotActive));
+      return Boolean(entry?.describeNotes?.trim() && entry.autopilotActive);
     });
     if (ids.length === 0) return null;
     const available = ids.filter(id => !this.festieShoutoutOnCooldown(id));
@@ -445,7 +452,7 @@ export class NpcChatterScheduler {
     if (this.chatterDisabled || this.deps.playerCount() === 0) return;
     if (this.activeConvo || this.activeStageWave) return;
 
-    const ids = this.positionedChatterNpcIds();
+    const ids = this.positionedChatterNpcIds().filter(id => this.festieAutopilotChatterEligible(id));
     if (ids.length === 0) return;
 
     const available = ids.filter(id => !this.npcOnCooldown(id));
@@ -477,7 +484,7 @@ export class NpcChatterScheduler {
   }
 
   private pickNpcPair(): [string, string] | null {
-    const ids = this.positionedChatterNpcIds();
+    const ids = this.positionedChatterNpcIds().filter(id => this.festieAutopilotChatterEligible(id));
     if (ids.length < 2) return null;
 
     const views = this.deps.getActivePlayerViews();

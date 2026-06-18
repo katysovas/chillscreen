@@ -2056,7 +2056,7 @@ export default function SFCity({
       if (now - lastNpcPosSendRef.current <= 66) return;
       lastNpcPosSendRef.current = now;
       const width = window.innerWidth;
-      const off = staticView ? playerWorldXRef.current : worldRef.current;
+      const off = cameraOff();
       const positions = effectiveNpcCastRef.current
         .map((cfg, i) => {
           const worldX = npcWorldXRefs.current[i]!;
@@ -2155,7 +2155,7 @@ export default function SFCity({
       }
       applyNetworkNpcPositions();
       runAllNpcMovementTicks(
-        staticView ? playerWorldXRef.current : worldRef.current,
+        cameraOff(),
         window.innerWidth,
         npcWorldXRefs.current,
       );
@@ -2287,11 +2287,11 @@ export default function SFCity({
           let bestDist = Infinity;
           if (Date.now() > disconnectUntil.current) {
             const playerWx = playerWorldX();
-            const cameraOff = staticView ? playerWorldXRef.current : worldRef.current;
+            const off = cameraOff();
             for (let i = 0; i < npcWorldXRefs.current.length; i++) {
               const wx = npcWorldXRefs.current[i];
               if (!Number.isFinite(wx)) continue;
-              const screenPct = worldXToScreenPct(wx, cameraOff, width);
+              const screenPct = worldXToScreenPct(wx, off, width);
               const distPx    = Math.abs(wx - playerWx);
               if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx && distPx < bestDist) {
                 bestDist = distPx; nextNpc = i; nextPeer = null;
@@ -2300,7 +2300,7 @@ export default function SFCity({
             const roster = mpRef.current?.remoteStateRef.current;
             if (roster) {
               for (const [pid, st] of roster) {
-                const screenPct = worldXToScreenPct(st.worldX, cameraOff, width);
+                const screenPct = worldXToScreenPct(st.worldX, off, width);
                 const distPx    = Math.abs(st.worldX - playerWx);
                 if (screenPct >= 5 && screenPct <= 95 && distPx < greetDistPx && distPx < bestDist) {
                   bestDist = distPx; nextPeer = pid; nextNpc = null;
@@ -2437,6 +2437,10 @@ export default function SFCity({
     if (mp.chatPairs.some(p => p.a === playerId || p.b === playerId)) return true;
     return mp.remoteNpcChats.some(c => c.playerId === playerId);
   }, [mp.selfId, mp.chatPairs, mp.remoteNpcChats, inConversation, peerChatId]);
+
+  const isNpcInPairConvo = useCallback((npcId: string) => {
+    return mp.npcConvoPairs.some(p => p.participants.includes(npcId));
+  }, [mp.npcConvoPairs]);
 
   const isNpcChatConnected = useCallback((npcIndex: number, npcId: string) => {
     if (activeChatDrawingForNpc(chatNpcDrawings, npcId)) return false;
@@ -2682,6 +2686,7 @@ export default function SFCity({
             npcMessages={npcMessages}
             npcChatLabel={npcChatLabel}
             isNpcChatConnected={isNpcChatConnected}
+            isNpcInPairConvo={isNpcInPairConvo}
             activeEaselSession={activeEaselSession}
             easelStageSlug={easelStageSlug}
             easelLayoutRoute={easelLayoutRoute}

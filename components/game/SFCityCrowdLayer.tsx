@@ -30,6 +30,7 @@ type SFCityCrowdLayerProps = {
   npcMessages: ChatLine[];
   npcChatLabel: (npcId: string, fallback: string) => string;
   isNpcChatConnected: (npcIndex: number, npcId: string) => boolean;
+  isNpcInPairConvo: (npcId: string) => boolean;
   activeEaselSession: EaselSessionSync | null;
   easelStageSlug: string | undefined;
   easelLayoutRoute?: VenueRoute;
@@ -60,6 +61,7 @@ function SFCityCrowdLayer({
   npcMessages,
   npcChatLabel,
   isNpcChatConnected,
+  isNpcInPairConvo,
   activeEaselSession,
   easelStageSlug,
   easelLayoutRoute,
@@ -143,6 +145,7 @@ function SFCityCrowdLayer({
             greeting={greetingNpc === i}
             connectGlow={ownerFestieNpcId === cfg.id && autopilotOn}
             chatConnected={chatConnected}
+            pairChatIndicator={isNpcInPairConvo(cfg.id)}
             dimmed={festieDimNpcIds.has(cfg.id)}
             greetFacing={greetNpcX < 50 ? 'right' : 'left'}
             greetingChat={greetingNpc === i ? {

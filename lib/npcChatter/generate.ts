@@ -143,7 +143,7 @@ export async function generateFestieDescribeShoutout(
 ): Promise<NpcChatterLine | null> {
   const npc = await resolveNpcRosterEntry(req.npc);
   if (!npc?.describeNotes?.trim()) return null;
-  if (!npc.autopilotActive && !npc.ownerOnStage) return null;
+  if (!npc.autopilotActive) return null;
 
   const system = buildFestieDescribeShoutoutPrompt({
     festieName: npc.displayName,

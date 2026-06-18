@@ -92,6 +92,8 @@ type NPCProps = NPCConfig & {
   connectGlow?: boolean;
   /** In a connected conversation — pauses wander; no connect aura. */
   chatConnected?: boolean;
+  /** Active NPC↔NPC pair convo — shows 💬 indicator only while server convo is live. */
+  pairChatIndicator?: boolean;
   /** Offline festie dim tier — reduced opacity and glow. */
   dimmed?: boolean;
   greetFacing: 'left' | 'right';
@@ -149,7 +151,7 @@ function NPC({
   easelPaintingLabel,
   chatPromptDrawingLabel,
   chatPromptCanvasWorldX,
-  paused, greeting, connectGlow = false, chatConnected = false, dimmed = false, greetFacing,   greetingChat,
+  paused, greeting, connectGlow = false, chatConnected = false, pairChatIndicator = false, dimmed = false, greetFacing,   greetingChat,
   publicMessages,
   spaceFloat = false,
   spawnWorldX,
@@ -736,7 +738,7 @@ function NPC({
     greeting && greetingChat && (greetingChat.npcTyping || greetingChat.messages.length > 0),
   );
   const showChattingBubble = Boolean(
-    chatConnected && !showPaintingBubble && !showGreetingChat,
+    pairChatIndicator && !showPaintingBubble && !showGreetingChat,
   );
 
   if (!active) return null;
@@ -842,6 +844,7 @@ function areNpcPropsEqual(prev: NPCProps, next: NPCProps): boolean {
     && prev.greeting === next.greeting
     && prev.connectGlow === next.connectGlow
     && prev.chatConnected === next.chatConnected
+    && prev.pairChatIndicator === next.pairChatIndicator
     && prev.dimmed === next.dimmed
     && prev.greetFacing === next.greetFacing
     && prev.spaceFloat === next.spaceFloat
