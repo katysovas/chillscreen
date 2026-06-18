@@ -21,6 +21,21 @@ const PANEL_STYLES = `
   0%, 80%, 100% { opacity: 0.3; }
   40% { opacity: 1; }
 }
+.stage-chatter-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  touch-action: pan-y;
+}
+.stage-chatter-scroll::-webkit-scrollbar {
+  display: none;
+}
+.stage-chatter-scroll.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+.stage-chatter-scroll:not(.is-dragging) {
+  cursor: grab;
+}
 `;
 
 type Props = {
@@ -82,8 +97,14 @@ export function StageChatterPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
   const stickToBottomRef = useRef(true);
+  const dragRef = useRef<{ active: boolean; startY: number; startScrollTop: number }>({
+    active: false,
+    startY: 0,
+    startScrollTop: 0,
+  });
   const typingHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [expanded, setExpanded] = useState(true);
+  const [dragging, setDragging] = useState(false);
   const humansOnly = useSyncExternalStore(
     subscribeHumansOnlyStageChatter,
     getHumansOnlyStageChatter,
@@ -119,6 +140,41 @@ export function StageChatterPanel({
     const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
     stickToBottomRef.current = dist < 48;
   }, []);
+
+  const endDrag = useCallback(() => {
+    if (!dragRef.current.active) return;
+    dragRef.current.active = false;
+    setDragging(false);
+    handleScroll();
+  }, [handleScroll]);
+
+  const handleScrollPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    dragRef.current = {
+      active: true,
+      startY: e.clientY,
+      startScrollTop: el.scrollTop,
+    };
+    setDragging(true);
+    el.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }, []);
+
+  const handleScrollPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current.active) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const dy = e.clientY - dragRef.current.startY;
+    el.scrollTop = dragRef.current.startScrollTop - dy;
+    stickToBottomRef.current = false;
+  }, []);
+
+  const handleScrollPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    scrollRef.current?.releasePointerCapture(e.pointerId);
+    endDrag();
+  }, [endDrag]);
 
   const handleSubmit = useCallback(() => {
     const raw = draftRef.current?.value ?? '';
@@ -317,7 +373,12 @@ export function StageChatterPanel({
       <>
       <div
         ref={scrollRef}
+        className={`stage-chatter-scroll${dragging ? ' is-dragging' : ''}`}
         onScroll={handleScroll}
+        onPointerDown={handleScrollPointerDown}
+        onPointerMove={handleScrollPointerMove}
+        onPointerUp={handleScrollPointerUp}
+        onPointerCancel={handleScrollPointerUp}
         role="log"
         aria-live="polite"
         aria-relevant="additions"
@@ -325,6 +386,8 @@ export function StageChatterPanel({
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',
+          overflowX: 'hidden',
+          overscrollBehavior: 'contain',
           padding: '10px 12px',
           display: 'flex',
           flexDirection: 'column',
