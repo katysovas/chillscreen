@@ -19,7 +19,8 @@
     "fetch-durations": "npx tsx scripts/fetch-durations.ts",
     "db:migrate": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; node scripts/db-migrate.mjs'",
     "db:import-seeds": "bash -c 'set -a; [ -f .env.local ] && . ./.env.local; set +a; node scripts/import-chat-seeds.mjs'",
-    "optimize:stage-images": "npx tsx scripts/optimize-stage-images.ts"
+    "optimize:stage-images": "npx tsx scripts/optimize-stage-images.ts",
+    "seed:genre-stages": "npx tsx scripts/seed-genre-stages.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1069.0",

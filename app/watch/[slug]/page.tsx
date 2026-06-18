@@ -21,9 +21,12 @@ export async function generateMetadata({ params }: WatchPageProps): Promise<Meta
   const { slug } = await params;
   if (slug.toLowerCase() === 'hulaween') {
     return buildPageMetadata({
-      title: 'Hulaween',
-      description: 'Hula family hangout — synchronized Hulaween festival sets on WhichStage.',
+      title: 'Hulaween Stage — Live Suwannee Sets & AI Festies',
+      description:
+        'The Hulaween stage on WhichStage streams full festival sets from Suwannee — synchronized for everyone in the room, with multiplayer chat and AI festies.',
       path: '/hula',
+      image: '/images/homepage/hula.webp',
+      imageAlt: `Hulaween — ${SITE_NAME}`,
     });
   }
   if (!getDb()) return {};
@@ -34,12 +37,13 @@ export async function generateMetadata({ params }: WatchPageProps): Promise<Meta
   }
 
   const seo = creatorStageSeo(userStage);
+  const shareImage = userStage.backdropUrl?.trim() || `${seo.path}/opengraph-image`;
   return buildPageMetadata({
     title: seo.metaTitle,
     description: seo.description,
     path: seo.path,
     keywords: seo.keywords,
-    image: `${seo.path}/opengraph-image`,
+    image: shareImage,
     imageAlt: `${seo.name} — ${SITE_NAME}`,
     // Dormant stages stay reachable but drop out of the index to save crawl budget.
     noIndex: userStage.tier === 'dormant',

@@ -646,21 +646,19 @@ export function CreatorStageLineupPanel() {
               >
                 {truncateWithEllipsis(s.title, 48)}
               </div>
-              {s.channelTitle && (
-                <div
-                  title={s.channelTitle}
-                  style={{
-                    marginTop: 2,
-                    fontSize: 10,
-                    color: 'rgba(255,255,255,0.45)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {truncateWithEllipsis(s.channelTitle, 40)}
-                </div>
-              )}
+              <div
+                style={{
+                  marginTop: 2,
+                  fontSize: 10,
+                  color: 'rgba(255,255,255,0.45)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {s.channelTitle && <span>{truncateWithEllipsis(s.channelTitle, 40)} · </span>}
+                {formatDurationSec(s.durationSec)}
+              </div>
             </div>
             {i === stage.nowPlayingIndex ? (
               <span

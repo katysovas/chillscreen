@@ -37,27 +37,35 @@ function nowPlayingLabel(stage: UserStagePublic): string | null {
 }
 
 /**
- * Build SEO copy for a user-created stage from its display name, scene preset,
- * and current lineup. Falls back gracefully when fields are missing.
+ * Build SEO copy for a user-created stage from its display name, tagline,
+ * scene preset, and current lineup. Falls back gracefully when fields are missing.
  */
 export function creatorStageSeo(stage: UserStagePublic): CreatorStageSeo {
   const name = stage.displayName?.trim() || stage.slug;
-  const scene = creatorStageSceneLabel(stage).toLowerCase();
+  const tagline = stage.description?.trim() || null;
+  const sceneLabel = creatorStageSceneLabel(stage);
+  const scene = sceneLabel.toLowerCase();
   const nowPlaying = nowPlayingLabel(stage);
   const trackCount = stage.streams.length;
 
-  const metaTitle = `${name} — Live ${creatorStageSceneLabel(stage)} Stage`;
+  const metaTitle = `${name} — Live ${sceneLabel} Stage`;
 
-  const descriptionBase = nowPlaying
-    ? `Watch ${name} on ${SITE_NAME} — now playing ${nowPlaying}. Hang out in a live ${scene} festival world with friends, free in your browser.`
-    : `Watch ${name}, a live ${scene} stage on ${SITE_NAME}. Hang out, stream synced video, and meet other festival-goers — free in your browser.`;
+  let descriptionBase: string;
+  if (tagline) {
+    descriptionBase =
+      `${name} on ${SITE_NAME} — ${tagline}. Join a live ${scene} watch party with friends in your browser.`;
+  } else if (nowPlaying) {
+    descriptionBase =
+      `Watch ${name} on ${SITE_NAME} — now playing ${nowPlaying}. Hang out in a live ${scene} festival world with friends, free in your browser.`;
+  } else {
+    descriptionBase =
+      `Watch ${name}, a live ${scene} stage on ${SITE_NAME}. Hang out, stream synced video, and meet other festival-goers — free in your browser.`;
+  }
 
   const lineupNote = trackCount > 1 ? ` A ${trackCount}-track lineup plays in sync for everyone in the room.` : '';
-  const longDescription =
-    `${name} is a creator-made ${scene} stage on ${SITE_NAME}. ` +
-    `Step into a live, multiplayer festival world, watch synchronized streams, chat with other ` +
-    `visitors and NPCs, and bring an AI festie that keeps vibing at the stage after you leave.${lineupNote}` +
-    (nowPlaying ? ` Now playing: ${nowPlaying}.` : '');
+  const longDescription = tagline
+    ? `${name} on ${SITE_NAME}: ${tagline}. Step into a live, multiplayer ${scene} festival world, watch synchronized streams, chat with other visitors and NPCs, and bring an AI festie that keeps vibing at the stage after you leave.${lineupNote}${nowPlaying ? ` Now playing: ${nowPlaying}.` : ''}`
+    : `${name} is a creator-made ${scene} stage on ${SITE_NAME}. Step into a live, multiplayer festival world, watch synchronized streams, chat with other visitors and NPCs, and bring an AI festie that keeps vibing at the stage after you leave.${lineupNote}${nowPlaying ? ` Now playing: ${nowPlaying}.` : ''}`;
 
   const keywords = [
     name,
@@ -68,6 +76,7 @@ export function creatorStageSeo(stage: UserStagePublic): CreatorStageSeo {
     'watch together',
     SITE_NAME,
   ];
+  if (tagline) keywords.push(tagline);
   const channel = nowPlayingStream(stage)?.channelTitle?.trim();
   if (channel) keywords.push(channel);
 

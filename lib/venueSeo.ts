@@ -11,6 +11,8 @@ export type VenueSeo = {
   /** Longer copy for JSON-LD, HTML sitemap, and discoverability */
   longDescription: string;
   keywords: string[];
+  /** Optional share card image (root-relative). */
+  shareImage?: string;
 };
 
 export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
@@ -30,6 +32,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'Southern California festival',
       'AI festie',
     ],
+    shareImage: '/images/homepage/thedesert.webp',
   },
   edc: {
     title: 'Las Vegas',
@@ -47,6 +50,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'live DJ sets',
       'AI festival buddy',
     ],
+    shareImage: '/images/homepage/edc.webp',
   },
   'outside-hands': {
     title: 'San Francisco',
@@ -64,6 +68,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'browser concert',
       'AI festie San Francisco',
     ],
+    shareImage: '/images/homepage/sf.webp',
   },
   'seattle-concerts': {
     title: 'Seattle',
@@ -81,6 +86,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'multiplayer music game',
       'AI festie',
     ],
+    shareImage: '/images/homepage/seatlle.webp',
   },
   cinema: {
     title: 'Chill Cinema',
@@ -98,6 +104,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'virtual festival',
       'AI festie',
     ],
+    shareImage: '/images/homepage/cinema.webp',
   },
   'deep-space': {
     title: 'Deep Space',
@@ -115,6 +122,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'multiplayer space game',
       'AI festie',
     ],
+    shareImage: '/images/homepage/space.webp',
   },
   tentaroo: {
     title: 'The Farm',
@@ -132,6 +140,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'Tennessee festival vibes',
       'AI festival buddy',
     ],
+    shareImage: '/images/homepage/thefarm.webp',
   },
   forest: {
     title: 'The Forest',
@@ -149,6 +158,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'browser adventure music',
       'AI festie',
     ],
+    shareImage: '/images/homepage/forest.webp',
   },
   'silent-disco': {
     title: 'Silent Disco',
@@ -166,6 +176,7 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'multiplayer dance game',
       'AI festie',
     ],
+    shareImage: '/images/homepage/silentdisco.webp',
   },
   'creator-chill': {
     title: 'Chill Stage',
@@ -183,9 +194,9 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
   },
   hula: {
     title: 'Hulaween',
-    metaTitle: 'Hulaween Stage — Live Sets & AI Festies',
+    metaTitle: 'Hulaween Stage — Live Suwannee Sets & AI Festies',
     description:
-      'Hula family hangout.',
+      'The Hulaween stage on WhichStage streams full festival sets from Suwannee — synchronized for everyone in the room, with multiplayer chat and AI festies.',
     longDescription:
       'The Hulaween stage on WhichStage streams full festival sets from Suwannee — String Cheese, Pretty Lights, Zeds Dead, CloZee, and more — synchronized for everyone in the room. ' +
       'Walk the grounds, shout to the crowd, and deploy an AI festie who keeps vibing while you\'re away.',
@@ -195,7 +206,9 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
       'festival live sets',
       'browser festival game',
       'AI festie',
+      'jamband stage',
     ],
+    shareImage: '/images/homepage/hula.webp',
   },
 };
 

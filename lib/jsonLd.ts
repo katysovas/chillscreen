@@ -246,8 +246,28 @@ export function stagesIndexWebPageJsonLd() {
     path: '/stages',
     title: 'Festival Stages & Live Sets',
     description:
-      'Directory of every WhichStage festival venue — desert main stages, city concerts, campground rigs, forest lasers, silent disco, and outdoor cinema.',
+      'Directory of WhichStage festival venues and creator stages — desert main stages, city concerts, campground rigs, forest lasers, silent disco, and live watch parties.',
   });
+}
+
+export function creatorStagesItemListJsonLd(
+  stages: Array<{ name: string; path: string; description: string }>,
+) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `${SITE_NAME} creator stages`,
+    description:
+      'User-created live stream stages with synchronized playback, multiplayer chat, and AI festies.',
+    numberOfItems: stages.length,
+    itemListElement: stages.map((entry, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: entry.name,
+      url: absoluteUrl(entry.path),
+      description: entry.description,
+    })),
+  };
 }
 
 type FaqEntry = { readonly q: string; readonly a: string };

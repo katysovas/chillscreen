@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { StagePickerTarget } from '@/lib/stagePickerOptions';
 import {
   resolvedChartEntryName,
@@ -12,6 +12,7 @@ import {
   chartEntryId,
   chartMovement,
   getFeaturedStagesChartTab,
+  getFeaturedStagesChartTabs,
   type FeaturedChartEntry,
 } from '@/lib/stages/featuredStagesChart';
 import { useCreatorChartMeta } from './useCreatorChartMeta';
@@ -30,8 +31,13 @@ export type FeaturedStagesChartProps = {
   variant?: 'page' | 'modal';
   /** Hide built-in header when the parent supplies section chrome. */
   showHeader?: boolean;
+  /** Genre tabs — defaults to match showHeader; set true on homepage with showHeader false. */
+  showTabs?: boolean;
   /** Render list only — parent supplies outer chart chrome (switch modal tabs). */
   embedded?: boolean;
+  /** Controlled chart tab (Featured, Chill, EDM, …). */
+  chartTabId?: string;
+  onChartTabChange?: (tabId: string) => void;
   className?: string;
 };
 
@@ -85,12 +91,44 @@ export function FeaturedStagesChart({
   joinLabel = 'Join',
   variant = 'page',
   showHeader = true,
+  showTabs,
   embedded = false,
+  chartTabId: chartTabIdProp,
+  onChartTabChange,
   className = '',
 }: FeaturedStagesChartProps) {
-  const tab = useMemo(() => getFeaturedStagesChartTab(), []);
+  const chartTabs = useMemo(() => getFeaturedStagesChartTabs(), []);
+  const [internalTabId, setInternalTabId] = useState('featured');
+  const activeTabId = chartTabIdProp ?? internalTabId;
+  const tab = useMemo(() => getFeaturedStagesChartTab(activeTabId), [activeTabId]);
   const creatorMeta = useCreatorChartMeta(tab.entries);
+
+  const selectTab = (tabId: string) => {
+    if (chartTabIdProp == null) setInternalTabId(tabId);
+    onChartTabChange?.(tabId);
+  };
   const isModal = variant === 'modal';
+  const tabsVisible = showTabs ?? showHeader;
+
+  const tabBar = tabsVisible ? (
+    <div className="featured-stages-chart__tabs" role="tablist" aria-label="Chart genres">
+      {chartTabs.map(chartTab => (
+        <button
+          key={chartTab.id}
+          type="button"
+          role="tab"
+          aria-selected={chartTab.id === activeTabId}
+          className={[
+            'featured-stages-chart__tab',
+            chartTab.id === activeTabId ? 'featured-stages-chart__tab--active' : '',
+          ].filter(Boolean).join(' ')}
+          onClick={() => selectTab(chartTab.id)}
+        >
+          {chartTab.label}
+        </button>
+      ))}
+    </div>
+  ) : null;
 
   const resolveEntry = (entry: FeaturedChartEntry) => {
     const slug = creatorStageForChartEntry(entry);
@@ -171,17 +209,12 @@ export function FeaturedStagesChart({
             <p className="featured-stages-chart__eyebrow">Featured Stages</p>
             <h2 className="featured-stages-chart__title" id="mobile-stage-swap-chart-title">Top 10</h2>
           </div>
-          <div className="featured-stages-chart__tabs" role="tablist" aria-label="Chart genres">
-            <span
-              className="featured-stages-chart__tab featured-stages-chart__tab--active"
-              role="tab"
-              aria-selected
-            >
-              {tab.label}
-            </span>
-          </div>
+          {tabBar}
         </div>
       )}
+      {!showHeader && tabBar ? (
+        <div className="featured-stages-chart__tabs-row">{tabBar}</div>
+      ) : null}
       {list}
     </div>
   );

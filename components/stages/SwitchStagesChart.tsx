@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { StagePickerTarget } from '@/lib/stagePickerOptions';
 import { stagePickerTargetId } from '@/lib/stagePickerOptions';
 import { fetchMyStages } from '@/lib/stages/client';
 import type { UserStagePublic } from '@/lib/stages/types';
 import { displayForOwnedStage } from '@/lib/stages/chartEntryDisplay';
+import { getFeaturedStagesChartTabs } from '@/lib/stages/featuredStagesChart';
 import { FeaturedStagesChart } from './FeaturedStagesChart';
 import './FeaturedStagesChart.css';
 
-export type SwitchStagesTab = 'featured' | 'mine';
+export type SwitchStagesTab = string;
 
 type Props = {
   selectedId?: string | null;
@@ -18,13 +19,14 @@ type Props = {
   titleId?: string;
 };
 
-/** Switch-stage modal — Featured top 10 + optional My Stages tab. */
+/** Switch-stage modal — chart tabs (Featured + genres) + optional My Stages. */
 export function SwitchStagesChart({
   selectedId = null,
   currentId = null,
   onSelect,
   titleId = 'switch-stages-chart-title',
 }: Props) {
+  const chartTabs = useMemo(() => getFeaturedStagesChartTabs(), []);
   const [activeTab, setActiveTab] = useState<SwitchStagesTab>('featured');
   const [myStages, setMyStages] = useState<UserStagePublic[] | null>(null);
   const showMineTab = (myStages?.length ?? 0) > 0;
@@ -47,46 +49,52 @@ export function SwitchStagesChart({
     }
   }, [activeTab, showMineTab]);
 
+  const isMine = activeTab === 'mine';
+
   return (
     <div className="featured-stages-chart featured-stages-chart--modal featured-stages-chart--switch featured-stages-chart--scrollable">
       <span id={titleId} className="featured-stages-chart__sr-only">Switch stage</span>
 
-      {showMineTab && (
-        <div className="featured-stages-chart__switch-header">
-          <div className="featured-stages-chart__tabbar" role="tablist" aria-label="Stage lists">
+      <div className="featured-stages-chart__switch-header">
+        <div className="featured-stages-chart__tabbar" role="tablist" aria-label="Stage lists">
+          {chartTabs.map(tab => (
             <button
+              key={tab.id}
               type="button"
               role="tab"
-              aria-selected={activeTab === 'featured'}
+              aria-selected={!isMine && activeTab === tab.id}
               className={[
                 'featured-stages-chart__switch-tab',
-                activeTab === 'featured' ? 'featured-stages-chart__switch-tab--active' : '',
+                !isMine && activeTab === tab.id ? 'featured-stages-chart__switch-tab--active' : '',
               ].filter(Boolean).join(' ')}
-              onClick={() => setActiveTab('featured')}
+              onClick={() => setActiveTab(tab.id)}
             >
-              Featured
+              {tab.label}
             </button>
+          ))}
+          {showMineTab && (
             <button
               type="button"
               role="tab"
-              aria-selected={activeTab === 'mine'}
+              aria-selected={isMine}
               className={[
                 'featured-stages-chart__switch-tab',
-                activeTab === 'mine' ? 'featured-stages-chart__switch-tab--active' : '',
+                isMine ? 'featured-stages-chart__switch-tab--active' : '',
               ].filter(Boolean).join(' ')}
               onClick={() => setActiveTab('mine')}
             >
               My Stages
             </button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {activeTab === 'featured' ? (
+      {!isMine ? (
         <FeaturedStagesChart
           variant="modal"
           showHeader={false}
           embedded
+          chartTabId={activeTab}
           selectedId={selectedId}
           currentId={currentId}
           onSelect={onSelect}

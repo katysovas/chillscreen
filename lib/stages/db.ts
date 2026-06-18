@@ -325,6 +325,24 @@ export async function listIndexableStageSlugs(now = Date.now()): Promise<Indexab
   });
 }
 
+/** Active creator stages for HTML sitemap / SEO index pages. */
+export async function listIndexableStagesForSeo(now = Date.now()): Promise<UserStagePublic[]> {
+  const sql = requireDb();
+  const activeSince = new Date(now - STAGE_CONFIG.DORMANCY_WINDOW_MS).toISOString();
+  const rows = await sql`
+    SELECT slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
+           backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+    FROM user_stages
+    WHERE taken_down_at IS NULL
+      AND last_active_at >= ${activeSince}::timestamptz
+    ORDER BY display_name ASC
+    LIMIT 5000
+  `;
+  return rows
+    .map(r => rowToPublic(parseRow(r as Record<string, unknown>), now))
+    .filter(stage => stage.tier === 'active');
+}
+
 /** When shuffle is on and the room is empty, pick a random track for the first viewer. */
 export async function maybeShuffleStageOnStart(
   slug: string,

@@ -9,6 +9,7 @@ import { JsonLd } from '@/components/JsonLd';
 import { invitePageCopy, parseFriendParam } from '@/lib/inviteSeo';
 import { breadcrumbJsonLd, festivalStageJsonLd, webPageJsonLd } from '@/lib/jsonLd';
 import { buildPageMetadata } from '@/lib/siteMetadata';
+import { SITE_NAME } from '@/lib/site';
 import { stagePathForSlug } from '@/lib/stages/runtime';
 import { venueSeoForRoute, venuePathForRoute } from '@/lib/venueSeo';
 import { parseVenueSlug, VENUE_SLUGS, worldOffForVenueRoute } from '@/lib/venueRoutes';
@@ -42,6 +43,8 @@ export async function generateMetadata({
     description: copy.description,
     path,
     keywords: [...seo.keywords, ...seo.title.split(' ')],
+    image: seo.shareImage,
+    imageAlt: `${seo.title} — ${SITE_NAME}`,
   });
 }
 

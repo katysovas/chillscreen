@@ -4,83 +4,55 @@
       "id": "featured",
       "label": "Featured",
       "entries": [
-        {
-          "rank": 1,
-          "previousRank": 1,
-          "name": "Las Vegas",
-          "subtitle": "Neon, lasers, and bass with the Strip at your back",
-          "thumbnail": "/images/homepage/edc.webp",
-          "target": { "kind": "venue", "route": "edc" }
-        },
-        {
-          "rank": 2,
-          "previousRank": 2,
-          "name": "Silent Disco",
-          "subtitle": "Headsets on, dance till the sun comes up",
-          "thumbnail": "/images/homepage/silentdisco.webp",
-          "target": { "kind": "venue", "route": "silent-disco" }
-        },
-        {
-          "rank": 3,
-          "previousRank": 3,
-          "name": "The Forest",
-          "subtitle": "Get lost in the woods — Electric Forest vibes",
-          "thumbnail": "/images/homepage/forest.webp",
-          "target": { "kind": "venue", "route": "forest" }
-        },
-        {
-          "rank": 4,
-          "previousRank": 5,
-          "name": "Deep Space",
-          "subtitle": "Drift through the cosmos when the night goes deep",
-          "thumbnail": "/images/homepage/space.webp",
-          "target": { "kind": "venue", "route": "deep-space" }
-        },
-        {
-          "rank": 5,
-          "previousRank": 5,
-          "name": "The Desert",
-          "subtitle": "Golden-hour main-stage energy out in the desert",
-          "thumbnail": "/images/homepage/thedesert.webp",
-          "target": { "kind": "venue", "route": "coachella" }
-        },
-        {
-          "rank": 6,
-          "previousRank": 6,
-          "name": "The Farm",
-          "subtitle": "Camp out in the fields where the music never stops",
-          "thumbnail": "/images/homepage/thefarm.webp",
-          "target": { "kind": "venue", "route": "tentaroo" }
-        },
-        {
-          "rank": 7,
-          "previousRank": 7,
-          "name": "Hulaween",
-          "subtitle": "Full sets from Suwannee — Hula family hangout",
-          "thumbnail": "/images/homepage/hula.webp",
-          "target": { "kind": "venue", "route": "hula" }
-        },
-        {
-          "rank": 8,
-          "previousRank": 8,
-          "name": "San Francisco",
-          "subtitle": "Nonstop sets, SF style — Outside Lands energy",
-          "thumbnail": "/images/homepage/sf.webp",
-          "target": { "kind": "venue", "route": "outside-hands" }
-        },
-        {
-          "rank": 9,
-          "previousRank": 9,
-          "name": "Chill Cinema",
-          "subtitle": "Take a breather with chill sets under the skyline",
-          "thumbnail": "/images/homepage/cinema.webp",
-          "target": { "kind": "venue", "route": "cinema" }
-        },
-        {
-          "rank": 10,
-          "previousRank": 12,
-          "target": { "kind": "creator", "slug": "dead-company" }
-        }
+        { "rank": 1, "previousRank": 1, "name": "Las Vegas", "subtitle": "Neon, lasers, and bass with the Strip at your back", "thumbnail": "/images/homepage/edc.webp", "target": { "kind": "venue", "route": "edc" } },
+        { "rank": 2, "previousRank": 2, "name": "Silent Disco", "subtitle": "Headsets on, dance till the sun comes up", "thumbnail": "/images/homepage/silentdisco.webp", "target": { "kind": "venue", "route": "silent-disco" } },
+        { "rank": 3, "previousRank": 3, "name": "The Forest", "subtitle": "Get lost in the woods — Electric Forest vibes", "thumbnail": "/images/homepage/forest.webp", "target": { "kind": "venue", "route": "forest" } },
+        { "rank": 4, "previousRank": 4, "name": "Deep Space", "subtitle": "Drift through the cosmos when the night goes deep", "thumbnail": "/images/homepage/space.webp", "target": { "kind": "venue", "route": "deep-space" } },
+        { "rank": 5, "previousRank": 5, "name": "The Farm", "subtitle": "Camp out in the fields where the music never stops", "thumbnail": "/images/homepage/thefarm.webp", "target": { "kind": "venue", "route": "tentaroo" } }
+      ]
+    },
+    {
+      "id": "chill",
+      "label": "Chill",
+      "entries": [
+        { "rank": 1, "previousRank": 1, "name": "Chill Cinema", "subtitle": "big screen, low volume, half asleep", "thumbnail": "/images/homepage/cinema.webp", "target": { "kind": "venue", "route": "cinema" } },
+        { "rank": 2, "previousRank": 2, "name": "Deep Space", "subtitle": "deep hum, slow drift, lights out", "thumbnail": "/images/homepage/space.webp", "target": { "kind": "venue", "route": "deep-space" } },
+        { "rank": 3, "previousRank": 3, "name": "Study Room", "subtitle": "desk lamp, rain on the glass, no actual studying", "target": { "kind": "creator", "slug": "study-room" } },
+        { "rank": 4, "previousRank": 4, "name": "Rainy Café", "subtitle": "coffee going cold, someone always typing", "target": { "kind": "creator", "slug": "rainy-cafe" } },
+        { "rank": 5, "previousRank": 6, "name": "Jazz Lounge", "subtitle": "low light, brass, a little smoke", "target": { "kind": "creator", "slug": "jazz-lounge" } }
+      ]
+    },
+    {
+      "id": "edm",
+      "label": "EDM / Pop",
+      "entries": [
+        { "rank": 1, "previousRank": 1, "name": "Las Vegas", "subtitle": "Neon, lasers, and bass with the Strip at your back", "thumbnail": "/images/homepage/edc.webp", "target": { "kind": "venue", "route": "edc" } },
+        { "rank": 2, "previousRank": 2, "name": "Silent Disco", "subtitle": "Headsets on, dance till the sun comes up", "thumbnail": "/images/homepage/silentdisco.webp", "target": { "kind": "venue", "route": "silent-disco" } },
+        { "rank": 3, "previousRank": 3, "name": "The Forest", "subtitle": "Get lost in the woods — Electric Forest vibes", "thumbnail": "/images/homepage/forest.webp", "target": { "kind": "venue", "route": "forest" } },
+        { "rank": 4, "previousRank": 4, "name": "The Desert", "subtitle": "Golden-hour main-stage energy out in the desert", "thumbnail": "/images/homepage/thedesert.webp", "target": { "kind": "venue", "route": "coachella" } },
+        { "rank": 5, "previousRank": 5, "name": "San Francisco", "subtitle": "Nonstop sets, SF style — Outside Lands energy", "thumbnail": "/images/homepage/sf.webp", "target": { "kind": "venue", "route": "outside-hands" } }
+      ]
+    },
+    {
+      "id": "jambands",
+      "label": "Jambands",
+      "entries": [
+        { "rank": 1, "previousRank": 1, "name": "Hulaween", "subtitle": "spanish moss, costumes, late sets", "thumbnail": "/images/homepage/hula.webp", "target": { "kind": "venue", "route": "hula" } },
+        { "rank": 2, "previousRank": 2, "name": "Dead & Company", "subtitle": "official channel, full shows", "target": { "kind": "creator", "slug": "dead-company" } },
+        { "rank": 3, "previousRank": 3, "name": "The Meadow", "subtitle": "tapestries, someone hooping, no schedule", "target": { "kind": "creator", "slug": "the-meadow" } },
+        { "rank": 4, "previousRank": 5, "name": "The Farm", "subtitle": "Camp out in the fields where the music never stops", "thumbnail": "/images/homepage/thefarm.webp", "target": { "kind": "venue", "route": "tentaroo" } },
+        { "rank": 5, "previousRank": 5, "name": "Peach Festival", "subtitle": "no start, no end", "target": { "kind": "creator", "slug": "peach" } }
+      ]
+    },
+    {
+      "id": "mix",
+      "label": "Mix",
+      "entries": [
+        { "rank": 1, "previousRank": 1, "name": "Stagecoach Festival", "subtitle": "Indio dust, boots, main stage country", "target": { "kind": "creator", "slug": "stagecoach" } },
+        { "rank": 2, "previousRank": 2, "name": "Summerfest Festival", "subtitle": "Milwaukee lakefront, eleven days, every genre", "target": { "kind": "creator", "slug": "summerfest" } },
+        { "rank": 3, "previousRank": 3, "name": "Lollapalooza Festival", "subtitle": "Chicago skyline, Grant Park, all weekend", "target": { "kind": "creator", "slug": "lollapalooza" } },
+        { "rank": 4, "previousRank": 4, "name": "Cute Animals", "subtitle": "paws, purrs, zero agenda", "target": { "kind": "creator", "slug": "cute-animals" } },
+        { "rank": 5, "previousRank": 5, "name": "After Party", "subtitle": "trippy lights, 4am, nobody leaving", "target": { "kind": "creator", "slug": "after-party" } }
       ]
     }
   ]

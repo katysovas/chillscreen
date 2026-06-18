@@ -627,8 +627,100 @@
   opacity: 0.18;
 }
 
-.landing-page .stages-section { background: var(--lp-bg); scroll-margin-top: 84px; }
-.landing-page .stages-inner { max-width: 1200px; margin: 0 auto; padding: 52px 44px 8px; }
+.landing-page .stages-section {
+  background: var(--lp-bg);
+  scroll-margin-top: 84px;
+  padding-bottom: 64px;
+}
+
+.landing-page .stages-inner { max-width: 1200px; margin: 0 auto; padding: 52px 44px 0; }
+
+/* Light card — tabs + chart list read clearly off the dark page */
+.landing-page .featured-stages-chart--landing {
+  --fsc-text: #1a1612;
+  --fsc-muted: rgba(26, 22, 18, 0.58);
+  --fsc-edge: rgba(26, 22, 18, 0.1);
+  --fsc-row-bg: rgba(26, 22, 18, 0.025);
+  --fsc-row-hover: rgba(26, 22, 18, 0.055);
+  --fsc-accent: #c45f10;
+  --fsc-accent-dim: rgba(230, 126, 34, 0.12);
+  --fsc-up: #1a8f4a;
+  --fsc-down: #d63b3b;
+  --fsc-display: var(--ff-display);
+  --fsc-mono: var(--ff-mono);
+  background: #f8f6f2;
+  border: 1px solid rgba(26, 22, 18, 0.08);
+  border-radius: 20px;
+  padding: 22px 24px 24px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 24px 56px rgba(0, 0, 0, 0.32);
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__tabs-row {
+  margin: 0 0 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(26, 22, 18, 0.08);
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__tabs {
+  gap: 8px;
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__tab {
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(26, 22, 18, 0.05);
+  border-color: rgba(26, 22, 18, 0.12);
+  color: rgba(26, 22, 18, 0.62);
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__tab:hover:not(.featured-stages-chart__tab--active) {
+  color: var(--fsc-text);
+  border-color: rgba(26, 22, 18, 0.2);
+  background: rgba(26, 22, 18, 0.07);
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__tab--active {
+  background: #fff;
+  border-color: rgba(230, 126, 34, 0.55);
+  color: var(--fsc-accent);
+  box-shadow: 0 2px 10px rgba(230, 126, 34, 0.14);
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__row {
+  border-color: rgba(26, 22, 18, 0.08);
+  background: #fff;
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__row:hover {
+  border-color: rgba(26, 22, 18, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 16px rgba(26, 22, 18, 0.06);
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__thumb {
+  box-shadow: 0 2px 8px rgba(26, 22, 18, 0.12);
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__move--same {
+  color: rgba(26, 22, 18, 0.22);
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__join {
+  border-color: rgba(230, 126, 34, 0.5);
+  background: rgba(230, 126, 34, 0.1);
+  color: #c45f10;
+}
+
+.landing-page .featured-stages-chart--landing .featured-stages-chart__join:hover {
+  background: rgba(230, 126, 34, 0.18);
+  border-color: rgba(230, 126, 34, 0.65);
+  color: #a34d0c;
+}
 
 .landing-page .featured-stages-chart {
   --fsc-display: var(--ff-display);
@@ -1328,7 +1420,25 @@
     font-weight: 600;
     letter-spacing: 0.03em;
   }
-  .landing-page .stages-inner { padding: 40px 22px 8px; }
+  .landing-page .stages-inner { padding: 40px 22px 0; }
   .landing-page .stages-header { margin-bottom: 22px; }
   .landing-page .stages-subrow { gap: 10px 12px; }
+  .landing-page .featured-stages-chart--landing {
+    padding: 16px 14px 18px;
+    border-radius: 16px;
+  }
+  .landing-page .featured-stages-chart--landing .featured-stages-chart__tabs-row {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+  }
+  .landing-page .featured-stages-chart--landing .featured-stages-chart__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .landing-page .featured-stages-chart--landing .featured-stages-chart__tab {
+    flex-shrink: 0;
+    padding: 7px 12px;
+    font-size: 10px;
+  }
 }

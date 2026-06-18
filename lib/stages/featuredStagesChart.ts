@@ -25,7 +25,12 @@ type FeaturedStagesChartData = {
 
 const data = chartData as FeaturedStagesChartData;
 
-/** Active chart tab — single "Featured" tab for now; genre tabs later. */
+/** All chart tabs (Featured + genre categories). */
+export function getFeaturedStagesChartTabs(): FeaturedChartTab[] {
+  return data.tabs;
+}
+
+/** Active chart tab by id — defaults to Featured. */
 export function getFeaturedStagesChartTab(tabId = 'featured'): FeaturedChartTab {
   return data.tabs.find(tab => tab.id === tabId) ?? data.tabs[0]!;
 }

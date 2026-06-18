@@ -19,7 +19,7 @@ export default async function Image({ params }: Props) {
 
   let stageName = SITE_NAME;
   let scene = 'Live festival stage';
-  let nowPlaying: string | null = null;
+  let subtitle: string | null = null;
 
   if (getDb()) {
     const stage = await getUserStagePublicBySlug(slug.toLowerCase()).catch(() => null);
@@ -30,7 +30,9 @@ export default async function Image({ params }: Props) {
       const title = stream?.title?.trim();
       if (title) {
         const channel = stream?.channelTitle?.trim();
-        nowPlaying = channel ? `Now playing: ${title} · ${channel}` : `Now playing: ${title}`;
+        subtitle = channel ? `Now playing: ${title} · ${channel}` : `Now playing: ${title}`;
+      } else {
+        subtitle = stage.description?.trim() || null;
       }
     }
   }
@@ -80,7 +82,7 @@ export default async function Image({ params }: Props) {
           >
             {stageName}
           </div>
-          {nowPlaying ? (
+          {subtitle ? (
             <div
               style={{
                 display: 'flex',
@@ -90,7 +92,7 @@ export default async function Image({ params }: Props) {
                 maxWidth: 1056,
               }}
             >
-              {nowPlaying.length > 70 ? `${nowPlaying.slice(0, 69)}…` : nowPlaying}
+              {subtitle.length > 70 ? `${subtitle.slice(0, 69)}…` : subtitle}
             </div>
           ) : null}
         </div>

@@ -253,9 +253,11 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
           <FeaturedStagesChart
             variant="page"
             showHeader={false}
+            showTabs
             showJoinAction
             joinLabel={LANDING_TRENDING_JOIN_LABEL}
             onSelect={onStageEnter}
+            className="featured-stages-chart--landing"
           />
         </div>
       </section>

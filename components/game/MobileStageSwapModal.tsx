@@ -77,7 +77,7 @@ export function MobileStageSwapModal({
           border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 22,
           padding: '24px 20px 20px',
-          maxWidth: 560,
+          maxWidth: 720,
           width: '100%',
           fontFamily: "Georgia,'Times New Roman',serif",
           boxShadow: '0 24px 64px rgba(0,0,0,0.65)',

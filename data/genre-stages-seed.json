@@ -1,0 +1,146 @@
+{
+  "_meta": {
+    "purpose": "Seed pool for programmatic stage generation. 5 genre categories, 10 stages each (50 total).",
+    "link_strategy": "YouTube links are pooled per CATEGORY, not per stage. Each stage draws its lineup from its parent category's `streams` pool at generation time.",
+    "verified_field": "stream.verified=true means the exact URL was confirmed from a live web search. verified=false means the channel is known to exist but the handle/URL should be confirmed before seeding (do not assume it resolves).",
+    "live_video_warning": "stream.type='live_video' URLs (watch?v=) point at a specific live broadcast. These IDs CHANGE when a stream restarts. Prefer resolving channel/playlist URLs to the current live video at runtime (oEmbed / Data API) rather than hardcoding live IDs.",
+    "supply_notes": {
+      "chill": "Abundant always-live 24/7 supply.",
+      "edm": "Strong live supply (label radio + mix channels).",
+      "hiphop": "Decent always-live 24/7 rap-radio supply, but most are rotating live_video IDs.",
+      "jambands": "VOD / official-channel lean. nugs.net is the big archive but it's a PAID app, NOT free-YouTube-embeddable. Free supply = official band channels + concert clips.",
+      "country": "Weakest YouTube live supply. 24/7 country live is mostly web/satellite radio (SiriusXM Outlaw Country, AccuRadio) which is NOT embeddable. YouTube supply = official artist channels + concert/festival VOD."
+    },
+    "existing_stages": "Stages with existing=true are already built; the generator should skip scene creation for them. Scene-generation work is front-loaded on hiphop and country (zero existing stages).",
+    "orphaned": "Deep Space (ambient) is not in any of these 5 buckets — park it or fold into chill separately."
+  },
+  "categories": [
+    {
+      "id": "chill",
+      "name": "Chill",
+      "attention_mode": "chill",
+      "stream_source_type": "live_24_7",
+      "streams": [
+        { "label": "Lofi Girl", "url": "https://www.youtube.com/@LofiGirl", "type": "channel", "verified": false },
+        { "label": "Chillhop Lofi Girl", "url": "https://www.youtube.com/channel/UCHZZyaDXM7DixSjCuMdg7BA", "type": "channel", "verified": true },
+        { "label": "Chillhop Music", "url": "https://www.youtube.com/@ChillhopMusic", "type": "channel", "verified": false },
+        { "label": "The Bootleg Boy", "url": "https://www.youtube.com/@thebootlegboy", "type": "channel", "verified": false },
+        { "label": "College Music", "url": "https://www.youtube.com/@CollegeMusic", "type": "channel", "verified": false },
+        { "label": "Dreamhop Music", "url": "https://www.youtube.com/@DreamhopMusic", "type": "channel", "verified": false },
+        { "label": "24/7 Live Radio Stations (playlist)", "url": "https://www.youtube.com/playlist?list=PLWeiPFlwTt8E2B0ds6diIwhog1zlSkoBf", "type": "playlist", "verified": true }
+      ],
+      "stages": [
+        { "slug": "study-room", "name": "Study Room", "description": "desk lamp, rain on the glass, no actual studying", "existing": false },
+        { "slug": "rainy-cafe", "name": "Rainy Café", "description": "coffee going cold, someone always typing", "existing": false },
+        { "slug": "jazz-lounge", "name": "Jazz Lounge", "description": "low light, brass, a little smoke", "existing": false },
+        { "slug": "rooftop-garden", "name": "Rooftop Garden", "description": "string lights, plants, city humming below", "existing": false },
+        { "slug": "night-drive", "name": "Night Drive", "description": "wet asphalt, synth, nowhere to be", "existing": false },
+        { "slug": "beach-sunset", "name": "Beach Sunset", "description": "last light, nobody leaving", "existing": false },
+        { "slug": "chill-cinema", "name": "Chill Cinema", "description": "big screen, low volume, half asleep", "existing": true, "venueRoute": "cinema" },
+        { "slug": "fireplace-cabin", "name": "Fireplace Cabin", "description": "wood crackle, snow outside, fully horizontal", "existing": false },
+        { "slug": "library", "name": "Library", "description": "too quiet to talk, perfect to lurk", "existing": false },
+        { "slug": "greenhouse", "name": "Greenhouse", "description": "humid, green, one chair", "existing": false }
+      ]
+    },
+    {
+      "id": "edm",
+      "name": "EDM / Dance",
+      "attention_mode": "live",
+      "stream_source_type": "live_24_7",
+      "streams": [
+        { "label": "Monstercat", "url": "https://www.youtube.com/channel/UCJ6td3C9QlPO9O_J5dF4ZzA", "type": "channel", "verified": true },
+        { "label": "Monstercat Silk (melodic/house)", "url": "https://www.youtube.com/channel/UCX4sShAQf01LYjYQhG2ZgKg", "type": "channel", "verified": true },
+        { "label": "Proximity", "url": "https://www.youtube.com/channel/UC3ifTl5zKiCAhHIBQYcaTeg", "type": "channel", "verified": true },
+        { "label": "UKF (bass/dubstep/dnb)", "url": "https://www.youtube.com/@UKF", "type": "channel", "verified": false },
+        { "label": "Armada Music", "url": "https://www.youtube.com/@armadamusic", "type": "channel", "verified": false }
+      ],
+      "stages": [
+        { "slug": "warehouse", "name": "Warehouse", "description": "concrete, fog, one strobe", "existing": false },
+        { "slug": "mainstage", "name": "Mainstage", "description": "pyro you feel from the back", "existing": false },
+        { "slug": "silent-disco", "name": "Silent Disco", "description": "headphones on, looks unhinged from outside", "existing": true, "venueRoute": "silent-disco" },
+        { "slug": "neon-rooftop", "name": "Neon Rooftop", "description": "pool, palms, bass over the skyline", "existing": false },
+        { "slug": "las-vegas", "name": "Las Vegas", "description": "the strip, no clocks", "existing": true, "venueRoute": "edc" },
+        { "slug": "underground", "name": "Underground", "description": "no sign, you just know", "existing": false },
+        { "slug": "beach-rave", "name": "Beach Rave", "description": "sand in everything, worth it", "existing": false },
+        { "slug": "laser-dome", "name": "Laser Dome", "description": "geometry on the ceiling", "existing": false },
+        { "slug": "afterparty", "name": "Afterparty", "description": "4am, nobody admits they're tired", "existing": false },
+        { "slug": "concert-stage", "name": "Concert Stage", "description": "barricade, lights, full send", "existing": true, "venueRoute": "outside-hands" }
+      ]
+    },
+    {
+      "id": "jambands",
+      "name": "Jambands",
+      "attention_mode": "live",
+      "stream_source_type": "vod_official_channel",
+      "streams": [
+        { "label": "Grateful Dead (official)", "url": "https://www.youtube.com/@GratefulDead", "type": "channel", "verified": false },
+        { "label": "Goose (official)", "url": "https://www.youtube.com/@goosetheband", "type": "channel", "verified": false },
+        { "label": "Billy Strings (official)", "url": "https://www.youtube.com/@BillyStrings", "type": "channel", "verified": false },
+        { "label": "Phish (official)", "url": "https://www.youtube.com/@phish", "type": "channel", "verified": false },
+        { "label": "Umphrey's McGee (official)", "url": "https://www.youtube.com/@umphreys", "type": "channel", "verified": false },
+        { "label": "Relix", "url": "https://www.youtube.com/@relix", "type": "channel", "verified": false }
+      ],
+      "stages": [
+        { "slug": "the-farm", "name": "The Farm", "description": "fields, flags, dust kicked up", "existing": true, "venueRoute": "tentaroo" },
+        { "slug": "the-forest", "name": "The Forest", "description": "lights in the trees, lose your friends", "existing": true, "venueRoute": "forest" },
+        { "slug": "outside-hands", "name": "Outside Hands", "description": "fog, bridge, bay air", "existing": true, "venueRoute": "outside-hands" },
+        { "slug": "hulaween", "name": "Hulaween", "description": "spanish moss, costumes, late sets", "existing": true, "venueRoute": "hula" },
+        { "slug": "tentaroo", "name": "Tentaroo", "description": "tent city, no sleep, all heart", "existing": true, "venueRoute": "tentaroo" },
+        { "slug": "the-meadow", "name": "The Meadow", "description": "tapestries, someone hooping, no schedule", "existing": false },
+        { "slug": "the-barn", "name": "The Barn", "description": "old wood, fiddle, hay", "existing": false },
+        { "slug": "peach", "name": "Peach Festival", "description": "no start, no end", "existing": false },
+        { "slug": "the-desert", "name": "The Desert", "description": "dust, art cars, vast", "existing": false },
+        { "slug": "riverside", "name": "Riverside", "description": "bare feet, banjo, cold beer", "existing": false }
+      ]
+    },
+    {
+      "id": "hiphop",
+      "name": "Hip-Hop",
+      "attention_mode": "live",
+      "stream_source_type": "live_24_7",
+      "streams": [
+        { "label": "Rap Town Radio (24/7)", "url": "https://www.youtube.com/watch?v=dTtshy4KzSY", "type": "live_video", "verified": true },
+        { "label": "BigXthaPlug Radio (24/7)", "url": "https://www.youtube.com/watch?v=d5YParKZgmg", "type": "live_video", "verified": true },
+        { "label": "Rap & Bass Radio (24/7)", "url": "https://www.youtube.com/watch?v=_uy73AyZAXw", "type": "live_video", "verified": true },
+        { "label": "Rap Radio / Hip-Hop Live (24/7)", "url": "https://www.youtube.com/watch?v=mNgSEOsWDmc", "type": "live_video", "verified": true }
+      ],
+      "stages": [
+        { "slug": "block-party", "name": "Block Party", "description": "folding tables, speaker in a window", "existing": false },
+        { "slug": "basement-studio", "name": "Basement Studio", "description": "foam on the walls, red light, someone recording", "existing": false },
+        { "slug": "lowrider-blvd", "name": "Lowrider Blvd", "description": "chrome, hydraulics, slow roll", "existing": false },
+        { "slug": "rooftop-cypher", "name": "Rooftop Cypher", "description": "folding chairs, one mic, skyline", "existing": false },
+        { "slug": "corner-store", "name": "Corner Store", "description": "out front, all night", "existing": false },
+        { "slug": "the-booth", "name": "The Booth", "description": "one take", "existing": false },
+        { "slug": "arcade", "name": "Arcade", "description": "neon, tokens, a beat underneath", "existing": false },
+        { "slug": "subway-platform", "name": "Subway Platform", "description": "tile echo, a boombox", "existing": false },
+        { "slug": "house-party", "name": "House Party", "description": "too many people, one bathroom", "existing": false },
+        { "slug": "the-lot", "name": "The Lot", "description": "trunk open, tailgate, bass", "existing": false }
+      ]
+    },
+    {
+      "id": "mix",
+      "name": "Mix",
+      "attention_mode": "lounge",
+      "stream_source_type": "vod_official_channel",
+      "streams": [
+        { "label": "Whiskey Riff", "url": "https://www.youtube.com/@WhiskeyRiff", "type": "channel", "verified": false },
+        { "label": "Grand Ole Opry (official)", "url": "https://www.youtube.com/@opry", "type": "channel", "verified": false },
+        { "label": "Luke Combs (official)", "url": "https://www.youtube.com/@LukeCombs", "type": "channel", "verified": false },
+        { "label": "Zach Bryan (official)", "url": "https://www.youtube.com/@zachbryan", "type": "channel", "verified": false },
+        { "label": "Morgan Wallen (official)", "url": "https://www.youtube.com/@MorganWallen", "type": "channel", "verified": false }
+      ],
+      "stages": [
+        { "slug": "stagecoach", "name": "Stagecoach Festival", "description": "Indio dust, boots, main stage country", "existing": false },
+        { "slug": "summerfest", "name": "Summerfest Festival", "description": "Milwaukee lakefront, eleven days, every genre", "existing": false },
+        { "slug": "lollapalooza", "name": "Lollapalooza Festival", "description": "Chicago skyline, Grant Park, all weekend", "existing": false },
+        { "slug": "cute-animals", "name": "Cute Animals", "description": "paws, purrs, zero agenda", "existing": false },
+        { "slug": "after-party", "name": "After Party", "description": "trippy lights, 4am, nobody leaving", "existing": false },
+        { "slug": "tailgate", "name": "Tailgate", "description": "truck bed, cooler, radio", "existing": false },
+        { "slug": "the-roadhouse", "name": "The Roadhouse", "description": "pool table, jukebox, last call", "existing": false },
+        { "slug": "county-fair", "name": "County Fair", "description": "ferris wheel, stage by the livestock", "existing": false },
+        { "slug": "bonfire", "name": "Bonfire", "description": "field, flames, acoustic", "existing": false },
+        { "slug": "main-street", "name": "Main Street", "description": "small town, string lights, flatbed stage", "existing": false }
+      ]
+    }
+  ]
+}
