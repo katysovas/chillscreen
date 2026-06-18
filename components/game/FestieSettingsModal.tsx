@@ -625,7 +625,7 @@ export function FestieSettingsModal({
                 fontFamily: 'system-ui,sans-serif',
                 lineHeight: 1.5,
               }}>
-                Help build this stage — we'd love to hear from you.
+                We'd love to hear from you.
               </p>
               {contactStatus === 'sent' ? (
                 <div style={{
