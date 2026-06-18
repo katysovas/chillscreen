@@ -137,12 +137,18 @@ export async function fetchUserStage(slug: string): Promise<UserStagePublic | nu
   return data.stage ?? null;
 }
 
+export async function fetchMyStages(): Promise<UserStagePublic[]> {
+  const res = await fetch('/api/stages/me', { credentials: 'include' });
+  if (res.status === 401) return [];
+  const data = await res.json() as { stages?: UserStagePublic[]; stage?: UserStagePublic | null; error?: string };
+  if (!res.ok) throw new Error(data.error ?? 'Failed to load your stages');
+  if (Array.isArray(data.stages)) return data.stages;
+  return data.stage ? [data.stage] : [];
+}
+
 export async function fetchMyStage(): Promise<UserStagePublic | null> {
-  const res = await fetch('/api/stages/me');
-  if (res.status === 401) return null;
-  const data = await res.json() as { stage?: UserStagePublic | null; error?: string };
-  if (!res.ok) throw new Error(data.error ?? 'Failed to load your stage');
-  return data.stage ?? null;
+  const stages = await fetchMyStages();
+  return stages[0] ?? null;
 }
 
 export async function uploadStageBackdrop(slug: string, file: File): Promise<UserStagePublic> {

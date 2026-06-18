@@ -224,6 +224,33 @@ export function AttachedTypingBubble({
   );
 }
 
+/** Compact chatting indicator — emoji only, no speaker label. */
+export function AttachedChatEmojiBubble({
+  side = 'left',
+  showTail = true,
+  emoji = '💬',
+  tailAlign = 'edge',
+}: {
+  side?: BubbleSide;
+  showTail?: boolean;
+  emoji?: string;
+  tailAlign?: 'edge' | 'center' | 'speaker' | 'easel';
+}) {
+  return (
+    <div
+      className="game-chat-bubble game-chat-bubble-stacked"
+      style={{
+        ...bubbleShell,
+        padding: '5px 9px',
+        animation: 'chat-in-left 0.22s ease-out both',
+      }}
+    >
+      <div style={{ fontSize: 17, lineHeight: 1 }} aria-hidden>{emoji}</div>
+      {showTail && <div style={bubbleTailStyle(side, tailAlign)} />}
+    </div>
+  );
+}
+
 export function AttachedInputBubble({
   children,
   animate = true,

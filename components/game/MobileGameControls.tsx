@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { trackMobileControl } from '@/lib/gameInputAnalytics';
-import { LineupIcon, ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
+import { ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
 
 type Props = {
   muted: boolean;
@@ -11,9 +11,6 @@ type Props = {
   onToggleVendorShop?: () => void;
   onVendorShopWarm?: () => void;
   onOpenStageSwap?: () => void;
-  /** Stage owner only — opens lineup modal. */
-  showStageSettings?: boolean;
-  onOpenStageSettings?: () => void;
   onOpenAmbientChat?: () => void;
   ambientChatOpen?: boolean;
   showMute?: boolean;
@@ -65,8 +62,6 @@ export function MobileGameControls({
   onToggleVendorShop,
   onVendorShopWarm,
   onOpenStageSwap,
-  showStageSettings = false,
-  onOpenStageSettings,
   onOpenAmbientChat,
   ambientChatOpen = false,
   showMute = true,
@@ -75,7 +70,6 @@ export function MobileGameControls({
 }: Props) {
   const showCart = Boolean(onToggleVendorShop);
   const showStageSwap = showStageSwapProp && Boolean(onOpenStageSwap);
-  const showStageSettingsBtn = showStageSettings && Boolean(onOpenStageSettings);
   const showChat = Boolean(onOpenAmbientChat);
 
   return (
@@ -140,26 +134,6 @@ export function MobileGameControls({
             }}
           >
             <StageSwapIcon size={24} />
-          </button>
-        )}
-
-        {showStageSettingsBtn && (
-          <button
-            type="button"
-            className="mobile-controls-stage-settings mobile-controls-action-btn"
-            aria-label="Lineup"
-            title="Lineup"
-            onPointerDown={e => e.preventDefault()}
-            onClick={() => {
-              trackMobileControl('stage_settings');
-              onOpenStageSettings?.();
-            }}
-            style={{
-              ...mobileActionBtn,
-              color: 'rgba(255,255,255,.78)',
-            }}
-          >
-            <LineupIcon size={22} />
           </button>
         )}
 

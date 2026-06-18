@@ -6,6 +6,7 @@ import {
 } from '@/lib/festie/llmProviders';
 import type {
   FestieAttributes,
+  FestieControlMode,
   FestieOwner,
   FestiePreset,
   FestiePublic,
@@ -14,6 +15,7 @@ import type {
 import { requireDb } from '@/lib/db';
 import { toIsoTimestamp } from '@/lib/timestamps';
 import { isMissingColumnError } from '@/lib/dbErrors';
+import { parseFestieControlMode } from '@/lib/festie/types';
 
 export class FestieSchemaError extends Error {
   readonly migration: string;
@@ -47,6 +49,7 @@ function rowToFestie(row: Record<string, unknown>): FestieRow {
     help_dismissed_at: row.help_dismissed_at != null
       ? toIsoTimestamp(row.help_dismissed_at)
       : null,
+    control_mode: parseFestieControlMode(row.control_mode) ?? 'human',
     created_at: toIsoTimestamp(row.created_at),
   };
 }
@@ -57,6 +60,7 @@ export function toFestieOwner(row: FestieRow): FestieOwner {
     notify_email: row.notify_email,
     email_opted_in: row.email_opted_in,
     help_dismissed_at: row.help_dismissed_at,
+    control_mode: row.control_mode,
   };
 }
 
@@ -133,6 +137,7 @@ export type UpdateFestieInput = {
   notify_email?: string | null;
   email_opted_in?: boolean;
   llm_provider?: FestieLlmProvider;
+  control_mode?: FestieControlMode;
 };
 
 export async function updateFestie(userId: string, patch: UpdateFestieInput): Promise<FestieRow | null> {
@@ -172,6 +177,25 @@ export async function updateFestie(userId: string, patch: UpdateFestieInput): Pr
         throw new FestieSchemaError(
           '006_festie_llm_provider',
           'AI model setting is not available yet — run migration 006_festie_llm_provider.sql on the database.',
+        );
+      }
+      throw err;
+    }
+  }
+
+  if (patch.control_mode !== undefined) {
+    try {
+      const modeRows = await sql`
+        UPDATE festies SET control_mode = ${patch.control_mode}
+        WHERE user_id = ${userId}::uuid
+        RETURNING *
+      `;
+      row = rowToFestie(modeRows[0] as Record<string, unknown>);
+    } catch (err) {
+      if (isMissingColumnError(err, 'control_mode')) {
+        throw new FestieSchemaError(
+          '022_festie_control_mode',
+          'Autopilot setting is not available yet — run migration 022_festie_control_mode.sql on the database.',
         );
       }
       throw err;
@@ -225,7 +249,7 @@ export async function listActiveFestiesForStage(
   const online = new Set(onlineUserIds);
   const rows = online.size > 0
     ? await sql`
-        SELECT id, user_id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online
+        SELECT id, user_id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online, control_mode
         FROM festies
         WHERE last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
           AND (
@@ -235,7 +259,7 @@ export async function listActiveFestiesForStage(
         ORDER BY last_seen_at DESC
       `
     : await sql`
-        SELECT id, user_id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online
+        SELECT id, user_id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online, control_mode
         FROM festies
         WHERE stage_slug = ${stageSlug}
           AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
@@ -245,10 +269,12 @@ export async function listActiveFestiesForStage(
   const byId = new Map<string, FestiePublic>();
   for (const r of rows) {
     const row = rowToFestie({ ...r, last_chat_at: null, created_at: '' });
-    const onStage = online.has(row.user_id) || row.owner_online;
+    const isOnline = online.has(row.user_id);
+    const autopilot = isOnline && row.control_mode === 'ai';
     byId.set(row.id, {
       ...toFestiePublic(row),
-      owner_on_stage: onStage,
+      control_mode: row.control_mode,
+      owner_on_stage: isOnline && !autopilot,
     });
   }
   return [...byId.values()];

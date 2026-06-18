@@ -12,6 +12,11 @@ export function setNpcConvoHold(npcId: string, worldX: number): void {
   holds.set(npcId, worldX);
 }
 
+export function clearNpcConvoHold(npcId: string): void {
+  if (!holds.delete(npcId)) return;
+  releaseListener?.();
+}
+
 export function getNpcConvoHold(npcId: string): number | undefined {
   return holds.get(npcId);
 }

@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   currentStagePickerTarget,
   stagePickerTargetId,
+  stagePickerTargetFromId,
   type StagePickerTarget,
 } from '@/lib/stagePickerOptions';
 import { FeaturedStagesChart } from '@/components/stages/FeaturedStagesChart';
+import { SwitchStagesChart } from '@/components/stages/SwitchStagesChart';
 import { chartEntryId, getFeaturedStagesChartTab } from '@/lib/stages/featuredStagesChart';
 import {
   isValidPlayerName,
@@ -62,8 +64,9 @@ export function StagePicker({
 
   const pickedTarget = useMemo(() => {
     if (!pickedId) return null;
-    const entry = chartEntries.find(e => chartEntryId(e) === pickedId);
-    return entry?.target ?? null;
+    const fromChart = chartEntries.find(e => chartEntryId(e) === pickedId);
+    if (fromChart) return fromChart.target;
+    return stagePickerTargetFromId(pickedId);
   }, [chartEntries, pickedId]);
 
   const sameAsCurrent = pickedTarget != null && currentTarget != null
@@ -185,12 +188,20 @@ export function StagePicker({
           </>
         )}
 
-        <FeaturedStagesChart
-          variant="modal"
-          selectedId={pickedId}
-          currentId={currentId}
-          onSelect={target => setPickedId(stagePickerTargetId(target))}
-        />
+        {isSwap ? (
+          <SwitchStagesChart
+            selectedId={pickedId}
+            currentId={currentId}
+            onSelect={target => setPickedId(stagePickerTargetId(target))}
+          />
+        ) : (
+          <FeaturedStagesChart
+            variant="modal"
+            selectedId={pickedId}
+            currentId={currentId}
+            onSelect={target => setPickedId(stagePickerTargetId(target))}
+          />
+        )}
 
         {requireName && (
           <>

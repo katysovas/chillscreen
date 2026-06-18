@@ -1,5 +1,13 @@
 import type { FestieLlmProvider } from '@/lib/festie/llmProviders';
 
+export type FestieControlMode = 'human' | 'ai';
+
+export function parseFestieControlMode(raw: unknown): FestieControlMode | null {
+  if (raw === 'ai') return 'ai';
+  if (raw === 'human') return 'human';
+  return null;
+}
+
 export type FestiePreset = 'ember' | 'moss' | 'tide' | 'dusk';
 
 export type FestieAttributes = {
@@ -24,6 +32,7 @@ export type FestieRow = {
   notify_email: string | null;
   email_opted_in: boolean;
   help_dismissed_at: string | null;
+  control_mode: FestieControlMode;
   created_at: string;
 };
 
@@ -40,6 +49,8 @@ export type FestiePublic = {
   tier: 'live' | 'dim' | 'gone';
   /** True when the festie's human is signed in on this stage right now. */
   owner_on_stage?: boolean;
+  /** Autopilot — festie wanders autonomously while owner is online. */
+  control_mode?: FestieControlMode;
 };
 
 /** Signed-in owner view — includes email recap prefs (never on stage sync). */
@@ -47,6 +58,7 @@ export type FestieOwner = FestiePublic & {
   notify_email: string | null;
   email_opted_in: boolean;
   help_dismissed_at: string | null;
+  control_mode: FestieControlMode;
 };
 
 export type FestieCache = {

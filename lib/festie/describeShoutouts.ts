@@ -12,7 +12,8 @@ export const FESTIE_SHOUTOUT_MAX_WORDS = 4;
 export const FESTIE_SHOUTOUT_MAX_TOKENS = 16;
 
 export function festieHasDescribeShoutoutNotes(festie: FestiePublic): boolean {
-  return Boolean(festie.owner_on_stage && festie.personality_notes?.trim());
+  if (!festie.personality_notes?.trim()) return false;
+  return festie.control_mode === 'ai' || Boolean(festie.owner_on_stage);
 }
 
 /** Clamp model output to 1–4 words for ambient bubbles. */
@@ -52,10 +53,14 @@ export function buildFestieDescribeShoutoutPrompt(opts: {
   festieName: string;
   describeNotes: string;
   stage: string;
+  autopilot?: boolean;
 }): string {
-  const { festieName, describeNotes, stage } = opts;
+  const { festieName, describeNotes, stage, autopilot = false } = opts;
+  const role = autopilot
+    ? `You are ${festieName} — a festie avatar wandering ${stage} on autopilot while your human watches.`
+    : `You are ${festieName} — a festie avatar wandering ${stage} while your human is here on stage.`;
   return [
-    `You are ${festieName} — a festie avatar wandering ${stage} while your human is here on stage.`,
+    role,
     `Owner description: ${describeNotes}`,
     'Shout ONE tiny festival aside to yourself — exactly 1 to 4 words only.',
     'It must feel inspired by the owner description (vibe, hobby, joke, mood).',

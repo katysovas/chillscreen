@@ -5,7 +5,7 @@ import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
 import { CHAR_BOTTOM, crowdDepthOffsetPx, crowdDepthZIndex } from './groundLayout';
-import { screenXToBubbleSide } from './ChatBubble';
+import { AttachedChatEmojiBubble, screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import {
   crowdSpawnWorldX,
@@ -88,7 +88,9 @@ type NPCProps = NPCConfig & {
   chatPromptCanvasWorldX?: number | null;
   paused: boolean;
   greeting: boolean;
-  /** Soft connect glow — local or remote 1:1 conversation. */
+  /** Soft connect glow — autopilot owner festie only. */
+  connectGlow?: boolean;
+  /** In a connected conversation — pauses wander; no connect aura. */
   chatConnected?: boolean;
   /** Offline festie dim tier — reduced opacity and glow. */
   dimmed?: boolean;
@@ -102,6 +104,10 @@ type NPCProps = NPCConfig & {
   publicMessages?: ChatLine[];
   /** Deep Space — zero-G float visuals instead of walk cycle. */
   spaceFloat?: boolean;
+  /** Spawn immediately at world-x instead of walking in from off-screen. */
+  spawnWorldX?: number;
+  /** Owner festie hidden while the human player avatar is on stage. */
+  ownerAvatarSuppressed?: boolean;
 };
 
 function rndBetween(min: number, max: number) {
@@ -143,9 +149,11 @@ function NPC({
   easelPaintingLabel,
   chatPromptDrawingLabel,
   chatPromptCanvasWorldX,
-  paused, greeting, chatConnected = false, dimmed = false, greetFacing,   greetingChat,
+  paused, greeting, connectGlow = false, chatConnected = false, dimmed = false, greetFacing,   greetingChat,
   publicMessages,
   spaceFloat = false,
+  spawnWorldX,
+  ownerAvatarSuppressed = false,
 }: NPCProps) {
   const depthY = useMemo(() => crowdDepthOffsetPx(characterId), [characterId]);
   const depthZ = crowdDepthZIndex(depthY);
@@ -201,6 +209,8 @@ function NPC({
   const stageVisibleRef     = useRef(!stageAnchor);
   const chatConnectedRef    = useRef(chatConnected || greeting);
   chatConnectedRef.current = chatConnected || greeting;
+  const ownerAvatarSuppressedRef = useRef(ownerAvatarSuppressed);
+  ownerAvatarSuppressedRef.current = ownerAvatarSuppressed;
   const spaceFloatRef       = useRef(spaceFloat);
   spaceFloatRef.current     = spaceFloat;
   const wasPausedRef        = useRef(paused);
@@ -389,7 +399,21 @@ function NPC({
       return;
     }
 
+    const held = getNpcConvoHold(characterId);
+    if (held != null && Number.isFinite(held)) {
+      spawnInPlace(held);
+      if (ownerAvatarSuppressedRef.current && divRef.current) {
+        divRef.current.style.visibility = 'hidden';
+      }
+      return;
+    }
+
     const t = setTimeout(() => {
+      if (spawnWorldX != null && Number.isFinite(spawnWorldX)) {
+        spawnInPlace(spawnWorldX);
+        return;
+      }
+
       if (stageCrowd) {
         const worldX = crowdSpawnWorldX(stageCrowd, gameWorldOffRef.current, characterId, vw());
         spawnInPlace(worldX ?? pctToWorld(startX));
@@ -411,7 +435,17 @@ function NPC({
     }, entryDelay);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entryDelay, startX, stageAnchor, stageCrowd, characterId]);
+  }, [entryDelay, startX, stageAnchor, stageCrowd, characterId, spawnWorldX]);
+
+  useLayoutEffect(() => {
+    if (!active || !divRef.current) return;
+    if (ownerAvatarSuppressed) {
+      divRef.current.style.visibility = 'hidden';
+      applyWalking(false);
+    } else if (onScreenRef.current) {
+      divRef.current.style.visibility = 'visible';
+    }
+  }, [active, ownerAvatarSuppressed]);
 
   useEffect(() => {
     if (!active || easelPaintingSlot == null || !easelStageSlug) return;
@@ -446,6 +480,13 @@ function NPC({
 
     const decide = () => {
       if (isNpcNetworkFollowMode()) {
+        timer = setTimeout(decide, 500);
+        return;
+      }
+
+      if (ownerAvatarSuppressedRef.current) {
+        if (divRef.current) divRef.current.style.visibility = 'hidden';
+        applyWalking(false);
         timer = setTimeout(decide, 500);
         return;
       }
@@ -608,8 +649,10 @@ function NPC({
       if (onScreen !== onScreenRef.current) {
         onScreenRef.current = onScreen;
         if (divRef.current) {
-          divRef.current.style.visibility = onScreen ? 'visible' : 'hidden';
-          divRef.current.style.pointerEvents = onScreen ? '' : 'none';
+          divRef.current.style.visibility = ownerAvatarSuppressedRef.current || !onScreen
+            ? 'hidden'
+            : 'visible';
+          divRef.current.style.pointerEvents = onScreen && !ownerAvatarSuppressedRef.current ? '' : 'none';
         }
         if (!onScreen) applyWalking(false);
       }
@@ -679,6 +722,13 @@ function NPC({
     ? 'left'
     : screenXToBubbleSide(screenX);
 
+  const showGreetingChat = Boolean(
+    greeting && greetingChat && (greetingChat.npcTyping || greetingChat.messages.length > 0),
+  );
+  const showChattingBubble = Boolean(
+    chatConnected && !showPaintingBubble && !showGreetingChat,
+  );
+
   if (!active) return null;
 
   return (
@@ -709,7 +759,7 @@ function NPC({
           scale={scale}
           bubbleSide={bubbleSide}
           easelChatAnchor={showPaintingBubble}
-          chatConnected={promptDrawing ? false : chatConnected || greeting || showPaintingBubble}
+          connectGlow={connectGlow}
           chatOverlay={
             showPaintingBubble ? (
               <NpcChatOverlay
@@ -721,6 +771,15 @@ function NPC({
                 tailAlign="edge"
                 faded
               />
+            ) : showGreetingChat && greetingChat ? (
+              <NpcChatOverlay
+                name={greetingChat.name}
+                npcTyping={greetingChat.npcTyping}
+                messages={greetingChat.messages}
+                side={bubbleSide}
+              />
+            ) : showChattingBubble ? (
+              <AttachedChatEmojiBubble side={bubbleSide} showTail />
             ) : showPublicBubble ? (
               <NpcChatOverlay
                 name={name}
@@ -771,10 +830,13 @@ function areNpcPropsEqual(prev: NPCProps, next: NPCProps): boolean {
     && prev.chatPromptCanvasWorldX === next.chatPromptCanvasWorldX
     && prev.paused === next.paused
     && prev.greeting === next.greeting
+    && prev.connectGlow === next.connectGlow
     && prev.chatConnected === next.chatConnected
     && prev.dimmed === next.dimmed
     && prev.greetFacing === next.greetFacing
     && prev.spaceFloat === next.spaceFloat
+    && prev.spawnWorldX === next.spawnWorldX
+    && prev.ownerAvatarSuppressed === next.ownerAvatarSuppressed
     && prev.publicMessages === next.publicMessages
     && greetingChatEqual(prev.greetingChat, next.greetingChat);
 }

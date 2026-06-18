@@ -52,8 +52,8 @@ export type CharacterProps = {
   bubbleSide?: BubbleSide;
   /** Chat UI — pinned above the head on `bubbleSide`. */
   chatOverlay?: ReactNode;
-  /** Soft glow while in a 1:1 connected conversation. */
-  chatConnected?: boolean;
+  /** Soft pulsing connect aura — autopilot festie only; not used for NPC chat/draw states. */
+  connectGlow?: boolean;
   /** Easel painter — bubble sits left of the festie, away from the canvas. */
   easelChatAnchor?: boolean;
   /** Deep Space — zero-G float visuals (bob + drift legs) instead of walk cycle. */
@@ -165,7 +165,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   dancing = false,
   bubbleSide = 'left',
   chatOverlay,
-  chatConnected = false,
+  connectGlow = false,
   easelChatAnchor = false,
   spaceFloat = false,
 }, ref) {
@@ -349,7 +349,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
           </div>
         </div>
 
-        <ChatConnectGlow active={chatConnected} color={balloonColor} />
+        <ChatConnectGlow active={connectGlow} color={balloonColor} />
         <GlowstickAmbient active={glowstickAmbient} />
         <ConfettiAmbient active={confettiAmbient} />
         <FireworksOverlay active={fireworksActive} />

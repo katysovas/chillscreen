@@ -68,13 +68,69 @@
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  cursor: default;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.featured-stages-chart__tab:hover:not(.featured-stages-chart__tab--active) {
+  color: var(--fsc-text);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .featured-stages-chart__tab--active {
   border-color: rgba(230, 126, 34, 0.45);
   background: var(--fsc-accent-dim);
   color: var(--fsc-accent);
+}
+
+.featured-stages-chart__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.featured-stages-chart--switch .featured-stages-chart__switch-header {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--fsc-edge);
+}
+
+.featured-stages-chart--switch .featured-stages-chart__tabbar {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: -1px;
+}
+
+.featured-stages-chart--switch .featured-stages-chart__switch-tab {
+  padding: 10px 14px 9px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--fsc-muted);
+  font-family: var(--fsc-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s;
+}
+
+.featured-stages-chart--switch .featured-stages-chart__switch-tab:hover:not(.featured-stages-chart__switch-tab--active) {
+  color: var(--fsc-text);
+}
+
+.featured-stages-chart--switch .featured-stages-chart__switch-tab--active {
+  color: var(--fsc-text);
+  border-bottom-color: var(--fsc-accent);
 }
 
 .featured-stages-chart__body {
@@ -110,6 +166,10 @@
 
 .featured-stages-chart__row--no-action {
   grid-template-columns: 36px 52px minmax(0, 1fr) 28px;
+}
+
+.featured-stages-chart__row--owned {
+  grid-template-columns: 52px minmax(0, 1fr);
 }
 
 .featured-stages-chart__row:hover {
@@ -252,6 +312,10 @@
   .featured-stages-chart__thumb {
     width: 44px;
     height: 44px;
+  }
+
+  .featured-stages-chart__row--owned {
+    grid-template-columns: 44px minmax(0, 1fr);
   }
 
   .featured-stages-chart__name {

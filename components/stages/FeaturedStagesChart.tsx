@@ -30,6 +30,8 @@ export type FeaturedStagesChartProps = {
   variant?: 'page' | 'modal';
   /** Hide built-in header when the parent supplies section chrome. */
   showHeader?: boolean;
+  /** Render list only — parent supplies outer chart chrome (switch modal tabs). */
+  embedded?: boolean;
   className?: string;
 };
 
@@ -83,6 +85,7 @@ export function FeaturedStagesChart({
   joinLabel = 'Join',
   variant = 'page',
   showHeader = true,
+  embedded = false,
   className = '',
 }: FeaturedStagesChartProps) {
   const tab = useMemo(() => getFeaturedStagesChartTab(), []);
@@ -99,34 +102,9 @@ export function FeaturedStagesChart({
     };
   };
 
-  return (
-    <div
-      className={[
-        'featured-stages-chart',
-        isModal ? 'featured-stages-chart--modal featured-stages-chart--scrollable' : '',
-        className,
-      ].filter(Boolean).join(' ')}
-    >
-      {showHeader && (
-        <div className="featured-stages-chart__header">
-          <div className="featured-stages-chart__title-block">
-            <p className="featured-stages-chart__eyebrow">Featured Stages</p>
-            <h2 className="featured-stages-chart__title" id="mobile-stage-swap-chart-title">Top 10</h2>
-          </div>
-          <div className="featured-stages-chart__tabs" role="tablist" aria-label="Chart genres">
-            <span
-              className="featured-stages-chart__tab featured-stages-chart__tab--active"
-              role="tab"
-              aria-selected
-            >
-              {tab.label}
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="featured-stages-chart__body" role="list">
-        {tab.entries.map(entry => {
+  const list = (
+    <div className="featured-stages-chart__body" role="list">
+      {tab.entries.map(entry => {
           const id = chartEntryId(entry);
           const display = resolveEntry(entry);
           const selected = selectedId === id;
@@ -174,7 +152,37 @@ export function FeaturedStagesChart({
             </div>
           );
         })}
-      </div>
+    </div>
+  );
+
+  if (embedded) return list;
+
+  return (
+    <div
+      className={[
+        'featured-stages-chart',
+        isModal ? 'featured-stages-chart--modal featured-stages-chart--scrollable' : '',
+        className,
+      ].filter(Boolean).join(' ')}
+    >
+      {showHeader && (
+        <div className="featured-stages-chart__header">
+          <div className="featured-stages-chart__title-block">
+            <p className="featured-stages-chart__eyebrow">Featured Stages</p>
+            <h2 className="featured-stages-chart__title" id="mobile-stage-swap-chart-title">Top 10</h2>
+          </div>
+          <div className="featured-stages-chart__tabs" role="tablist" aria-label="Chart genres">
+            <span
+              className="featured-stages-chart__tab featured-stages-chart__tab--active"
+              role="tab"
+              aria-selected
+            >
+              {tab.label}
+            </span>
+          </div>
+        </div>
+      )}
+      {list}
     </div>
   );
 }

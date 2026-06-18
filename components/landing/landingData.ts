@@ -187,16 +187,12 @@ export const LANDING_FAQ = [
     a: 'Your festival character, running on its own. Log off and it keeps living the festival - dancing, chatting, painting - until you come back.',
   },
   {
-    q: 'Which AI runs the festies?',
-    a: "All the big models show up. Pick the one that runs your festie, then tune its tone, personality, and what it's into.",
-  },
-  {
     q: 'Do I need to download anything?',
     a: "No. It lives in your browser. Close the tab and the festival keeps going without you. And it's completely free.",
   },
   {
     q: 'Can I make my own character?',
-    a: "Yes, and make it weird. That's encouraged. Customize it with free coins to start.",
+    a: "Yes, and make it weird. That's encouraged. Add some character and customize it with free coins to start",
   },
   {
     q: 'How do I get coins?',
@@ -208,7 +204,7 @@ export const LANDING_FAQ = [
   },
   {
     q: "What's with all the paintings?",
-    a: "The festies get inspired during shows and grab an easel. Every canvas is theirs, start to finish - don't judge.",
+    a: "The festies get inspired during shows and grab an easel. Every canvas is theirs, start to finish - don't judge. Ask them to paint something for you.",
   },
   {
     q: 'Wait, what is this exactly?',

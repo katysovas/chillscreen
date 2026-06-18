@@ -2,6 +2,7 @@
 
 import { markLocalFestieAccount } from '@/lib/festie/localAccount';
 import { trackFestieSignedIn, trackFestieSignedUp } from '@/lib/analytics';
+import { patchPlayerSessionFestie } from '@/lib/player/session';
 import type { FestieCache, FestieOwner } from '@/lib/festie/types';
 
 let festieCache: FestieCache | null = null;
@@ -99,6 +100,7 @@ export type UpdateFestieBody = {
   notify_email?: string | null;
   email_opted_in?: boolean;
   llm_provider?: string;
+  control_mode?: 'human' | 'ai';
 };
 
 export async function fetchFestie(): Promise<FestieOwner | null> {
@@ -124,6 +126,7 @@ export async function updateFestie(body: UpdateFestieBody): Promise<FestieOwner>
   const festie = data.festie as FestieOwner;
   setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
   markLocalFestieAccount(festie.name);
+  patchPlayerSessionFestie(festie);
   return festie;
 }
 

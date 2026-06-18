@@ -1,12 +1,8 @@
 'use client';
 
 import { FAQ_ITEMS, isKeyboardMoveFaq } from '@/lib/helpFaq';
-import { festiePresetById } from '@/lib/festie/presets';
-import { ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
-import { FestieHeart } from './FestieHeart';
+import { SettingsIcon, ShoppingCartIcon, StageSwapIcon } from './BottomControlPanel';
 import { KeyboardMoveHint } from './KeyboardMoveHint';
-
-const EMBER_GLOW = festiePresetById('ember').balloonColor;
 
 const ANSWER: React.CSSProperties = {
   margin: 0,
@@ -30,7 +26,7 @@ const INLINE_ICON_BTN: React.CSSProperties = {
   color: 'rgba(255,255,255,.78)',
 };
 
-const FAQ_ICON_TOKEN_PATTERN = /(\{icon\}|\{stageIcon\}|\{heartIcon\})/;
+const FAQ_ICON_TOKEN_PATTERN = /(\{icon\}|\{stageIcon\}|\{settingsIcon\})/;
 
 const FAQ_ICON_TOKENS: Record<string, React.ReactNode> = {
   '{icon}': (
@@ -43,15 +39,9 @@ const FAQ_ICON_TOKENS: Record<string, React.ReactNode> = {
       <StageSwapIcon size={14} />
     </span>
   ),
-  '{heartIcon}': (
-    <span style={{ ...INLINE_ICON_BTN, width: 28, height: 28 }} aria-hidden>
-      <FestieHeart
-        inline
-        fill={1}
-        glowColor={EMBER_GLOW}
-        size={16}
-        clipId="festie-heart-faq-clip"
-      />
+  '{settingsIcon}': (
+    <span style={INLINE_ICON_BTN} aria-hidden>
+      <SettingsIcon size={14} />
     </span>
   ),
 };

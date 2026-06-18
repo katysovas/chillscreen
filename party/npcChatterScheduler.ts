@@ -410,7 +410,7 @@ export class NpcChatterScheduler {
     const ids = festieChatterNpcIds().filter(id => {
       if (!positioned.has(id)) return false;
       const entry = getNpcRosterEntry(id);
-      return Boolean(entry?.describeNotes?.trim() && entry.ownerOnStage);
+      return Boolean(entry?.describeNotes?.trim() && (entry.ownerOnStage || entry.autopilotActive));
     });
     if (ids.length === 0) return null;
     const available = ids.filter(id => !this.festieShoutoutOnCooldown(id));

@@ -1,0 +1,155 @@
+@keyframes festie-neon-pulse {
+  0% {
+    text-shadow:
+      0 0 4px #fff,
+      0 0 8px #fff,
+      0 0 12px #b8d4ff,
+      0 0 18px #8eb8ff;
+  }
+  100% {
+    text-shadow:
+      0 0 2px #fff,
+      0 0 6px #fff,
+      0 0 10px #b8d4ff,
+      0 0 14px #8eb8ff;
+  }
+}
+
+.festie-control-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: fit-content;
+  max-width: calc(100vw - 24px);
+  padding: 4px 8px 4px 4px;
+  gap: 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-sizing: border-box;
+}
+
+.festie-control-bar--open {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.festie-control-bar--mobile {
+  border-radius: 12px;
+  padding: 5px 10px 5px 5px;
+}
+
+.festie-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  padding: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.festie-control-bar--mobile .festie-icon-btn {
+  padding: 8px;
+}
+
+.festie-icon-btn--active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.festie-control-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 0;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.festie-autopilot-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 4px;
+  user-select: none;
+}
+
+.festie-control-bar--mobile .festie-autopilot-row {
+  gap: 12px;
+  padding-right: 2px;
+}
+
+.festie-autopilot-label {
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  flex-shrink: 0;
+}
+
+.festie-control-bar--mobile .festie-autopilot-label {
+  font-size: 10px;
+}
+
+.festie-neon-toggle {
+  display: block;
+  flex-shrink: 0;
+}
+
+.festie-neon-toggle .toggle--checkbox {
+  display: none;
+}
+
+.festie-neon-toggle .toggle--btn {
+  display: block;
+  margin: 0;
+  text-transform: lowercase;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.festie-control-bar--mobile .festie-neon-toggle .toggle--btn {
+  font-size: 12px;
+}
+
+.festie-neon-toggle .toggle--btn::before,
+.festie-neon-toggle .toggle--btn::after {
+  display: inline-block;
+  margin: 0 5px;
+  transition: all 220ms ease-in-out;
+}
+
+.festie-neon-toggle .toggle--btn::before {
+  content: attr(data-label-off);
+  animation: festie-neon-pulse 1.5s ease-in-out infinite alternate;
+  animation-delay: 90ms;
+  color: #f1f1f1;
+}
+
+.festie-neon-toggle .toggle--btn::after {
+  content: attr(data-label-on);
+}
+
+.festie-neon-toggle .toggle--checkbox:checked + .toggle--btn::before {
+  animation: none;
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.festie-neon-toggle .toggle--checkbox:checked + .toggle--btn::after {
+  animation: festie-neon-pulse 1.5s ease-in-out infinite alternate;
+  animation-delay: 90ms;
+  color: #f1f1f1;
+}
+
+.festie-neon-toggle .toggle--btn:hover {
+  color: rgba(255, 255, 255, 0.4);
+}

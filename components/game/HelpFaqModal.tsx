@@ -44,8 +44,7 @@ export function HelpFaqModal({ onClose }: Props) {
           <h2
             id="help-faq-title"
             style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}
-          >
-            Real human? Start here.
+          >Quick start
           </h2>
 
           <button

@@ -20,6 +20,8 @@ export type NpcRosterEntry = {
   topics?: string[];
   /** Live owner on stage — eligible for describe-note ambient shoutouts. */
   ownerOnStage?: boolean;
+  /** Owner enabled autopilot — festie wanders and chats while human is away. */
+  autopilotActive?: boolean;
   /** Raw owner describe field — used for short ambient shoutouts. */
   describeNotes?: string | null;
 };

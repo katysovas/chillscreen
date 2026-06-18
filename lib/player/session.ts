@@ -57,6 +57,13 @@ export function getPlayerSession(): Readonly<SessionState> {
   return state;
 }
 
+/** Merge festie fields into the in-memory session (e.g. after settings PATCH). */
+export function patchPlayerSessionFestie(patch: Partial<FestieOwner>): void {
+  if (!state.festie) return;
+  state = { ...state, festie: { ...state.festie, ...patch } };
+  emit();
+}
+
 const fetchOpts: RequestInit = {
   credentials: 'include',
   headers: { 'Content-Type': 'application/json' },

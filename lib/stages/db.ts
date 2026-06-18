@@ -101,17 +101,20 @@ export async function getUserStagePublicBySlug(slug: string): Promise<UserStageP
 }
 
 export async function getUserStageByOwnerId(ownerId: string): Promise<UserStageRow | null> {
+  const stages = await listUserStagesByOwnerId(ownerId);
+  return stages[0] ?? null;
+}
+
+export async function listUserStagesByOwnerId(ownerId: string): Promise<UserStageRow[]> {
   const sql = requireDb();
   const rows = await sql`
     SELECT slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
            backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE owner_id = ${ownerId}::uuid AND taken_down_at IS NULL
-    LIMIT 1
+    ORDER BY last_active_at DESC
   `;
-  const row = rows[0] as Record<string, unknown> | undefined;
-  if (!row) return null;
-  return parseRow(row);
+  return rows.map(r => parseRow(r as Record<string, unknown>));
 }
 
 export async function touchUserStageActive(slug: string): Promise<boolean> {

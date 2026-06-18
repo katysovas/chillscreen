@@ -20,6 +20,7 @@ import {
 } from '@/lib/festie/validation';
 import { resolveStageSlugForFestie } from '@/lib/stages/resolveStageSlug';
 import { parseFestieLlmProvider } from '@/lib/festie/llmProviders';
+import { parseFestieControlMode } from '@/lib/festie/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -139,6 +140,13 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: 'Invalid llm_provider' }, { status: 400 });
       }
       patch.llm_provider = provider;
+    }
+    if (body.control_mode !== undefined) {
+      const mode = parseFestieControlMode(body.control_mode);
+      if (!mode) {
+        return NextResponse.json({ error: 'Invalid control_mode' }, { status: 400 });
+      }
+      patch.control_mode = mode;
     }
 
     const festie = await updateFestie(userId, patch);

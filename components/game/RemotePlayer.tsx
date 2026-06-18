@@ -170,7 +170,7 @@ function RemotePlayer({
         scale={scale}
         spaceFloat={spaceFloat}
         bubbleSide={bubbleSide}
-        chatConnected={chatConnected || greeting}
+        connectGlow={false}
         chatOverlay={
           greeting ? undefined : overlayMessages.length > 0 ? (
             <NpcChatOverlay

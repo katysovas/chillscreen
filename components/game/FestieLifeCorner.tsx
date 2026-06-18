@@ -1,158 +1,193 @@
 'use client';
 
-import { SettingsIcon } from './BottomControlPanel';
-import { festieLifeFill } from '@/lib/festie/config';
-import { festiePresetById } from '@/lib/festie/presets';
+import { useId, useSyncExternalStore } from 'react';
+import { LineupIcon, SettingsIcon } from './BottomControlPanel';
+import {
+  getFestieControlMode,
+  setFestieControlMode,
+  subscribeFestieControlMode,
+  type FestieControlMode,
+} from '@/lib/festie/controlMode';
+import { updateFestie } from '@/lib/festie/client';
+import { patchPlayerSessionFestie } from '@/lib/player/session';
 import type { FestieOwner } from '@/lib/festie/types';
+import './FestieLifeCorner.css';
 
 type Props = {
   festie: FestieOwner;
-  ownerOnline: boolean;
-  playerName: string | null;
   settingsOpen?: boolean;
+  stageLineupOpen?: boolean;
+  showStageSettings?: boolean;
+  onOpenStageSettings?: () => void;
   hidden?: boolean;
-  /** Icon-only button on phone — matches MobileGameControls tray buttons. */
   isMobile?: boolean;
   onOpenSettings: () => void;
+  onControlModeChange?: (mode: FestieControlMode) => void;
 };
 
 const CORNER_LEFT = 'max(12px, calc(env(safe-area-inset-left, 0px) + 8px))';
 
-/** Bottom-left festie lifeline — opens Settings modal. */
+function AutopilotSwitch({ onControlModeChange }: { onControlModeChange?: (mode: FestieControlMode) => void }) {
+  const toggleId = useId();
+  const mode = useSyncExternalStore(
+    subscribeFestieControlMode,
+    getFestieControlMode,
+    () => 'human' as FestieControlMode,
+  );
+  const autopilotOn = mode === 'ai';
+
+  const handleToggle = (next: FestieControlMode) => {
+    const prev = getFestieControlMode();
+    setFestieControlMode(next);
+    patchPlayerSessionFestie({ control_mode: next });
+    onControlModeChange?.(next);
+    void updateFestie({ control_mode: next })
+      .then(festie => {
+        onControlModeChange?.(festie.control_mode);
+      })
+      .catch(err => {
+        console.error('[autopilot] failed to persist control_mode', err);
+        setFestieControlMode(prev);
+        patchPlayerSessionFestie({ control_mode: prev });
+        onControlModeChange?.(prev);
+      });
+  };
+
+  return (
+    <div
+      className="festie-autopilot-row"
+      onClick={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
+    >
+      <span className="festie-autopilot-label">Autopilot</span>
+      <div className="festie-neon-toggle">
+        <input
+          type="checkbox"
+          id={toggleId}
+          className="toggle--checkbox"
+          checked={autopilotOn}
+          onChange={e => handleToggle(e.target.checked ? 'ai' : 'human')}
+          aria-label="Autopilot"
+        />
+        <label
+          className="toggle--btn"
+          htmlFor={toggleId}
+          data-label-on="on"
+          data-label-off="off"
+        />
+      </div>
+    </div>
+  );
+}
+
+type BarProps = {
+  settingsOpen: boolean;
+  stageLineupOpen: boolean;
+  showStageSettings: boolean;
+  isMobile: boolean;
+  onOpenSettings: () => void;
+  onOpenStageSettings?: () => void;
+  onControlModeChange?: (mode: FestieControlMode) => void;
+};
+
+function FestieControlBar({
+  settingsOpen,
+  stageLineupOpen,
+  showStageSettings,
+  isMobile,
+  onOpenSettings,
+  onOpenStageSettings,
+  onControlModeChange,
+}: BarProps) {
+  const iconSize = isMobile ? 18 : 16;
+  const showLineup = showStageSettings && Boolean(onOpenStageSettings);
+
+  return (
+    <div
+      className={[
+        'festie-control-bar',
+        settingsOpen ? 'festie-control-bar--open' : '',
+        isMobile ? 'festie-control-bar--mobile' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <button
+        type="button"
+        className={['festie-icon-btn', settingsOpen ? 'festie-icon-btn--active' : '']
+          .filter(Boolean)
+          .join(' ')}
+        onClick={onOpenSettings}
+        onPointerDown={isMobile ? e => e.preventDefault() : undefined}
+        aria-label="Settings"
+        aria-pressed={settingsOpen}
+        title="Settings"
+        style={isMobile ? { touchAction: 'none' } : undefined}
+      >
+        <SettingsIcon size={iconSize} />
+      </button>
+
+      {showLineup && (
+        <>
+          <div className="festie-control-divider" aria-hidden />
+          <button
+            type="button"
+            className={['festie-icon-btn', stageLineupOpen ? 'festie-icon-btn--active' : '']
+              .filter(Boolean)
+              .join(' ')}
+            onClick={onOpenStageSettings}
+            onPointerDown={isMobile ? e => e.preventDefault() : undefined}
+            aria-label="Lineup settings"
+            aria-pressed={stageLineupOpen}
+            title="Lineup"
+            style={isMobile ? { touchAction: 'none' } : undefined}
+          >
+            <LineupIcon size={iconSize} />
+          </button>
+        </>
+      )}
+
+      <div className="festie-control-divider" aria-hidden />
+
+      <AutopilotSwitch onControlModeChange={onControlModeChange} />
+    </div>
+  );
+}
+
+/** Bottom-left festie panel — settings, lineup, Autopilot off/on in one row. */
 export function FestieLifeCorner({
-  festie,
-  ownerOnline,
-  playerName,
+  festie: _festie,
   settingsOpen = false,
+  stageLineupOpen = false,
+  showStageSettings = false,
+  onOpenStageSettings,
   hidden = false,
   isMobile = false,
   onOpenSettings,
+  onControlModeChange,
 }: Props) {
   if (hidden) return null;
-
-  const preset = festiePresetById(festie.preset);
-  const fill = festieLifeFill(festie.last_seen_at, ownerOnline);
-  const glow = preset.balloonColor;
-
-  if (isMobile) {
-    return (
-      <div
-        data-paraloid-ui
-        className="festie-life-corner-mobile"
-        style={{
-          position: 'absolute',
-          left: CORNER_LEFT,
-          zIndex: 45,
-          pointerEvents: 'auto',
-        }}
-      >
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          onPointerDown={e => e.preventDefault()}
-          aria-label="Settings"
-          aria-pressed={settingsOpen}
-          title="Settings"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 56,
-            height: 56,
-            borderRadius: 12,
-            border: settingsOpen
-              ? `1px solid ${glow}55`
-              : '1px solid rgba(255,255,255,.22)',
-            background: settingsOpen ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.42)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
-            color: 'rgba(255,255,255,.78)',
-            cursor: 'pointer',
-            padding: 0,
-            userSelect: 'none',
-            touchAction: 'none',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <SettingsIcon size={22} />
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div
       data-paraloid-ui
-      className="bottom-5"
+      className={isMobile ? 'festie-life-corner-mobile' : 'bottom-5'}
       style={{
         position: 'absolute',
         left: CORNER_LEFT,
-        zIndex: 38,
+        zIndex: isMobile ? 45 : 38,
         pointerEvents: 'auto',
-        maxWidth: 'min(52vw, 200px)',
       }}
     >
-      <button
-        type="button"
-        onClick={onOpenSettings}
-        aria-label="Settings"
-        aria-pressed={settingsOpen}
-        title="Settings"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '8px 14px',
-          borderRadius: 999,
-          background: settingsOpen ? 'rgba(0,0,0,.44)' : 'rgba(0,0,0,.36)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: settingsOpen
-            ? `1px solid ${glow}55`
-            : '1px solid rgba(255,255,255,.1)',
-          cursor: 'pointer',
-          width: '100%',
-          boxSizing: 'border-box',
-          color: 'rgba(255,255,255,.78)',
-        }}
-      >
-        <SettingsIcon size={18} />
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div
-            style={{
-              height: 3,
-              borderRadius: 2,
-              background: 'rgba(255,255,255,0.12)',
-              overflow: 'hidden',
-            }}
-            aria-hidden
-          >
-            <div
-              style={{
-                height: '100%',
-                width: `${fill * 100}%`,
-                borderRadius: 2,
-                background: `linear-gradient(90deg, ${glow}, ${glow}aa)`,
-                transition: 'width 0.4s ease',
-              }}
-            />
-          </div>
-          <span
-            style={{
-              fontSize: 9,
-              letterSpacing: 0.6,
-              color: 'rgba(255,255,255,.55)',
-              fontFamily: "Georgia,'Times New Roman',serif",
-              lineHeight: 1.2,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {playerName?.trim() || 'You'}
-          </span>
-        </div>
-      </button>
+      <FestieControlBar
+        settingsOpen={settingsOpen}
+        stageLineupOpen={stageLineupOpen}
+        showStageSettings={showStageSettings}
+        isMobile={isMobile}
+        onOpenSettings={onOpenSettings}
+        onOpenStageSettings={onOpenStageSettings}
+        onControlModeChange={onControlModeChange}
+      />
     </div>
   );
 }

@@ -33,6 +33,11 @@ import {
   fetchFestie,
   logoutFestie,
 } from '@/lib/festie/client';
+import {
+  getFestieControlMode,
+  hydrateFestieControlMode,
+  subscribeFestieControlMode,
+} from '@/lib/festie/controlMode';
 import { persistFestieStageSlug } from '@/lib/festie/stage';
 import { festiePresetById } from '@/lib/festie/presets';
 import {
@@ -41,15 +46,24 @@ import {
   shouldShowFestieLifeOnTabExit,
 } from '@/lib/festie/intro';
 import type { FestieOwner, FestiePublic } from '@/lib/festie/types';
-import { festieIdFromNpcId, festieNpcId, festiesToCharacterDefs, isFestieNpcId } from '@/lib/festie/toCharacterDef';
+import {
+  applyOwnerPlayerLookToFestieDef,
+  festieIdFromNpcId,
+  festieNpcId,
+  festiesToCharacterDefs,
+  isFestieNpcId,
+} from '@/lib/festie/toCharacterDef';
 import {
   getPlayerSession,
   hydratePlayerSession,
   subscribePlayerSession,
 } from '@/lib/player/session';
-import { preloadPurchaseSound, unlockPurchaseSound } from '@/lib/playPurchaseSound';
+import { preloadPurchaseSound, playPurchaseSound, unlockPurchaseSound } from '@/lib/playPurchaseSound';
 import { loadoutSyncKey, serializeLoadout } from '@/lib/multiplayer/loadoutSync';
 import { isBuzNpc } from '@/lib/vendorShop';
+import { pickAutopilotVendorItem } from '@/lib/autopilot/vendorShop';
+import { vendorAnchorGroundWorldX } from '@/lib/stageAnchor';
+import { getAmbientIntervalMs, pickAutopilotAmbientLine } from '@/lib/npcAmbientChat';
 import {
   getOrCreatePlayerId,
   getPlayerName,
@@ -138,6 +152,7 @@ import { isMobileLoungeDevice } from '@/lib/mobileLounge';
 import { BottomControlPanel, SignOutIcon } from './BottomControlPanel';
 import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
 import { HelpFaqModal } from './HelpFaqModal';
+import { AutopilotMoveHintModal } from './AutopilotMoveHintModal';
 import { SignOutConfirmModal } from './SignOutConfirmModal';
 import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
@@ -177,11 +192,12 @@ import type { ChatNpcDrawingSession } from '@/lib/easel/types';
 import { NpcPromptCanvasLayer } from './easel/NpcPromptCanvasLayer';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { Z_CHAT_CHARACTER, Z_PLAYER_CHARACTER } from '@/lib/zLayers';
-import { getNpcConvoHold, hasNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
+import { clearNpcConvoHold, getNpcConvoHold, hasNpcConvoHold, setNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
 import { getNpcConvoAnchor, setNpcConvoAnchor } from '@/lib/npcConvoAnchor';
 import { releaseNpcConvoSnap, snapNpcPairForConvo } from '@/lib/npcConvoSnap';
 import { npcTouchDistPx } from '@/lib/npcProximity';
 import { appendChatLine, type ChatLine } from '@/lib/chatLines';
+import type { CharacterDef } from './characters';
 import type { CharacterLoadout } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
 
@@ -476,6 +492,9 @@ export default function SFCity({
   const [lifeModalOpen, setLifeModalOpen] = useState(false);
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   const [signOutLoading, setSignOutLoading] = useState(false);
+  const [autopilotMoveHintOpen, setAutopilotMoveHintOpen] = useState(false);
+  const autopilotMoveHintOpenRef = useRef(false);
+  const autopilotMoveHintCooldownRef = useRef(0);
   const [festieSignedIn, setFestieSignedIn] = useState(false);
   const [ownerFestie, setOwnerFestie] = useState<FestieOwner | null>(null);
   const [profileReady, setProfileReady] = useState(false);
@@ -671,6 +690,8 @@ export default function SFCity({
   const beginPeerChatRef = useRef<((peerId: string, announce: boolean) => void) | null>(null);
   const endPeerChatRef   = useRef<((announce: boolean) => void) | null>(null);
   const lastNpcPosSendRef = useRef(0);
+  const autopilotShopCooldownRef = useRef(0);
+  const autopilotAmbientAtRef = useRef(0);
 
   const npcChatLabel = useCallback((npcId: string, fallback: string) => {
     return npcChatLabelForId(npcId, fallback);
@@ -880,26 +901,65 @@ export default function SFCity({
     return subscribeEaselPainterReady(syncBlockZones);
   }, [activeEaselSession, easelStageSlug, easelLayoutRoute, chatNpcDrawings]);
 
+  const controlMode = useSyncExternalStore(
+    subscribeFestieControlMode,
+    getFestieControlMode,
+    () => 'human' as const,
+  );
+  const autopilotOn = festieSignedIn && Boolean(ownerFestie) && controlMode === 'ai';
+  const autopilotOnRef = useRef(autopilotOn);
+  autopilotOnRef.current = autopilotOn;
+  autopilotMoveHintOpenRef.current = autopilotMoveHintOpen;
+  const ownerFestieNpcId = ownerFestie?.id ? festieNpcId(ownerFestie.id) : null;
+  const ownerFestieNpcIdRef = useRef(ownerFestieNpcId);
+  ownerFestieNpcIdRef.current = ownerFestieNpcId;
+  const ownerFestieNpcIndexRef = useRef(-1);
+  const ownerFestieSpawnWx = useMemo(() => {
+    if (!autopilotOn) return null;
+    return isStaticCityViewRef.current ? playerWorldXRef.current : worldRef.current;
+  }, [autopilotOn]);
+
   const syncedStageFesties = useMemo((): FestiePublic[] => {
     const list = [...mp.festies];
     const online = festieSignedIn && Boolean(mp.selfId);
     if (!online || !ownerFestie) return list;
-    const enriched: FestiePublic = { ...ownerFestie, owner_on_stage: true };
+    const enriched: FestiePublic = {
+      ...ownerFestie,
+      owner_on_stage: !autopilotOn,
+      control_mode: autopilotOn ? 'ai' : 'human',
+    };
     const idx = list.findIndex(f => f.id === ownerFestie.id);
     if (idx >= 0) {
       list[idx] = enriched;
       return list;
     }
     return [...list, enriched];
-  }, [mp.festies, mp.selfId, festieSignedIn, ownerFestie]);
+  }, [mp.festies, mp.selfId, festieSignedIn, ownerFestie, autopilotOn]);
 
   const effectiveNpcCast = useMemo(() => {
     const compareCast = drawModelCompareCast();
     if (compareCast) return compareCast;
 
+    let festieDefs = festiesToCharacterDefs(syncedStageFesties, effectiveVenueRoute);
+    if (ownerFestieNpcId) {
+      festieDefs = festieDefs.map(cfg => {
+        const extras: Partial<CharacterDef> = { entryDelay: 0 };
+        if (autopilotOn && ownerFestieSpawnWx != null) {
+          extras.spawnWorldX = ownerFestieSpawnWx;
+        }
+        return applyOwnerPlayerLookToFestieDef(
+          cfg,
+          ownerFestieNpcId,
+          myColor,
+          playerLoadout,
+          extras,
+        );
+      });
+    }
+
     const base = [
       ...npcCast,
-      ...festiesToCharacterDefs(syncedStageFesties, effectiveVenueRoute),
+      ...festieDefs,
     ];
     if (!easelSessionEnabled) return base;
     if (!easelCastReady && !TEST_EASEL_ON_LOAD) return base;
@@ -908,7 +968,16 @@ export default function SFCity({
       easelChannel,
       activePainterNpcIds(activeEaselSession),
     );
-  }, [npcCast, syncedStageFesties, effectiveVenueRoute, easelCastReady, activeEaselSession, easelSessionEnabled, easelChannel]);
+  }, [npcCast, syncedStageFesties, effectiveVenueRoute, easelCastReady, activeEaselSession, easelSessionEnabled, easelChannel, autopilotOn, ownerFestieNpcId, ownerFestieSpawnWx, myColor, playerLoadout]);
+
+  const ownerFestieVendorAttractWx = useMemo(() => {
+    if (!autopilotOn) return undefined;
+    const buz = effectiveNpcCast.find(c => isBuzNpc(c.id) && c.stageAnchor);
+    if (!buz?.stageAnchor) return undefined;
+    const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    return vendorAnchorGroundWorldX(buz.stageAnchor, gndScrollWorldOff, width) ?? undefined;
+  }, [autopilotOn, effectiveNpcCast, gndScrollWorldOff]);
+
   const effectiveNpcCastKey = useMemo(
     () => effectiveNpcCast.map(c => c.id).join('\0'),
     [effectiveNpcCast],
@@ -917,6 +986,46 @@ export default function SFCity({
   effectiveNpcCastRef.current = effectiveNpcCast;
   const ownerFestieRef = useRef(ownerFestie);
   ownerFestieRef.current = ownerFestie;
+
+  // Sync DB control_mode into local store once when festie loads — not on every
+  // ownerFestie patch (session emits can briefly carry stale control_mode).
+  useEffect(() => {
+    if (!ownerFestie?.id) return;
+    hydrateFestieControlMode(ownerFestie.control_mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- identity load only
+  }, [ownerFestie?.id]);
+
+  useEffect(() => {
+    ownerFestieNpcIndexRef.current = ownerFestieNpcId
+      ? effectiveNpcCast.findIndex(c => c.id === ownerFestieNpcId)
+      : -1;
+  }, [effectiveNpcCast, ownerFestieNpcId]);
+
+  useEffect(() => {
+    if (!autopilotOn) return;
+    if (ownerFestieNpcId) clearNpcConvoHold(ownerFestieNpcId);
+    autopilotAmbientAtRef.current = Date.now() + 3_000 + Math.random() * 4_000;
+    keysRef.current.left = false;
+    keysRef.current.right = false;
+    walkingRef.current = false;
+    setWalking(false);
+    if (greetingRef.current !== null) {
+      const npcId = effectiveNpcCastRef.current[greetingRef.current]?.id;
+      greetingRef.current = null;
+      setGreetingNpc(null);
+      if (npcId) mpRef.current?.sendNpcChat(npcId, false);
+    }
+    if (peerChatRef.current !== null) {
+      endPeerChatRef.current?.(true);
+    }
+    setChatMode(null);
+    setChatDraft('');
+    setPlayerMessages([]);
+    setNearNpc(null);
+    nearNpcRef.current = null;
+    setNearPeer(null);
+    nearPeerRef.current = null;
+  }, [autopilotOn, ownerFestieNpcId]);
 
   const resolveFestieNpcName = useCallback((npcId: string): string | null => {
     if (!isFestieNpcId(npcId)) return null;
@@ -993,6 +1102,27 @@ export default function SFCity({
 
   const roomChatter = useRoomChatter(resolvePlayerId);
   const stageChatter = useStageChatter();
+  const roomChatterRef = useRef(roomChatter);
+  roomChatterRef.current = roomChatter;
+  const handleVendorPurchaseRef = useRef(handleVendorPurchase);
+  handleVendorPurchaseRef.current = handleVendorPurchase;
+  const playerCoinsRef = useRef(playerCoins);
+  playerCoinsRef.current = playerCoins;
+  const playerLoadoutRef = useRef(playerLoadout);
+  playerLoadoutRef.current = playerLoadout;
+
+  useEffect(() => {
+    if (!festieSignedIn || !mp.connected) return;
+    mpRef.current?.requestFestiesSync();
+  }, [autopilotOn, festieSignedIn, mp.connected]);
+
+  useEffect(() => {
+    if (!autopilotOn || !ownerFestieNpcId) return;
+    const t = setTimeout(() => {
+      roomChatter.handleNpcShout(ownerFestieNpcId, "let's party!");
+    }, 32);
+    return () => clearTimeout(t);
+  }, [autopilotOn, ownerFestieNpcId, roomChatter.handleNpcShout]);
 
   useEffect(() => {
     setNpcConvoReleaseListener(() => setConvoHoldTick(t => t + 1));
@@ -1007,8 +1137,6 @@ export default function SFCity({
     const sid = mpRef.current?.selfId;
     return Boolean(sid && (label === sid || sid.startsWith(label)));
   }, [playerName]);
-
-  const ownerFestieNpcId = ownerFestie?.id ? festieNpcId(ownerFestie.id) : null;
 
   chatterHandlersRef.current = {
     onStageChatterHistory: messages => stageChatter.loadHistory(messages),
@@ -1235,11 +1363,21 @@ export default function SFCity({
   }, [spawnWorldOff, isStaticCityView]);
 
   useLayoutEffect(() => {
+    if (!ownerFestieNpcId || autopilotOn) return;
+    const wx = isStaticCityViewRef.current ? playerWorldXRef.current : worldRef.current;
+    setNpcConvoHold(ownerFestieNpcId, wx);
+    npcWorldXByIdRef.current.set(ownerFestieNpcId, wx);
+  }, [ownerFestieNpcId, autopilotOn, effectiveNpcCastKey]);
+
+  useLayoutEffect(() => {
+    if (autopilotOn && ownerFestieNpcId && ownerFestieSpawnWx != null) {
+      npcWorldXByIdRef.current.set(ownerFestieNpcId, ownerFestieSpawnWx);
+    }
     npcWorldXRefs.current = effectiveNpcCast.map(cfg =>
       npcWorldXByIdRef.current.get(cfg.id) ?? Infinity,
     );
     npcDancingRef.current = effectiveNpcCast.map((_, i) => npcDancingRef.current[i] ?? false);
-  }, [effectiveNpcCastKey]);
+  }, [effectiveNpcCastKey, autopilotOn, ownerFestieNpcId, ownerFestieSpawnWx]);
 
   const navigateToStageTarget = useCallback((target: StagePickerTarget) => {
     setShowCityPicker(false);
@@ -1763,6 +1901,17 @@ export default function SFCity({
     };
 
     const onDown = (e: KeyboardEvent) => {
+      const navKeys = new Set([
+        'ArrowLeft', 'ArrowRight', 'ArrowUp', 'a', 'A', 'd', 'D', 'w', 'W', ' ',
+      ]);
+
+      if (e.key === 'Escape' && autopilotMoveHintOpenRef.current) {
+        e.preventDefault();
+        setAutopilotMoveHintOpen(false);
+        autopilotMoveHintCooldownRef.current = Date.now() + 8_000;
+        return;
+      }
+
       if (e.key === 'Escape') {
         e.preventDefault();
         if (greetingRef.current !== null || peerChatRef.current !== null) {
@@ -1783,16 +1932,29 @@ export default function SFCity({
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
-      if (['ArrowLeft',  'a', 'A'].includes(e.key)) { keysRef.current.left  = true;  e.preventDefault(); }
-      if (['ArrowRight', 'd', 'D'].includes(e.key)) { keysRef.current.right = true;  e.preventDefault(); }
+      if (autopilotOnRef.current && navKeys.has(e.key)) {
+        e.preventDefault();
+        const now = Date.now();
+        if (!autopilotMoveHintOpenRef.current && now >= autopilotMoveHintCooldownRef.current) {
+          setAutopilotMoveHintOpen(true);
+          autopilotMoveHintCooldownRef.current = now + 8_000;
+        }
+        return;
+      }
+
+      if (!autopilotOnRef.current) {
+        if (['ArrowLeft',  'a', 'A'].includes(e.key)) { keysRef.current.left  = true;  e.preventDefault(); }
+        if (['ArrowRight', 'd', 'D'].includes(e.key)) { keysRef.current.right = true;  e.preventDefault(); }
+      }
       if (
-        !showWelcomeRef.current
+        !autopilotOnRef.current
+        && !showWelcomeRef.current
         && !showCityPickerRef.current
         && ['ArrowLeft', 'a', 'A', 'ArrowRight', 'd', 'D'].includes(e.key)
       ) {
         mpRef.current?.requestConnect();
       }
-      if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) {
+      if (!autopilotOnRef.current && ['ArrowUp', 'w', 'W', ' '].includes(e.key)) {
         e.preventDefault();
         if (greetingRef.current !== null || peerChatRef.current !== null) {
           disconnect();
@@ -1803,6 +1965,7 @@ export default function SFCity({
       }
       if (e.key === 'Enter') {
         e.preventDefault();
+        if (autopilotOnRef.current) return;
         if (greetingRef.current !== null || peerChatRef.current !== null) {
           openChatPanel();
         } else if (
@@ -1826,6 +1989,7 @@ export default function SFCity({
       }
     };
     const onUp = (e: KeyboardEvent) => {
+      if (autopilotOnRef.current) return;
       if (['ArrowLeft',  'a', 'A'].includes(e.key)) keysRef.current.left  = false;
       if (['ArrowRight', 'd', 'D'].includes(e.key)) keysRef.current.right = false;
     };
@@ -1859,7 +2023,14 @@ export default function SFCity({
     const broadcastMove = () => {
       if (showWelcomeRef.current || showCityPickerRef.current) return;
       const last = lastSentRef.current;
-      const wx = playerWorldX();
+      let wx = playerWorldX();
+      if (autopilotOnRef.current) {
+        const idx = ownerFestieNpcIndexRef.current;
+        if (idx >= 0) {
+          const npcWx = npcWorldXRefs.current[idx];
+          if (Number.isFinite(npcWx)) wx = npcWx;
+        }
+      }
       const f  = facingRef.current;
       const w  = walkingRef.current;
       const eps = moveBroadcastWorldEpsilon();
@@ -1898,10 +2069,66 @@ export default function SFCity({
       const sync = mpRef.current?.npcSyncRef.current;
       if (!sync || sync.size === 0) return;
       const cast = effectiveNpcCastRef.current;
+      const ownerId = ownerFestieNpcIdRef.current;
       for (let i = 0; i < cast.length; i++) {
+        if (autopilotOnRef.current && ownerId && cast[i]!.id === ownerId) continue;
         const pct = sync.get(cast[i]!.id);
         setNpcSyncedScreenPct(i, pct != null && Number.isFinite(pct) ? pct : null);
       }
+    };
+
+    const runAutopilotAmbient = () => {
+      const ownerId = ownerFestieNpcIdRef.current;
+      if (!autopilotOnRef.current || !ownerId) return;
+      const now = Date.now();
+      if (now < autopilotAmbientAtRef.current) return;
+      const cfg = effectiveNpcCastRef.current.find(c => c.id === ownerId);
+      if (!cfg) return;
+      const { minMs, maxMs } = getAmbientIntervalMs(ownerId);
+      autopilotAmbientAtRef.current = now + minMs + Math.random() * (maxMs - minMs);
+      if (roomChatterRef.current.isNpcInConvo(ownerId)) return;
+      roomChatterRef.current.handleNpcShout(ownerId, pickAutopilotAmbientLine(cfg));
+    };
+
+    const runAutopilotVendor = () => {
+      const ownerId = ownerFestieNpcIdRef.current;
+      if (!autopilotOnRef.current || !ownerId) return;
+      const now = Date.now();
+      if (now < autopilotShopCooldownRef.current) return;
+      if (peerChatRef.current !== null) return;
+
+      const cast = effectiveNpcCastRef.current;
+      const buzIdx = cast.findIndex(c => isBuzNpc(c.id));
+      const festieIdx = ownerFestieNpcIndexRef.current;
+      if (buzIdx < 0 || festieIdx < 0) return;
+      if (greetingRef.current !== null && greetingRef.current !== buzIdx) return;
+
+      const festieWx = npcWorldXRefs.current[festieIdx];
+      const buzWx = npcWorldXRefs.current[buzIdx];
+      if (!Number.isFinite(festieWx) || !Number.isFinite(buzWx)) return;
+
+      const width = window.innerWidth;
+      if (Math.abs(festieWx! - buzWx!) > npcTouchDistPx(width) * 2.5) return;
+
+      const itemId = pickAutopilotVendorItem(playerCoinsRef.current, playerLoadoutRef.current);
+      if (!itemId) return;
+
+      autopilotShopCooldownRef.current = now + 45_000;
+
+      if (greetingRef.current !== buzIdx) {
+        const screenPct = worldXToScreenPct(buzWx!, worldRef.current, width);
+        connectToNpc(buzIdx, screenPct);
+      }
+
+      void handleVendorPurchaseRef.current(itemId).then(ok => {
+        if (ok) {
+          unlockPurchaseSound();
+          playPurchaseSound();
+        }
+        window.setTimeout(() => {
+          if (greetingRef.current === buzIdx) disconnect();
+        }, 1_200);
+      });
     };
 
     const persistNpcWorldXById = () => {
@@ -1913,6 +2140,12 @@ export default function SFCity({
     };
 
     const tickNpcs = () => {
+      if (!autopilotOnRef.current && ownerFestieNpcIdRef.current) {
+        const wx = staticView ? playerWorldXRef.current : worldRef.current;
+        setNpcConvoHold(ownerFestieNpcIdRef.current, wx);
+        const idx = ownerFestieNpcIndexRef.current;
+        if (idx >= 0) npcWorldXRefs.current[idx] = wx;
+      }
       applyNetworkNpcPositions();
       runAllNpcMovementTicks(
         worldRef.current,
@@ -1924,6 +2157,7 @@ export default function SFCity({
     };
 
     connectNearRef.current = () => {
+      if (autopilotOnRef.current) return;
       if (greetingRef.current !== null || peerChatRef.current !== null) return;
       if (Date.now() <= disconnectUntil.current) return;
       if (nearNpcRef.current !== null) {
@@ -1940,7 +2174,7 @@ export default function SFCity({
 
     const loop = () => {
       const inChatFreeze = greetingRef.current !== null || peerChatRef.current !== null;
-      const noWalk = inChatFreeze;
+      const noWalk = inChatFreeze || autopilotOnRef.current;
 
       if (noWalk) {
         keysRef.current.left = false;
@@ -1999,13 +2233,27 @@ export default function SFCity({
         setWalking(isWalking);
       }
 
+      if (autopilotOnRef.current && !staticView) {
+        const festieIdx = ownerFestieNpcIndexRef.current;
+        if (festieIdx >= 0) {
+          const festieWx = npcWorldXRefs.current[festieIdx];
+          if (Number.isFinite(festieWx)) {
+            worldRef.current = festieWx!;
+            playerWorldXRef.current = festieWx!;
+            const { min, max } = cityBoundsRef.current;
+            worldRef.current = Math.max(min, Math.min(max, worldRef.current));
+            playerWorldXRef.current = worldRef.current;
+          }
+        }
+      }
+
       // Scroll layers each frame in normal cities; static city updates on spawn/resize only.
       const off = worldRef.current;
       if (!staticView) updateViewBoxes(off);
       tickNpcs();
 
       // Re-render layers only when the visible tile window changes — avoids per-frame React re-renders.
-      if (isWalking && !staticView) {
+      if ((isWalking || autopilotOnRef.current) && !staticView) {
         const midTile = midScrollTile(off);
         if (midTile !== lastMidScrollTileRef.current) {
           lastMidScrollTileRef.current = midTile;
@@ -2024,7 +2272,7 @@ export default function SFCity({
       if (frameCountRef.current % 4 === 0) {
         // Proximity check only — connection requires Enter. Picks the single
         // closest interactable (NPC or real player) within touch range.
-        if (greetingRef.current === null && peerChatRef.current === null) {
+        if (greetingRef.current === null && peerChatRef.current === null && !autopilotOnRef.current) {
           const width = window.innerWidth;
           const greetDistPx = npcTouchDistPx(width);
           let nextNpc: number | null = null;
@@ -2067,6 +2315,10 @@ export default function SFCity({
 
         updateDanceState(worldRef.current);
         broadcastNpcPositions();
+        if (autopilotOnRef.current) {
+          runAutopilotAmbient();
+          runAutopilotVendor();
+        }
       }
 
       if (shouldBroadcastMove()) broadcastMove();
@@ -2439,6 +2691,9 @@ export default function SFCity({
             isPlayerChatConnected={isPlayerChatConnected}
             playerMessages={roomChatter.playerMessages}
             npcPublicMessages={roomChatter.npcMessages}
+            ownerFestieNpcId={ownerFestieNpcId}
+            autopilotOn={autopilotOn}
+            ownerFestieVendorAttractWx={ownerFestieVendorAttractWx}
           />
         )}
 
@@ -2449,7 +2704,7 @@ export default function SFCity({
             walking={walking}
             dancing={TEST_FORCE_DANCE || playerDancing}
           />
-        ) : (
+        ) : !autopilotOn && (
           /* Player — scrolls with world in normal cities; walks across screen in static city */
           <div
             ref={isStaticCityView ? playerCharRef : undefined}
@@ -2471,7 +2726,7 @@ export default function SFCity({
                 balloonColor={myColor}
                 loadout={playerLoadout}
                 bubbleSide={inConversation ? 'center' : playerBubbleSide(greetNpcX)}
-                chatConnected={inConversation}
+                connectGlow={false}
                 chatOverlay={
                   inConversation ? (
                     <PlayerChatOverlay
@@ -2515,12 +2770,18 @@ export default function SFCity({
       {festieSignedIn && ownerFestie && (
         <FestieLifeCorner
           festie={ownerFestie}
-          ownerOnline={ownerOnline}
-          playerName={playerName}
           settingsOpen={settingsOpen}
+          stageLineupOpen={stageLineupOpen}
+          showStageSettings={isCreatorStageOwner}
+          onOpenStageSettings={
+            isCreatorStageOwner ? () => setStageLineupOpen(true) : undefined
+          }
           hidden={showWelcome || showCityPicker}
           isMobile={mobileDevice}
           onOpenSettings={toggleSettings}
+          onControlModeChange={mode => {
+            setOwnerFestie(prev => (prev ? { ...prev, control_mode: mode } : prev));
+          }}
         />
       )}
 
@@ -2538,10 +2799,6 @@ export default function SFCity({
         hidden={showWelcome || showCityPicker || stageLineupOpen || isChatterDebugMode()}
         onConnectTap={mobileDevice ? () => connectNearRef.current?.() : undefined}
         onOpenCityPicker={() => setShowCityPicker(true)}
-        onOpenStageSettings={
-          isCreatorStageOwner ? () => setStageLineupOpen(true) : undefined
-        }
-        showStageSettings={isCreatorStageOwner}
         creatorStageSlug={creatorStage?.slug ?? null}
         vendorShopOpen={vendorShopManualOpen}
         onToggleVendorShop={toggleVendorShop}
@@ -2555,6 +2812,15 @@ export default function SFCity({
 
       {showHelpPopup && (
         <HelpFaqModal onClose={dismissHelpPopup} />
+      )}
+
+      {autopilotMoveHintOpen && (
+        <AutopilotMoveHintModal
+          onClose={() => {
+            setAutopilotMoveHintOpen(false);
+            autopilotMoveHintCooldownRef.current = Date.now() + 8_000;
+          }}
+        />
       )}
 
       {signOutConfirmOpen && (
@@ -2763,10 +3029,6 @@ export default function SFCity({
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
           onOpenStageSwap={() => setShowCityPicker(true)}
-          onOpenStageSettings={
-            isCreatorStageOwner ? () => setStageLineupOpen(true) : undefined
-          }
-          showStageSettings={isCreatorStageOwner}
           onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}
           ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}
           onToggleMute={() => setMuted(m => !m)}

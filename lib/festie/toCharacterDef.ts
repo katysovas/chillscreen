@@ -1,4 +1,5 @@
 import type { CharacterDef } from '@/components/game/characters';
+import type { CharacterLoadout } from '@/components/game/characters/loadout';
 import type { Personality } from '@/components/game/NPC';
 import { festiePersonalityNotesForNpcChatter } from '@/lib/festie/describeNotes';
 import { festieModelIdForProvider } from '@/lib/festie/llmProviders';
@@ -66,4 +67,23 @@ export function festiesToCharacterDefs(
   route: VenueRoute,
 ): CharacterDef[] {
   return festies.map((festie, index) => festieToCharacterDef(festie, route, index));
+}
+
+/** Mirror the signed-in player's equipped look on their festie avatar. */
+export function applyOwnerPlayerLookToFestieDef(
+  cfg: CharacterDef,
+  ownerFestieNpcId: string,
+  balloonColor: string,
+  loadout: CharacterLoadout,
+  extras?: Partial<CharacterDef>,
+): CharacterDef {
+  if (cfg.id !== ownerFestieNpcId) return cfg;
+  return {
+    ...cfg,
+    balloonColor,
+    loadout,
+    outfit: undefined,
+    accessory: undefined,
+    ...extras,
+  };
 }

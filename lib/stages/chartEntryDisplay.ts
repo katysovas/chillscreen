@@ -40,6 +40,19 @@ export function resolvedChartEntrySubtitle(
   return tagline?.trim() ?? '';
 }
 
+export function displayForOwnedStage(stage: UserStagePublic) {
+  const stub: FeaturedChartEntry = {
+    rank: 0,
+    previousRank: null,
+    target: { kind: 'creator', slug: stage.slug },
+  };
+  return {
+    name: stage.displayName?.trim() || stage.slug,
+    subtitle: resolvedChartEntrySubtitle(stub, stage),
+    thumbnail: resolvedChartEntryThumbnail(stub, stage),
+  };
+}
+
 export function resolvedChartEntryThumbnail(
   entry: FeaturedChartEntry,
   stage: UserStagePublic | null | undefined,

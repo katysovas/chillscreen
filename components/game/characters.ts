@@ -26,6 +26,8 @@ export type CharacterDef = {
   personalityNotes: string;
   /** OpenRouter model for NPC chatter (optional — generated NPCs may omit). */
   modelId?: string;
+  /** Skip entry walk — spawn at this world-x (autopilot handoff from player). */
+  spawnWorldX?: number;
 };
 
 const CHARACTERS: CharacterDef[] = [

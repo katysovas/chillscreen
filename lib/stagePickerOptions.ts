@@ -19,6 +19,18 @@ export function stagePickerTargetId(target: StagePickerTarget): string {
   return target.kind === 'venue' ? `venue:${target.route}` : `creator:${target.slug}`;
 }
 
+export function stagePickerTargetFromId(id: string): StagePickerTarget | null {
+  if (id.startsWith('creator:')) {
+    const slug = id.slice('creator:'.length);
+    return slug ? { kind: 'creator', slug } : null;
+  }
+  if (id.startsWith('venue:')) {
+    const route = id.slice('venue:'.length) as VenueRoute;
+    return route ? { kind: 'venue', route } : null;
+  }
+  return null;
+}
+
 export function buildStagePickerOptions(featured: FeaturedStageSummary[]): StagePickerOption[] {
   const venues: StagePickerOption[] = MOBILE_LOUNGE_STAGES.map(stage => ({
     id: `venue:${stage.route}`,

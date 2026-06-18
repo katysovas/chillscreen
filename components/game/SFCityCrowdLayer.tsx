@@ -47,6 +47,9 @@ type SFCityCrowdLayerProps = {
   isPlayerChatConnected: (playerId: string) => boolean;
   playerMessages: Map<string, ChatLine[]>;
   npcPublicMessages: Map<string, ChatLine[]>;
+  ownerFestieNpcId?: string | null;
+  autopilotOn?: boolean;
+  ownerFestieVendorAttractWx?: number;
 };
 
 function SFCityCrowdLayer({
@@ -74,6 +77,9 @@ function SFCityCrowdLayer({
   isPlayerChatConnected,
   playerMessages,
   npcPublicMessages,
+  ownerFestieNpcId = null,
+  autopilotOn = false,
+  ownerFestieVendorAttractWx,
 }: SFCityCrowdLayerProps) {
   const handleEaselStationed = useCallback(
     (npcId: string) => onEaselStationed(npcId),
@@ -107,6 +113,9 @@ function SFCityCrowdLayer({
           ? activeEaselSession?.slots.find(s => s.npc === cfg.id && s.status === 'painting')?.slot
           : undefined;
         const isDrawing = isPainting || chatPromptPainting || Boolean(comparePin);
+        const ownerAvatarSuppressed = Boolean(
+          ownerFestieNpcId && cfg.id === ownerFestieNpcId && !autopilotOn,
+        );
         return (
           <NPC
             key={cfg.id}
@@ -124,8 +133,15 @@ function SFCityCrowdLayer({
             chatPromptCanvasWorldX={chatPromptCanvasWorldX}
             startX={testing ? 55 : cfg.startX}
             entryDelay={testing ? 0 : cfg.entryDelay}
-            paused={chatConnected}
+            paused={chatConnected || ownerAvatarSuppressed}
+            ownerAvatarSuppressed={ownerAvatarSuppressed}
+            wanderAttractWorldX={
+              ownerAvatarSuppressed || !autopilotOn || cfg.id !== ownerFestieNpcId
+                ? undefined
+                : ownerFestieVendorAttractWx
+            }
             greeting={greetingNpc === i}
+            connectGlow={ownerFestieNpcId === cfg.id && autopilotOn}
             chatConnected={chatConnected}
             dimmed={festieDimNpcIds.has(cfg.id)}
             greetFacing={greetNpcX < 50 ? 'right' : 'left'}

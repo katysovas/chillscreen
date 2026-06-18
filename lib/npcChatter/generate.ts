@@ -142,12 +142,14 @@ export async function generateFestieDescribeShoutout(
   req: FestieShoutoutRequest,
 ): Promise<NpcChatterLine | null> {
   const npc = await resolveNpcRosterEntry(req.npc);
-  if (!npc?.ownerOnStage || !npc.describeNotes?.trim()) return null;
+  if (!npc?.describeNotes?.trim()) return null;
+  if (!npc.autopilotActive && !npc.ownerOnStage) return null;
 
   const system = buildFestieDescribeShoutoutPrompt({
     festieName: npc.displayName,
     describeNotes: npc.describeNotes,
     stage: req.stage,
+    autopilot: Boolean(npc.autopilotActive),
   });
 
   const model = resolveModel(npc.modelId, req.houseModel);

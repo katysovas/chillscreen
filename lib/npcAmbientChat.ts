@@ -27,6 +27,38 @@ export const NPC_AMBIENT_CHEER_LINES = [
   'noice',
 ] as const;
 
+/** Festie autopilot asides — self-aware, silly, still scannable in a bubble. */
+export const FESTIE_AUTOPILOT_FUNNY_LINES = [
+  'human said party. partying.',
+  'autopilot but make it fashion',
+  'no thoughts just shuffle',
+  'lost the human. found the bass',
+  'running on vibes only',
+  'my human is watching probably',
+  'festie on duty',
+  'wander mode: elite',
+  'who gave me the keys',
+  'main character energy',
+  'unsupervised festie hours',
+  'is this what freedom feels like',
+  'talking to strangers. classic.',
+  'did I buy this hat? yes.',
+  'Buz knows my name probably',
+  'plotting my next snack',
+  'legs are NPCs now',
+  'brain: festival only',
+  'I am legally a festie',
+  'human toggled me on lol',
+  'npc behavior: unlocked',
+  'forgot real life again',
+  'send festie',
+  'ok one more stage',
+  'professionally vibing',
+] as const;
+
+const AUTOPILOT_CHEER_WEIGHT = 0.22;
+const AUTOPILOT_FUNNY_WEIGHT = 0.38;
+
 /** Per-NPC ambient timing overrides. */
 const NPC_AMBIENT_INTERVAL: Partial<Record<string, { minMs: number; maxMs: number }>> = {
   [BUZ_NPC_ID]: { minMs: 9_000, maxMs: 16_000 },
@@ -528,6 +560,18 @@ function pickBuzAmbientMumble(): string {
 
 export function pickAmbientCheerLine(): string {
   return pick([...NPC_AMBIENT_CHEER_LINES]);
+}
+
+/** Autopilot festie shouts — cheers, silly asides, and stage-aware mumbles. */
+export function pickAutopilotAmbientLine(character: CharacterDef): string {
+  const roll = Math.random();
+  if (roll < AUTOPILOT_CHEER_WEIGHT) {
+    return clampAmbientLine(pick([...NPC_AMBIENT_CHEER_LINES]));
+  }
+  if (roll < AUTOPILOT_CHEER_WEIGHT + AUTOPILOT_FUNNY_WEIGHT) {
+    return clampAmbientLine(pick([...FESTIE_AUTOPILOT_FUNNY_LINES]));
+  }
+  return pickAmbientMumble(character);
 }
 
 export function pickAmbientMumble(character: CharacterDef): string {

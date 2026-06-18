@@ -4,10 +4,11 @@ import { useMemo, useState } from 'react';
 import {
   currentStagePickerTarget,
   stagePickerTargetId,
+  stagePickerTargetFromId,
   stageTargetsEqual,
   type StagePickerTarget,
 } from '@/lib/stagePickerOptions';
-import { FeaturedStagesChart } from '@/components/stages/FeaturedStagesChart';
+import { SwitchStagesChart } from '@/components/stages/SwitchStagesChart';
 import { chartEntryId, getFeaturedStagesChartTab } from '@/lib/stages/featuredStagesChart';
 import type { VenueRoute } from '@/lib/venueRoutes';
 
@@ -35,8 +36,9 @@ export function MobileStageSwapModal({
 
   const pickedTarget = useMemo(() => {
     if (!pickedId) return null;
-    const entry = chartEntries.find(e => chartEntryId(e) === pickedId);
-    return entry?.target ?? null;
+    const fromChart = chartEntries.find(e => chartEntryId(e) === pickedId);
+    if (fromChart) return fromChart.target;
+    return stagePickerTargetFromId(pickedId);
   }, [chartEntries, pickedId]);
 
   const canSwap = pickedTarget != null
@@ -105,8 +107,8 @@ export function MobileStageSwapModal({
           ×
         </button>
 
-        <FeaturedStagesChart
-          variant="modal"
+        <SwitchStagesChart
+          titleId="mobile-stage-swap-chart-title"
           selectedId={pickedId}
           currentId={currentId}
           onSelect={target => setPickedId(stagePickerTargetId(target))}

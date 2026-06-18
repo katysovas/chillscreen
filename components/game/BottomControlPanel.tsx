@@ -22,9 +22,6 @@ type BottomControlPanelProps = {
   onVendorShopWarm?: () => void;
   /** Opens the city / stage picker (desktop + in-game). */
   onOpenCityPicker?: () => void;
-  /** Stage owner only — opens lineup modal. */
-  showStageSettings?: boolean;
-  onOpenStageSettings?: () => void;
   /** User-created stage slug — invite links use /watch/{slug}. */
   creatorStageSlug?: string | null;
   /** Hides invite + cart — those move to MobileGameControls on phone. */
@@ -254,8 +251,6 @@ export function BottomControlPanel({
   onToggleVendorShop,
   onVendorShopWarm,
   onOpenCityPicker,
-  showStageSettings = false,
-  onOpenStageSettings,
   creatorStageSlug = null,
   isMobile = false,
 }: BottomControlPanelProps) {
@@ -279,7 +274,6 @@ export function BottomControlPanel({
   const hasMessages = showConnect || showInviteBtn;
   const showCart = Boolean(onToggleVendorShop) && !isMobile;
   const showCityPicker = Boolean(onOpenCityPicker) && !isMobile;
-  const showStageSettingsBtn = showStageSettings && Boolean(onOpenStageSettings) && !isMobile;
 
   const copyLink = useCallback(async () => {
     if (!inviteUrl) return;
@@ -306,7 +300,7 @@ export function BottomControlPanel({
     setInviteOpen(false);
   }, [hidden, showConnect, route]);
 
-  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showCart && !showCityPicker && !showStageSettingsBtn && !hasMessages)) {
+  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showCart && !showCityPicker && !hasMessages)) {
     return null;
   }
 
@@ -336,32 +330,6 @@ export function BottomControlPanel({
           overflow: 'hidden',
         }}
       >
-        {showStageSettingsBtn && (
-          <button
-            type="button"
-            onClick={onOpenStageSettings}
-            aria-label="Lineup"
-            title="Lineup"
-            style={{
-              ...ghostBtn,
-              padding: '8px 14px',
-              background: 'rgba(255,255,255,.06)',
-              color: 'rgba(255,255,255,.78)',
-              cursor: 'pointer',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <LineupIcon />
-          </button>
-        )}
-
-        {showStageSettingsBtn && showCart && (
-          <div style={panelDivider} aria-hidden />
-        )}
-
         {showCart && (
           <button
             type="button"
@@ -416,7 +384,7 @@ export function BottomControlPanel({
           </button>
         )}
 
-        {(showStageSettingsBtn || showCart || showCityPicker) && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
+        {(showCart || showCityPicker) && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
           <div style={panelDivider} aria-hidden />
         )}
 

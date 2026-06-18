@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { userIdFromRequest } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import {
-  getUserStageByOwnerId,
+  listUserStagesByOwnerId,
   toUserStagePublic,
 } from '@/lib/stages/db';
 
@@ -20,8 +20,12 @@ export async function GET(req: Request) {
   }
 
   try {
-    const row = await getUserStageByOwnerId(userId);
-    return NextResponse.json({ stage: row ? toUserStagePublic(row) : null });
+    const rows = await listUserStagesByOwnerId(userId);
+    const stages = rows.map(row => toUserStagePublic(row));
+    return NextResponse.json({
+      stages,
+      stage: stages[0] ?? null,
+    });
   } catch (err) {
     console.error('[api/stages/me GET]', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
