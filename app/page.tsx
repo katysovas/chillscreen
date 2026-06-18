@@ -9,6 +9,7 @@ import {
   LANDING_PAGE_TITLE,
 } from '@/lib/landingSeo';
 import { buildPageMetadata } from '@/lib/siteMetadata';
+import { getLandingCreatorStageCount } from '@/lib/landing/stageStats';
 
 export const metadata: Metadata = buildPageMetadata({
   title: LANDING_PAGE_TITLE,
@@ -17,11 +18,13 @@ export const metadata: Metadata = buildPageMetadata({
   keywords: LANDING_PAGE_KEYWORDS,
 });
 
-export default function Home() {
+export default async function Home() {
+  const creatorStageCount = await getLandingCreatorStageCount();
+
   return (
     <>
       <JsonLd data={homePageGraphJsonLd(LANDING_FAQ)} />
-      <HomeCityPicker />
+      <HomeCityPicker initialCreatorStageCount={creatorStageCount} />
     </>
   );
 }

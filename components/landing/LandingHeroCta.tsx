@@ -6,6 +6,7 @@ import { useLandingStageCount } from './useLandingStageCount';
 
 type Props = {
   onScrollToStages: () => void;
+  initialCreatorStageCount?: number;
 };
 
 function ArrowIcon() {
@@ -22,10 +23,10 @@ function ArrowIcon() {
   );
 }
 
-export function LandingHeroCta({ onScrollToStages }: Props) {
+export function LandingHeroCta({ onScrollToStages, initialCreatorStageCount = 0 }: Props) {
   const festieTotal = useLandingFestieTotal();
   const festieDisplay = festieTotal.toLocaleString();
-  const stageCount = useLandingStageCount();
+  const stageCount = useLandingStageCount(initialCreatorStageCount);
 
   return (
     <button type="button" className="hero-cta-bar" onClick={onScrollToStages}>

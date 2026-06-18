@@ -5,8 +5,8 @@ import { displayStageCount } from '@/lib/landing/displayStats';
 import { VENUE_SLUGS } from '@/lib/venueSlugs';
 
 /** Built-in venues + active creator stages — inflated for LP. */
-export function useLandingStageCount(): number {
-  const [creatorStages, setCreatorStages] = useState(0);
+export function useLandingStageCount(initialCreatorStages = 0): number {
+  const [creatorStages, setCreatorStages] = useState(initialCreatorStages);
 
   useEffect(() => {
     let cancelled = false;

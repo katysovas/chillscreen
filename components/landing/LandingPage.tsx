@@ -29,6 +29,7 @@ type Props = {
   onScrollToStages: () => void;
   onStageEnter: (target: StagePickerTarget) => void;
   onSignIn: () => void;
+  initialCreatorStageCount?: number;
 };
 
 function SpeakerSvg() {
@@ -67,7 +68,12 @@ const GALLERY_ITEMS = [
 ] as const;
 */
 
-export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props) {
+export function LandingPage({
+  onScrollToStages,
+  onStageEnter,
+  onSignIn,
+  initialCreatorStageCount = 0,
+}: Props) {
   const starsRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
@@ -220,7 +226,10 @@ export function LandingPage({ onScrollToStages, onStageEnter, onSignIn }: Props)
 
         <div className="hero-content">
           <LandingHeroHeader />
-          <LandingHeroCta onScrollToStages={onScrollToStages} />
+          <LandingHeroCta
+            onScrollToStages={onScrollToStages}
+            initialCreatorStageCount={initialCreatorStageCount}
+          />
         </div>
 
         <svg className="hero-arc-svg" width="460" height="280" viewBox="0 0 460 280" fill="none" aria-hidden>

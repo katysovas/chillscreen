@@ -16,7 +16,11 @@ import { pathForStageTarget, type StagePickerTarget } from '@/lib/stagePickerOpt
 import { setLastUsedStage } from '@/lib/lastUsedStage';
 
 /** Home `/` — landing page; stage tiles route into the game with welcome modal. */
-export function HomeCityPicker() {
+export function HomeCityPicker({
+  initialCreatorStageCount = 0,
+}: {
+  initialCreatorStageCount?: number;
+}) {
   const router = useRouter();
   const [showWelcome, setShowWelcome] = useState(false);
   const [welcomeAuthIntent, setWelcomeAuthIntent] = useState<'create' | 'signin'>('signin');
@@ -67,6 +71,7 @@ export function HomeCityPicker() {
         onScrollToStages={scrollToStages}
         onStageEnter={handleStageEnter}
         onSignIn={openSignIn}
+        initialCreatorStageCount={initialCreatorStageCount}
       />
       {showWelcome && (
         <WelcomePopup
