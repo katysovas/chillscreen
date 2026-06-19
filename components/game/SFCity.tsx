@@ -1674,7 +1674,7 @@ export default function SFCity({
   // ── Ground Score — sidewalk coin pickups ───────────────────────────────────
   const handleGroundScore = useCallback((value: number) => {
     void addPlayerCoins(value).then(coins => setPlayerCoins(coins));
-    const message = `Ground Score! ${value} Coins!`;
+    const message = `ground score! ${value} coins!`;
     showPlayerAmbient(message);
     mpRef.current?.sendAmbientMessage(message);
     playFoundSound();

@@ -66,10 +66,17 @@ function RemotePlayer({
   const loadoutKeyRef = useRef(loadoutSyncKey(initial?.loadout));
   // screenX only feeds the chat-bubble side; refreshed when a chat opens.
   const [screenX, setScreenX] = useState(50);
+  const screenXRef = useRef(50);
   const [ambientMessages, setAmbientMessages] = useState<ChatLine[]>([]);
   const lastAmbientRef = useRef<string | null>(null);
   const chatConnectedRef = useRef(chatConnected || greeting);
   chatConnectedRef.current = chatConnected || greeting;
+  const publicMessagesRef = useRef(publicMessages);
+  publicMessagesRef.current = publicMessages;
+  const ambientMessagesRef = useRef(ambientMessages);
+  ambientMessagesRef.current = ambientMessages;
+  const greetingRef = useRef(greeting);
+  greetingRef.current = greeting;
 
   useEffect(() => {
     if (greeting && divRef.current) {
@@ -115,11 +122,18 @@ function RemotePlayer({
         }
 
         const pct = worldXToScreenPct(renderXRef.current, gameWorldOffRef.current);
+        screenXRef.current = pct;
         if (divRef.current) {
           divRef.current.style.left = `${pct}%`;
           const depthY = crowdDepthOffsetPx(id);
           const spread = chatConnectedRef.current ? chatConnectSpreadPx(pct) : 0;
           divRef.current.style.transform = `translate(${spread}px, ${depthY}px)`;
+        }
+
+        const hasOverlay = !greetingRef.current
+          && ((publicMessagesRef.current?.length ?? 0) > 0 || ambientMessagesRef.current.length > 0);
+        if (hasOverlay) {
+          characterRef.current?.setChatScreenPct(pct);
         }
 
         if (ambientRef?.current) {
@@ -146,6 +160,12 @@ function RemotePlayer({
   const overlayMessages = publicMessages?.length
     ? publicMessages
     : ambientMessages;
+
+  useEffect(() => {
+    if (!greeting && overlayMessages.length > 0) {
+      setScreenX(screenXRef.current);
+    }
+  }, [greeting, overlayMessages.length, publicMessages?.length, ambientMessages.length]);
 
   const depthY = crowdDepthOffsetPx(id);
   const depthZ = crowdDepthZIndex(depthY);

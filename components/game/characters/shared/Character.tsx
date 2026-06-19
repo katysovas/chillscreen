@@ -1,6 +1,7 @@
 'use client';
 import { forwardRef, memo, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import type { BubbleSide } from '../../ChatBubble';
+import { clampChatAnchorHorizontally, screenXToBubbleSide } from '@/lib/chatBubbleViewport';
 import {
   areLoadoutItemsReady,
   equippedLoadoutItemIds,
@@ -69,6 +70,8 @@ export type CharacterHandle = {
   setWalking: (w: boolean) => void;
   /** Toggle dance animation — updates classList directly, zero React re-render. */
   setDancing: (d: boolean) => void;
+  /** Flip chat bubble side from live screen % — used while ambient chatter is visible. */
+  setChatScreenPct: (pct: number) => void;
 };
 
 /** Artboard coords (500×240) — above the head, aligned to the sprite body. */
@@ -181,7 +184,25 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   easelChatAnchorRef.current = easelChatAnchor;
   const scaleRef       = useRef(scale);
   scaleRef.current     = scale;
+  const facingRef      = useRef(facing);
+  facingRef.current    = facing;
   const holdRightRef   = useRef(false);
+
+  function applyChatAnchorSide(side: BubbleSide) {
+    const el = chatAnchorRef.current;
+    if (!el) return;
+    el.style.marginLeft = '';
+    if (side === 'center') {
+      el.style.left = '50%';
+      el.style.right = 'auto';
+    } else if (side === 'right') {
+      el.style.left = 'auto';
+      el.style.right = `${CHAT_ANCHOR.right}px`;
+    } else {
+      el.style.left = `${CHAT_ANCHOR.left}px`;
+      el.style.right = 'auto';
+    }
+  }
 
   function syncChatAnchorTransform(mirrored: boolean) {
     if (!chatAnchorRef.current) return;
@@ -277,12 +298,41 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     setDancing(d) {
       syncDancingClasses(d);
     },
+    setChatScreenPct(pct) {
+      if (easelChatAnchorRef.current || !chatAnchorRef.current) return;
+      const nextSide = screenXToBubbleSide(pct);
+      if (nextSide === bubbleSideRef.current) return;
+      bubbleSideRef.current = nextSide;
+      applyChatAnchorSide(nextSide);
+      syncChatAnchorTransform(facingRef.current === 'left');
+    },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), []);
 
   useLayoutEffect(() => {
     syncDancingClasses(dancing);
   }, [dancing]);
+
+  useLayoutEffect(() => {
+    if (!chatOverlay) return;
+    let raf = 0;
+    const tick = () => {
+      const el = chatAnchorRef.current;
+      if (el) clampChatAnchorHorizontally(el);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      if (chatAnchorRef.current) chatAnchorRef.current.style.marginLeft = '';
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- clamp while any chat UI is mounted
+  }, [Boolean(chatOverlay), bubbleSide, scale, easelChatAnchor]);
+
+  useLayoutEffect(() => {
+    applyChatAnchorSide(bubbleSide);
+    syncChatAnchorTransform(facingRef.current === 'left');
+  }, [bubbleSide, scale, easelChatAnchor, Boolean(chatOverlay)]);
 
   const partyHandClass = dancing
     ? holdRight ? ' ch-free-hand-left' : ' ch-free-hand-right'

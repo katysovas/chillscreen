@@ -172,6 +172,8 @@ function NPC({
   const characterRef  = useRef<CharacterHandle>(null);
   const greetingRef   = useRef(greeting);
   greetingRef.current = greeting;
+  const publicMessagesRef = useRef(publicMessages);
+  publicMessagesRef.current = publicMessages;
   const facingRef     = useRef<'left' | 'right'>(entryDirection);
   const walkingRef    = useRef(false);
   const onScreenRef   = useRef(true);
@@ -221,10 +223,12 @@ function NPC({
   // Keep RAF/decision loops in sync — useEffect runs after paint.
   pausedRef.current = paused;
 
-  // Sync screenX state when greeting starts (needed for bubble side only).
+  // Sync screenX when greeting or public bubble starts (needed for bubble side).
   useEffect(() => {
-    if (greeting) setScreenX(screenXRef.current);
-  }, [greeting]);
+    if (greeting || (publicMessages?.length ?? 0) > 0) {
+      setScreenX(screenXRef.current);
+    }
+  }, [greeting, publicMessages?.length]);
 
   // ── Re-sync Character DOM after any React render of NPC ────────────────────
   // Runs before paint on every NPC render (jump, active, screenX, etc.).
@@ -706,6 +710,10 @@ function NPC({
         const spread = chatConnectedRef.current ? chatConnectSpreadPx(pct) : 0;
         const y = easelStationedRef.current ? 0 : depthY;
         divRef.current.style.transform = `translate(${spread}px, ${y}px)`;
+      }
+
+      if ((publicMessagesRef.current?.length ?? 0) > 0 && !greetingRef.current) {
+        characterRef.current?.setChatScreenPct(pct);
       }
       return worldXRef.current;
     });

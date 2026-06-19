@@ -3,6 +3,7 @@
 import { memo, useEffect, useRef } from 'react';
 import { CHAR_BOTTOM } from '@/components/game/groundLayout';
 import { worldXToScreenPct } from '@/components/game/NPC';
+import { Z_EASEL } from '@/lib/zLayers';
 import { cinemaCanvasAnchorWorldX } from '@/lib/cinemaCanvasLayout';
 import { setWorldPositionTick } from '@/lib/worldPositionTicks';
 import { CinemaCanvasEasel } from './CinemaCanvasEasel';
@@ -64,7 +65,7 @@ export const CinemaCanvasGroundLayer = memo(function CinemaCanvasGroundLayer() {
         position: 'absolute',
         left: 0,
         bottom: CHAR_BOTTOM,
-        zIndex: 15,
+        zIndex: Z_EASEL,
         willChange: 'transform',
       }}
     >

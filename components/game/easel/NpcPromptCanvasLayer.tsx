@@ -4,6 +4,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { CHAR_BOTTOM } from '@/components/game/groundLayout';
 import { worldXToScreenPct } from '@/components/game/NPC';
 import { useEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
+import { Z_EASEL } from '@/lib/zLayers';
 import { chatDrawingRate } from '@/lib/easel/chatNpcDrawings';
 import type { ChatNpcDrawingSession } from '@/lib/easel/types';
 import { setWorldPositionTick } from '@/lib/worldPositionTicks';
@@ -60,7 +61,7 @@ function PromptCanvasSlot({
         position: 'absolute',
         left: 0,
         bottom: CHAR_BOTTOM,
-        zIndex: 16,
+        zIndex: Z_EASEL,
         willChange: 'transform',
         visibility: 'hidden',
       }}

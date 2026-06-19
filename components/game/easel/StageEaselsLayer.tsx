@@ -7,6 +7,7 @@ import { easelSlotWorldX } from '@/lib/easel/layout';
 import { useEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import type { EaselSessionSync, EaselSlotSync } from '@/lib/easel/types';
 import { pickVisibleEaselSlots } from '@/lib/easel/visibleSlots';
+import { Z_EASEL } from '@/lib/zLayers';
 import type { VenueRoute } from '@/lib/venueSlugs';
 import { venueSlugForRoute } from '@/lib/venueSlugs';
 import { setWorldPositionTick } from '@/lib/worldPositionTicks';
@@ -70,7 +71,7 @@ function EaselSlotLayer({
         position: 'absolute',
         left: 0,
         bottom: CHAR_BOTTOM,
-        zIndex: 15,
+        zIndex: Z_EASEL,
         willChange: 'transform',
         visibility: 'hidden',
       }}
