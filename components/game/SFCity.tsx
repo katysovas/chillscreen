@@ -38,6 +38,7 @@ import {
   hydrateFestieControlMode,
   subscribeFestieControlMode,
 } from '@/lib/festie/controlMode';
+import { patchPlayerSessionFestie } from '@/lib/player/session';
 import { persistFestieStageSlug } from '@/lib/festie/stage';
 import { festiePresetById } from '@/lib/festie/presets';
 import {
@@ -192,6 +193,7 @@ import type { ChatNpcDrawingSession } from '@/lib/easel/types';
 import { NpcPromptCanvasLayer } from './easel/NpcPromptCanvasLayer';
 import { chatConnectSpreadPlayerPx } from '@/lib/chatConnectSpread';
 import { Z_CHAT_CHARACTER, Z_PLAYER_CHARACTER } from '@/lib/zLayers';
+import { bumpPublicChatBubbleLayer, usePublicChatBubbleZ } from '@/lib/publicChatBubbleLayer';
 import { clearNpcConvoHold, getNpcConvoHold, hasNpcConvoHold, setNpcConvoHold, setNpcConvoReleaseListener } from '@/lib/npcConvoHold';
 import { getNpcConvoAnchor, setNpcConvoAnchor } from '@/lib/npcConvoAnchor';
 import { releaseNpcConvoSnap, snapNpcPairForConvo } from '@/lib/npcConvoSnap';
@@ -586,7 +588,15 @@ export default function SFCity({
   useEffect(() => {
     return subscribePlayerSession(() => {
       const festie = getPlayerSession().festie;
-      if (festie) setOwnerFestie(festie);
+      if (festie) {
+        setOwnerFestie(prev => {
+          if (!prev) return festie;
+          if (prev.help_dismissed_at && !festie.help_dismissed_at) {
+            return { ...festie, help_dismissed_at: prev.help_dismissed_at };
+          }
+          return festie;
+        });
+      }
       if (!getPlayerSession().authenticated) return;
       const nextLoadout = { ...getPlayerLoadout(myColor), ...TEST_PLAYER_LOADOUT };
       setPlayerLoadout(prev => {
@@ -607,7 +617,9 @@ export default function SFCity({
   const dismissHelpPopup = useCallback(() => {
     if (!ownerFestie || ownerFestie.help_dismissed_at) return;
     const dismissedAt = new Date().toISOString();
-    setOwnerFestie({ ...ownerFestie, help_dismissed_at: dismissedAt });
+    const dismissed = { ...ownerFestie, help_dismissed_at: dismissedAt };
+    setOwnerFestie(dismissed);
+    patchPlayerSessionFestie({ help_dismissed_at: dismissedAt });
     void dismissFestieHelp()
       .then(festie => {
         if (festie) setOwnerFestie(festie);
@@ -1644,6 +1656,8 @@ export default function SFCity({
 
   const showPlayerAmbient = useCallback((text: string) => {
     clearAmbientHide();
+    const selfId = mpRef.current?.selfId;
+    if (selfId) bumpPublicChatBubbleLayer(`player:${selfId}`);
     setPlayerAmbientMessages(prev => appendChatLine(prev, text));
     ambientHideRef.current = setTimeout(() => {
       setPlayerAmbientMessages([]);
@@ -2347,6 +2361,7 @@ export default function SFCity({
 
     return (
       <NpcPairChatOverlay
+        convoId={convo.convoId}
         worldXA={wxA}
         worldXB={wxB}
         lines={convo.lines}
@@ -2377,6 +2392,17 @@ export default function SFCity({
   ]);
 
   const inConversation = greetingNpc !== null || peerChatId !== null;
+  const playerChatKey = mp.selfId ? `player:${mp.selfId}` : '';
+  const boostedPlayerZ = usePublicChatBubbleZ(
+    playerChatKey,
+    inConversation ? Z_CHAT_CHARACTER : Z_PLAYER_CHARACTER,
+  );
+  const hasPlayerAmbientBubble = !inConversation && playerAmbientMessages.length > 0;
+  const playerZIndex = hasPlayerAmbientBubble
+    ? boostedPlayerZ
+    : inConversation
+      ? Z_CHAT_CHARACTER
+      : Z_PLAYER_CHARACTER;
 
   const isPlayerChatConnected = useCallback((playerId: string) => {
     if (mp.selfId === playerId && inConversation) return true;
@@ -2675,7 +2701,7 @@ export default function SFCity({
             bottom: mobileDevice ? CHAR_BOTTOM : `calc(${CHAR_BOTTOM})`,
             transform: `translateX(${inConversation ? chatConnectSpreadPlayerPx(greetNpcX) : 0}px)`,
             transition: 'transform 0.25s ease',
-            zIndex: inConversation ? Z_CHAT_CHARACTER : Z_PLAYER_CHARACTER,
+            zIndex: playerZIndex,
           }}>
             <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
               <Character

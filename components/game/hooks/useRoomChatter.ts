@@ -6,6 +6,7 @@ import { clearNpcConvoAnchor } from '@/lib/npcConvoAnchor';
 import { appendChatLine, createChatLine, type ChatLine, type KeyedChatLine } from '@/lib/chatLines';
 import { AMBIENT_VISIBLE_MS, AMBIENT_VISIBLE_JITTER_MS } from '@/lib/npcAmbientChat';
 import { PLAYER_AMBIENT_VISIBLE_MS } from '@/lib/multiplayer/useMultiplayer';
+import { bumpPublicChatBubbleLayer } from '@/lib/publicChatBubbleLayer';
 
 /** Keep pair-chat bubbles on screen after the server ends the convo. */
 export const NPC_PAIR_CHAT_LINGER_MS = 12_000;
@@ -73,6 +74,7 @@ export function useRoomChatter(
   }, [cancelHide]);
 
   const appendPlayer = useCallback((playerKey: string, text: string) => {
+    bumpPublicChatBubbleLayer(`player:${playerKey}`);
     setPlayerMessages(prev => {
       const next = new Map(prev);
       next.set(playerKey, appendChatLine(prev.get(playerKey) ?? [], text));
@@ -89,6 +91,7 @@ export function useRoomChatter(
   }, [scheduleHide]);
 
   const appendNpcShout = useCallback((npcId: string, text: string) => {
+    bumpPublicChatBubbleLayer(`npc:${npcId}`);
     setNpcMessages(prev => {
       const next = new Map(prev);
       next.set(npcId, appendChatLine(prev.get(npcId) ?? [], text));
@@ -141,6 +144,7 @@ export function useRoomChatter(
         return prev;
       }
       const line = createChatLine(cleaned);
+      bumpPublicChatBubbleLayer(`npc-convo:${convoId}`);
       return {
         ...base,
         lines: [...base.lines, { ...line, speakerKey: npc }].slice(-6),
@@ -150,6 +154,7 @@ export function useRoomChatter(
 
   const onNpcConvoStart = useCallback((convoId: string, participants: [string, string]) => {
     cancelHide(`npc-convo:${convoId}`);
+    bumpPublicChatBubbleLayer(`npc-convo:${convoId}`);
     setNpcConvo(prev => (prev?.convoId === convoId ? prev : { convoId, participants, lines: [] }));
     setNpcMessages(prev => {
       const next = new Map(prev);

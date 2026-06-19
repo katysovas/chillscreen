@@ -14,7 +14,7 @@ import { ArrowSignBoard } from './city/ArrowSignBoard';
 import { PARALLAX_LAYER_BASE } from './city/shared/parallaxLayerStyle';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
-import { Z_PLAYER_CHARACTER } from '@/lib/zLayers';
+import { Z_NAV_SIGNS } from '@/lib/zLayers';
 import { CITY_GRASS_DROP_Y } from '@/components/game/city/cinema/constants';
 import { FOREST_GRASS_DROP_Y } from '@/components/game/city/forest/constants';
 import { TENTAROO_GRASS_DROP_Y } from '@/components/game/city/tentaroo/constants';
@@ -245,7 +245,7 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
         preserveAspectRatio="xMidYMid slice"
         style={{
           ...PARALLAX_LAYER_BASE,
-          zIndex: Z_PLAYER_CHARACTER + 1,
+          zIndex: Z_NAV_SIGNS,
           pointerEvents: 'none',
           opacity: active ? 1 : 0,
           transition: 'opacity 0.3s ease',

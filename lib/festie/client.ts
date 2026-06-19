@@ -72,6 +72,7 @@ export async function dismissFestieHelp(): Promise<FestieOwner | null> {
   const festie = (data.festie as FestieOwner | null) ?? null;
   if (festie) {
     setFestieCache({ id: festie.id, name: festie.name, preset: festie.preset });
+    patchPlayerSessionFestie(festie);
   }
   return festie;
 }

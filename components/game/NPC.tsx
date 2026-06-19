@@ -27,6 +27,7 @@ import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
 import { setNpcMovementTick, getNpcSyncedWorldX, isNpcNetworkFollowMode } from '@/lib/npcMovementRegistry';
 import { setNpcDancingToggle } from '@/lib/npcDancingRegistry';
 import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
+import { usePublicChatBubbleZ } from '@/lib/publicChatBubbleLayer';
 import {
   NPC_FAR_WANDER_CHANCE,
   NPC_IDLE_MS_SCALE,
@@ -749,6 +750,18 @@ function NPC({
     pairChatIndicator && !showPaintingBubble && !showGreetingChat,
   );
 
+  const publicChatKey = `npc:${characterId}`;
+  const boostedPublicZ = usePublicChatBubbleZ(publicChatKey, depthZ);
+  const zIndex = greeting
+    ? Z_CHAT_CHARACTER
+    : showPublicBubble
+      ? boostedPublicZ
+      : showPaintingBubble
+        ? depthZ + 1
+        : showChattingBubble
+          ? depthZ + 2
+          : depthZ;
+
   if (!active) return null;
 
   return (
@@ -759,7 +772,7 @@ function NPC({
         position: 'absolute',
         bottom: CHAR_BOTTOM,
         transform: `translateY(${effectiveDepthY}px)`,
-        zIndex: greeting ? Z_CHAT_CHARACTER : showPaintingBubble ? depthZ + 1 : showChattingBubble ? depthZ + 2 : depthZ,
+        zIndex: zIndex,
         opacity: dimmed ? 0.6 : 1,
         filter: dimmed ? 'brightness(0.85)' : undefined,
         transition: 'opacity 0.4s ease, filter 0.4s ease',

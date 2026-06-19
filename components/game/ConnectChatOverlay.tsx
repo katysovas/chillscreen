@@ -25,6 +25,7 @@ import {
 } from '@/lib/chatBubbleViewport';
 import { CHAR_BOTTOM, NPC_PAIR_CHAT_LIFT_PX } from './groundLayout';
 import { Z_CHAT_OVERLAY } from '@/lib/zLayers';
+import { usePublicChatBubbleZ } from '@/lib/publicChatBubbleLayer';
 
 type ChatMode = null | 'chat' | 'ambient';
 
@@ -78,12 +79,14 @@ export function NpcChatOverlay({
 
 /** Unified NPC↔NPC thread — centered between speakers, tracks camera each frame. */
 export function NpcPairChatOverlay({
+  convoId,
   lines,
   speakers,
   worldXA,
   worldXB,
   typingSpeakerKey,
 }: {
+  convoId: string;
   lines: KeyedChatLine[];
   speakers: [Omit<SpeakerProfile, 'screenPct'>, Omit<SpeakerProfile, 'screenPct'>];
   worldXA: number;
@@ -92,6 +95,7 @@ export function NpcPairChatOverlay({
   typingSpeakerKey?: string | null;
 }) {
   const divRef = useRef<HTMLDivElement>(null);
+  const zIndex = usePublicChatBubbleZ(`npc-convo:${convoId}`, Z_CHAT_OVERLAY);
 
   useLayoutEffect(() => {
     let raf = 0;
@@ -130,7 +134,7 @@ export function NpcPairChatOverlay({
         left: '50%',
         bottom: `calc(${CHAR_BOTTOM} + ${NPC_PAIR_CHAT_LIFT_PX}px)`,
         transform: 'translateX(-50%)',
-        zIndex: Z_CHAT_OVERLAY,
+        zIndex,
         width: '100%',
         maxWidth: chatColumnMaxWidthPx(
           typeof window !== 'undefined' ? window.innerWidth : 1200,

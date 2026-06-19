@@ -374,6 +374,8 @@ export function DualSpeakerChatThread({
           <div
             key={line.id}
             style={{
+              position: 'relative',
+              zIndex: i + 1,
               display: 'flex',
               justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
               width: '100%',
@@ -397,6 +399,8 @@ export function DualSpeakerChatThread({
         const side = sideForSpeaker(speakers, typingSpeakerKey);
         return (
           <div style={{
+            position: 'relative',
+            zIndex: total + 1,
             display: 'flex',
             justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
             width: '100%',
@@ -488,19 +492,20 @@ export function ChatBubbleStack({
         const ageFromBottom = total - 1 - i;
         const isNewest = ageFromBottom === 0;
         return (
-          <AttachedChatBubble
-            key={line.id}
-            name={nameOnEveryBubble || isNewest ? name : undefined}
-            message={line.text}
-            side={side}
-            glowColor={glowColor}
-            ageFromBottom={ageFromBottom}
-            stackSize={total}
-            showTail={showTailOnNewest && isNewest && total === 1}
-            animate={noAnimate ? false : isNewest}
-            tailAlign={tailAlign}
-            opacityScale={opacityScale}
-          />
+          <div key={line.id} style={{ position: 'relative', zIndex: i + 1 }}>
+            <AttachedChatBubble
+              name={nameOnEveryBubble || isNewest ? name : undefined}
+              message={line.text}
+              side={side}
+              glowColor={glowColor}
+              ageFromBottom={ageFromBottom}
+              stackSize={total}
+              showTail={showTailOnNewest && isNewest && total === 1}
+              animate={noAnimate ? false : isNewest}
+              tailAlign={tailAlign}
+              opacityScale={opacityScale}
+            />
+          </div>
         );
       })}
     </>

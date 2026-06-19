@@ -17,6 +17,7 @@ import {
 import type { CharacterLoadout } from './characters/loadout';
 import { chatConnectSpreadPx } from '@/lib/chatConnectSpread';
 import { appendChatLine, type ChatLine } from '@/lib/chatLines';
+import { usePublicChatBubbleZ } from '@/lib/publicChatBubbleLayer';
 
 type RemotePlayerProps = {
   id: string;
@@ -148,6 +149,8 @@ function RemotePlayer({
 
   const depthY = crowdDepthOffsetPx(id);
   const depthZ = crowdDepthZIndex(depthY);
+  const hasPublicOverlay = !greeting && overlayMessages.length > 0;
+  const boostedPublicZ = usePublicChatBubbleZ(`player:${id}`, depthZ);
 
   return (
     <div
@@ -158,7 +161,7 @@ function RemotePlayer({
         left: '50%',
         bottom: CHAR_BOTTOM,
         transform: `translateY(${depthY}px)`,
-        zIndex: greeting ? 199 : depthZ,
+        zIndex: greeting ? 199 : hasPublicOverlay ? boostedPublicZ : depthZ,
       }}
     >
       <Character
