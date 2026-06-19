@@ -92,7 +92,11 @@ export async function POST(req: Request) {
       case 'checkpoint': {
         if (slot == null) return NextResponse.json({ ok: false }, { status: 400 });
         const row = await getEaselRow(stageKey, slot);
-        if (!row || row.status !== 'painting') {
+        if (!row) return NextResponse.json({ ok: false }, { status: 404 });
+        if (row.hidden_at || row.status === 'done') {
+          return NextResponse.json(slotResponse(row));
+        }
+        if (row.status !== 'painting') {
           return NextResponse.json({ ok: false }, { status: 400 });
         }
         const requested = Math.max(0, Math.floor(body.segments_done ?? 0));
@@ -107,8 +111,11 @@ export async function POST(req: Request) {
       case 'complete': {
         if (slot == null) return NextResponse.json({ ok: false }, { status: 400 });
         const row = await getEaselRow(stageKey, slot);
-        if (!row || row.status !== 'painting') {
-          if (row?.status === 'done') return NextResponse.json(slotResponse(row));
+        if (!row) return NextResponse.json({ ok: false }, { status: 404 });
+        if (row.hidden_at || row.status === 'done') {
+          return NextResponse.json(slotResponse(row));
+        }
+        if (row.status !== 'painting') {
           return NextResponse.json({ ok: false }, { status: 400 });
         }
         const updated = await completeEasel(stageKey, slot);

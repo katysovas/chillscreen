@@ -224,7 +224,9 @@ export const AmbientCanvasDrawing = memo(function AmbientCanvasDrawing({
       clearInterval(interval);
       window.removeEventListener('pagehide', persist);
       document.removeEventListener('visibilitychange', onHide);
-      persist();
+      if (progressRef.current.status !== 'done' && !completingRef.current) {
+        persist();
+      }
     };
   }, [npcId, npcKey, program, totalSegments, rate, status, painterReady, persistence, label, logContext, onPaintingComplete]);
 
