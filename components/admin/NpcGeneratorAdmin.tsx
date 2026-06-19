@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { AdminNav } from './AdminNav';
 import { STAGE_CHANNEL_META } from '@/lib/stageChannelLabels';
 import type { StageChannel } from '@/lib/stageVideos';
 import { dedupeGeneratedNpcs, parseGeneratedNpcs, type GeneratedNpc } from '@/lib/npcGenerator';
@@ -149,9 +150,7 @@ export function NpcGeneratorAdmin() {
         spawn on that stage&apos;s city page. You can also paste previously copied JSON.
       </p>
       <nav style={{ marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <a href="/admin/stage-playlists" style={{ color: '#8ab4f8', fontSize: 13, textDecoration: 'none' }}>Stage playlists</a>
-        <a href="/admin/npc-generator" style={{ color: '#8ab4f8', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>NPC generator</a>
-        <a href="/admin/seeds" style={{ color: '#8ab4f8', fontSize: 13, textDecoration: 'none' }}>Seeds</a>
+        <AdminNav active="npc" />
       </nav>
 
       <div style={{ ...CARD_STYLE, display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>

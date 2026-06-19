@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AdminNav } from './AdminNav';
 import {
   GENERAL_SUBREDDITS,
   SEED_STAGE_META,
@@ -288,9 +289,7 @@ export function SeedAdmin() {
           )}
         </p>
         <nav style={{ marginTop: 10, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <a href="/admin/stage-playlists" style={LINK_STYLE}>Stage playlists</a>
-          <a href="/admin/npc-generator" style={LINK_STYLE}>NPC generator</a>
-          <a href="/admin/seeds" style={{ ...LINK_STYLE, fontWeight: 600 }}>Seeds</a>
+          <AdminNav active="seeds" />
         </nav>
       </header>
 

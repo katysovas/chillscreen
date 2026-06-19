@@ -6,6 +6,8 @@ export type StageChatterMessage = {
   sender: string;
   text: string;
   ts: number;
+  /** Signed-in account id when the player was authenticated. */
+  userId?: string;
 };
 
 export const STAGE_CHATTER_RETENTION_MS = 2 * 24 * 60 * 60 * 1000;

@@ -117,6 +117,28 @@ export class NpcChatterScheduler {
     return history.filter(m => !shouldExcludeFromStageChatter(m.sender, m.text));
   }
 
+  async purgeStageChatterSenders(senders: string[]): Promise<{
+    removed: number;
+    remaining: StageChatterMessage[];
+  }> {
+    const result = await this.stageChatter.removeSenders(senders);
+    return {
+      removed: result.removed,
+      remaining: result.remaining.filter(m => !shouldExcludeFromStageChatter(m.sender, m.text)),
+    };
+  }
+
+  async inspectStageChatterSenders(senders: string[]): Promise<{
+    total: number;
+    matching: number;
+  }> {
+    return this.stageChatter.countBySenders(senders);
+  }
+
+  async listStageChatterUserSenders() {
+    return this.stageChatter.listUserSenders();
+  }
+
   private broadcastSoloNpcLine(npcId: string, text: string): void {
     const cleaned = stripNpcChatterDots(text);
     if (!cleaned.trim()) return;
@@ -128,12 +150,16 @@ export class NpcChatterScheduler {
     });
   }
 
-  private async persistAndBroadcastRoomChat(sender: string, text: string): Promise<boolean> {
+  private async persistAndBroadcastRoomChat(
+    sender: string,
+    text: string,
+    userId?: string | null,
+  ): Promise<boolean> {
     if (sender.startsWith('npc:')) {
       this.broadcastSoloNpcLine(sender.slice(4), text);
       return true;
     }
-    const { entry, added } = await this.stageChatter.append(sender, text);
+    const { entry, added } = await this.stageChatter.append(sender, text, Date.now(), userId);
     if (!added) return false;
     this.deps.broadcast({ t: 'room-chat', sender, text, ts: entry.ts });
     return true;
@@ -247,12 +273,12 @@ export class NpcChatterScheduler {
     }
   }
 
-  handleRoomChat(sender: string, text: string) {
+  handleRoomChat(sender: string, text: string, userId?: string | null) {
     if (shouldExcludeFromStageChatter(sender, text)) {
       this.deps.broadcast({ t: 'room-chat', sender, text });
     } else {
       this.appendBuffer(sender, text);
-      void this.persistAndBroadcastRoomChat(sender, text);
+      void this.persistAndBroadcastRoomChat(sender, text, userId);
     }
 
     if (!shouldExcludeFromStageChatter(sender, text)) {

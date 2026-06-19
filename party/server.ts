@@ -22,10 +22,17 @@ import { chatterAuthHeader } from '../lib/npcChatter/auth';
 import { venueSlugFromRoomId } from '../lib/npcChatter/roomContext';
 import { resolveStagePlaylists } from '../lib/resolveStagePlaylists';
 import { filterChatMessage } from '../lib/messageFilter';
+import {
+  checkChatMessage,
+  checkTypingRelay,
+  createChatSpamState,
+  type ChatSpamState,
+} from './chatSpamLimit';
 import { DEFAULT_DURATION_MS, STAGE_EPOCH, type StageSync } from '../lib/stageVideos';
 import type { PlayerViewSnapshot } from '../lib/npcProximity';
 import { NpcChatterScheduler } from './npcChatterScheduler';
 import { EaselScheduler } from './easelScheduler';
+import { clientIpFromRequest, isConnectionBlocked } from './blocklistCache';
 
 /**
  * WhichStage presence room.
@@ -49,6 +56,8 @@ export default class WhichStageServer implements Party.Server {
   private chatterDebugPlayers = new Set<string>();
   /** connId → signed-in user id (for festie presence / seen debounce). */
   private connUserIds = new Map<string, string>();
+  /** connId → client IP when available (Cloudflare / proxy headers). */
+  private connIps = new Map<string, string>();
   /** Debounced last_seen_at when owner disconnects (userId → timer). */
   private festieSeenTimers = new Map<string, ReturnType<typeof setTimeout>>();
   /** Coalesce festie roster refresh after rapid leave events. */
@@ -64,6 +73,8 @@ export default class WhichStageServer implements Party.Server {
   private moveRelayLastSent = new Map<string, { worldX: number; facing: Facing; walking: boolean }>();
   private moveTickTimer: ReturnType<typeof setTimeout> | null = null;
   private static readonly MOVE_TICK_MS = 100;
+  /** Per-connection chat spam gate — evaporates on disconnect. */
+  private chatSpam = new Map<string, ChatSpamState>();
   private stageSync: StageSync | null = null;
   private chatter: NpcChatterScheduler;
   private easels: EaselScheduler;
@@ -102,7 +113,14 @@ export default class WhichStageServer implements Party.Server {
     this.chatter.setChatterDisabled(this.shouldSuppressNpcChatter());
   }
 
-  async onConnect(conn: Party.Connection) {
+  async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
+    const ip = clientIpFromRequest(ctx.request);
+    if (ip) this.connIps.set(conn.id, ip);
+    if (await isConnectionBlocked(this.partyEnv(), { ip })) {
+      conn.close(4403, 'blocked');
+      return;
+    }
+
     const playlists = await resolveStagePlaylists(this.room.env.YOUTUBE_API_KEY as string | undefined);
     this.stageSync = { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists };
     const festies = await this.fetchFesties();
@@ -125,22 +143,27 @@ export default class WhichStageServer implements Party.Server {
   }
 
   onMessage(raw: string, sender: Party.Connection) {
-    try {
-      this.handleMessage(raw, sender);
-    } catch (err) {
+    void this.handleMessage(raw, sender).catch(err => {
       console.error(
         `[whichstage] onMessage failed room=${this.room.id} conn=${sender.id}`,
         err,
       );
-    }
+    });
   }
 
-  private handleMessage(raw: string, sender: Party.Connection) {
+  private async handleMessage(raw: string, sender: Party.Connection) {
     const msg = decodeClient(raw);
     if (!msg) return;
 
     switch (msg.t) {
       case 'join': {
+        if (await this.rejectIfBlocked(sender.id, {
+          userId: msg.userId,
+          displayName: msg.profile.name,
+        })) {
+          sender.close(4403, 'blocked');
+          break;
+        }
         const wasEmpty = this.players.size === 0;
         const player: PlayerState = {
           id: sender.id,
@@ -242,28 +265,43 @@ export default class WhichStageServer implements Party.Server {
         }
         break;
       }
-      case 'chat-typing':
+      case 'chat-typing': {
+        if (!this.tryRelayTyping(sender.id)) break;
         this.sendTo(msg.to, { t: 'chat-typing', from: sender.id, typing: msg.typing });
         break;
+      }
       case 'chat-msg': {
-        const filtered = filterChatMessage(msg.text);
+        if (await this.rejectIfBlocked(sender.id, {
+          userId: this.players.get(sender.id)?.userId,
+          displayName: this.players.get(sender.id)?.name,
+        })) break;
+        const spam = this.tryPlayerChat(sender.id, msg.text);
+        if (!spam) break;
+        const filtered = filterChatMessage(spam);
         if (!filtered.ok) return;
         const player = this.players.get(sender.id);
         const label = player?.name?.trim() || sender.id.slice(0, 8);
-        this.chatter.handleRoomChat(`user:${label}`, filtered.text);
+        this.chatter.handleRoomChat(`user:${label}`, filtered.text, player?.userId);
         // Mirror to partner for connected-chat overlay sync.
         this.sendTo(msg.to, { t: 'chat-msg', from: sender.id, text: filtered.text });
         break;
       }
       case 'room-chat': {
-        const filtered = filterChatMessage(msg.text);
+        if (await this.rejectIfBlocked(sender.id, {
+          userId: this.players.get(sender.id)?.userId,
+          displayName: this.players.get(sender.id)?.name,
+        })) break;
+        const spam = this.tryPlayerChat(sender.id, msg.text);
+        if (!spam) break;
+        const filtered = filterChatMessage(spam);
         if (!filtered.ok) return;
         const player = this.players.get(sender.id);
         const label = player?.name?.trim() || sender.id.slice(0, 8);
-        this.chatter.handleRoomChat(`user:${label}`, filtered.text);
+        this.chatter.handleRoomChat(`user:${label}`, filtered.text, player?.userId);
         break;
       }
       case 'room-typing': {
+        if (!this.tryRelayTyping(sender.id)) break;
         const player = this.players.get(sender.id);
         const label = player?.name?.trim() || sender.id.slice(0, 8);
         this.room.broadcast(
@@ -282,11 +320,17 @@ export default class WhichStageServer implements Party.Server {
         break;
       }
       case 'ambient-msg': {
-        const filtered = filterChatMessage(msg.text);
+        if (await this.rejectIfBlocked(sender.id, {
+          userId: this.players.get(sender.id)?.userId,
+          displayName: this.players.get(sender.id)?.name,
+        })) break;
+        const spam = this.tryPlayerChat(sender.id, msg.text);
+        if (!spam) break;
+        const filtered = filterChatMessage(spam);
         if (!filtered.ok) return;
         const player = this.players.get(sender.id);
         const label = player?.name?.trim() || sender.id.slice(0, 8);
-        this.chatter.handleRoomChat(`user:${label}`, filtered.text);
+        this.chatter.handleRoomChat(`user:${label}`, filtered.text, player?.userId);
         break;
       }
       case 'npc-chat': {
@@ -369,6 +413,8 @@ export default class WhichStageServer implements Party.Server {
     const wasLeader = conn.id === this.npcLeaderId;
     const userId = this.connUserIds.get(conn.id);
     this.connUserIds.delete(conn.id);
+    this.connIps.delete(conn.id);
+    this.chatSpam.delete(conn.id);
     this.playerCapabilities.delete(conn.id);
     this.clearMoveRelay(conn.id);
     if (this.players.delete(conn.id)) {
@@ -402,8 +448,43 @@ export default class WhichStageServer implements Party.Server {
     this.onClose(conn);
   }
 
+  private partyEnv(): Record<string, string | undefined> {
+    return this.room.env as Record<string, string | undefined>;
+  }
+
+  private async rejectIfBlocked(
+    connId: string,
+    input: { userId?: string | null; displayName?: string | null },
+  ): Promise<boolean> {
+    return isConnectionBlocked(this.partyEnv(), {
+      userId: input.userId,
+      displayName: input.displayName,
+      ip: this.connIps.get(connId) ?? null,
+    });
+  }
+
   private broadcastExcept(exceptId: string, msg: ServerMessage) {
     this.room.broadcast(encode(msg), [exceptId]);
+  }
+
+  private chatSpamState(connId: string): ChatSpamState {
+    let state = this.chatSpam.get(connId);
+    if (!state) {
+      state = createChatSpamState();
+      this.chatSpam.set(connId, state);
+    }
+    return state;
+  }
+
+  /** Spam gate for player chat — silent drop when over budget or soft-muted. */
+  private tryPlayerChat(connId: string, raw: string): string | null {
+    const hit = checkChatMessage(this.chatSpamState(connId), raw);
+    return hit.ok ? hit.text : null;
+  }
+
+  /** Typing relay cap (~2 Hz) — silent drop when too fast. */
+  private tryRelayTyping(connId: string): boolean {
+    return checkTypingRelay(this.chatSpamState(connId));
   }
 
   private queueMoveRelay(
@@ -602,11 +683,91 @@ export default class WhichStageServer implements Party.Server {
     }
   }
 
-  /** HTTP stats for stage picker festie counts (GET /parties/whichstage/:room). */
-  async onRequest(req: Party.Request): Promise<Response> {
-    if (req.method !== 'GET') {
-      return new Response('Method not allowed', { status: 405 });
+  private verifyPartyAdmin(req: Party.Request): Response | null {
+    const secret = (this.room.env as Record<string, string | undefined>).NPC_CHATTER_SECRET?.trim();
+    if (!secret) {
+      return Response.json({ error: 'Service unavailable' }, { status: 503 });
     }
-    return Response.json({ players: this.players.size });
+    const auth = req.headers.get('authorization');
+    if (auth !== `Bearer ${secret}`) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return null;
+  }
+
+  /** HTTP stats + admin (GET /parties/whichstage/:room). */
+  async onRequest(req: Party.Request): Promise<Response> {
+    if (req.method === 'GET') {
+      return Response.json({ players: this.players.size });
+    }
+
+    if (req.method === 'POST') {
+      const authErr = this.verifyPartyAdmin(req);
+      if (authErr) return authErr;
+
+      let body: { action?: string; sender?: string; senders?: string[] };
+      try {
+        body = await req.json() as typeof body;
+      } catch {
+        return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+      }
+
+      if (body.action === 'purge-chatter') {
+        const senders = [
+          ...(body.senders ?? []),
+          ...(body.sender ? [body.sender] : []),
+        ]
+          .map(s => s.trim())
+          .filter(Boolean);
+        if (senders.length === 0) {
+          return Response.json({ error: 'sender or senders required' }, { status: 400 });
+        }
+
+        const result = await this.chatter.purgeStageChatterSenders(senders);
+        this.room.broadcast(encode({
+          t: 'stage-chatter-history',
+          messages: result.remaining,
+        }));
+        return Response.json({
+          ok: true,
+          room: this.room.id,
+          removed: result.removed,
+          remaining: result.remaining.length,
+        });
+      }
+
+      if (body.action === 'inspect-chatter') {
+        const senders = [
+          ...(body.senders ?? []),
+          ...(body.sender ? [body.sender] : []),
+        ]
+          .map(s => s.trim())
+          .filter(Boolean);
+        if (senders.length === 0) {
+          return Response.json({ error: 'sender or senders required' }, { status: 400 });
+        }
+
+        const result = await this.chatter.inspectStageChatterSenders(senders);
+        return Response.json({
+          ok: true,
+          room: this.room.id,
+          matching: result.matching,
+          total: result.total,
+        });
+      }
+
+      if (body.action === 'list-chatter-senders') {
+        const senders = await this.chatter.listStageChatterUserSenders();
+        return Response.json({
+          ok: true,
+          room: this.room.id,
+          senders,
+        });
+      }
+
+      return Response.json({ error: 'Unknown action' }, { status: 400 });
+    }
+
+    return new Response('Method not allowed', { status: 405 });
   }
 }
