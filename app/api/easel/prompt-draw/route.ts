@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { generatePromptedDrawingProgram } from '@/lib/easel/generatePromptedDrawing';
-import { drawingModelLabel, resolveDrawingModelId } from '@/lib/easel/drawingModel';
+import {
+  drawingModelLabel,
+  ensurePixelLlmDrawingModel,
+  resolveDrawingModelId,
+} from '@/lib/easel/drawingModel';
 import { parseDrawPrompt } from '@/lib/easel/parseDrawPrompt';
 import { ierror } from '@/lib/internalDebug';
 
@@ -32,7 +36,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const modelId = body.modelId?.trim() || resolveDrawingModelId(npcId);
+    const modelId = ensurePixelLlmDrawingModel(body.modelId?.trim() || resolveDrawingModelId(npcId));
     const { program, totalSegments } = await generatePromptedDrawingProgram(
       npcId,
       userPrompt,

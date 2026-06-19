@@ -1,8 +1,11 @@
 /**
  * Drawing LLM selection — separate from NPC chat models.
  *
- * Set `DRAWING_MODEL_OVERRIDE` to force one model for every NPC drawing
- * (ambient easels + chat prompts). Chat replies still use each NPC's own model.
+ * All NPC drawings (ambient easels + chat prompts) use the pixel-llm GRID
+ * pipeline. Chat replies still use each NPC's own model.
+ *
+ * Set `DRAWING_MODEL_OVERRIDE` to force one pixel-llm backend for every NPC.
+ * null = each NPC draws via pixel-llm/{their chat model}.
  *
  * Enable `TEST_DRAW_MODEL_COMPARE` to spawn NPCs on load, same prompt,
  * different models — side-by-side canvases for judging.
@@ -10,14 +13,15 @@
 
 import { resolveNpcModelId, getChatterCharacter } from '@/lib/chatterCast';
 import {
+  ensurePixelLlmDrawingModel,
   isPixelLlmGridModel,
   resolvePixelLlmBackendModel,
 } from './generatePixelGridDrawing';
 
-/** Default drawing pipeline — pixel-llm GRID via Gemini Flash. Chat models unchanged. */
+/** Default pixel-llm backend when no per-NPC chat model is available. */
 export const DEFAULT_DRAWING_MODEL = 'pixel-llm/google/gemini-2.5-flash';
 
-/** Force this OpenRouter/OpenAI model for all drawing. null = per-NPC default. */
+/** Force this pixel-llm backend for all drawing. null = per-NPC chat model. */
 export const DRAWING_MODEL_OVERRIDE: string | null = DEFAULT_DRAWING_MODEL;
 
 /** Side-by-side drawing model shootout on page load. */
@@ -54,19 +58,22 @@ export function drawingModelLabel(modelId: string): string {
   return slash >= 0 ? modelId.slice(slash + 1) : modelId;
 }
 
-/** Model used for stroke generation — not NPC chat. */
+/** Pixel-llm GRID model for stroke generation — not NPC chat. */
 export function resolveDrawingModelId(npcId: string): string {
-  const ch = getChatterCharacter(npcId);
-  const chatModel = ch ? resolveNpcModelId(ch) : 'openai/gpt-4.1-nano';
-
-  if (DRAWING_MODEL_OVERRIDE) return DRAWING_MODEL_OVERRIDE;
-
   if (TEST_DRAW_MODEL_COMPARE) {
     const idx = TEST_DRAW_MODEL_COMPARE_CONFIG.npcIds.indexOf(npcId);
-    if (idx >= 0) return TEST_DRAW_MODEL_COMPARE_CONFIG.models[idx]!;
+    if (idx >= 0) {
+      return ensurePixelLlmDrawingModel(TEST_DRAW_MODEL_COMPARE_CONFIG.models[idx]!);
+    }
   }
 
-  return chatModel;
+  if (DRAWING_MODEL_OVERRIDE) {
+    return ensurePixelLlmDrawingModel(DRAWING_MODEL_OVERRIDE);
+  }
+
+  const ch = getChatterCharacter(npcId);
+  const chatModel = ch ? resolveNpcModelId(ch) : 'openai/gpt-4.1-nano';
+  return ensurePixelLlmDrawingModel(chatModel);
 }
 
 export function isDrawModelCompareNpc(npcId: string): boolean {
@@ -77,3 +84,5 @@ export function isDrawModelCompareNpc(npcId: string): boolean {
 export function drawModelCompareNpcIds(): readonly string[] {
   return TEST_DRAW_MODEL_COMPARE ? TEST_DRAW_MODEL_COMPARE_CONFIG.npcIds : [];
 }
+
+export { ensurePixelLlmDrawingModel };

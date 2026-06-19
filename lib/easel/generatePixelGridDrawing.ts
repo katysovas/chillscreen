@@ -46,6 +46,14 @@ export function resolvePixelLlmBackendModel(modelId: string): string {
   return PIXEL_LLM_BACKEND_MODEL;
 }
 
+/** Every drawing uses pixel-llm GRID — wrap chat / raw OpenRouter ids when needed. */
+export function ensurePixelLlmDrawingModel(modelId: string): string {
+  const id = modelId.trim();
+  if (!id) return `${PIXEL_LLM_PREFIX}${PIXEL_LLM_BACKEND_MODEL}`;
+  if (isPixelLlmGridModel(id)) return id;
+  return `${PIXEL_LLM_PREFIX}${id}`;
+}
+
 function backendModelLabel(backendModel: string): string {
   const slash = backendModel.lastIndexOf('/');
   return slash >= 0 ? backendModel.slice(slash + 1) : backendModel;
