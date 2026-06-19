@@ -1,5 +1,6 @@
 import type { CharacterDef } from '@/components/game/characters';
 import type { CharacterLoadout } from '@/components/game/characters/loadout';
+import { loadoutFromSync } from '@/lib/multiplayer/loadoutSync';
 import type { Personality } from '@/components/game/NPC';
 import { festiePersonalityNotesForNpcChatter } from '@/lib/festie/describeNotes';
 import { festieModelIdForProvider } from '@/lib/festie/llmProviders';
@@ -46,12 +47,17 @@ export function festieToCharacterDef(
   const preset = festiePresetById(festie.preset);
   const anchor = stageAnchorForRoute(route);
   const fromLeft = index % 2 === 0;
+  const balloonColor = festie.balloon_color ?? preset.balloonColor;
+  const loadout = festie.loadout
+    ? loadoutFromSync(festie.loadout, balloonColor)
+    : undefined;
 
   return {
     id: festieNpcId(festie.id),
     name: festie.name,
-    balloonColor: preset.balloonColor,
-    outfit: preset.outfit,
+    balloonColor,
+    outfit: loadout ? undefined : preset.outfit,
+    loadout,
     startX: fromLeft ? -16 - (index % 3) * 5 : 108 + (index % 3) * 5,
     entryDirection: fromLeft ? 'right' : 'left',
     entryDelay: 2_000 + index * 1_500,
@@ -60,6 +66,18 @@ export function festieToCharacterDef(
     personalityNotes: festiePersonalityNotesForNpcChatter(festie),
     modelId: festieModelIdForProvider(festie.llm_provider),
   };
+}
+
+/** Hide festie NPC when owner is live as a remote player (keep visible for local autopilot). */
+export function hideFestieNpcForConnectedOwner(
+  festie: FestiePublic,
+  connectedUserIds: ReadonlySet<string>,
+  localUserId: string | null,
+  localAutopilot: boolean,
+): boolean {
+  const uid = festie.owner_user_id;
+  if (!uid || !connectedUserIds.has(uid)) return false;
+  return !(localUserId === uid && localAutopilot);
 }
 
 export function festiesToCharacterDefs(

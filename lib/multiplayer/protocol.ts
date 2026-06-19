@@ -49,6 +49,8 @@ export type PlayerProfile = {
 /** Full per-player state the room keeps in memory and replicates. */
 export type PlayerState = PlayerProfile & {
   id: string;
+  /** Signed-in account id when the player joined authenticated. */
+  userId?: string;
   worldX: number;
   facing: Facing;
   walking: boolean;

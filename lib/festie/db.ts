@@ -16,6 +16,10 @@ import { requireDb } from '@/lib/db';
 import { toIsoTimestamp } from '@/lib/timestamps';
 import { isMissingColumnError } from '@/lib/dbErrors';
 import { parseFestieControlMode } from '@/lib/festie/types';
+import { normalizeLoadout } from '@/components/game/characters/loadout/defaults';
+import type { CharacterLoadout } from '@/components/game/characters/loadout/types';
+import { serializeLoadout } from '@/lib/multiplayer/loadoutSync';
+import { festiePresetById } from '@/lib/festie/presets';
 
 export class FestieSchemaError extends Error {
   readonly migration: string;
@@ -77,6 +81,26 @@ export function toFestiePublic(row: FestieRow): FestiePublic {
     last_seen_at: row.last_seen_at,
     tier: festieTier(new Date(row.last_seen_at)),
     owner_on_stage: row.owner_online,
+    owner_user_id: row.user_id,
+  };
+}
+
+function parseUserLoadout(raw: unknown): CharacterLoadout {
+  if (!raw || typeof raw !== 'object') return {};
+  return raw as CharacterLoadout;
+}
+
+function festieAppearanceFromUserLoadout(
+  preset: FestiePreset,
+  rawLoadout: unknown,
+): Pick<FestiePublic, 'loadout' | 'balloon_color'> {
+  const presetDef = festiePresetById(preset);
+  const partial = parseUserLoadout(rawLoadout);
+  const balloonColor = partial.balloonColor ?? presetDef.balloonColor;
+  const normalized = normalizeLoadout(partial, balloonColor);
+  return {
+    balloon_color: balloonColor,
+    loadout: serializeLoadout(normalized),
   };
 }
 
@@ -249,21 +273,23 @@ export async function listActiveFestiesForStage(
   const online = new Set(onlineUserIds);
   const rows = online.size > 0
     ? await sql`
-        SELECT id, user_id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online, control_mode
-        FROM festies
-        WHERE last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
+        SELECT f.id, f.user_id, f.name, f.preset, f.attributes, f.topics, f.personality_notes, f.stage_slug, f.last_seen_at, f.owner_online, f.control_mode, u.loadout
+        FROM festies f
+        LEFT JOIN users u ON u.id = f.user_id
+        WHERE f.last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
           AND (
-            stage_slug = ${stageSlug}
-            OR user_id = ANY(${[...online]}::uuid[])
+            f.stage_slug = ${stageSlug}
+            OR f.user_id = ANY(${[...online]}::uuid[])
           )
-        ORDER BY last_seen_at DESC
+        ORDER BY f.last_seen_at DESC
       `
     : await sql`
-        SELECT id, user_id, name, preset, attributes, topics, personality_notes, stage_slug, last_seen_at, owner_online, control_mode
-        FROM festies
-        WHERE stage_slug = ${stageSlug}
-          AND last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
-        ORDER BY last_seen_at DESC
+        SELECT f.id, f.user_id, f.name, f.preset, f.attributes, f.topics, f.personality_notes, f.stage_slug, f.last_seen_at, f.owner_online, f.control_mode, u.loadout
+        FROM festies f
+        LEFT JOIN users u ON u.id = f.user_id
+        WHERE f.stage_slug = ${stageSlug}
+          AND f.last_seen_at > now() - (${DIM_WINDOW_HOURS}::int * interval '1 hour')
+        ORDER BY f.last_seen_at DESC
       `;
 
   const byId = new Map<string, FestiePublic>();
@@ -273,6 +299,7 @@ export async function listActiveFestiesForStage(
     const autopilot = isOnline && row.control_mode === 'ai';
     byId.set(row.id, {
       ...toFestiePublic(row),
+      ...festieAppearanceFromUserLoadout(row.preset, (r as { loadout?: unknown }).loadout),
       control_mode: row.control_mode,
       owner_on_stage: isOnline && !autopilot,
     });

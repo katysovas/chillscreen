@@ -1,4 +1,5 @@
 import type { FestieLlmProvider } from '@/lib/festie/llmProviders';
+import type { PlayerLoadoutSync } from '@/lib/multiplayer/protocol';
 
 export type FestieControlMode = 'human' | 'ai';
 
@@ -51,6 +52,12 @@ export type FestiePublic = {
   owner_on_stage?: boolean;
   /** Autopilot — festie wanders autonomously while owner is online. */
   control_mode?: FestieControlMode;
+  /** Signed-in owner account — used to dedupe live remote avatars vs festie NPCs. */
+  owner_user_id?: string;
+  /** Owner's equipped vendor props (from users.loadout). */
+  loadout?: PlayerLoadoutSync;
+  /** Balloon color from owner loadout (falls back to preset). */
+  balloon_color?: string;
 };
 
 /** Signed-in owner view — includes email recap prefs (never on stage sync). */

@@ -17,7 +17,7 @@ import { getNpcConvoHold } from '@/lib/npcConvoHold';
 import type { VenueRoute } from '@/lib/venueSlugs';
 import { easelNpcStandWorldX, easelNpcStandWorldXForCanvas } from '@/lib/easel/layout';
 import { setEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
-import { easelPaintingChatter } from '@/lib/easel/paintingLabel';
+import { easelPaintingChatter, PAINTING_CHATTER_VISIBLE_MS } from '@/lib/easel/paintingLabel';
 import {
   pickWorldXOutsideEaselBlock,
   shouldNpcAvoidEaselCanvas,
@@ -732,16 +732,30 @@ function NPC({
     }
   }, [greeting]);
 
-  const paintingMessages = useMemo((): ChatLine[] => {
-    const label = chatPromptDrawingLabel ?? easelPaintingLabel;
-    if (!label) return [];
-    return [createChatLine(easelPaintingChatter(label))];
-  }, [chatPromptDrawingLabel, easelPaintingLabel]);
+  const paintingLabel = chatPromptDrawingLabel ?? easelPaintingLabel;
+  const [paintingMessages, setPaintingMessages] = useState<ChatLine[]>([]);
+  const paintingHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const promptDrawing = Boolean(chatPromptDrawingLabel);
-  const showPaintingBubble = promptDrawing
-    ? Boolean(chatPromptDrawingLabel)
-    : easelStationed && Boolean(easelPaintingLabel);
+  useEffect(() => {
+    if (paintingHideRef.current) {
+      clearTimeout(paintingHideRef.current);
+      paintingHideRef.current = null;
+    }
+    if (!paintingLabel) {
+      setPaintingMessages([]);
+      return;
+    }
+    setPaintingMessages([createChatLine(easelPaintingChatter(paintingLabel))]);
+    paintingHideRef.current = setTimeout(() => {
+      setPaintingMessages([]);
+      paintingHideRef.current = null;
+    }, PAINTING_CHATTER_VISIBLE_MS);
+    return () => {
+      if (paintingHideRef.current) clearTimeout(paintingHideRef.current);
+    };
+  }, [paintingLabel]);
+
+  const showPaintingBubble = paintingMessages.length > 0;
   const showPublicBubble = Boolean(
     publicMessages?.length && !greeting && !showPaintingBubble,
   );

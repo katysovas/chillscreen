@@ -22,17 +22,45 @@ import { getHumansOnlyStageChatter } from '@/lib/stageChatter/preferences';
 import { isChatterDebugMode } from '@/lib/chatterDebug';
 import { ilog, ierror, iwarn } from '@/lib/internalDebug';
 import type { StageChatterMessage } from '@/lib/stageChatter/types';
+import type { PlayerState } from './protocol';
 import type { NpcLeaderCapability } from '@/lib/npcLeaderCapability';
 import {
   awaitNpcLeaderCapability,
   prepareNpcLeaderCapability,
 } from '@/lib/npcLeaderCapabilityClient';
 
+function remoteFromPlayer(p: PlayerState): RemotePlayerState {
+  return {
+    name: p.name,
+    balloonColor: p.balloonColor,
+    loadout: p.loadout,
+    userId: p.userId,
+    worldX: p.worldX,
+    facing: p.facing,
+    walking: p.walking,
+  };
+}
+
+function connectedUserIdsFromRoster(
+  roster: Map<string, RemotePlayerState>,
+  selfUserId: string | null | undefined,
+): string[] {
+  const ids = new Set<string>();
+  const self = selfUserId?.trim();
+  if (self) ids.add(self);
+  for (const st of roster.values()) {
+    const uid = st.userId?.trim();
+    if (uid) ids.add(uid);
+  }
+  return [...ids];
+}
+
 /** What a remote avatar needs to render — kept in a ref, mutated without rerenders. */
 export type RemotePlayerState = {
   name: string | null;
   balloonColor: string;
   loadout?: PlayerLoadoutSync;
+  userId?: string;
   worldX: number;
   facing: Facing;
   walking: boolean;
@@ -136,6 +164,8 @@ export type Multiplayer = {
   ambientRef: React.RefObject<Map<string, RemoteAmbientMessage>>;
   /** Re-renders only when players join/leave. */
   remoteIds: string[];
+  /** Signed-in account ids currently in the room (for festie vs remote dedupe). */
+  connectedUserIds: string[];
   /** Active player↔player conversations (for connect glow). */
   chatPairs: RemoteChatPair[];
   /** Active player↔NPC conversations (for connect glow). */
@@ -198,6 +228,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const [connected, setConnected] = useState(false);
   const [shouldConnect, setShouldConnect] = useState(false);
   const [remoteIds, setRemoteIds] = useState<string[]>([]);
+  const [connectedUserIds, setConnectedUserIds] = useState<string[]>([]);
   const [chatPairs, setChatPairs] = useState<RemoteChatPair[]>([]);
   const [remoteNpcChats, setRemoteNpcChats] = useState<RemoteNpcChat[]>([]);
   const [npcConvoPairs, setNpcConvoPairs] = useState<NpcConvoPair[]>([]);
@@ -219,6 +250,12 @@ export function useMultiplayer(opts: Options): Multiplayer {
   eventsRef.current = opts;
   const profileRef = opts.profileRef;
   const userIdRef = opts.userIdRef;
+
+  const syncConnectedUserIds = useCallback(() => {
+    setConnectedUserIds(
+      connectedUserIdsFromRoster(remoteStateRef.current, userIdRef?.current),
+    );
+  }, [userIdRef]);
   const spawnRef = opts.spawnWorldOffRef;
 
   const sendNow = useCallback((data: object) => {
@@ -354,16 +391,10 @@ export function useMultiplayer(opts: Options): Multiplayer {
           }
           roster.clear();
           for (const p of msg.players) {
-            roster.set(p.id, {
-              name: p.name,
-              balloonColor: p.balloonColor,
-              loadout: p.loadout,
-              worldX: p.worldX,
-              facing: p.facing,
-              walking: p.walking,
-            });
+            roster.set(p.id, remoteFromPlayer(p));
           }
           setRemoteIds([...roster.keys()]);
+          syncConnectedUserIds();
           // Server ignores moves until join is processed — safe to flush now.
           flushMove();
           flushPending();
@@ -371,20 +402,17 @@ export function useMultiplayer(opts: Options): Multiplayer {
         }
         case 'joined': {
           const p = msg.player;
-          roster.set(p.id, {
-            name: p.name,
-            balloonColor: p.balloonColor,
-            loadout: p.loadout,
-            worldX: p.worldX,
-            facing: p.facing,
-            walking: p.walking,
-          });
+          roster.set(p.id, remoteFromPlayer(p));
           setRemoteIds([...roster.keys()]);
+          syncConnectedUserIds();
           break;
         }
         case 'left': {
           ambientRef.current.delete(msg.id);
-          if (roster.delete(msg.id)) setRemoteIds([...roster.keys()]);
+          if (roster.delete(msg.id)) {
+            setRemoteIds([...roster.keys()]);
+            syncConnectedUserIds();
+          }
           setChatPairs(prev => prev.filter(p => p.a !== msg.id && p.b !== msg.id));
           setRemoteNpcChats(prev => prev.filter(c => c.playerId !== msg.id));
           ev.onPeerLeft?.(msg.id);
@@ -567,7 +595,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
     [],
   );
   return {
-    selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds,
+    selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds, connectedUserIds,
     chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,
     isNpcLeader, npcSyncRef,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,

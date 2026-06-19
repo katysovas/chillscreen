@@ -13,6 +13,9 @@ export function easelPaintingChatter(title: string): string {
   return `currently doodling ${title}..`.toLowerCase();
 }
 
+/** How long the easel painting bubble stays visible. */
+export const PAINTING_CHATTER_VISIBLE_MS = 5_000;
+
 /** Label for the NPC actively painting — null once their canvas is finished. */
 export function easelPaintingLabelForNpc(
   npcId: string,

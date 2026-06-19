@@ -147,6 +147,7 @@ export default class WhichStageServer implements Party.Server {
           name: msg.profile.name,
           balloonColor: msg.profile.balloonColor,
           loadout: msg.profile.loadout,
+          userId: msg.userId?.trim() || undefined,
           worldX: msg.worldX,
           facing: msg.facing,
           walking: msg.walking,

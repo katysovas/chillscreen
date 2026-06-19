@@ -52,6 +52,7 @@ import {
   festieIdFromNpcId,
   festieNpcId,
   festiesToCharacterDefs,
+  hideFestieNpcForConnectedOwner,
   isFestieNpcId,
 } from '@/lib/festie/toCharacterDef';
 import {
@@ -929,7 +930,20 @@ export default function SFCity({
     const compareCast = drawModelCompareCast();
     if (compareCast) return compareCast;
 
-    let festieDefs = festiesToCharacterDefs(syncedStageFesties, effectiveVenueRoute);
+    const connectedOwnerIds = new Set(mp.connectedUserIds);
+    let festieDefs = festiesToCharacterDefs(syncedStageFesties, effectiveVenueRoute)
+      .filter(cfg => {
+        const festieId = festieIdFromNpcId(cfg.id);
+        if (!festieId) return true;
+        const festie = syncedStageFesties.find(f => f.id === festieId);
+        if (!festie) return true;
+        return !hideFestieNpcForConnectedOwner(
+          festie,
+          connectedOwnerIds,
+          userIdRef.current,
+          autopilotOn,
+        );
+      });
     if (ownerFestieNpcId) {
       festieDefs = festieDefs.map(cfg => {
         const extras: Partial<CharacterDef> = { entryDelay: 0 };
@@ -957,7 +971,7 @@ export default function SFCity({
       easelChannel,
       activePainterNpcIds(activeEaselSession),
     );
-  }, [npcCast, syncedStageFesties, effectiveVenueRoute, easelCastReady, activeEaselSession, easelSessionEnabled, easelChannel, autopilotOn, ownerFestieNpcId, ownerFestieSpawnWx, myColor, playerLoadout]);
+  }, [npcCast, syncedStageFesties, effectiveVenueRoute, easelCastReady, activeEaselSession, easelSessionEnabled, easelChannel, autopilotOn, ownerFestieNpcId, ownerFestieSpawnWx, myColor, playerLoadout, mp.connectedUserIds]);
 
   const ownerFestieVendorAttractWx = useMemo(() => {
     if (!autopilotOn) return undefined;
