@@ -63,14 +63,23 @@ export async function listChatAccounts(): Promise<ChatAccountRow[]> {
       f.name AS festie_name,
       f.stage_slug,
       u.created_at,
-      COUNT(DISTINCT fc.id)::int AS conversation_sessions,
-      MAX(fc.created_at) AS last_chat_at
+      (
+        SELECT COUNT(*)::int
+        FROM festie_conversations fc
+        WHERE fc.player_id = u.id
+      ) AS conversation_sessions,
+      (
+        SELECT MAX(fc.created_at)
+        FROM festie_conversations fc
+        WHERE fc.player_id = u.id
+      ) AS last_chat_at
     FROM users u
     LEFT JOIN festies f ON f.user_id = u.id
-    LEFT JOIN festie_conversations fc ON fc.player_id = u.id
-    GROUP BY u.id, f.name, f.stage_slug, u.created_at
-    HAVING COUNT(fc.id) > 0 OR f.id IS NOT NULL
-    ORDER BY MAX(fc.created_at) DESC NULLS LAST, u.created_at DESC
+    WHERE f.id IS NOT NULL
+       OR EXISTS (
+         SELECT 1 FROM festie_conversations fc WHERE fc.player_id = u.id
+       )
+    ORDER BY last_chat_at DESC NULLS LAST, u.created_at DESC
   ` as Record<string, unknown>[];
 
   return rows.map(row => {
