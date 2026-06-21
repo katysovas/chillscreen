@@ -60,10 +60,7 @@ import {
   FESTIE_DESCRIBE_SHOUTOUT_INTERVAL_MIN_MS,
   FESTIE_SHOUTOUT_COOLDOWN_MS,
 } from '../lib/festie/describeShoutouts';
-import {
-  shouldExcludeFromStageChatter,
-  type StageChatterMessage,
-} from '../lib/stageChatter/types';
+import type { StageChatterMessage } from '../lib/stageChatter/types';
 
 type NpcChatterLine = { npc: string; text: string };
 
@@ -114,7 +111,7 @@ export class NpcChatterScheduler {
 
   async getStageChatterHistory(): Promise<StageChatterMessage[]> {
     const history = await this.stageChatter.load();
-    return history.filter(m => !shouldExcludeFromStageChatter(m.sender, m.text));
+    return history;
   }
 
   async purgeStageChatterSenders(senders: string[]): Promise<{
@@ -124,7 +121,7 @@ export class NpcChatterScheduler {
     const result = await this.stageChatter.removeSenders(senders);
     return {
       removed: result.removed,
-      remaining: result.remaining.filter(m => !shouldExcludeFromStageChatter(m.sender, m.text)),
+      remaining: result.remaining,
     };
   }
 
@@ -139,29 +136,22 @@ export class NpcChatterScheduler {
     return this.stageChatter.listUserSenders();
   }
 
-  private broadcastSoloNpcLine(npcId: string, text: string): void {
-    const cleaned = stripNpcChatterDots(text);
-    if (!cleaned.trim()) return;
-    this.deps.broadcast({
-      t: 'room-chat',
-      sender: `npc:${npcId}`,
-      text: cleaned,
-      ts: Date.now(),
-    });
-  }
-
   private async persistAndBroadcastRoomChat(
     sender: string,
     text: string,
     userId?: string | null,
   ): Promise<boolean> {
-    if (sender.startsWith('npc:')) {
-      this.broadcastSoloNpcLine(sender.slice(4), text);
-      return true;
-    }
-    const { entry, added } = await this.stageChatter.append(sender, text, Date.now(), userId);
+    const cleaned = sender.startsWith('npc:') ? stripNpcChatterDots(text) : text;
+    if (sender.startsWith('npc:') && !cleaned.trim()) return false;
+
+    const { entry, added } = await this.stageChatter.append(
+      sender,
+      cleaned,
+      Date.now(),
+      userId,
+    );
     if (!added) return false;
-    this.deps.broadcast({ t: 'room-chat', sender, text, ts: entry.ts });
+    this.deps.broadcast({ t: 'room-chat', sender, text: entry.text, ts: entry.ts });
     return true;
   }
 
@@ -274,16 +264,9 @@ export class NpcChatterScheduler {
   }
 
   handleRoomChat(sender: string, text: string, userId?: string | null) {
-    if (shouldExcludeFromStageChatter(sender, text)) {
-      this.deps.broadcast({ t: 'room-chat', sender, text });
-    } else {
-      this.appendBuffer(sender, text);
-      void this.persistAndBroadcastRoomChat(sender, text, userId);
-    }
-
-    if (!shouldExcludeFromStageChatter(sender, text)) {
-      this.scheduleStageChatterWave();
-    }
+    this.appendBuffer(sender, text);
+    void this.persistAndBroadcastRoomChat(sender, text, userId);
+    this.scheduleStageChatterWave();
 
     if (!SOLO_NPC_ROOM_REPLIES_ENABLED || this.chatterDisabled) return;
 

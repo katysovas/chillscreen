@@ -134,7 +134,6 @@ import { PlayerVariantGallery } from './PlayerVariantGallery';
 import { useSkyPeriod } from './hooks/useSkyPeriod';
 import { AMBIENT_CHAT_ENABLED } from '@/lib/ambientChatEnabled';
 import { useRoomChatter } from './hooks/useRoomChatter';
-import { shouldExcludeFromStageChatter } from '@/lib/stageChatter/types';
 import { isNpcStageChatterSender } from '@/lib/stageChatter/preferences';
 import { purgeChatterSenderInRoom } from '@/lib/moderation/client';
 import { isSuperAdminFestieName } from '@/lib/superAdmin';
@@ -1192,6 +1191,8 @@ export default function SFCity({
       }
     },
     onRoomChat: (sender, text, ts) => {
+      stageChatter.appendMessage(sender, text, ts);
+
       if (sender.startsWith('npc:')) {
         const npcId = sender.slice(4);
         roomChatter.handleNpcShout(npcId, text);
@@ -1203,9 +1204,6 @@ export default function SFCity({
           });
         }
         return;
-      }
-      if (!shouldExcludeFromStageChatter(sender, text)) {
-        stageChatter.appendMessage(sender, text, ts);
       }
       if (skipRoomChatEcho(sender)) return;
       roomChatter.handleRoomChat(sender, text);
@@ -1797,6 +1795,9 @@ export default function SFCity({
     setChatDraft('');
     setChatMode(null);
     if (!filtered.ok) return;
+    const label = playerName?.trim() || mpRef.current?.selfId?.slice(0, 8) || 'festie';
+    const sender = `user:${label}`;
+    stageChatter.appendMessage(sender, filtered.text);
     showPlayerAmbient(filtered.text);
     mpRef.current?.sendAmbientMessage(filtered.text);
   };
@@ -1806,10 +1807,11 @@ export default function SFCity({
     if (!filtered.ok) return;
     const label = playerName?.trim() || mpRef.current?.selfId?.slice(0, 8) || 'festie';
     const sender = `user:${label}`;
+    stageChatter.appendMessage(sender, filtered.text);
     stageChatter.setTyping(sender, false);
     roomChatter.handleRoomChat(sender, filtered.text);
     mpRef.current?.sendRoomChat(filtered.text);
-  }, [playerName, roomChatter, stageChatter.setTyping]);
+  }, [playerName, roomChatter, stageChatter.appendMessage, stageChatter.setTyping]);
 
   const handleStageChatterTyping = useCallback((typing: boolean) => {
     const label = playerName?.trim() || mpRef.current?.selfId?.slice(0, 8) || 'festie';

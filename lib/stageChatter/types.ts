@@ -13,12 +13,6 @@ export type StageChatterMessage = {
 export const STAGE_CHATTER_RETENTION_MS = 2 * 24 * 60 * 60 * 1000;
 export const STAGE_CHATTER_STORAGE_KEY = 'stage-chatter-v1';
 
-/** Ground Score pickups — world bubble only, not stage chatter log. */
-export function shouldExcludeFromStageChatter(sender: string, text: string): boolean {
-  if (!sender.startsWith('user:')) return false;
-  return /^Ground Score!\s+\d+\s+Coins!$/i.test(text.trim());
-}
-
 export function stageChatterKey(msg: Pick<StageChatterMessage, 'sender' | 'text' | 'ts'>): string {
   return `${msg.ts}\0${msg.sender}\0${msg.text}`;
 }
@@ -55,7 +49,6 @@ export function mergeStageChatter(
   const seen = new Set(existing.map(stageChatterDedupKey));
   const merged = [...existing];
   for (const msg of incoming) {
-    if (shouldExcludeFromStageChatter(msg.sender, msg.text)) continue;
     const normalized = msg.sender.startsWith('npc:')
       ? { ...msg, text: stripNpcChatterDots(msg.text) }
       : msg;
