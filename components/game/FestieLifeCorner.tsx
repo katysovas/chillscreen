@@ -12,6 +12,7 @@ import { updateFestie } from '@/lib/festie/client';
 import { patchPlayerSessionFestie } from '@/lib/player/session';
 import type { FestieOwner } from '@/lib/festie/types';
 import './FestieLifeCorner.css';
+import './GameControlBar.css';
 
 type Props = {
   festie: FestieOwner;
@@ -105,9 +106,10 @@ function FestieControlBar({
   return (
     <div
       className={[
+        'game-control-bar',
         'festie-control-bar',
-        settingsOpen ? 'festie-control-bar--open' : '',
-        isMobile ? 'festie-control-bar--mobile' : '',
+        settingsOpen ? 'game-control-bar--open festie-control-bar--open' : '',
+        isMobile ? 'game-control-bar--mobile festie-control-bar--mobile' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -129,7 +131,7 @@ function FestieControlBar({
 
       {showLineup && (
         <>
-          <div className="festie-control-divider" aria-hidden />
+          <div className="game-control-bar__divider festie-control-divider" aria-hidden />
           <button
             type="button"
             className={['festie-icon-btn', stageLineupOpen ? 'festie-icon-btn--active' : '']
@@ -147,7 +149,7 @@ function FestieControlBar({
         </>
       )}
 
-      <div className="festie-control-divider" aria-hidden />
+      <div className="game-control-bar__divider festie-control-divider" aria-hidden />
 
       <AutopilotSwitch onControlModeChange={onControlModeChange} />
     </div>

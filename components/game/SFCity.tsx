@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
-import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Character from './Character';
 import { worldXToScreenPct } from './NPC';
@@ -136,7 +135,7 @@ import { useRoomChatter } from './hooks/useRoomChatter';
 import { shouldExcludeFromStageChatter } from '@/lib/stageChatter/types';
 import { isNpcStageChatterSender } from '@/lib/stageChatter/preferences';
 import { useStageChatter } from './hooks/useStageChatter';
-import { StageChatterPanel } from './StageChatterPanel';
+import { StageChatterPanel, type StageSidePanelTab } from './StageChatterPanel';
 import { npcChatLabelForId } from '@/lib/npcRoster';
 import { applyNpcDancing } from '@/lib/npcDancingRegistry';
 import { MobileGameControls } from './MobileGameControls';
@@ -151,8 +150,9 @@ import { SEATTLE_BACKDROP_FILL } from './city/seattle/constants';
 import { TENTAROO_BACKDROP_FILL } from './city/tentaroo/constants';
 import { SILENT_DISCO_BACKDROP_FILL } from './city/silent-disco/constants';
 import { isMobileLoungeDevice } from '@/lib/mobileLounge';
-import { BottomControlPanel, SignOutIcon } from './BottomControlPanel';
-import { VendorShopPanel, preloadVendorShopPanel } from './VendorShopPanelLazy';
+import { BottomControlPanel } from './BottomControlPanel';
+import { RightControlPanel } from './RightControlPanel';
+import { preloadVendorShopPanel } from './VendorShopPanelLazy';
 import { HelpFaqModal } from './HelpFaqModal';
 import { AutopilotMoveHintModal } from './AutopilotMoveHintModal';
 import { SignOutConfirmModal } from './SignOutConfirmModal';
@@ -464,7 +464,7 @@ export default function SFCity({
     ...TEST_PLAYER_LOADOUT,
   }));
   const [playerCoins, setPlayerCoins] = useState(STARTING_COINS);
-  const [vendorShopManualOpen, setVendorShopManualOpen] = useState(false);
+  const [stageSidePanelTab, setStageSidePanelTab] = useState<StageSidePanelTab>('chat');
   const [vendorShopDismissed, setVendorShopDismissed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<FestieSettingsTab>('customize');
@@ -508,7 +508,7 @@ export default function SFCity({
     setSettingsInitialTab(tab);
     setSettingsOpen(true);
     setLifeModalOpen(false);
-    setVendorShopManualOpen(false);
+    setStageSidePanelTab('chat');
   }, []);
 
   const toggleSettings = useCallback(() => {
@@ -516,7 +516,7 @@ export default function SFCity({
       if (open) return false;
       setSettingsInitialTab('customize');
       setLifeModalOpen(false);
-      setVendorShopManualOpen(false);
+      setStageSidePanelTab('chat');
       return true;
     });
   }, []);
@@ -526,7 +526,7 @@ export default function SFCity({
       const next = !open;
       if (next) {
         setSettingsOpen(false);
-        setVendorShopManualOpen(false);
+        setStageSidePanelTab('chat');
       }
       return next;
     });
@@ -535,7 +535,7 @@ export default function SFCity({
   const openSignOutConfirm = useCallback(() => {
     setSettingsOpen(false);
     setLifeModalOpen(false);
-    setVendorShopManualOpen(false);
+    setStageSidePanelTab('chat');
     setSignOutConfirmOpen(true);
   }, []);
 
@@ -644,19 +644,20 @@ export default function SFCity({
 
   const toggleVendorShop = useCallback(() => {
     unlockPurchaseSound();
-    setVendorShopManualOpen(open => {
-      const next = !open;
-      if (next) {
-        setVendorShopDismissed(false);
-        setSettingsOpen(false);
-        setLifeModalOpen(false);
+    setStageSidePanelTab(tab => {
+      if (tab === 'shop') {
+        setVendorShopDismissed(true);
+        return 'chat';
       }
-      return next;
+      setVendorShopDismissed(false);
+      setSettingsOpen(false);
+      setLifeModalOpen(false);
+      return 'shop';
     });
   }, []);
 
   const closeVendorShop = useCallback(() => {
-    setVendorShopManualOpen(false);
+    setStageSidePanelTab('chat');
     setVendorShopDismissed(true);
   }, []);
 
@@ -2452,19 +2453,36 @@ export default function SFCity({
     );
   const showVendorShop =
     greetingNpc !== null && isBuzNpc(effectiveNpcCast[greetingNpc]?.id ?? '');
-  const showVendorPanel =
-    vendorShopManualOpen || (showVendorShop && !vendorShopDismissed);
+  const vendorShopOpen = stageSidePanelTab === 'shop';
   const showStageChatterPanel =
     !homePreview
     && !showWelcome
     && !showCityPicker
     && !stageLineupOpen
-    && !showVendorPanel
     && !isChatterDebugMode();
+
+  const handleStageSidePanelTabChange = useCallback((tab: StageSidePanelTab) => {
+    setStageSidePanelTab(prev => {
+      if (tab === 'shop') {
+        setVendorShopDismissed(false);
+        warmVendorShop();
+      } else if (prev === 'shop') {
+        setVendorShopDismissed(true);
+      }
+      return tab;
+    });
+  }, [warmVendorShop]);
 
   useEffect(() => {
     if (!showVendorShop) setVendorShopDismissed(false);
   }, [showVendorShop]);
+
+  useEffect(() => {
+    if (showVendorShop && !vendorShopDismissed) {
+      setStageSidePanelTab('shop');
+      warmVendorShop();
+    }
+  }, [showVendorShop, vendorShopDismissed, warmVendorShop]);
 
   useEffect(() => {
     if (nearNpc === null) return;
@@ -2473,9 +2491,9 @@ export default function SFCity({
   }, [nearNpc, warmVendorShop]);
 
   useEffect(() => {
-    if (!showVendorPanel) return;
+    if (stageSidePanelTab !== 'shop') return;
     warmVendorShop();
-  }, [showVendorPanel, warmVendorShop]);
+  }, [stageSidePanelTab, warmVendorShop]);
 
   const conversationPartnerName = peerChatId !== null
     ? (mp.remoteStateRef.current.get(peerChatId)?.name ?? 'Wanderer')
@@ -2786,25 +2804,20 @@ export default function SFCity({
       )}
 
       <BottomControlPanel
+        hidden={showWelcome || showCityPicker || stageLineupOpen || isChatterDebugMode()}
+        onOpenCityPicker={() => setShowCityPicker(true)}
+        isMobile={mobileDevice}
+      />
+
+      <RightControlPanel
         worldOff={midScrollWorldOff}
         playerName={playerName}
         venueRoute={effectiveVenueRoute}
-        connectName={
-          !inConversation && nearNpc !== null
-            && effectiveNpcCast[nearNpc]?.id !== ownerFestieNpcId
-            ? npcChatLabel(effectiveNpcCast[nearNpc]!.id, effectiveNpcCast[nearNpc]!.name)
-            : !inConversation && nearPeer !== null
-              ? nearPeerName
-              : null
-        }
-        hidden={showWelcome || showCityPicker || stageLineupOpen || isChatterDebugMode()}
-        onConnectTap={mobileDevice ? () => connectNearRef.current?.() : undefined}
-        onOpenCityPicker={() => setShowCityPicker(true)}
         creatorStageSlug={creatorStage?.slug ?? null}
-        vendorShopOpen={vendorShopManualOpen}
-        onToggleVendorShop={toggleVendorShop}
-        onVendorShopWarm={warmVendorShop}
-        isMobile={mobileDevice}
+        hidden={showWelcome || showCityPicker || stageLineupOpen || isChatterDebugMode()}
+        showCreateStage={showCreateStageButton}
+        showSignOut={festieSignedIn}
+        onSignOut={openSignOutConfirm}
       />
 
       {stageLineupOpen && isCreatorStageOwner && (
@@ -2877,16 +2890,12 @@ export default function SFCity({
           stageName={stageChatterWelcome.stageName}
           stageDescription={stageChatterWelcome.stageDescription}
           isStageOwner={isCreatorStageOwner}
-        />
-      )}
-
-      {showVendorPanel && (
-        <VendorShopPanel
-          loadout={playerLoadout}
-          coins={playerCoins}
-          onPurchase={handleVendorPurchase}
-          onUnequip={handleVendorUnequip}
-          onClose={closeVendorShop}
+          activeTab={stageSidePanelTab}
+          onTabChange={handleStageSidePanelTabChange}
+          shopLoadout={playerLoadout}
+          shopCoins={playerCoins}
+          onShopPurchase={handleVendorPurchase}
+          onShopUnequip={handleVendorUnequip}
         />
       )}
 
@@ -2953,52 +2962,6 @@ export default function SFCity({
         />
       )}
 
-      {!isChatterDebugMode() && (
-      <div data-paraloid-ui className="hidden md:flex" style={{
-        position: 'absolute', bottom: 22, right: 22,
-        gap: 10, alignItems: 'center', zIndex: 40,
-      }}>
-        {!showWelcome && !showCityPicker && showCreateStageButton && (
-          <Link
-            href="/create"
-            style={{
-              border: '1px solid rgba(255,255,255,.2)',
-              background: 'rgba(0,0,0,.3)',
-              backdropFilter: 'blur(4px)',
-              borderRadius: 7,
-              padding: '7px 12px',
-              color: 'rgba(255,255,255,.55)',
-              fontSize: 10,
-              letterSpacing: 1.8,
-              textTransform: 'uppercase',
-              fontFamily: "Georgia,'Times New Roman',serif",
-              textDecoration: 'none',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Create New Stage
-          </Link>
-        )}
-        {festieSignedIn && (
-          <button
-            type="button"
-            onClick={openSignOutConfirm}
-            title="Sign out"
-            aria-label="Sign out"
-            style={{
-              width: 30, height: 30, borderRadius: 7,
-              border: '1px solid rgba(255,255,255,.2)',
-              background: 'rgba(0,0,0,.3)', backdropFilter: 'blur(4px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'rgba(255,255,255,.55)',
-              cursor: 'pointer',
-            }}
-          >
-            <SignOutIcon size={16} />
-          </button>
-        )}
-      </div>
-      )}
 
       {showMobileChatBar && (
         <MobileChatInputBar
@@ -3026,7 +2989,7 @@ export default function SFCity({
       {!showWelcome && !showCityPicker && !stageLineupOpen && !isChatterDebugMode() && (
         <MobileGameControls
           muted={muted}
-          vendorShopOpen={vendorShopManualOpen}
+          vendorShopOpen={vendorShopOpen}
           onToggleVendorShop={toggleVendorShop}
           onVendorShopWarm={warmVendorShop}
           onOpenStageSwap={() => setShowCityPicker(true)}

@@ -24,6 +24,8 @@ type Props = {
   onPurchase: (itemId: string) => boolean | Promise<boolean>;
   onUnequip: (itemId: string) => void | Promise<void>;
   onClose?: () => void;
+  /** Renders inside the stage chat panel — no outer chrome or close button. */
+  embedded?: boolean;
 };
 
 function SwordPreview() {
@@ -297,32 +299,52 @@ function ItemPreview({ itemId }: { itemId: VendorShopItemId }) {
   );
 }
 
-/** Buz's merch panel — fixed on the right so chat stays clear. */
-export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose }: Props) {
+/** Buz's merch — standalone overlay or embedded in the stage chat shop tab. */
+export function VendorShopPanel({
+  loadout,
+  coins,
+  onPurchase,
+  onUnequip,
+  onClose,
+  embedded = false,
+}: Props) {
   const [categoryId, setCategoryId] = useState(DEFAULT_VENDOR_CATEGORY);
   const category =
     VENDOR_SHOP_CATEGORIES.find(c => c.id === categoryId) ?? VENDOR_SHOP_CATEGORIES[0]!;
 
   return (
     <div
-      style={{
-        position: 'absolute',
-        right: 14,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        zIndex: Z_MODAL,
-        width: 300,
-        padding: '14px 14px 12px',
-        borderRadius: 16,
-        background: '#fff',
-        border: '1px solid rgba(0,0,0,0.08)',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.16)',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        pointerEvents: 'auto',
-      }}
+      style={
+        embedded
+          ? {
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '14px 14px 12px',
+              background: '#fff',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              pointerEvents: 'auto',
+            }
+          : {
+              position: 'absolute',
+              right: 14,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: Z_MODAL,
+              width: 300,
+              padding: '14px 14px 12px',
+              borderRadius: 16,
+              background: '#fff',
+              border: '1px solid rgba(0,0,0,0.08)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.16)',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              pointerEvents: 'auto',
+            }
+      }
     >
       <style>{VENDOR_BUY_BTN_STYLES}</style>
-      {onClose && (
+      {!embedded && onClose && (
         <button
           type="button"
           onClick={onClose}
@@ -357,6 +379,7 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
           marginBottom: 10,
           paddingLeft: onClose ? 24 : 0,
           paddingRight: onClose ? 24 : 0,
+          flexShrink: 0,
         }}
       >
         <div
@@ -376,7 +399,13 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
           }}
         >
           <span>My Coins:</span>
-          <CoinAmount amount={coins} iconSize={11} fontSize={11} fontWeight={700} />
+          <CoinAmount
+            amount={coins}
+            iconSize={11}
+            fontSize={11}
+            fontWeight={700}
+            light={false}
+          />
         </div>
       </div>
 
@@ -389,6 +418,7 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
           padding: 3,
           borderRadius: 10,
           background: '#f3f3f3',
+          flexShrink: 0,
         }}
       >
         {VENDOR_SHOP_CATEGORIES.map(tab => {
@@ -424,7 +454,18 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
         })}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          flex: embedded ? 1 : undefined,
+          minHeight: embedded ? 0 : undefined,
+          overflowY: embedded ? 'auto' : undefined,
+          padding: embedded ? undefined : undefined,
+        }}
+        className={embedded ? 'stage-chatter-scroll' : undefined}
+      >
         {category.items.length === 0 ? (
           <div
             style={{
@@ -516,7 +557,7 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
                         textTransform: 'uppercase',
                         color: '#c86a1a',
                         padding: '7px 8px',
-                        borderRadius: 8,
+                        borderRadius: 8,  
                         background: 'rgba(230, 126, 34, 0.1)',
                       }}
                     >
@@ -532,9 +573,11 @@ export function VendorShopPanel({ loadout, coins, onPurchase, onUnequip, onClose
                         height: 28,
                         padding: 0,
                         borderRadius: 8,
-                        border: '1px solid rgba(200, 106, 26, 0.3)',
-                        background: '#fff',
-                        color: '#c86a1a',
+                        border: embedded
+                          ? '1px solid rgba(255, 140, 100, 0.35)'
+                          : '1px solid rgba(200, 106, 26, 0.3)',
+                        background: embedded ? 'rgba(255, 255, 255, 0.06)' : '#fff',
+                        color: embedded ? '#ffb347' : '#c86a1a',
                         fontSize: 14,
                         lineHeight: 1,
                         cursor: 'pointer',

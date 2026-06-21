@@ -6,11 +6,13 @@ import {
   filterStageChatterMessages,
   filterStageChatterTypingSenders,
   getHumansOnlyStageChatter,
-  setHumansOnlyStageChatter,
   subscribeHumansOnlyStageChatter,
 } from '@/lib/stageChatter/preferences';
 import type { StageChatterMessage } from '@/lib/stageChatter/types';
+import type { CharacterLoadout } from './characters/loadout';
 import { Z_CONTROLS } from '@/lib/zLayers';
+import { ShoppingCartIcon } from './BottomControlPanel';
+import { VendorShopPanel } from './VendorShopPanelLazy';
 
 const PANEL_STYLES = `
 @keyframes stage-chatter-glow {
@@ -38,6 +40,8 @@ const PANEL_STYLES = `
 }
 `;
 
+export type StageSidePanelTab = 'chat' | 'shop' | 'info';
+
 type Props = {
   messages: StageChatterMessage[];
   typingSenders: string[];
@@ -50,6 +54,12 @@ type Props = {
   stageDescription?: string | null;
   isStageOwner?: boolean;
   hidden?: boolean;
+  activeTab: StageSidePanelTab;
+  onTabChange: (tab: StageSidePanelTab) => void;
+  shopLoadout: CharacterLoadout;
+  shopCoins: number;
+  onShopPurchase: (itemId: string) => boolean | Promise<boolean>;
+  onShopUnequip: (itemId: string) => void | Promise<void>;
 };
 
 function formatTime(ts: number): string {
@@ -81,6 +91,113 @@ function CollapseIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
+function ChatTabIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <path
+        d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H11l-3.5 3v-3H7.5A2.5 2.5 0 0 1 5 12.5v-6Z"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function InfoTabIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <circle cx={12} cy={12} r={9} stroke="currentColor" strokeWidth={1.6} />
+      <path
+        d="M12 11v5.5M12 8.25h.01"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+const tabBtnBase: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5,
+  border: 'none',
+  borderRadius: 8,
+  padding: '5px 6px',
+  fontSize: 9,
+  letterSpacing: 0.9,
+  textTransform: 'uppercase',
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+  flexShrink: 0,
+};
+
+function SidePanelTab({
+  active,
+  label,
+  icon,
+  notify = false,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  icon: React.ReactNode;
+  notify?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      aria-label={notify ? `${label}, new messages` : label}
+      onClick={onClick}
+      style={{
+        ...tabBtnBase,
+        position: 'relative',
+        color: active ? 'rgba(255, 240, 250, 0.95)' : 'rgba(255, 255, 255, 0.45)',
+        background: active ? 'rgba(255, 120, 200, 0.18)' : 'transparent',
+        boxShadow: active ? 'inset 0 0 12px rgba(255, 120, 200, 0.08)' : 'none',
+      }}
+    >
+      {icon}
+      {label}
+      {notify ? (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: 3,
+            right: 4,
+            width: 7,
+            height: 7,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, #ffb4dc 0%, #ff6eb4 70%)',
+            boxShadow: '0 0 10px rgba(255, 110, 180, 0.85)',
+          }}
+        />
+      ) : null}
+    </button>
+  );
+}
+
 export function StageChatterPanel({
   messages,
   typingSenders,
@@ -93,6 +210,12 @@ export function StageChatterPanel({
   stageDescription,
   isStageOwner = false,
   hidden = false,
+  activeTab,
+  onTabChange,
+  shopLoadout,
+  shopCoins,
+  onShopPurchase,
+  onShopUnequip,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
@@ -103,7 +226,10 @@ export function StageChatterPanel({
     startScrollTop: 0,
   });
   const typingHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSeenMessageCountRef = useRef(0);
+  const messagesInitializedRef = useRef(false);
   const [expanded, setExpanded] = useState(true);
+  const [chatUnread, setChatUnread] = useState(false);
   const [dragging, setDragging] = useState(false);
   const humansOnly = useSyncExternalStore(
     subscribeHumansOnlyStageChatter,
@@ -226,17 +352,52 @@ export function StageChatterPanel({
       : `Welcome to ${name}`;
   }, [isStageOwner, stageDescription, stageName]);
 
+  const infoName = stageName?.trim() ?? '';
+  const infoDescription = stageDescription?.trim() ?? '';
+
   useEffect(() => () => {
     if (typingHideTimerRef.current) clearTimeout(typingHideTimerRef.current);
     onTypingChange?.(false);
   }, [onTypingChange]);
 
+  useEffect(() => {
+    if (activeTab === 'shop') setExpanded(true);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (expanded && activeTab === 'chat') {
+      lastSeenMessageCountRef.current = visibleMessages.length;
+      setChatUnread(false);
+    }
+  }, [expanded, activeTab, visibleMessages.length]);
+
+  useEffect(() => {
+    const count = visibleMessages.length;
+    if (!messagesInitializedRef.current) {
+      messagesInitializedRef.current = true;
+      lastSeenMessageCountRef.current = count;
+      return;
+    }
+
+    if (count < lastSeenMessageCountRef.current) {
+      lastSeenMessageCountRef.current = count;
+      if (count === 0) setChatUnread(false);
+      return;
+    }
+
+    if (count > lastSeenMessageCountRef.current && !expanded) {
+      setChatUnread(true);
+    }
+  }, [visibleMessages.length, expanded]);
+
   if (hidden) return null;
+
+  const panelVisibleOnMobile = activeTab === 'shop';
 
   return (
     <div
       data-paraloid-ui
-      className="hidden md:flex"
+      className={panelVisibleOnMobile ? 'flex' : 'hidden md:flex'}
       style={{
         position: 'absolute',
         right: 14,
@@ -260,7 +421,7 @@ export function StageChatterPanel({
 
       <div
         style={{
-          padding: '12px 14px 10px',
+          padding: '10px 12px 10px',
           display: 'flex',
           alignItems: 'center',
           gap: 6,
@@ -268,88 +429,37 @@ export function StageChatterPanel({
           width: '100%',
           borderBottom: expanded ? '1px solid rgba(255, 255, 255, 0.08)' : 'transparent',
         }}
+        role="tablist"
+        aria-label="Stage panel"
       >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
+          <SidePanelTab
+            active={activeTab === 'chat'}
+            label="Chat"
+            icon={<ChatTabIcon />}
+            notify={chatUnread}
+            onClick={() => onTabChange('chat')}
+          />
+          <SidePanelTab
+            active={activeTab === 'shop'}
+            label="Shop"
+            icon={<ShoppingCartIcon size={14} />}
+            onClick={() => onTabChange('shop')}
+          />
+          <SidePanelTab
+            active={activeTab === 'info'}
+            label="Info"
+            icon={<InfoTabIcon />}
+            onClick={() => onTabChange('info')}
+          />
+        </div>
+
+
         <button
           type="button"
           onClick={() => setExpanded(prev => !prev)}
           aria-expanded={expanded}
-          aria-label={expanded ? 'Collapse stage talk' : 'Expand stage talk'}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            flex: 1,
-            minWidth: 0,
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: 'inherit',
-            fontFamily: 'inherit',
-            textAlign: 'left',
-            padding: 0,
-          }}
-        >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, #ffb4dc 0%, #ff6eb4 70%)',
-              boxShadow: '0 0 10px rgba(255, 110, 180, 0.8)',
-              flexShrink: 0,
-            }}
-            aria-hidden
-          />
-          <span
-            style={{
-              fontSize: 10,
-              letterSpacing: 2.2,
-              textTransform: 'uppercase',
-              color: 'rgba(255, 220, 240, 0.82)',
-              fontWeight: 600,
-            }}
-          >
-            Stage Talk
-          </span>
-        </button>
-
-        <label
-          onClick={e => e.stopPropagation()}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            flexShrink: 0,
-            cursor: 'pointer',
-            fontSize: 9,
-            color: 'rgba(255, 255, 255, 0.5)',
-            userSelect: 'none',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={humansOnly}
-            onChange={e => {
-              const enabled = e.target.checked;
-              setHumansOnlyStageChatter(enabled);
-              onHumansOnlyChange?.(enabled);
-            }}
-            style={{
-              width: 12,
-              height: 12,
-              margin: 0,
-              accentColor: '#ff6eb4',
-              cursor: 'pointer',
-            }}
-          />
-          Humans only
-        </label>
-
-        <button
-          type="button"
-          onClick={() => setExpanded(prev => !prev)}
-          aria-label={expanded ? 'Collapse stage talk' : 'Expand stage talk'}
+          aria-label={expanded ? 'Collapse stage panel' : 'Expand stage panel'}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -369,7 +479,7 @@ export function StageChatterPanel({
         </button>
       </div>
 
-      {expanded && (
+      {expanded && activeTab === 'chat' && (
       <>
       <div
         ref={scrollRef}
@@ -540,6 +650,78 @@ export function StageChatterPanel({
         </div>
       </div>
       </>
+      )}
+
+      {expanded && activeTab === 'shop' && (
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            background: '#fff',
+            overflow: 'hidden',
+          }}
+        >
+          <VendorShopPanel
+            embedded
+            loadout={shopLoadout}
+            coins={shopCoins}
+            onPurchase={onShopPurchase}
+            onUnequip={onShopUnequip}
+          />
+        </div>
+      )}
+
+      {expanded && activeTab === 'info' && (
+        <div
+          className="stage-chatter-scroll"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            padding: '14px 14px 16px',
+          }}
+        >
+          {infoName ? (
+            <>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  lineHeight: 1.35,
+                  color: 'rgba(255, 240, 250, 0.95)',
+                }}
+              >
+                {infoName}
+              </h2>
+              {infoDescription ? (
+                <p
+                  style={{
+                    margin: '10px 0 0',
+                    fontSize: 11,
+                    lineHeight: 1.55,
+                    color: 'rgba(255, 255, 255, 0.72)',
+                  }}
+                >
+                  {infoDescription}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p
+              style={{
+                margin: '12px 4px',
+                fontSize: 11,
+                lineHeight: 1.5,
+                color: 'rgba(255, 255, 255, 0.38)',
+              }}
+            >
+              No stage information yet.
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

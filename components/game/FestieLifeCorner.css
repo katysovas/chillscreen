@@ -16,27 +16,15 @@
 }
 
 .festie-control-bar {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  width: fit-content;
-  max-width: calc(100vw - 24px);
-  padding: 4px 8px 4px 4px;
   gap: 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-sizing: border-box;
+  padding: 4px 8px 4px 4px;
 }
 
 .festie-control-bar--open {
-  border-color: rgba(255, 255, 255, 0.28);
+  /* border handled by game-control-bar--open */
 }
 
 .festie-control-bar--mobile {
-  border-radius: 12px;
   padding: 5px 10px 5px 5px;
 }
 
@@ -64,11 +52,7 @@
 }
 
 .festie-control-divider {
-  width: 1px;
-  align-self: stretch;
-  margin: 4px 0;
-  background: rgba(255, 255, 255, 0.1);
-  flex-shrink: 0;
+  /* layout handled by game-control-bar__divider */
 }
 
 .festie-autopilot-row {

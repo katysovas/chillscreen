@@ -1,96 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  activeVenueRoute,
-  buildInviteUrl,
-  inviteLinkLabel,
-} from '@/lib/inviteLink';
-import type { VenueRoute } from '@/lib/venueRoutes';
+import './GameControlBar.css';
+
+const LOGO_SRC = '/images/logos/logo_transparent.png';
 
 type BottomControlPanelProps = {
-  worldOff: number;
-  playerName: string | null;
-  venueRoute?: VenueRoute;
-  connectName?: string | null;
-  /** Tap-to-connect on mobile (replaces ↵ keyboard hint). */
-  onConnectTap?: () => void;
   hidden?: boolean;
-  onCapturePhoto?: () => void | Promise<void>;
-  vendorShopOpen?: boolean;
-  onToggleVendorShop?: () => void;
-  onVendorShopWarm?: () => void;
-  /** Opens the city / stage picker (desktop + in-game). */
+  /** Opens the city / stage picker (desktop). */
   onOpenCityPicker?: () => void;
-  /** User-created stage slug — invite links use /watch/{slug}. */
-  creatorStageSlug?: string | null;
-  /** Hides invite + cart — those move to MobileGameControls on phone. */
   isMobile?: boolean;
 };
-
-const hintText: React.CSSProperties = {
-  color: 'rgba(255,255,255,.55)',
-  fontSize: 10,
-  letterSpacing: 1.8,
-  textTransform: 'uppercase',
-  fontFamily: "Georgia,'Times New Roman',serif",
-  pointerEvents: 'none',
-  whiteSpace: 'nowrap',
-};
-
-const ghostBtn: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  color: 'rgba(255,255,255,.65)',
-  fontSize: 10,
-  letterSpacing: 1.8,
-  textTransform: 'uppercase',
-  fontFamily: "Georgia,'Times New Roman',serif",
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
-};
-
-const panelDivider: React.CSSProperties = {
-  width: 1,
-  alignSelf: 'stretch',
-  background: 'rgba(255,255,255,.1)',
-  flexShrink: 0,
-};
-
-/** Re-enable when paraloid capture is ready. */
-const PARALOID_CAPTURE_ENABLED = false;
-
-function CameraIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-      style={{ display: 'block' }}
-    >
-      {/* flat body */}
-      <rect x={3} y={7} width={18} height={13} rx={2} stroke="currentColor" strokeWidth={1.5} />
-      {/* viewfinder housing */}
-      <path
-        d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-      {/* eyepiece slot */}
-      <rect x={10.2} y={4.8} width={3.6} height={1.4} rx={0.35} fill="currentColor" />
-      {/* flash */}
-      <rect x={5} y={9.2} width={2.8} height={2} rx={0.45} stroke="currentColor" strokeWidth={1.25} />
-      {/* lens ring */}
-      <circle cx={12} cy={13.5} r={4.1} stroke="currentColor" strokeWidth={1.5} />
-      {/* lens glass — flat filled disc */}
-      <circle cx={12} cy={13.5} r={2.3} fill="currentColor" />
-    </svg>
-  );
-}
 
 export function StageSwapIcon({ size = 18 }: { size?: number }) {
   return (
@@ -238,249 +157,40 @@ export function ShoppingCartIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-/** Bottom-center panel — vendor cart, paraloid capture, invite, connect hints. */
+/** Bottom-center logo — tap to switch stage. */
 export function BottomControlPanel({
-  worldOff,
-  playerName,
-  venueRoute,
-  connectName = null,
-  onConnectTap,
   hidden = false,
-  onCapturePhoto,
-  vendorShopOpen = false,
-  onToggleVendorShop,
-  onVendorShopWarm,
   onOpenCityPicker,
-  creatorStageSlug = null,
   isMobile = false,
 }: BottomControlPanelProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [capturing, setCapturing] = useState(false);
-  const route = useMemo(
-    () => activeVenueRoute(worldOff, venueRoute),
-    [worldOff, venueRoute],
-  );
+  const showLogo = Boolean(onOpenCityPicker) && !isMobile;
 
-  const inviteUrl = useMemo(
-    () => (route ? buildInviteUrl(route, playerName, creatorStageSlug) : ''),
-    [route, playerName, creatorStageSlug],
-  );
-
-  const showInvite = Boolean(inviteUrl);
-  const showConnect = Boolean(connectName?.trim()) && !isMobile;
-  const showInviteBtn = !isMobile && showInvite && !showConnect;
-  const hasMessages = showConnect || showInviteBtn;
-  const showCart = Boolean(onToggleVendorShop) && !isMobile;
-  const showCityPicker = Boolean(onOpenCityPicker) && !isMobile;
-
-  const copyLink = useCallback(async () => {
-    if (!inviteUrl) return;
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* clipboard blocked */
-    }
-  }, [inviteUrl]);
-
-  const handleCapture = useCallback(async () => {
-    if (!onCapturePhoto || capturing) return;
-    setCapturing(true);
-    try {
-      await onCapturePhoto();
-    } finally {
-      setCapturing(false);
-    }
-  }, [capturing, onCapturePhoto]);
-
-  useEffect(() => {
-    setInviteOpen(false);
-  }, [hidden, showConnect, route]);
-
-  if (hidden || (!PARALOID_CAPTURE_ENABLED && !showCart && !showCityPicker && !hasMessages)) {
+  if (hidden || !showLogo) {
     return null;
   }
 
   return (
     <div
-      ref={panelRef}
       data-paraloid-ui
-      className="bottom-[max(124px,calc(env(safe-area-inset-bottom)+112px))] md:bottom-5"
+      className="hidden md:block bottom-5"
       style={{
         position: 'absolute',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 38,
         pointerEvents: 'auto',
-        maxWidth: 'min(96vw, 560px)',
       }}
     >
-      <div
-        style={{
-          borderRadius: 999,
-          background: 'rgba(0,0,0,.36)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255,255,255,.1)',
-          display: 'flex',
-          alignItems: 'stretch',
-          overflow: 'hidden',
-        }}
-      >
-        {showCart && (
-          <button
-            type="button"
-            onClick={() => {
-              onVendorShopWarm?.();
-              onToggleVendorShop?.();
-            }}
-            onMouseEnter={onVendorShopWarm}
-            onFocus={onVendorShopWarm}
-            aria-label={vendorShopOpen ? 'Close festival store' : 'Open festival store'}
-            aria-pressed={vendorShopOpen}
-            title={vendorShopOpen ? 'Close store' : 'Festival store'}
-            style={{
-              ...ghostBtn,
-              padding: '8px 14px',
-              background: vendorShopOpen ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.06)',
-              color: vendorShopOpen ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.78)',
-              cursor: 'pointer',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ShoppingCartIcon />
-          </button>
-        )}
-
-        {showCart && showCityPicker && (
-          <div style={panelDivider} aria-hidden />
-        )}
-
-        {showCityPicker && (
-          <button
-            type="button"
-            onClick={onOpenCityPicker}
-            aria-label="Change city"
-            title="Change city"
-            style={{
-              ...ghostBtn,
-              padding: '8px 14px',
-              background: 'rgba(255,255,255,.06)',
-              color: 'rgba(255,255,255,.78)',
-              cursor: 'pointer',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <StageSwapIcon />
-          </button>
-        )}
-
-        {(showCart || showCityPicker) && (PARALOID_CAPTURE_ENABLED || hasMessages) && (
-          <div style={panelDivider} aria-hidden />
-        )}
-
-        {PARALOID_CAPTURE_ENABLED && (
-          <button
-            type="button"
-            onClick={handleCapture}
-            disabled={!onCapturePhoto || capturing}
-            aria-label={capturing ? 'Capturing photo' : 'Capture photo'}
-            aria-busy={capturing}
-            title="Capture photo"
-            style={{
-              ...ghostBtn,
-              padding: '8px 14px',
-              background: 'rgba(255,255,255,.06)',
-              color: capturing ? 'rgba(255,255,255,.45)' : 'rgba(255,255,255,.78)',
-              cursor: onCapturePhoto && !capturing ? 'pointer' : 'default',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <CameraIcon />
-          </button>
-        )}
-
-        {PARALOID_CAPTURE_ENABLED && hasMessages && (
-          <div style={panelDivider} aria-hidden />
-        )}
-
-        {hasMessages && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              flexWrap: 'nowrap',
-              padding: '7px 16px',
-              minWidth: 0,
-            }}
-          >
-              {showConnect && onConnectTap ? (
-                <button
-                  type="button"
-                  onClick={onConnectTap}
-                  style={{
-                    ...ghostBtn,
-                    color: 'rgba(255,255,255,.72)',
-                    padding: '4px 2px',
-                  }}
-                >
-                  Tap to connect with {connectName}
-                </button>
-              ) : showConnect ? (
-                <span style={hintText}>↵ connect with {connectName}</span>
-              ) : null}
-              {showInviteBtn && (
-                <button
-                  type="button"
-                  onClick={() => setInviteOpen(o => !o)}
-                  aria-expanded={inviteOpen}
-                  style={{
-                    ...ghostBtn,
-                    color: inviteOpen ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.65)',
-                  }}
-                >
-                  Invite Friends
-                </button>
-              )}
-              {inviteOpen && showInviteBtn && (
-                <>
-                  <span style={{ color: 'rgba(255,255,255,.2)', fontSize: 10, userSelect: 'none' }}>·</span>
-                  <span
-                    style={{
-                      maxWidth: 'min(42vw, 200px)',
-                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                      fontStyle: 'normal',
-                      fontSize: 10,
-                      color: 'rgba(255,255,255,.5)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {inviteLinkLabel(inviteUrl)}
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,.2)', fontSize: 10, userSelect: 'none' }}>·</span>
-                  <button type="button" onClick={copyLink} style={ghostBtn}>
-                    {copied ? 'Copied' : 'Copy'}
-                  </button>
-                </>
-              )}
-            </div>
-        )}
+      <div className="game-control-bar">
+        <button
+          type="button"
+          className="game-control-bar__logo-btn"
+          onClick={onOpenCityPicker}
+          aria-label="Switch stage"
+          title="Switch stage"
+        >
+          <img src={LOGO_SRC} alt="Which Stage" draggable={false} />
+        </button>
       </div>
     </div>
   );
