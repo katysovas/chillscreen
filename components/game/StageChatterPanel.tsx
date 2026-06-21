@@ -12,7 +12,9 @@ import type { StageChatterMessage } from '@/lib/stageChatter/types';
 import type { CharacterLoadout } from './characters/loadout';
 import { Z_CONTROLS } from '@/lib/zLayers';
 import { ShoppingCartIcon } from './BottomControlPanel';
+import { StageLineupPanel } from './StageLineupPanel';
 import { VendorShopPanel } from './VendorShopPanelLazy';
+import type { StageChannel } from '@/lib/stageVideos';
 
 const PANEL_STYLES = `
 @keyframes stage-chatter-glow {
@@ -40,7 +42,7 @@ const PANEL_STYLES = `
 }
 `;
 
-export type StageSidePanelTab = 'chat' | 'shop' | 'info';
+export type StageSidePanelTab = 'chat' | 'lineup' | 'shop' | 'info';
 
 type Props = {
   messages: StageChatterMessage[];
@@ -60,6 +62,8 @@ type Props = {
   shopCoins: number;
   onShopPurchase: (itemId: string) => boolean | Promise<boolean>;
   onShopUnequip: (itemId: string) => void | Promise<void>;
+  /** Curated JSON stage channel — enables the Lineup tab when set. */
+  stageChannel?: StageChannel | null;
 };
 
 function formatTime(ts: number): string {
@@ -107,6 +111,27 @@ function ChatTabIcon({ size = 14 }: { size?: number }) {
         strokeWidth={1.6}
         strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+function LineupTabIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <path
+        d="M5 7h14M5 12h14M5 17h10"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+      <circle cx="18" cy="17" r="2.5" stroke="currentColor" strokeWidth={1.6} />
     </svg>
   );
 }
@@ -216,6 +241,7 @@ export function StageChatterPanel({
   shopCoins,
   onShopPurchase,
   onShopUnequip,
+  stageChannel = null,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
@@ -361,7 +387,7 @@ export function StageChatterPanel({
   }, [onTypingChange]);
 
   useEffect(() => {
-    if (activeTab === 'shop') setExpanded(true);
+    if (activeTab === 'shop' || activeTab === 'lineup') setExpanded(true);
   }, [activeTab]);
 
   useEffect(() => {
@@ -390,6 +416,8 @@ export function StageChatterPanel({
     }
   }, [visibleMessages.length, expanded]);
 
+  const showLineupTab = Boolean(stageChannel);
+
   if (hidden) return null;
 
   const panelVisibleOnMobile = activeTab === 'shop';
@@ -403,7 +431,7 @@ export function StageChatterPanel({
         right: 14,
         top: 20,
         zIndex: Z_CONTROLS,
-        width: 280,
+        width: 320,
         height: expanded ? 800 : 'auto',
         maxHeight: expanded ? 'calc(100vh - 220px)' : undefined,
         flexDirection: 'column',
@@ -440,6 +468,14 @@ export function StageChatterPanel({
             notify={chatUnread}
             onClick={() => onTabChange('chat')}
           />
+          {showLineupTab ? (
+            <SidePanelTab
+              active={activeTab === 'lineup'}
+              label="Lineup"
+              icon={<LineupTabIcon />}
+              onClick={() => onTabChange('lineup')}
+            />
+          ) : null}
           <SidePanelTab
             active={activeTab === 'shop'}
             label="Shop"
@@ -651,6 +687,10 @@ export function StageChatterPanel({
       </div>
       </>
       )}
+
+      {expanded && activeTab === 'lineup' && stageChannel ? (
+        <StageLineupPanel channel={stageChannel} />
+      ) : null}
 
       {expanded && activeTab === 'shop' && (
         <div

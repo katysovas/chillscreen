@@ -42,6 +42,12 @@ export type StageVideo = {
    * DEFAULT_DURATION_MS (1 hour).
    */
   durationSec?: number;
+  /** YouTube channel / uploader — shown in lineup when available. */
+  channelTitle?: string;
+  /** Channel avatar or video thumbnail for lineup rows. */
+  thumbnailUrl?: string;
+  /** YouTube channel page when known. */
+  channelUrl?: string;
 };
 
 /** One synchronized playback channel per distinct venue/stage. */
@@ -178,7 +184,7 @@ export const DEFAULT_STAGE_SYNC: StageSync = {
   playlists: STAGE_PLAYLISTS,
 };
 
-function isCuratedChannel(channel: StageChannel): boolean {
+export function isCuratedChannel(channel: StageChannel): boolean {
   return STAGE_CHANNEL_CONFIG[channel].source === 'curated';
 }
 

@@ -371,6 +371,152 @@ export async function resolveAdminYoutubeVideo(
   return { ...oembed, metaSource: 'oembed' };
 }
 
+export type YoutubeVideoDisplayMeta = {
+  videoId: string;
+  videoTitle: string;
+  channelTitle: string;
+  avatarUrl: string;
+  /** YouTube channel page — from channel id or oEmbed author_url. */
+  channelUrl?: string;
+};
+
+const YOUTUBE_VIDEO_ID_RE = /^[\w-]{11}$/;
+
+/** Channel avatar + uploader name for curated lineup rows. */
+export async function fetchYoutubeVideoDisplayMeta(
+  ids: string[],
+  apiKey?: string,
+): Promise<Map<string, YoutubeVideoDisplayMeta>> {
+  const unique = [...new Set(ids.filter(id => YOUTUBE_VIDEO_ID_RE.test(id)))];
+  const out = new Map<string, YoutubeVideoDisplayMeta>();
+  if (!unique.length) return out;
+
+  const pending = new Set(unique);
+
+  if (apiKey) {
+    for (let i = 0; i < unique.length; i += 50) {
+      const batch = unique.slice(i, i + 50);
+      try {
+        const detailsUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
+        detailsUrl.searchParams.set('part', 'snippet');
+        detailsUrl.searchParams.set('id', batch.join(','));
+        detailsUrl.searchParams.set('key', apiKey);
+
+        const detailsRes = await fetch(detailsUrl);
+        if (!detailsRes.ok) throw new Error(String(detailsRes.status));
+
+        const detailsData = await detailsRes.json() as {
+          items?: {
+            id: string;
+            snippet?: {
+              title?: string;
+              channelTitle?: string;
+              channelId?: string;
+              thumbnails?: { medium?: { url?: string }; default?: { url?: string } };
+            };
+          }[];
+        };
+
+        type VideoRow = {
+          id: string;
+          channelId?: string;
+          channelTitle: string;
+          videoTitle: string;
+          videoThumb: string;
+        };
+
+        const rows: VideoRow[] = [];
+        const channelIds = new Set<string>();
+
+        for (const item of detailsData.items ?? []) {
+          const snippet = item.snippet;
+          if (!snippet) continue;
+          const videoTitle = snippet.title?.trim() || item.id;
+          const channelTitle = snippet.channelTitle?.trim() || videoTitle;
+          const videoThumb =
+            snippet.thumbnails?.medium?.url
+            ?? snippet.thumbnails?.default?.url
+            ?? `https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`;
+          if (snippet.channelId) channelIds.add(snippet.channelId);
+          rows.push({
+            id: item.id,
+            channelId: snippet.channelId,
+            channelTitle,
+            videoTitle,
+            videoThumb,
+          });
+        }
+
+        const channelAvatars = new Map<string, string>();
+        if (channelIds.size) {
+          const channelsUrl = new URL('https://www.googleapis.com/youtube/v3/channels');
+          channelsUrl.searchParams.set('part', 'snippet');
+          channelsUrl.searchParams.set('id', [...channelIds].join(','));
+          channelsUrl.searchParams.set('key', apiKey);
+
+          const channelsRes = await fetch(channelsUrl);
+          if (channelsRes.ok) {
+            const channelsData = await channelsRes.json() as {
+              items?: {
+                id: string;
+                snippet?: {
+                  thumbnails?: { default?: { url?: string }; medium?: { url?: string } };
+                };
+              }[];
+            };
+            for (const channel of channelsData.items ?? []) {
+              const avatar =
+                channel.snippet?.thumbnails?.medium?.url
+                ?? channel.snippet?.thumbnails?.default?.url;
+              if (avatar) channelAvatars.set(channel.id, avatar);
+            }
+          }
+        }
+
+        for (const row of rows) {
+          out.set(row.id, {
+            videoId: row.id,
+            videoTitle: row.videoTitle,
+            channelTitle: row.channelTitle,
+            avatarUrl: (row.channelId ? channelAvatars.get(row.channelId) : undefined) ?? row.videoThumb,
+            ...(row.channelId ? { channelUrl: `https://www.youtube.com/channel/${row.channelId}` } : {}),
+          });
+          pending.delete(row.id);
+        }
+      } catch {
+        /* oEmbed fallback below */
+      }
+    }
+  }
+
+  await Promise.all([...pending].map(async id => {
+    try {
+      const oembedUrl = new URL('https://www.youtube.com/oembed');
+      oembedUrl.searchParams.set('url', `https://www.youtube.com/watch?v=${id}`);
+      oembedUrl.searchParams.set('format', 'json');
+      const res = await fetch(oembedUrl);
+      if (!res.ok) return;
+      const data = await res.json() as {
+        title?: string;
+        author_name?: string;
+        author_url?: string;
+        thumbnail_url?: string;
+      };
+      out.set(id, {
+        videoId: id,
+        videoTitle: data.title?.trim() || id,
+        channelTitle: data.author_name?.trim() || data.title?.trim() || id,
+        avatarUrl: data.thumbnail_url ?? `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
+        ...(data.author_url?.trim() ? { channelUrl: data.author_url.trim() } : {}),
+      });
+    } catch {
+      /* skip unavailable ids */
+    }
+  }));
+
+  return out;
+}
+
 /** YouTube search for localhost admin — includes thumbnails and live/unknown lengths. */
 export async function fetchYoutubeAdminSearch(
   query: string,

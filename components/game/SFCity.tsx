@@ -92,6 +92,7 @@ import {
   moveBroadcastWorldEpsilon,
 } from '@/lib/presenceBroadcast';
 import { isNearStage } from '@/lib/concertDance';
+import { isCuratedChannel } from '@/lib/stageVideos';
 import {
   cityTileForRoute,
   cityWorldOffBounds,
@@ -262,6 +263,11 @@ export default function SFCity({
   const effectiveVenueRoute = creatorStage
     ? venueRouteForUserStage(creatorStage)
     : venueRoute;
+  const curatedStageChannel = useMemo(() => {
+    if (creatorStage) return null;
+    const channel = stageChannelForRoute(effectiveVenueRoute);
+    return isCuratedChannel(channel) ? channel : null;
+  }, [creatorStage, effectiveVenueRoute]);
   const stageChatterWelcome = useMemo(() => {
     if (creatorStage) {
       return {
@@ -2478,6 +2484,12 @@ export default function SFCity({
   }, [showVendorShop]);
 
   useEffect(() => {
+    if (!curatedStageChannel && stageSidePanelTab === 'lineup') {
+      setStageSidePanelTab('chat');
+    }
+  }, [curatedStageChannel, stageSidePanelTab]);
+
+  useEffect(() => {
     if (showVendorShop && !vendorShopDismissed) {
       setStageSidePanelTab('shop');
       warmVendorShop();
@@ -2896,6 +2908,7 @@ export default function SFCity({
           shopCoins={playerCoins}
           onShopPurchase={handleVendorPurchase}
           onShopUnequip={handleVendorUnequip}
+          stageChannel={curatedStageChannel}
         />
       )}
 
