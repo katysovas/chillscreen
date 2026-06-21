@@ -257,16 +257,16 @@ function BuyButton({
   );
 }
 
-function EquipButton({ onClick }: { onClick: () => void }) {
+function EquipButton({ onClick, embedded = false }: { onClick: () => void; embedded?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
       style={{
         ...actionBtnBase,
-        border: '1.5px solid #e67e22',
-        background: '#fff',
-        color: '#e67e22',
+        border: embedded ? '1.5px solid rgba(230, 126, 34, 0.65)' : '1.5px solid #e67e22',
+        background: embedded ? 'rgba(255, 255, 255, 0.06)' : '#fff',
+        color: embedded ? '#ffb347' : '#e67e22',
         cursor: 'pointer',
       }}
     >
@@ -300,6 +300,56 @@ function ItemPreview({ itemId }: { itemId: VendorShopItemId }) {
 }
 
 /** Buz's merch — standalone overlay or embedded in the stage chat shop tab. */
+function shopTheme(embedded: boolean) {
+  if (!embedded) {
+    return {
+      coinsLabel: '#9a7209',
+      coinsBg: 'linear-gradient(180deg,#fff9e6,#fff3cc)',
+      coinsBorder: '1px solid rgba(184,134,11,0.35)',
+      coinsLight: false,
+      categoryBg: '#f3f3f3',
+      categoryActiveBg: '#fff',
+      categoryActiveColor: '#222',
+      categoryInactiveColor: '#888',
+      categoryActiveShadow: '0 1px 4px rgba(0,0,0,0.08)',
+      rowBg: '#fafafa',
+      rowBgEquipped: '#fff8f0',
+      rowBorder: '1px solid #ececec',
+      rowBorderEquipped: '1.5px solid #e67e22',
+      rowNameColor: '#222',
+      rowMutedColor: '#9a9a9a',
+      previewBg: '#fff',
+      previewBorder: '1px solid #eee',
+      emptyBg: '#fafafa',
+      emptyBorder: '1px solid #ececec',
+      emptyColor: '#999',
+    } as const;
+  }
+
+  return {
+    coinsLabel: 'rgba(255, 255, 255, 0.88)',
+    coinsBg: 'rgba(255, 255, 255, 0.06)',
+    coinsBorder: '1px solid rgba(255, 255, 255, 0.1)',
+    coinsLight: true,
+    categoryBg: 'rgba(255, 255, 255, 0.06)',
+    categoryActiveBg: 'rgba(255, 255, 255, 0.1)',
+    categoryActiveColor: 'rgba(255, 255, 255, 0.92)',
+    categoryInactiveColor: 'rgba(255, 255, 255, 0.45)',
+    categoryActiveShadow: 'none',
+    rowBg: 'rgba(255, 255, 255, 0.06)',
+    rowBgEquipped: 'rgba(255, 255, 255, 0.09)',
+    rowBorder: '1px solid rgba(255, 255, 255, 0.1)',
+    rowBorderEquipped: '1.5px solid rgba(230, 126, 34, 0.55)',
+    rowNameColor: 'rgba(255, 255, 255, 0.88)',
+    rowMutedColor: 'rgba(255, 255, 255, 0.42)',
+    previewBg: '#fff',
+    previewBorder: '1px solid #eee',
+    emptyBg: 'rgba(255, 255, 255, 0.06)',
+    emptyBorder: '1px solid rgba(255, 255, 255, 0.1)',
+    emptyColor: 'rgba(255, 255, 255, 0.45)',
+  } as const;
+}
+
 export function VendorShopPanel({
   loadout,
   coins,
@@ -311,6 +361,7 @@ export function VendorShopPanel({
   const [categoryId, setCategoryId] = useState(DEFAULT_VENDOR_CATEGORY);
   const category =
     VENDOR_SHOP_CATEGORIES.find(c => c.id === categoryId) ?? VENDOR_SHOP_CATEGORIES[0]!;
+  const theme = shopTheme(embedded);
 
   return (
     <div
@@ -322,7 +373,6 @@ export function VendorShopPanel({
               display: 'flex',
               flexDirection: 'column',
               padding: '14px 14px 12px',
-              background: '#fff',
               fontFamily: 'system-ui, -apple-system, sans-serif',
               pointerEvents: 'auto',
             }
@@ -389,9 +439,9 @@ export function VendorShopPanel({
             gap: 6,
             fontSize: 11,
             fontWeight: 700,
-            color: '#9a7209',
-            background: 'linear-gradient(180deg,#fff9e6,#fff3cc)',
-            border: '1px solid rgba(184,134,11,0.35)',
+            color: theme.coinsLabel,
+            background: theme.coinsBg,
+            border: theme.coinsBorder,
             borderRadius: 999,
             padding: '4px 10px',
             whiteSpace: 'nowrap',
@@ -404,7 +454,8 @@ export function VendorShopPanel({
             iconSize={11}
             fontSize={11}
             fontWeight={700}
-            light={false}
+            buttonCoin
+            light={theme.coinsLight}
           />
         </div>
       </div>
@@ -417,7 +468,7 @@ export function VendorShopPanel({
           marginBottom: 10,
           padding: 3,
           borderRadius: 10,
-          background: '#f3f3f3',
+          background: theme.categoryBg,
           flexShrink: 0,
         }}
       >
@@ -434,9 +485,9 @@ export function VendorShopPanel({
                 padding: '5px 6px',
                 borderRadius: 8,
                 border: 'none',
-                background: active ? '#fff' : 'transparent',
-                boxShadow: active ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-                color: active ? '#222' : '#888',
+                background: active ? theme.categoryActiveBg : 'transparent',
+                boxShadow: active ? theme.categoryActiveShadow : 'none',
+                color: active ? theme.categoryActiveColor : theme.categoryInactiveColor,
                 fontSize: 8,
                 fontWeight: 700,
                 letterSpacing: 0.2,
@@ -471,10 +522,10 @@ export function VendorShopPanel({
             style={{
               padding: '14px 10px',
               borderRadius: 12,
-              border: '1px solid #ececec',
-              background: '#fafafa',
+              border: theme.emptyBorder,
+              background: theme.emptyBg,
               fontSize: 10,
-              color: '#999',
+              color: theme.emptyColor,
               textAlign: 'center',
             }}
           >
@@ -498,8 +549,8 @@ export function VendorShopPanel({
                 gap: 10,
                 padding: '8px 10px',
                 borderRadius: 12,
-                border: equipped ? '1.5px solid #e67e22' : '1px solid #ececec',
-                background: equipped ? '#fff8f0' : '#fafafa',
+                border: equipped ? theme.rowBorderEquipped : theme.rowBorder,
+                background: equipped ? theme.rowBgEquipped : theme.rowBg,
               }}
             >
               <div
@@ -508,8 +559,8 @@ export function VendorShopPanel({
                   width: 48,
                   height: 40,
                   borderRadius: 10,
-                  background: '#fff',
-                  border: '1px solid #eee',
+                  background: theme.previewBg,
+                  border: theme.previewBorder,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -523,7 +574,7 @@ export function VendorShopPanel({
                   style={{
                     fontSize: 12,
                     fontWeight: 600,
-                    color: '#222',
+                    color: theme.rowNameColor,
                     lineHeight: 1.25,
                     wordBreak: 'break-word',
                   }}
@@ -538,7 +589,7 @@ export function VendorShopPanel({
                       fontWeight: 600,
                       letterSpacing: 0.4,
                       textTransform: 'uppercase',
-                      color: '#9a9a9a',
+                      color: theme.rowMutedColor,
                     }}
                   >
                     Owned
@@ -592,6 +643,7 @@ export function VendorShopPanel({
                   </div>
                 ) : owned ? (
                   <EquipButton
+                    embedded={embedded}
                     onClick={() => {
                       void Promise.resolve(onPurchase(itemId)).then(ok => {
                         if (ok) playPurchaseSound();

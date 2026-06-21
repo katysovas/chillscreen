@@ -659,7 +659,6 @@ export function StageChatterPanel({
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            background: '#fff',
             overflow: 'hidden',
           }}
         >
