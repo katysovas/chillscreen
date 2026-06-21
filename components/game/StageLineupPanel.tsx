@@ -409,7 +409,11 @@ export function StageLineupPanel({ channel, lineupMultiplayer = null }: Props) {
     castVote,
     appendSuggestion,
     connected: lineupConnected,
+    sessionReady: lineupSessionReady,
+    voteLocked,
   } = useStageLineupVotes(channel, lineupMultiplayer);
+  const voteInputsReady = lineupConnected && lineupSessionReady;
+  const voteButtonsDisabled = !voteInputsReady || voteLocked;
   const [waitingExpanded, setWaitingExpanded] = useState(false);
   const [suggestBusy, setSuggestBusy] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
@@ -633,7 +637,7 @@ export function StageLineupPanel({ channel, lineupMultiplayer = null }: Props) {
                   : baseProgress}
                 progressColor={voted || queueIndex === 0 ? '#1D9E75' : '#888780'}
                 voteActive={voted}
-                voteDisabled={!lineupConnected}
+                voteDisabled={voteButtonsDisabled}
                 onVote={() => castVote(slot.video.id)}
                 showVote={canVoteOnDeck}
               />
@@ -689,7 +693,7 @@ export function StageLineupPanel({ channel, lineupMultiplayer = null }: Props) {
                       )}
                       progressColor={voted ? '#1D9E75' : '#888780'}
                       voteActive={voted}
-                      voteDisabled={!lineupConnected}
+                      voteDisabled={voteButtonsDisabled}
                       onVote={() => castVote(entry.video.id)}
                       showVote
                     />

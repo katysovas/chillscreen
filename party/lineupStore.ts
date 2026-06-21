@@ -136,6 +136,11 @@ export class LineupStore {
     secret: string | undefined,
   ): Promise<LineupStatePayload> {
     const state = await this.loadChannel(channel, apiBase, secret);
+    const existing = state.votes[voterId];
+    if (existing) {
+      return this.toPayload(channel, state, voterId);
+    }
+
     const votes = { ...state.votes, [voterId]: videoId };
     const next = { ...state, votes };
     await this.saveChannel(channel, next);

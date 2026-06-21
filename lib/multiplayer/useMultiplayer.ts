@@ -21,7 +21,6 @@ import {
 } from './protocol';
 import { applyServerStageSync } from '@/lib/stageClock';
 import { isChatterMuted } from '@/lib/chatterMuted';
-import { getHumansOnlyStageChatter } from '@/lib/stageChatter/preferences';
 import { isChatterDebugMode } from '@/lib/chatterDebug';
 import { ilog, ierror, iwarn } from '@/lib/internalDebug';
 import type { StageChatterMessage } from '@/lib/stageChatter/types';
@@ -192,7 +191,6 @@ export type Multiplayer = {
   sendAmbientMessage: (text: string) => void;
   sendRoomChat: (text: string) => void;
   sendRoomTyping: (typing: boolean) => void;
-  sendHumansOnlyChatter: (enabled: boolean) => void;
   sendNpcChat: (npcId: string, open: boolean) => void;
   sendNpcPositions: (positions: { id: string; worldX: number; pct: number }[], viewportWidth: number) => void;
   sendEaselPainterReady: (npcId: string) => void;
@@ -313,7 +311,6 @@ export function useMultiplayer(opts: Options): Multiplayer {
         facing: Facing;
         walking: boolean;
         chatterMuted?: boolean;
-        humansOnlyChatter?: boolean;
         chatterDebug?: boolean;
         userId?: string;
         capability: NpcLeaderCapability;
@@ -326,7 +323,6 @@ export function useMultiplayer(opts: Options): Multiplayer {
         capability,
       };
       if (isChatterMuted()) join.chatterMuted = true;
-      if (getHumansOnlyStageChatter()) join.humansOnlyChatter = true;
       if (isChatterDebugMode()) join.chatterDebug = true;
       const userId = userIdRef?.current?.trim();
       if (userId) join.userId = userId;
@@ -576,10 +572,6 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const sendAmbientMessage = useCallback((text: string) => connectAndSend({ t: 'ambient-msg', text }), [connectAndSend]);
   const sendRoomChat = useCallback((text: string) => connectAndSend({ t: 'room-chat', text }), [connectAndSend]);
   const sendRoomTyping = useCallback((typing: boolean) => connectAndSend({ t: 'room-typing', typing }), [connectAndSend]);
-  const sendHumansOnlyChatter = useCallback(
-    (enabled: boolean) => connectAndSend({ t: 'humans-only-chatter', enabled }),
-    [connectAndSend],
-  );
   const sendNpcChat = useCallback(
     (npcId: string, open: boolean) => connectAndSend({ t: 'npc-chat', npcId, open }),
     [connectAndSend],
@@ -648,7 +640,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
     chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,
     isNpcLeader, npcSyncRef,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
-    sendAmbientMessage, sendRoomChat, sendRoomTyping, sendHumansOnlyChatter, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
+    sendAmbientMessage, sendRoomChat, sendRoomTyping, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
     sendCreatorStageSync, registerCreatorStageSyncHandler,
     sendLineupSubscribe, sendLineupVote, sendLineupSuggest, registerLineupStateHandler,
     requestFestiesSync,

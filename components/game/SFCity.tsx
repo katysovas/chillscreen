@@ -1818,10 +1818,6 @@ export default function SFCity({
     mpRef.current?.sendRoomTyping(typing);
   }, [playerName, stageChatter.setTyping]);
 
-  const handleStageChatterHumansOnly = useCallback((enabled: boolean) => {
-    mpRef.current?.sendHumansOnlyChatter(enabled);
-  }, []);
-
   const handleWelcomeEnter = (name: string, target: StagePickerTarget) => {
     saveSessionPlayerName(name);
     const profile = {
@@ -2922,7 +2918,6 @@ export default function SFCity({
           resolveGlow={resolveStageChatterGlow}
           onSend={handleStageChatterSend}
           onTypingChange={handleStageChatterTyping}
-          onHumansOnlyChange={handleStageChatterHumansOnly}
           stageName={stageChatterWelcome.stageName}
           stageDescription={stageChatterWelcome.stageDescription}
           isStageOwner={isCreatorStageOwner}

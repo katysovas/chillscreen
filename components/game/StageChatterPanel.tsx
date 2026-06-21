@@ -1,13 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filterChatMessage } from '@/lib/messageFilter';
-import {
-  filterStageChatterMessages,
-  filterStageChatterTypingSenders,
-  getHumansOnlyStageChatter,
-  subscribeHumansOnlyStageChatter,
-} from '@/lib/stageChatter/preferences';
 import type { StageChatterMessage } from '@/lib/stageChatter/types';
 import type { CharacterLoadout } from './characters/loadout';
 import { Z_CONTROLS } from '@/lib/zLayers';
@@ -53,7 +47,6 @@ type Props = {
   resolveGlow?: (sender: string) => string | undefined;
   onSend: (text: string) => void;
   onTypingChange?: (typing: boolean) => void;
-  onHumansOnlyChange?: (enabled: boolean) => void;
   stageName?: string;
   stageDescription?: string | null;
   isStageOwner?: boolean;
@@ -246,7 +239,6 @@ export function StageChatterPanel({
   resolveGlow,
   onSend,
   onTypingChange,
-  onHumansOnlyChange,
   stageName,
   stageDescription,
   isStageOwner = false,
@@ -277,21 +269,6 @@ export function StageChatterPanel({
   const [expanded, setExpanded] = useState(true);
   const [chatUnread, setChatUnread] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const humansOnly = useSyncExternalStore(
-    subscribeHumansOnlyStageChatter,
-    getHumansOnlyStageChatter,
-    () => false,
-  );
-
-  const visibleMessages = useMemo(
-    () => filterStageChatterMessages(messages, humansOnly),
-    [humansOnly, messages],
-  );
-
-  const visibleTypingSenders = useMemo(
-    () => filterStageChatterTypingSenders(typingSenders, humansOnly),
-    [humansOnly, typingSenders],
-  );
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     const el = scrollRef.current;
@@ -302,9 +279,9 @@ export function StageChatterPanel({
   useEffect(() => {
     if (hidden || !expanded) return;
     if (stickToBottomRef.current) {
-      scrollToBottom(visibleMessages.length <= 1 ? 'auto' : 'smooth');
+      scrollToBottom(messages.length <= 1 ? 'auto' : 'smooth');
     }
-  }, [expanded, hidden, visibleMessages.length, scrollToBottom]);
+  }, [expanded, hidden, messages.length, scrollToBottom]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -369,21 +346,21 @@ export function StageChatterPanel({
   }, [onTypingChange]);
 
   const rows = useMemo(
-    () => visibleMessages.map(msg => ({
+    () => messages.map(msg => ({
       ...msg,
       name: resolveName(msg.sender),
       glow: resolveGlow?.(msg.sender),
     })),
-    [visibleMessages, resolveGlow, resolveName],
+    [messages, resolveGlow, resolveName],
   );
 
   const typingRows = useMemo(
-    () => visibleTypingSenders.map(sender => ({
+    () => typingSenders.map(sender => ({
       sender,
       name: resolveName(sender),
       glow: resolveGlow?.(sender),
     })),
-    [visibleTypingSenders, resolveGlow, resolveName],
+    [typingSenders, resolveGlow, resolveName],
   );
 
   const welcomeMessage = useMemo(() => {
@@ -413,13 +390,13 @@ export function StageChatterPanel({
 
   useEffect(() => {
     if (expanded && activeTab === 'chat') {
-      lastSeenMessageCountRef.current = visibleMessages.length;
+      lastSeenMessageCountRef.current = messages.length;
       setChatUnread(false);
     }
-  }, [expanded, activeTab, visibleMessages.length]);
+  }, [expanded, activeTab, messages.length]);
 
   useEffect(() => {
-    const count = visibleMessages.length;
+    const count = messages.length;
     if (!messagesInitializedRef.current) {
       messagesInitializedRef.current = true;
       lastSeenMessageCountRef.current = count;
@@ -435,7 +412,7 @@ export function StageChatterPanel({
     if (count > lastSeenMessageCountRef.current && (activeTab !== 'chat' || !expanded)) {
       setChatUnread(true);
     }
-  }, [visibleMessages.length, expanded, activeTab]);
+  }, [messages.length, expanded, activeTab]);
 
   const showLineupTab = Boolean(stageChannel);
 

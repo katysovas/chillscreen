@@ -68,8 +68,6 @@ export type ClientMessage =
       walking: boolean;
       /** From `?mute=true` — disables room NPC chatter while this player is present. */
       chatterMuted?: boolean;
-      /** Humans-only stage chat — disables room NPC chatter while this player is present. */
-      humansOnlyChatter?: boolean;
       /** From `?debug=true` — demo seed only, internal QA. */
       chatterDebug?: boolean;
       /** Signed-in account id — marks festie owner_on_stage for live NPC chatter. */
@@ -90,8 +88,6 @@ export type ClientMessage =
   | { t: 'room-chat'; text: string }
   // Stage chatter typing signal — visible to everyone in the room.
   | { t: 'room-typing'; typing: boolean }
-  /** Hide + suppress NPC stage chatter for this player (humans-only preference). */
-  | { t: 'humans-only-chatter'; enabled: boolean }
   // NPC 1:1 chat — broadcast so everyone sees the connect glow.
   | { t: 'npc-chat'; npcId: string; open: boolean }
   /** Throttled NPC snapshot for proximity chatter + follower sync. */

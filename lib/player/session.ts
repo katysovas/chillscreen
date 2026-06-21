@@ -6,7 +6,7 @@ import { loadoutItem } from '@/components/game/characters/loadout/catalog';
 import { loadoutItemId } from '@/components/game/characters/loadout/types';
 import { markLocalFestieAccount } from '@/lib/festie/localAccount';
 import type { FestieOwner } from '@/lib/festie/types';
-import { STARTING_COINS } from '@/lib/player/constants';
+import { GUEST_PLAYER_ID_KEY, STARTING_COINS } from '@/lib/player/constants';
 
 export { STARTING_COINS };
 
@@ -27,9 +27,32 @@ type SessionState = {
 
 let guestId: string | null = null;
 
-function getGuestId(): string {
-  if (!guestId) guestId = crypto.randomUUID();
-  return guestId;
+function readStoredGuestId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(GUEST_PLAYER_ID_KEY)?.trim();
+    return stored && /^[0-9a-f-]{36}$/i.test(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredGuestId(id: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(GUEST_PLAYER_ID_KEY, id);
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+function getPersistedGuestId(): string {
+  const stored = readStoredGuestId();
+  if (stored) return stored;
+  const id = guestId ?? crypto.randomUUID();
+  guestId = id;
+  writeStoredGuestId(id);
+  return id;
 }
 
 let state: SessionState = {
@@ -112,7 +135,13 @@ export async function hydratePlayerSession(): Promise<SessionState> {
 }
 
 export function getOrCreatePlayerId(): string {
-  return state.userId ?? getGuestId();
+  if (state.hydrated && state.userId) return state.userId;
+  return getPersistedGuestId();
+}
+
+/** True once sign-in state is known — lineup votes wait for this. */
+export function isPlayerSessionReady(): boolean {
+  return state.hydrated;
 }
 
 export function getPlayerName(): string | null {

@@ -73,8 +73,7 @@ export async function upsertLineupVote(
   await db`
     INSERT INTO lineup_votes (room_id, channel, voter_id, video_id, updated_at)
     VALUES (${roomId}, ${channel}, ${voterId}, ${videoId}, now())
-    ON CONFLICT (room_id, channel, voter_id)
-    DO UPDATE SET video_id = EXCLUDED.video_id, updated_at = now()
+    ON CONFLICT (room_id, channel, voter_id) DO NOTHING
   `;
 }
 

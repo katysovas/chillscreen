@@ -6,7 +6,11 @@ import type { LineupStatePayload } from '@/lib/multiplayer/protocol';
 import type { StageChannel, StageVideo } from '@/lib/stageVideos';
 import type { StoredLineupSuggestion } from '@/lib/lineup/types';
 import { EMPTY_LINEUP_VOTE_STATE, type LineupVoteState } from '@/lib/stageLineupVote';
-import { getOrCreatePlayerId } from '@/lib/player/session';
+import {
+  getOrCreatePlayerId,
+  isPlayerSessionReady,
+  subscribePlayerSession,
+} from '@/lib/player/session';
 
 type LineupMultiplayer = Pick<
   Multiplayer,
@@ -24,6 +28,17 @@ export function useStageLineupVotes(
 ) {
   const [voteState, setVoteState] = useState<LineupVoteState>(EMPTY_LINEUP_VOTE_STATE);
   const [suggestions, setSuggestions] = useState<StoredLineupSuggestion[]>([]);
+  const [sessionReady, setSessionReady] = useState(isPlayerSessionReady);
+
+  useEffect(() => {
+    if (isPlayerSessionReady()) {
+      setSessionReady(true);
+      return;
+    }
+    return subscribePlayerSession(() => {
+      if (isPlayerSessionReady()) setSessionReady(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (!mp) return;
@@ -47,19 +62,24 @@ export function useStageLineupVotes(
     };
 
     mp.registerLineupStateHandler(onState);
-    mp.sendLineupSubscribe(channel);
+    if (sessionReady) {
+      mp.sendLineupSubscribe(channel);
+    }
     return () => mp.registerLineupStateHandler(null);
-  }, [channel, mp]);
+  }, [channel, mp, sessionReady]);
 
   const castVote = useCallback((videoId: string) => {
-    if (!mp) return;
+    if (!mp || !sessionReady || voteState.myVote) return;
+    setVoteState(prev => ({ ...prev, myVote: videoId }));
     mp.sendLineupVote(channel, videoId);
-  }, [channel, mp]);
+  }, [channel, mp, sessionReady, voteState.myVote]);
 
   const appendSuggestion = useCallback((video: StageVideo) => {
     if (!mp) return;
     mp.sendLineupSuggest(channel, video);
   }, [channel, mp]);
+
+  const voteLocked = voteState.myVote != null;
 
   return {
     voteState,
@@ -67,6 +87,8 @@ export function useStageLineupVotes(
     castVote,
     appendSuggestion,
     connected: mp?.connected ?? false,
+    sessionReady,
+    voteLocked,
     playerId: getOrCreatePlayerId(),
   };
 }

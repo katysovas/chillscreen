@@ -51,8 +51,6 @@ export default class WhichStageServer implements Party.Server {
   private npcChats = new Map<string, string>();
   /** Players who joined with `?mute=true` — disables room NPC chatter while any remain. */
   private chatterMutedPlayers = new Set<string>();
-  /** Players who enabled humans-only stage chat — disables room NPC chatter while any remain. */
-  private humansOnlyPlayers = new Set<string>();
   /** Players who joined with `?debug=true` — demo seed only while any remain. */
   private chatterDebugPlayers = new Set<string>();
   /** connId → signed-in user id (for festie presence / seen debounce). */
@@ -109,7 +107,7 @@ export default class WhichStageServer implements Party.Server {
   }
 
   private shouldSuppressNpcChatter(): boolean {
-    return this.chatterMutedPlayers.size > 0 || this.humansOnlyPlayers.size > 0;
+    return this.chatterMutedPlayers.size > 0;
   }
 
   private syncChatterDisabled(): void {
@@ -187,9 +185,6 @@ export default class WhichStageServer implements Party.Server {
         }
         if (msg.chatterMuted) {
           this.chatterMutedPlayers.add(sender.id);
-        }
-        if (msg.humansOnlyChatter) {
-          this.humansOnlyPlayers.add(sender.id);
         }
         if (wasEmpty) {
           if (!this.shouldSuppressNpcChatter()) {
@@ -311,15 +306,6 @@ export default class WhichStageServer implements Party.Server {
           encode({ t: 'room-typing', sender: `user:${label}`, typing: msg.typing }),
           [sender.id],
         );
-        break;
-      }
-      case 'humans-only-chatter': {
-        if (msg.enabled) {
-          this.humansOnlyPlayers.add(sender.id);
-        } else {
-          this.humansOnlyPlayers.delete(sender.id);
-        }
-        this.syncChatterDisabled();
         break;
       }
       case 'ambient-msg': {
@@ -481,7 +467,6 @@ export default class WhichStageServer implements Party.Server {
       );
     }
     const wasMuted = this.chatterMutedPlayers.delete(conn.id);
-    const wasHumansOnly = this.humansOnlyPlayers.delete(conn.id);
     this.chatterDebugPlayers.delete(conn.id);
     const wasLeader = conn.id === this.npcLeaderId;
     const userId = this.connUserIds.get(conn.id);
@@ -498,7 +483,7 @@ export default class WhichStageServer implements Party.Server {
       this.scheduleFestieSeen(userId);
       this.scheduleFestiesSync();
     }
-    if (wasMuted || wasHumansOnly) {
+    if (wasMuted) {
       this.syncChatterDisabled();
     }
     if (this.players.size === 0) {
