@@ -57,6 +57,9 @@ type Props = {
   stageName?: string;
   stageDescription?: string | null;
   isStageOwner?: boolean;
+  /** In-game super admin (HuskyNights) — can purge user chatter. */
+  isSuperAdmin?: boolean;
+  onPurgeChatterSender?: (sender: string) => void | Promise<void>;
   hidden?: boolean;
   activeTab: StageSidePanelTab;
   onTabChange: (tab: StageSidePanelTab) => void;
@@ -247,6 +250,8 @@ export function StageChatterPanel({
   stageName,
   stageDescription,
   isStageOwner = false,
+  isSuperAdmin = false,
+  onPurgeChatterSender,
   hidden = false,
   activeTab,
   onTabChange,
@@ -573,35 +578,64 @@ export function StageChatterPanel({
             <div
               key={`${msg.ts}-${msg.sender}-${msg.text}`}
               style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 8,
                 fontSize: 11,
                 lineHeight: 1.45,
                 color: 'rgba(255, 255, 255, 0.88)',
               }}
             >
-              <span
-                style={{
-                  fontWeight: 600,
-                  color: msg.glow ?? 'rgba(180, 220, 255, 0.95)',
-                  textShadow: msg.glow
-                    ? `0 0 12px ${msg.glow}88`
-                    : '0 0 10px rgba(140, 200, 255, 0.35)',
-                }}
-              >
-                {msg.name}
-              </span>
-              <span style={{ color: 'rgba(255, 255, 255, 0.35)', margin: '0 4px' }}>:</span>
-              <span style={{ color: 'rgba(255, 255, 255, 0.82)' }}>{msg.text}</span>
-              <span
-                style={{
-                  display: 'block',
-                  marginTop: 2,
-                  fontSize: 9,
-                  letterSpacing: 0.4,
-                  color: 'rgba(255, 255, 255, 0.28)',
-                }}
-              >
-                {formatTime(msg.ts)}
-              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span
+                  style={{
+                    fontWeight: 600,
+                    color: msg.glow ?? 'rgba(180, 220, 255, 0.95)',
+                    textShadow: msg.glow
+                      ? `0 0 12px ${msg.glow}88`
+                      : '0 0 10px rgba(140, 200, 255, 0.35)',
+                  }}
+                >
+                  {msg.name}
+                </span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.35)', margin: '0 4px' }}>:</span>
+                <span style={{ color: 'rgba(255, 255, 255, 0.82)' }}>{msg.text}</span>
+                <span
+                  style={{
+                    display: 'block',
+                    marginTop: 2,
+                    fontSize: 9,
+                    letterSpacing: 0.4,
+                    color: 'rgba(255, 255, 255, 0.28)',
+                  }}
+                >
+                  {formatTime(msg.ts)}
+                </span>
+              </div>
+              {isSuperAdmin && msg.sender.startsWith('user:') && onPurgeChatterSender ? (
+                <button
+                  type="button"
+                  onClick={() => void onPurgeChatterSender(msg.sender)}
+                  aria-label={`Remove all messages from ${msg.name}`}
+                  title="Remove all messages from this user"
+                  style={{
+                    flexShrink: 0,
+                    width: 22,
+                    height: 22,
+                    marginTop: 1,
+                    border: '1px solid rgba(255, 120, 120, 0.35)',
+                    borderRadius: 6,
+                    background: 'rgba(255, 80, 80, 0.12)',
+                    color: 'rgba(255, 180, 180, 0.95)',
+                    fontSize: 14,
+                    lineHeight: 1,
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  ×
+                </button>
+              ) : null}
             </div>
           ))
         )}

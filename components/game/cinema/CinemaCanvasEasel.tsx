@@ -120,7 +120,7 @@ export const CinemaCanvasEasel = memo(function CinemaCanvasEasel({ interactive }
         viewBox="-9 0 64 64"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none' }}
       >
         <g stroke="none" fill="none" fillRule="evenodd">
           <g transform="translate(1,1)" stroke="#6B6C6E" strokeWidth={2}>

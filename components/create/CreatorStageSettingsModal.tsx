@@ -12,7 +12,7 @@ type Props = {
 export function CreatorStageLineupModal({ onClose }: Props) {
   const ctx = useCreatorStageControls();
 
-  if (!ctx?.isOwner) return null;
+  if (!ctx?.canManageLineup) return null;
 
   return (
     <CreatorStageModalShell

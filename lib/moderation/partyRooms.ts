@@ -112,16 +112,20 @@ export async function aggregateAnonymousChatters(): Promise<AnonymousChatterRow[
   return [...merged.values()].sort((a, b) => b.last_ts - a.last_ts);
 }
 
+export async function purgeSenderInRoom(roomId: string, sender: string): Promise<number> {
+  const data = await partyPost<{ removed?: number }>(roomId, {
+    action: 'purge-chatter',
+    sender,
+  });
+  return data.removed ?? 0;
+}
+
 export async function purgeSenderAcrossRooms(sender: string): Promise<number> {
   const roomIds = await allModerationRoomIds();
   let removed = 0;
   await Promise.all(roomIds.map(async roomId => {
     try {
-      const data = await partyPost<{ removed?: number }>(roomId, {
-        action: 'purge-chatter',
-        sender,
-      });
-      removed += data.removed ?? 0;
+      removed += await purgeSenderInRoom(roomId, sender);
     } catch {
       /* ignore empty rooms */
     }

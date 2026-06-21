@@ -19,6 +19,10 @@ export function UserStageShell({ stage }: Props) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => getPlayerSession().userId);
   const [authenticated, setAuthenticated] = useState(() => getPlayerSession().authenticated);
   const [sessionReady, setSessionReady] = useState(() => getPlayerSession().hydrated);
+  const [viewerFestieName, setViewerFestieName] = useState<string | null>(() => {
+    const session = getPlayerSession();
+    return session.festie?.name ?? session.name;
+  });
 
   useEffect(() => {
     void hydratePlayerSession();
@@ -27,6 +31,7 @@ export function UserStageShell({ stage }: Props) {
       setCurrentUserId(session.userId);
       setAuthenticated(session.authenticated);
       setSessionReady(session.hydrated);
+      setViewerFestieName(session.festie?.name ?? session.name);
     });
   }, []);
 
@@ -37,6 +42,7 @@ export function UserStageShell({ stage }: Props) {
       currentUserId={currentUserId}
       authenticated={authenticated}
       sessionReady={sessionReady}
+      viewerFestieName={viewerFestieName}
     >
       <VenueBootOverlay />
       <SFCityLoader

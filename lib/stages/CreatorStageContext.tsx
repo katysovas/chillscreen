@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { UserStagePublic } from '@/lib/stages/types';
+import { isSuperAdminFestieName } from '@/lib/superAdmin';
 import { touchStagePresence, tryShuffleOnStageStart, updateUserStage } from '@/lib/stages/client';
 import {
   mergeCreatorStageSync,
@@ -24,6 +25,8 @@ type SetStageOptions = { broadcast?: boolean };
 type CreatorStageContextValue = {
   stage: UserStagePublic;
   isOwner: boolean;
+  isSuperAdmin: boolean;
+  canManageLineup: boolean;
   /** False while shuffle-on-start runs — blocks the YouTube embed. */
   playbackReady: boolean;
   setStage: (stage: UserStagePublic, opts?: SetStageOptions) => void;
@@ -43,6 +46,8 @@ type ProviderProps = {
   authenticated?: boolean;
   /** Player session finished hydrating from /api/player. */
   sessionReady?: boolean;
+  /** Signed-in viewer festie name — used for super-admin checks. */
+  viewerFestieName?: string | null;
   children: ReactNode;
 };
 
@@ -67,11 +72,14 @@ export function CreatorStageProvider({
   currentUserId,
   authenticated = false,
   sessionReady = false,
+  viewerFestieName = null,
   children,
 }: ProviderProps) {
   const [stage, setStageState] = useState(initialStage);
   const [playbackReady, setPlaybackReady] = useState(() => !needsShuffleOnStart(initialStage));
   const isOwner = viewerIsStageOwner(ownerUserId, currentUserId, authenticated, sessionReady);
+  const isSuperAdmin = sessionReady && authenticated && isSuperAdminFestieName(viewerFestieName);
+  const canManageLineup = isOwner || isSuperAdmin;
   const broadcastRef = useRef<((payload: CreatorStageSyncPayload) => void) | null>(null);
 
   useEffect(() => {
@@ -131,24 +139,36 @@ export function CreatorStageProvider({
   }, []);
 
   const playNow = useCallback(async (index: number) => {
-    if (!isOwner || !stage.streams.length) return;
+    if (!canManageLineup || !stage.streams.length) return;
     const clamped = Math.max(0, Math.min(index, stage.streams.length - 1));
     if (clamped === stage.nowPlayingIndex) return;
     const updated = await updateUserStage(stage.slug, { nowPlayingIndex: clamped });
     setStage(updated, { broadcast: true });
-  }, [isOwner, stage.slug, stage.streams.length, stage.nowPlayingIndex, setStage]);
+  }, [canManageLineup, stage.slug, stage.streams.length, stage.nowPlayingIndex, setStage]);
 
   const value = useMemo(
     () => ({
       stage,
       isOwner,
+      isSuperAdmin,
+      canManageLineup,
       playbackReady,
       setStage,
       applyRemoteStage,
       registerStageBroadcast,
       playNow,
     }),
-    [stage, isOwner, playbackReady, setStage, applyRemoteStage, registerStageBroadcast, playNow],
+    [
+      stage,
+      isOwner,
+      isSuperAdmin,
+      canManageLineup,
+      playbackReady,
+      setStage,
+      applyRemoteStage,
+      registerStageBroadcast,
+      playNow,
+    ],
   );
 
   return (
@@ -168,6 +188,11 @@ export function useCreatorStagePlaybackReady(): boolean {
 
 export function useCreatorStageControls(): CreatorStageContextValue | null {
   return useContext(CreatorStageContext);
+}
+
+/** True for the stage owner or in-game super admin on /watch/{slug}. */
+export function useCanManageStageLineup(): boolean {
+  return useContext(CreatorStageContext)?.canManageLineup ?? false;
 }
 
 /** True only for the signed-in stage owner on /watch/{slug}. */

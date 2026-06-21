@@ -37,9 +37,9 @@ export function CreatorStageLineupPanel() {
     [ctx?.stage.streams],
   );
 
-  if (!ctx?.isOwner) return null;
+  if (!ctx?.canManageLineup) return null;
 
-  const { stage, setStage, playNow } = ctx;
+  const { stage, setStage, playNow, isSuperAdmin, isOwner } = ctx;
 
   const persistStreams = async (
     streams: StageStream[],
@@ -272,7 +272,9 @@ export function CreatorStageLineupPanel() {
         color: 'rgba(255,255,255,0.5)',
       }}
       >
-        Add videos, reorder the queue, and use Play now to switch what everyone sees on stage.
+        {isSuperAdmin && !isOwner
+          ? 'Super admin — add, remove, and reorder videos on this stage.'
+          : 'Add videos, reorder the queue, and use Play now to switch what everyone sees on stage.'}
       </p>
 
       <label

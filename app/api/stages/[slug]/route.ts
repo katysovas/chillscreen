@@ -23,6 +23,7 @@ import {
 } from '@/lib/stages/socialLinks';
 import type { StagePresetId } from '@/lib/stages/types';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
+import { isSuperAdminUserId } from '@/lib/superAdmin.server';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,8 +78,25 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     const patch: Parameters<typeof updateUserStage>[2] = {};
 
     const existing = await getUserStageBySlug(slug);
-    if (!existing || existing.owner_id !== userId || existing.taken_down_at) {
+    if (!existing || existing.taken_down_at) {
       return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
+    }
+
+    const isSuperAdmin = await isSuperAdminUserId(userId);
+    const isOwner = existing.owner_id === userId;
+    if (!isOwner && !isSuperAdmin) {
+      return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
+    }
+
+    if (isSuperAdmin && !isOwner) {
+      const lineupOnlyKeys = new Set(['streams', 'nowPlayingIndex', 'shuffleOnStart']);
+      const requestedKeys = Object.keys(body).filter(key => body[key] !== undefined);
+      if (requestedKeys.some(key => !lineupOnlyKeys.has(key))) {
+        return NextResponse.json(
+          { error: 'Super admin can only edit lineup.' },
+          { status: 403 },
+        );
+      }
     }
 
     if (body.streams !== undefined) {
@@ -154,7 +172,7 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       patch.backdropUrl = parsed ?? null;
     }
 
-    const row = await updateUserStage(slug, userId, patch, existing);
+    const row = await updateUserStage(slug, existing.owner_id, patch, existing);
     if (!row) {
       return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
     }

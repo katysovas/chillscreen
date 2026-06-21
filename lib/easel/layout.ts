@@ -13,6 +13,12 @@ export const EASEL_DISPLAY_WIDTH = EASEL_ART_SIZE * EASEL_DISPLAY_SCALE;
 export const EASEL_FRAME_LEFT = 94;
 export const EASEL_FRAME_TOP = 80;
 export const EASEL_FRAME_LEFT_SCALED = EASEL_FRAME_LEFT * EASEL_DISPLAY_SCALE;
+export const EASEL_FRAME_TOP_SCALED = EASEL_FRAME_TOP * EASEL_DISPLAY_SCALE;
+/** White drawing surface inside the easel frame (460 artboard coords). */
+export const EASEL_CANVAS_WIDTH = 272;
+export const EASEL_CANVAS_HEIGHT = 214;
+export const EASEL_CANVAS_DISPLAY_WIDTH = EASEL_CANVAS_WIDTH * EASEL_DISPLAY_SCALE;
+export const EASEL_CANVAS_DISPLAY_HEIGHT = EASEL_CANVAS_HEIGHT * EASEL_DISPLAY_SCALE;
 
 /** Gap between festie body and drawing canvas edge (screen px = world units). */
 export const EASEL_NPC_STAND_GAP = 0;

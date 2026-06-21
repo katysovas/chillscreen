@@ -11,13 +11,15 @@ import { clampLiveDone, liveSegmentsDone } from '@/lib/easel/segments';
 import { parseStartedAtMs, resolveEaselClockStart } from '@/lib/easel/sessionClock';
 import type { DrawingProgram, EaselStatus } from '@/lib/easel/types';
 import { EASEL_DEFAULT_RATE } from '@/lib/easel/types';
-import { EASEL_DISPLAY_WIDTH } from '@/lib/easel/layout';
+import {
+  EASEL_CANVAS_DISPLAY_HEIGHT,
+  EASEL_CANVAS_DISPLAY_WIDTH,
+  EASEL_DISPLAY_WIDTH,
+  EASEL_FRAME_LEFT_SCALED,
+  EASEL_FRAME_TOP_SCALED,
+} from '@/lib/easel/layout';
 
 const CHECKPOINT_MS = 12_000;
-const ART_SCALE = EASEL_DISPLAY_WIDTH / 460;
-const FRAME_LEFT = 94 * ART_SCALE;
-const FRAME_TOP = 80 * ART_SCALE;
-const CANVAS_DISPLAY = (272 / 460) * EASEL_DISPLAY_WIDTH;
 
 export type AmbientCanvasPersistence = {
   stageSlug: string;
@@ -236,7 +238,7 @@ export const AmbientCanvasDrawing = memo(function AmbientCanvasDrawing({
         viewBox="-9 0 64 64"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none' }}
       >
         <g stroke="none" fill="none" fillRule="evenodd">
           <g transform="translate(1,1)" stroke="#6B6C6E" strokeWidth={2}>
@@ -252,16 +254,16 @@ export const AmbientCanvasDrawing = memo(function AmbientCanvasDrawing({
       <div
         style={{
           position: 'absolute',
-          left: FRAME_LEFT,
-          top: FRAME_TOP,
+          left: EASEL_FRAME_LEFT_SCALED,
+          top: EASEL_FRAME_TOP_SCALED,
           lineHeight: 0,
         }}
       >
         <canvas
           ref={canvasRef}
           style={{
-            width: CANVAS_DISPLAY,
-            height: CANVAS_DISPLAY,
+            width: EASEL_CANVAS_DISPLAY_WIDTH,
+            height: EASEL_CANVAS_DISPLAY_HEIGHT,
             display: 'block',
             background: '#fdfcf8',
             boxShadow: 'inset 0 0 14px #00000014',

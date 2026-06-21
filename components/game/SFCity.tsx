@@ -114,6 +114,7 @@ import { useCreatorStageRemoteSync } from '@/lib/stages/useCreatorStageRemoteSyn
 import {
   useOptionalCreatorStage,
   useIsCreatorStageOwner,
+  useCanManageStageLineup,
   useCreatorStagePresence,
 } from '@/lib/stages/CreatorStageContext';
 import { fetchMyStage } from '@/lib/stages/client';
@@ -135,6 +136,8 @@ import { AMBIENT_CHAT_ENABLED } from '@/lib/ambientChatEnabled';
 import { useRoomChatter } from './hooks/useRoomChatter';
 import { shouldExcludeFromStageChatter } from '@/lib/stageChatter/types';
 import { isNpcStageChatterSender } from '@/lib/stageChatter/preferences';
+import { purgeChatterSenderInRoom } from '@/lib/moderation/client';
+import { isSuperAdminFestieName } from '@/lib/superAdmin';
 import { useStageChatter } from './hooks/useStageChatter';
 import { StageChatterPanel, type StageSidePanelTab } from './StageChatterPanel';
 import { npcChatLabelForId } from '@/lib/npcRoster';
@@ -249,6 +252,7 @@ export default function SFCity({
   const autoSkyPeriod = useSkyPeriod();
   const creatorStage = useOptionalCreatorStage();
   const isCreatorStageOwner = useIsCreatorStageOwner();
+  const canManageCreatorLineup = useCanManageStageLineup();
   const skyPeriod = creatorStage?.sky ?? autoSkyPeriod;
   useCreatorStagePresence(creatorStage?.slug ?? null);
 
@@ -595,6 +599,22 @@ export default function SFCity({
   }, [festieSignedIn, profileReady, isCreatorStageOwner, creatorStage?.slug]);
 
   const showCreateStageButton = festieSignedIn && profileReady;
+  const isSuperAdmin = festieSignedIn && profileReady && isSuperAdminFestieName(ownerFestie?.name);
+  const chatterRoomId = useMemo(
+    () => (
+      creatorStage
+        ? partyRoomIdForStageSlug(creatorStage.slug)
+        : partyRoomIdForRoute(effectiveVenueRoute)
+    ),
+    [creatorStage, effectiveVenueRoute],
+  );
+  const handlePurgeChatterSender = useCallback(async (sender: string) => {
+    try {
+      await purgeChatterSenderInRoom(chatterRoomId, sender);
+    } catch (err) {
+      console.error('[super-admin] purge chatter failed', err);
+    }
+  }, [chatterRoomId]);
 
   useEffect(() => {
     return subscribePlayerSession(() => {
@@ -784,7 +804,7 @@ export default function SFCity({
     }
   }, [mp.isNpcLeader, mp.connected, mp.selfId]);
 
-  useCreatorStageRemoteSync(creatorStage?.slug, isCreatorStageOwner, mp);
+  useCreatorStageRemoteSync(creatorStage?.slug, canManageCreatorLineup, mp);
 
   const easelChannel = stageChannelForRoute(effectiveVenueRoute);
   const easelStageSlug = creatorStage?.slug ?? stageSlugFromVenueRoute(effectiveVenueRoute);
@@ -2806,9 +2826,9 @@ export default function SFCity({
           festie={ownerFestie}
           settingsOpen={settingsOpen}
           stageLineupOpen={stageLineupOpen}
-          showStageSettings={isCreatorStageOwner}
+          showStageSettings={canManageCreatorLineup}
           onOpenStageSettings={
-            isCreatorStageOwner ? () => setStageLineupOpen(true) : undefined
+            canManageCreatorLineup ? () => setStageLineupOpen(true) : undefined
           }
           hidden={showWelcome || showCityPicker}
           isMobile={mobileDevice}
@@ -2836,7 +2856,7 @@ export default function SFCity({
         onSignOut={openSignOutConfirm}
       />
 
-      {stageLineupOpen && isCreatorStageOwner && (
+      {stageLineupOpen && canManageCreatorLineup && (
         <CreatorStageLineupModal onClose={() => setStageLineupOpen(false)} />
       )}
 
@@ -2906,6 +2926,8 @@ export default function SFCity({
           stageName={stageChatterWelcome.stageName}
           stageDescription={stageChatterWelcome.stageDescription}
           isStageOwner={isCreatorStageOwner}
+          isSuperAdmin={isSuperAdmin}
+          onPurgeChatterSender={isSuperAdmin ? handlePurgeChatterSender : undefined}
           activeTab={stageSidePanelTab}
           onTabChange={handleStageSidePanelTabChange}
           shopLoadout={playerLoadout}

@@ -48,7 +48,7 @@ export function createEaselController(): EaselController {
     if (!canvas || !ctx) return false;
     const rect = canvas.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return false;
-    displayScale = rect.width / EASEL_LOGICAL_SIZE;
+    displayScale = Math.min(rect.width, rect.height) / EASEL_LOGICAL_SIZE;
     canvas.width = Math.round(rect.width * dpr);
     canvas.height = Math.round(rect.height * dpr);
     ctx.setTransform(dpr * displayScale, 0, 0, dpr * displayScale, 0, 0);
