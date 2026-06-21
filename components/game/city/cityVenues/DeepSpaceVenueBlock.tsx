@@ -3,6 +3,7 @@ import DeepSpaceStage, { DeepSpaceShell } from '../../DeepSpaceStage';
 import {
   DEEP_SPACE_HEIGHT,
   DEEP_SPACE_SCALE,
+  DEEP_SPACE_STAGE_LIFT_Y,
   DEEP_SPACE_WIDTH,
 } from '@/lib/stageVideoLayout';
 import { STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
@@ -36,21 +37,23 @@ export function DeepSpaceVenueBlock({
 
   const deepSpaceFoW = DEEP_SPACE_WIDTH * DEEP_SPACE_SCALE;
   const deepSpaceFoH = DEEP_SPACE_HEIGHT * DEEP_SPACE_SCALE;
-  const deepSpaceFoY = STAGE_ANCHOR_Y - deepSpaceFoH;
+  const deepSpaceFoY = STAGE_ANCHOR_Y - deepSpaceFoH - DEEP_SPACE_STAGE_LIFT_Y;
+  const deepSpaceGlowY = 670 - DEEP_SPACE_STAGE_LIFT_Y;
+  const deepSpaceGlowInnerY = 674 - DEEP_SPACE_STAGE_LIFT_Y;
 
   return (
     <>
       <g>
         <ellipse
           cx={deepSpaceX}
-          cy={670}
+          cy={deepSpaceGlowY}
           rx={deepSpaceFoW / 2 + 24}
           ry={22}
           fill="rgba(54,224,200,.06)"
         />
         <ellipse
           cx={deepSpaceX}
-          cy={674}
+          cy={deepSpaceGlowInnerY}
           rx={deepSpaceFoW / 2 + 10}
           ry={8}
           fill="rgba(54,224,200,.14)"

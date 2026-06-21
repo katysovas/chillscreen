@@ -26,24 +26,6 @@ const S = `
     pointer-events: none;
   }
 
-  .ds-pylons {
-    width: ${STAGE_W + 48}px; height: 0; position: relative;
-    pointer-events: none;
-  }
-  .ds-pylon {
-    position: absolute; bottom: -2px; width: 14px; height: 72px;
-    background: linear-gradient(180deg, rgba(125,240,221,.08) 0%, rgba(54,224,200,.22) 40%, rgba(36,23,64,.9) 100%);
-    border: 1px solid rgba(125,240,221,.22);
-    border-radius: 3px 3px 0 0;
-  }
-  .ds-pylon::after {
-    content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-    width: 4px; height: 4px; border-radius: 50%;
-    background: #7df0dd; box-shadow: 0 0 6px rgba(125,240,221,.8);
-  }
-  .ds-pylon--l { left: 0; }
-  .ds-pylon--r { right: 0; }
-
   .ds-sign {
     width: ${STAGE_W}px; min-height: 54px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -201,10 +183,6 @@ export function DeepSpaceView({
     <div className="ds-wrap">
       <style>{S}</style>
       <div className="ds-halo" aria-hidden />
-      <div className="ds-pylons" aria-hidden>
-        <div className="ds-pylon ds-pylon--l" />
-        <div className="ds-pylon ds-pylon--r" />
-      </div>
       <div className="ds-sign">
         <div className="ds-title">{signTitle}</div>
         <div key={titleKey} className="ds-sub">{videoTitle}</div>
