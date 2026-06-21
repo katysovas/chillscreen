@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { stripNpcChatterDots } from '@/lib/messageFilter';
+import { clearLegacyStageChatterPrefs } from '@/lib/stageChatter/preferences';
 import { mergeStageChatter, type StageChatterMessage } from '@/lib/stageChatter/types';
 
 export type StageChatterState = {
@@ -15,6 +16,10 @@ export type StageChatterState = {
 export function useStageChatter(): StageChatterState {
   const [messages, setMessages] = useState<StageChatterMessage[]>([]);
   const [typingSenders, setTypingSenders] = useState<string[]>([]);
+
+  useEffect(() => {
+    clearLegacyStageChatterPrefs();
+  }, []);
 
   const loadHistory = useCallback((history: StageChatterMessage[]) => {
     if (history.length === 0) return;

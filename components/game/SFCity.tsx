@@ -1468,13 +1468,12 @@ export default function SFCity({
       if (storedName) {
         setPlayerName(storedName);
         identifyPlayer(storedName);
-        return scheduleIdleCallback(
-          () => mpRef.current?.requestConnect(),
-          { timeout: 4_000 },
-        );
       }
       if (TEST_DRAW_MODEL_COMPARE) return;
-      return;
+      return scheduleIdleCallback(
+        () => mpRef.current?.requestConnect(),
+        { timeout: 4_000 },
+      );
     }
 
     if (TEST_DRAW_MODEL_COMPARE) return;
@@ -1810,6 +1809,7 @@ export default function SFCity({
     stageChatter.appendMessage(sender, filtered.text);
     stageChatter.setTyping(sender, false);
     roomChatter.handleRoomChat(sender, filtered.text);
+    mpRef.current?.requestConnect();
     mpRef.current?.sendRoomChat(filtered.text);
   }, [playerName, roomChatter, stageChatter.appendMessage, stageChatter.setTyping]);
 
@@ -2486,8 +2486,12 @@ export default function SFCity({
     !homePreview
     && !showWelcome
     && !showCityPicker
-    && !stageLineupOpen
-    && !isChatterDebugMode();
+    && !stageLineupOpen;
+
+  useEffect(() => {
+    if (!showStageChatterPanel || stageSidePanelTab !== 'chat') return;
+    mpRef.current?.requestConnect();
+  }, [showStageChatterPanel, stageSidePanelTab]);
 
   const handleStageSidePanelTabChange = useCallback((tab: StageSidePanelTab) => {
     setStageSidePanelTab(prev => {
