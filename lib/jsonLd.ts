@@ -69,7 +69,7 @@ export function webApplicationJsonLd() {
       priceCurrency: 'USD',
     },
     featureList: [
-      'Join the AI Festival — create a festie that stays at the stage',
+      'Join the Forever Festival — create a festie that stays at the stage',
       'Walk through cities, campgrounds, and glowing forests',
       'Watch synchronized live festival and DJ sets',
       'Silent disco headphone raves and outdoor cinema',
