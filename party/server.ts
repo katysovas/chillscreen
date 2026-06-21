@@ -32,6 +32,7 @@ import { DEFAULT_DURATION_MS, STAGE_EPOCH, type StageSync } from '../lib/stageVi
 import type { PlayerViewSnapshot } from '../lib/npcProximity';
 import { NpcChatterScheduler } from './npcChatterScheduler';
 import { EaselScheduler } from './easelScheduler';
+import { LineupStore, resolveLineupVoterId } from './lineupStore';
 import { clientIpFromRequest, isConnectionBlocked } from './blocklistCache';
 
 /**
@@ -78,8 +79,10 @@ export default class WhichStageServer implements Party.Server {
   private stageSync: StageSync | null = null;
   private chatter: NpcChatterScheduler;
   private easels: EaselScheduler;
+  private lineup: LineupStore;
 
   constructor(readonly room: Party.Room) {
+    this.lineup = new LineupStore(room.storage, room.id);
     this.chatter = new NpcChatterScheduler({
       room: this.room,
       broadcast: msg => this.room.broadcast(encode(msg)),
@@ -384,6 +387,76 @@ export default class WhichStageServer implements Party.Server {
       case 'festie-refresh':
         void this.broadcastFestiesSync();
         break;
+
+      case 'lineup-subscribe': {
+        const voterId = resolveLineupVoterId(
+          sender.id,
+          this.connUserIds.get(sender.id),
+          msg.playerId,
+        );
+        const state = await this.lineup.loadChannel(
+          msg.channel,
+          this.festiesApiBase(),
+          this.partyEnv().NPC_CHATTER_SECRET,
+        );
+        sender.send(encode({
+          t: 'lineup-state',
+          ...this.lineup.toPayload(msg.channel, state, voterId),
+        }));
+        break;
+      }
+
+      case 'lineup-vote': {
+        const voterId = resolveLineupVoterId(
+          sender.id,
+          this.connUserIds.get(sender.id),
+          msg.playerId,
+        );
+        const payload = await this.lineup.castVote(
+          msg.channel,
+          voterId,
+          msg.videoId,
+          this.festiesApiBase(),
+          this.partyEnv().NPC_CHATTER_SECRET,
+        );
+        this.room.broadcast(
+          encode({
+            t: 'lineup-state',
+            channel: payload.channel,
+            counts: payload.counts,
+            suggestions: payload.suggestions,
+          }),
+          [sender.id],
+        );
+        sender.send(encode({ t: 'lineup-state', ...payload }));
+        break;
+      }
+
+      case 'lineup-suggest': {
+        const voterId = resolveLineupVoterId(
+          sender.id,
+          this.connUserIds.get(sender.id),
+          msg.playerId,
+        );
+        const payload = await this.lineup.addSuggestion(
+          msg.channel,
+          voterId,
+          msg.video,
+          this.festiesApiBase(),
+          this.partyEnv().NPC_CHATTER_SECRET,
+        );
+        this.room.broadcast(
+          encode({
+            t: 'lineup-state',
+            channel: payload.channel,
+            counts: payload.counts,
+            suggestions: payload.suggestions,
+          }),
+          [sender.id],
+        );
+        sender.send(encode({ t: 'lineup-state', ...payload }));
+        break;
+      }
     }
   }
 

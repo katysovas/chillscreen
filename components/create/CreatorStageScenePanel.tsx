@@ -16,6 +16,14 @@ import {
 } from '@/lib/stages/backdropValidation';
 import { normalizeBackdropPath } from '@/lib/stages/wallpapers';
 import { StageSceneGallery, type StageGallerySelection } from '@/components/create/StageSceneGallery';
+import { StageSocialLinksFields } from '@/components/create/StageSocialLinksFields';
+import {
+  emptyStageSocialLinks,
+  normalizeStageSocialLinks,
+  socialLinksEqual,
+  validateStageSocialLinks,
+} from '@/lib/stages/socialLinks';
+import type { StageSocialLinks } from '@/lib/stages/types';
 
 export function CreatorStageScenePanel() {
   const ctx = useCreatorStageControls();
@@ -24,16 +32,21 @@ export function CreatorStageScenePanel() {
   const [error, setError] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [descriptionDirty, setDescriptionDirty] = useState(false);
+  const [socialLinks, setSocialLinks] = useState<StageSocialLinks>(emptyStageSocialLinks());
+  const [socialLinksDirty, setSocialLinksDirty] = useState(false);
 
   const stage = ctx?.stage;
   const slug = stage?.slug;
   const stageDescription = stage?.description;
+  const stageSocialLinks = stage?.socialLinks;
 
   useEffect(() => {
     if (!slug) return;
     setDescription(stageDescription ?? '');
     setDescriptionDirty(false);
-  }, [slug, stageDescription]);
+    setSocialLinks(normalizeStageSocialLinks(stageSocialLinks ?? {}));
+    setSocialLinksDirty(false);
+  }, [slug, stageDescription, stageSocialLinks]);
 
   if (!ctx?.isOwner || !stage) return null;
 
@@ -61,6 +74,32 @@ export function CreatorStageScenePanel() {
       setDescriptionDirty(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save description');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveSocialLinks = async () => {
+    if (busy) return;
+    const normalized = normalizeStageSocialLinks(socialLinks);
+    const current = normalizeStageSocialLinks(stage.socialLinks ?? {});
+    if (socialLinksEqual(normalized, current)) {
+      setSocialLinksDirty(false);
+      return;
+    }
+    const validationErr = validateStageSocialLinks(normalized);
+    if (validationErr) {
+      setError(validationErr);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await updateUserStage(stage.slug, { socialLinks: normalized });
+      setStage(updated, { broadcast: false });
+      setSocialLinksDirty(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save links');
     } finally {
       setBusy(false);
     }
@@ -161,6 +200,44 @@ export function CreatorStageScenePanel() {
         <p style={{ margin: 0, fontSize: 11, lineHeight: 1.4, color: 'rgba(255,255,255,0.45)' }}>
           {STAGE_DESCRIPTION_FIELD_HINT}
         </p>
+      </div>
+
+      <div style={{ marginTop: 20, marginBottom: 16 }}>
+        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>
+          Social &amp; custom links
+        </label>
+        <StageSocialLinksFields
+          values={socialLinks}
+          disabled={busy}
+          invalid={Boolean(error) && socialLinksDirty}
+          compact
+          onChange={next => {
+            setSocialLinks(next);
+            setSocialLinksDirty(true);
+            setError(null);
+          }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+          <button
+            type="button"
+            disabled={busy || !socialLinksDirty}
+            onClick={() => void saveSocialLinks()}
+            style={{
+              borderRadius: 8,
+              padding: '7px 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              border: 'none',
+              background: socialLinksDirty && !busy
+                ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
+                : 'rgba(255,255,255,0.08)',
+              color: socialLinksDirty && !busy ? '#fff' : 'rgba(255,255,255,0.35)',
+              cursor: busy ? 'wait' : socialLinksDirty ? 'pointer' : 'default',
+            }}
+          >
+            {busy ? 'Saving…' : 'Save links'}
+          </button>
+        </div>
       </div>
 
       <p style={{ margin: '0 0 10px', fontSize: 11, lineHeight: 1.4, color: 'rgba(255,255,255,0.5)' }}>

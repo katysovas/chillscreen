@@ -13,8 +13,10 @@ import type { CharacterLoadout } from './characters/loadout';
 import { Z_CONTROLS } from '@/lib/zLayers';
 import { ShoppingCartIcon } from './BottomControlPanel';
 import { StageLineupPanel } from './StageLineupPanel';
+import { StageInfoPanel } from './StageInfoPanel';
 import { VendorShopPanel } from './VendorShopPanelLazy';
 import type { StageChannel } from '@/lib/stageVideos';
+import type { Multiplayer } from '@/lib/multiplayer/useMultiplayer';
 
 const PANEL_STYLES = `
 @keyframes stage-chatter-glow {
@@ -42,7 +44,7 @@ const PANEL_STYLES = `
 }
 `;
 
-export type StageSidePanelTab = 'chat' | 'lineup' | 'shop' | 'info';
+export type StageSidePanelTab = 'lineup' | 'chat' | 'shop' | 'info';
 
 type Props = {
   messages: StageChatterMessage[];
@@ -64,6 +66,17 @@ type Props = {
   onShopUnequip: (itemId: string) => void | Promise<void>;
   /** Curated JSON stage channel — enables the Lineup tab when set. */
   stageChannel?: StageChannel | null;
+  /** Built-in venue playback channel for info links (now-playing artist). */
+  playbackChannel?: StageChannel | null;
+  lineupMultiplayer?: Pick<
+    Multiplayer,
+    | 'connected'
+    | 'requestConnect'
+    | 'sendLineupSubscribe'
+    | 'sendLineupVote'
+    | 'sendLineupSuggest'
+    | 'registerLineupStateHandler'
+  > | null;
 };
 
 function formatTime(ts: number): string {
@@ -242,6 +255,8 @@ export function StageChatterPanel({
   onShopPurchase,
   onShopUnequip,
   stageChannel = null,
+  playbackChannel = null,
+  lineupMultiplayer = null,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
@@ -411,10 +426,10 @@ export function StageChatterPanel({
       return;
     }
 
-    if (count > lastSeenMessageCountRef.current && !expanded) {
+    if (count > lastSeenMessageCountRef.current && (activeTab !== 'chat' || !expanded)) {
       setChatUnread(true);
     }
-  }, [visibleMessages.length, expanded]);
+  }, [visibleMessages.length, expanded, activeTab]);
 
   const showLineupTab = Boolean(stageChannel);
 
@@ -461,13 +476,6 @@ export function StageChatterPanel({
         aria-label="Stage panel"
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
-          <SidePanelTab
-            active={activeTab === 'chat'}
-            label="Chat"
-            icon={<ChatTabIcon />}
-            notify={chatUnread}
-            onClick={() => onTabChange('chat')}
-          />
           {showLineupTab ? (
             <SidePanelTab
               active={activeTab === 'lineup'}
@@ -476,6 +484,13 @@ export function StageChatterPanel({
               onClick={() => onTabChange('lineup')}
             />
           ) : null}
+          <SidePanelTab
+            active={activeTab === 'chat'}
+            label="Chat"
+            icon={<ChatTabIcon />}
+            notify={chatUnread}
+            onClick={() => onTabChange('chat')}
+          />
           <SidePanelTab
             active={activeTab === 'shop'}
             label="Shop"
@@ -689,7 +704,7 @@ export function StageChatterPanel({
       )}
 
       {expanded && activeTab === 'lineup' && stageChannel ? (
-        <StageLineupPanel channel={stageChannel} />
+        <StageLineupPanel channel={stageChannel} lineupMultiplayer={lineupMultiplayer} />
       ) : null}
 
       {expanded && activeTab === 'shop' && (
@@ -723,35 +738,35 @@ export function StageChatterPanel({
           }}
         >
           {infoName ? (
-            <>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  lineHeight: 1.35,
-                  color: 'rgba(255, 240, 250, 0.95)',
-                }}
-              >
-                {infoName}
-              </h2>
-              {infoDescription ? (
-                <p
-                  style={{
-                    margin: '10px 0 0',
-                    fontSize: 11,
-                    lineHeight: 1.55,
-                    color: 'rgba(255, 255, 255, 0.72)',
-                  }}
-                >
-                  {infoDescription}
-                </p>
-              ) : null}
-            </>
-          ) : (
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 14,
+                fontWeight: 700,
+                lineHeight: 1.35,
+                color: 'rgba(255, 240, 250, 0.95)',
+              }}
+            >
+              {infoName}
+            </h2>
+          ) : null}
+          {infoDescription ? (
             <p
               style={{
-                margin: '12px 4px',
+                margin: infoName ? '10px 0 0' : 0,
+                fontSize: 11,
+                lineHeight: 1.55,
+                color: 'rgba(255, 255, 255, 0.72)',
+              }}
+            >
+              {infoDescription}
+            </p>
+          ) : null}
+          <StageInfoPanel playbackChannel={playbackChannel} />
+          {!infoName && !infoDescription ? (
+            <p
+              style={{
+                margin: '12px 4px 0',
                 fontSize: 11,
                 lineHeight: 1.5,
                 color: 'rgba(255, 255, 255, 0.38)',
@@ -759,7 +774,7 @@ export function StageChatterPanel({
             >
               No stage information yet.
             </p>
-          )}
+          ) : null}
         </div>
       )}
     </div>

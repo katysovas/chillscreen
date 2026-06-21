@@ -9,7 +9,9 @@
 
 import type { FestiePublic } from '../festie/types';
 import type { StageChatterMessage } from '../stageChatter/types';
-import type { StageSync } from '../stageVideos';
+import type { LineupStatePayload } from '../lineup/types';
+import type { StoredLineupSuggestion } from '../lineup/types';
+import type { StageChannel, StageSync, StageVideo } from '../stageVideos';
 import type { EaselSessionSync, EaselSlotSync } from '../easel/types';
 import type { CreatorStageSyncPayload } from '../stages/stageSync';
 import type { NpcLeaderCapability } from '../npcLeaderCapability';
@@ -103,7 +105,13 @@ export type ClientMessage =
   /** Owner lineup / now-playing change — relayed to everyone in the creator room. */
   | { t: 'creator-stage-sync'; stage: CreatorStageSyncPayload }
   /** Ask the room to refresh festie roster (e.g. after describe-notes save). */
-  | { t: 'festie-refresh' };
+  | { t: 'festie-refresh' }
+  /** Subscribe to shared lineup votes for a curated stage channel. */
+  | { t: 'lineup-subscribe'; channel: StageChannel; playerId?: string }
+  /** Cast one vote toward a lineup video (deck or waiting pool). */
+  | { t: 'lineup-vote'; channel: StageChannel; videoId: string; playerId?: string }
+  /** Suggest a custom video for the waiting pool. */
+  | { t: 'lineup-suggest'; channel: StageChannel; video: StageVideo; playerId?: string };
 
 /** Debug metadata for NPC↔NPC pair convos. */
 export type NpcConvoMeta = {
@@ -168,9 +176,11 @@ export type ServerMessage =
   | { t: 'easel-session'; sessionStart: number; slots: EaselSlotSync[] }
   | { t: 'easel-update'; sessionStart: number; slots: EaselSlotSync[] }
   /** Creator stage lineup / scene update from owner or shuffle. */
-  | { t: 'creator-stage-sync'; stage: CreatorStageSyncPayload };
+  | { t: 'creator-stage-sync'; stage: CreatorStageSyncPayload }
+  /** Shared curated-stage lineup vote counts + suggestions. */
+  | { t: 'lineup-state'; channel: StageChannel; myVote?: string | null; counts: Record<string, number>; suggestions: StoredLineupSuggestion[] };
 
-export type { EaselSessionSync, EaselSlotSync };
+export type { EaselSessionSync, EaselSlotSync, LineupStatePayload, StoredLineupSuggestion };
 
 /** Stable key for a player↔player chat pair. */
 export function chatPairKey(a: string, b: string): string {

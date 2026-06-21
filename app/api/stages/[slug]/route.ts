@@ -16,6 +16,11 @@ import {
   normalizeStageDescription,
   validateStageDescription,
 } from '@/lib/stages/stageDescription';
+import {
+  normalizeStageSocialLinks,
+  parseSocialLinksJson,
+  validateStageSocialLinks,
+} from '@/lib/stages/socialLinks';
 import type { StagePresetId } from '@/lib/stages/types';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
 
@@ -121,6 +126,17 @@ export async function PATCH(req: Request, ctx: RouteContext) {
         return NextResponse.json({ error: descriptionErr }, { status: 400 });
       }
       patch.description = normalizeStageDescription(descriptionRaw);
+    }
+
+    if (body.socialLinks !== undefined || body.social_links !== undefined) {
+      const socialLinks = normalizeStageSocialLinks(
+        parseSocialLinksJson(body.socialLinks ?? body.social_links),
+      );
+      const socialLinksErr = validateStageSocialLinks(socialLinks);
+      if (socialLinksErr) {
+        return NextResponse.json({ error: socialLinksErr }, { status: 400 });
+      }
+      patch.socialLinks = socialLinks;
     }
 
     if (body.backdropUrl !== undefined) {

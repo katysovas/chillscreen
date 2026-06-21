@@ -13,8 +13,7 @@ CREATE TABLE IF NOT EXISTS user_stages (
   taken_down_at      timestamptz
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS user_stages_one_per_owner
-  ON user_stages (owner_id);
+-- One stage per owner was removed in 019_multi_stage_per_owner.sql.
 
 CREATE INDEX IF NOT EXISTS user_stages_last_active
   ON user_stages (last_active_at);

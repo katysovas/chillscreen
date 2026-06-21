@@ -6,6 +6,7 @@ import {
   type StageVideo,
 } from './stageVideos';
 import { resolveStageVideoDisplayMeta, type StageVideoDisplayMeta } from './stageVideoMeta';
+import { topVotedVideoId } from './stageLineupVote';
 
 export type StageLineupSlot = {
   video: StageVideo;
@@ -21,13 +22,146 @@ export type StageLineupNowPlaying = StageLineupSlot & {
 /** Now playing + next slots shown in the lineup panel. */
 export const LINEUP_VISIBLE_COUNT = 5;
 
+/** Now playing + next on-deck slots (excluding now). */
+export const LINEUP_ON_DECK_WAITING = 4;
+
 export type StageLineup = {
   now: StageLineupNowPlaying;
-  /** Upcoming slots after now (at most LINEUP_VISIBLE_COUNT - 1). */
+  /** Next scheduled slots after now (up to LINEUP_ON_DECK_WAITING). */
   waiting: StageLineupSlot[];
-  /** Playlist entries beyond the visible window. */
+  /** Scheduled playlist entries beyond the on-deck window. */
   moreWaitingCount: number;
 };
+
+export type LineupWaitingEntry = StageLineupSlot & {
+  /** User-submitted — not in the synced playlist. */
+  custom?: boolean;
+};
+
+export function lineupSlotAtOffset(
+  list: StageVideo[],
+  schedIndex: number,
+  offset: number,
+): StageLineupSlot {
+  const index = (schedIndex + offset) % list.length;
+  return { video: list[index]!, index };
+}
+
+export function lineupHiddenScheduledSlots(
+  list: StageVideo[],
+  schedIndex: number,
+): StageLineupSlot[] {
+  if (list.length <= LINEUP_VISIBLE_COUNT) return [];
+  const slots: StageLineupSlot[] = [];
+  for (let offset = LINEUP_VISIBLE_COUNT; offset < list.length; offset++) {
+    slots.push(lineupSlotAtOffset(list, schedIndex, offset));
+  }
+  return slots;
+}
+
+export function buildLineupWaitingPool(
+  list: StageVideo[],
+  schedIndex: number,
+  scheduledFifth: StageLineupSlot | null,
+  customVideos: StageVideo[],
+): LineupWaitingEntry[] {
+  const pool: LineupWaitingEntry[] = [];
+  const seen = new Set<string>();
+
+  const push = (slot: StageLineupSlot, custom = false) => {
+    if (seen.has(slot.video.id)) return;
+    seen.add(slot.video.id);
+    pool.push({ ...slot, custom });
+  };
+
+  for (const slot of lineupHiddenScheduledSlots(list, schedIndex)) {
+    push(slot);
+  }
+  if (scheduledFifth) push(scheduledFifth);
+  for (const video of customVideos) {
+    push({ video, index: -1 }, true);
+  }
+  return pool;
+}
+
+export function sortLineupSlotsByVotes(
+  slots: StageLineupSlot[],
+  voteCounts: Record<string, number>,
+): StageLineupSlot[] {
+  return [...slots]
+    .map((slot, order) => ({ slot, order }))
+    .sort((a, b) => {
+      const diff = (voteCounts[b.slot.video.id] ?? 0) - (voteCounts[a.slot.video.id] ?? 0);
+      if (diff !== 0) return diff;
+      return a.order - b.order;
+    })
+    .map(({ slot }) => slot);
+}
+
+export function sortWaitingPoolByVotes(
+  pool: LineupWaitingEntry[],
+  voteCounts: Record<string, number>,
+): LineupWaitingEntry[] {
+  return [...pool]
+    .map((entry, order) => ({ entry, order }))
+    .sort((a, b) => {
+      const diff = (voteCounts[b.entry.video.id] ?? 0) - (voteCounts[a.entry.video.id] ?? 0);
+      if (diff !== 0) return diff;
+      return a.order - b.order;
+    })
+    .map(({ entry }) => entry);
+}
+
+export function buildLineupDeck(
+  lineup: StageLineup,
+  waitingPool: LineupWaitingEntry[],
+  voteCounts: Record<string, number>,
+): {
+  onDeckWaiting: StageLineupSlot[];
+  fifthSlot: StageLineupSlot | null;
+  bumpedScheduledFifth: StageLineupSlot | null;
+} {
+  const scheduled = lineup.waiting;
+  const poolIds = waitingPool.map(entry => entry.video.id);
+  const topVoted = topVotedVideoId(voteCounts, poolIds);
+  const fromPool = topVoted
+    ? waitingPool.find(entry => entry.video.id === topVoted)
+    : null;
+
+  if (scheduled.length < LINEUP_ON_DECK_WAITING) {
+    const onDeckWaiting = sortLineupSlotsByVotes(scheduled, voteCounts);
+    if (fromPool) {
+      return {
+        onDeckWaiting,
+        fifthSlot: { video: fromPool.video, index: fromPool.index },
+        bumpedScheduledFifth: null,
+      };
+    }
+    return {
+      onDeckWaiting,
+      fifthSlot: null,
+      bumpedScheduledFifth: null,
+    };
+  }
+
+  const scheduledFirstThree = sortLineupSlotsByVotes(scheduled.slice(0, 3), voteCounts);
+  const scheduledFifth = scheduled[3]!;
+
+  if (fromPool) {
+    return {
+      onDeckWaiting: scheduledFirstThree,
+      fifthSlot: { video: fromPool.video, index: fromPool.index },
+      bumpedScheduledFifth: scheduledFifth,
+    };
+  }
+
+  const onDeckFour = sortLineupSlotsByVotes(scheduled.slice(0, LINEUP_ON_DECK_WAITING), voteCounts);
+  return {
+    onDeckWaiting: onDeckFour.slice(0, 3),
+    fifthSlot: onDeckFour[3] ?? scheduledFifth,
+    bumpedScheduledFifth: null,
+  };
+}
 
 export function stageLineupFor(
   channel: StageChannel,
@@ -44,11 +178,10 @@ export function stageLineupFor(
     ? sched.video.durationSec * 1000
     : sync.defaultDurationMs;
 
-  const maxWaiting = Math.min(LINEUP_VISIBLE_COUNT - 1, Math.max(0, list.length - 1));
+  const maxWaiting = Math.min(LINEUP_ON_DECK_WAITING, Math.max(0, list.length - 1));
   const waiting: StageLineupSlot[] = [];
   for (let offset = 1; offset <= maxWaiting; offset++) {
-    const index = (sched.index + offset) % list.length;
-    waiting.push({ video: list[index]!, index });
+    waiting.push(lineupSlotAtOffset(list, sched.index, offset));
   }
 
   return {
@@ -124,6 +257,17 @@ const AVATAR_PALETTE = [
   { bg: '#FAC775', fg: '#633806' },
   { bg: '#D3D1C7', fg: '#444441' },
 ] as const;
+
+export function lineupWaitingPoolCount(
+  listLength: number,
+  customCount: number,
+  bumpedScheduledFifth: boolean,
+): number {
+  const hiddenScheduled = listLength > LINEUP_VISIBLE_COUNT
+    ? listLength - LINEUP_VISIBLE_COUNT
+    : 0;
+  return hiddenScheduled + customCount + (bumpedScheduledFifth ? 1 : 0);
+}
 
 export function lineupAvatarColors(index: number): { bg: string; fg: string } {
   return AVATAR_PALETTE[index % AVATAR_PALETTE.length]!;

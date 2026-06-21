@@ -3,19 +3,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { currentSchedule, getStageSync, subscribeStageSync, syncedNow } from '@/lib/stageClock';
 import {
+  buildLineupDeck,
+  buildLineupWaitingPool,
   lineupDisplayForVideo,
   lineupProgressPct,
   lineupQueueProgressPct,
   lineupWaitingSubtitle,
+  sortWaitingPoolByVotes,
   stageLineupFor,
   type StageLineup,
 } from '@/lib/stageLineup';
-import type { StageChannel, StageVideo } from '@/lib/stageVideos';
-import {
-  lineupProgressWithVoteBump,
-  readLineupVote,
-  writeLineupVote,
-} from '@/lib/stageLineupVote';
+import { mergeStagePlaylists, type StageChannel, type StageVideo } from '@/lib/stageVideos';
+import { lineupProgressWithVoteBump } from '@/lib/stageLineupVote';
+import { parseLineupSuggestionYoutubeId, resolveLineupSuggestionInput } from '@/lib/stageLineupSuggestResolve';
+import type { Multiplayer } from '@/lib/multiplayer/useMultiplayer';
+import { useStageLineupVotes } from './hooks/useStageLineupVotes';
 import { useStageVideoMeta } from './hooks/useStageVideoMeta';
 
 const LINEUP_STYLES = `
@@ -34,17 +36,44 @@ const LINEUP_STYLES = `
 
 type Props = {
   channel: StageChannel;
+  lineupMultiplayer?: Pick<
+    Multiplayer,
+    | 'connected'
+    | 'requestConnect'
+    | 'sendLineupSubscribe'
+    | 'sendLineupVote'
+    | 'sendLineupSuggest'
+    | 'registerLineupStateHandler'
+  > | null;
 };
 
-function ChevronUpIcon() {
+function ChevronDownIcon({ flipped = false }: { flipped?: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+      style={{
+        transform: flipped ? 'rotate(180deg)' : undefined,
+        transition: 'transform 0.2s ease',
+      }}
+    >
+      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-function MoveUpButton({
+function VotePlusIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M8 3.5v9M3.5 8h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function VoteButton({
   active = false,
   disabled = false,
   onClick,
@@ -56,7 +85,7 @@ function MoveUpButton({
   return (
     <button
       type="button"
-      aria-label={active ? 'Your vote' : 'Move up'}
+      aria-label={active ? 'Your vote' : 'Vote'}
       aria-pressed={active}
       disabled={disabled}
       onClick={onClick}
@@ -80,7 +109,7 @@ function MoveUpButton({
         transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
       }}
     >
-      <ChevronUpIcon />
+      <VotePlusIcon />
     </button>
   );
 }
@@ -168,6 +197,7 @@ function LineupRow({
   voteActive = false,
   voteDisabled = false,
   onVote,
+  showVote = false,
 }: {
   video: StageVideo;
   meta?: import('@/lib/stageVideoMeta').StageVideoDisplayMeta;
@@ -179,6 +209,7 @@ function LineupRow({
   voteActive?: boolean;
   voteDisabled?: boolean;
   onVote?: () => void;
+  showVote?: boolean;
 }) {
   const display = lineupDisplayForVideo(video, meta);
   const detail = statusLabel
@@ -253,13 +284,115 @@ function LineupRow({
       </div>
       {playing ? (
         <EqBars />
-      ) : (
-        <MoveUpButton
+      ) : showVote ? (
+        <VoteButton
           active={voteActive}
           disabled={voteDisabled}
           onClick={onVote}
         />
-      )}
+      ) : null}
+    </div>
+  );
+}
+
+function LineupSuggestForm({
+  onSubmit,
+  busy,
+  error,
+}: {
+  onSubmit: (value: string) => void;
+  busy: boolean;
+  error: string | null;
+}) {
+  const [draft, setDraft] = useState('');
+
+  const handleSubmit = () => {
+    const value = draft.trim();
+    if (!value || busy) return;
+    onSubmit(value);
+    setDraft('');
+  };
+
+  return (
+    <div
+      style={{
+        padding: '10px 12px 12px',
+        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+        flexShrink: 0,
+      }}
+    >
+      {error ? (
+        <p
+          style={{
+            margin: '0 0 8px',
+            fontSize: 10,
+            lineHeight: 1.4,
+            color: 'rgba(255, 150, 150, 0.85)',
+          }}
+        >
+          {error}
+        </p>
+      ) : null}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          borderRadius: 10,
+          padding: '6px 10px',
+          background: 'rgba(255, 255, 255, 0.06)',
+          border: '1px solid rgba(255, 200, 230, 0.14)',
+          boxShadow: 'inset 0 0 12px rgba(255, 120, 200, 0.06)',
+        }}
+      >
+        <input
+          type="text"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          placeholder="Paste a YouTube video link…"
+          disabled={busy}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            color: 'rgba(255, 255, 255, 0.9)',
+            fontSize: 11,
+            fontFamily: 'inherit',
+          }}
+          autoComplete="off"
+        />
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={busy || !draft.trim()}
+          aria-label="Suggest video for lineup"
+          style={{
+            border: 'none',
+            borderRadius: 7,
+            padding: '4px 8px',
+            fontSize: 10,
+            letterSpacing: 0.6,
+            textTransform: 'uppercase',
+            cursor: busy || !draft.trim() ? 'not-allowed' : 'pointer',
+            opacity: busy || !draft.trim() ? 0.45 : 1,
+            color: 'rgba(255, 240, 250, 0.9)',
+            background: 'linear-gradient(135deg, rgba(255, 100, 180, 0.45), rgba(140, 120, 255, 0.4))',
+            boxShadow: '0 0 10px rgba(255, 120, 200, 0.25)',
+            fontFamily: 'inherit',
+            flexShrink: 0,
+          }}
+        >
+          {busy ? '…' : 'Add'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -268,26 +401,114 @@ function readLineup(channel: StageChannel): StageLineup | null {
   return stageLineupFor(channel, syncedNow(), getStageSync());
 }
 
-export function StageLineupPanel({ channel }: Props) {
+export function StageLineupPanel({ channel, lineupMultiplayer = null }: Props) {
   const [lineup, setLineup] = useState<StageLineup | null>(() => readLineup(channel));
-  const [votedVideoId, setVotedVideoId] = useState<string | null>(() => readLineupVote(channel));
+  const {
+    voteState,
+    suggestions,
+    castVote,
+    appendSuggestion,
+    connected: lineupConnected,
+  } = useStageLineupVotes(channel, lineupMultiplayer);
+  const [waitingExpanded, setWaitingExpanded] = useState(false);
+  const [suggestBusy, setSuggestBusy] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+
+  const playlist = useMemo(() => {
+    if (!lineup) return [];
+    return mergeStagePlaylists(getStageSync().playlists)[channel];
+  }, [lineup, channel]);
+
+  const customVideos = useMemo(
+    () => suggestions.map(entry => entry.video),
+    [suggestions],
+  );
+
+  const preVotePool = useMemo(() => {
+    if (!lineup || !playlist.length) return [];
+    return buildLineupWaitingPool(playlist, lineup.now.index, null, customVideos);
+  }, [lineup, playlist, customVideos]);
+
+  const deck = useMemo(() => {
+    if (!lineup) return null;
+    return buildLineupDeck(lineup, preVotePool, voteState.counts);
+  }, [lineup, preVotePool, voteState.counts]);
+
+  const waitingPool = useMemo(() => {
+    if (!lineup || !deck || !playlist.length) return [];
+    return buildLineupWaitingPool(
+      playlist,
+      lineup.now.index,
+      deck.bumpedScheduledFifth,
+      customVideos,
+    );
+  }, [lineup, deck, playlist, customVideos]);
+
+  const deckSlots = useMemo(() => {
+    if (!deck) return [];
+    return deck.fifthSlot
+      ? [...deck.onDeckWaiting, deck.fifthSlot]
+      : deck.onDeckWaiting;
+  }, [deck]);
+
+  const waitingPoolVisible = useMemo(() => {
+    const onDeckIds = new Set(deckSlots.map(slot => slot.video.id));
+    const filtered = waitingPool.filter(entry => !onDeckIds.has(entry.video.id));
+    return sortWaitingPoolByVotes(filtered, voteState.counts);
+  }, [waitingPool, deckSlots, voteState.counts]);
+
+  const fifthFromVotes = Boolean(deck?.bumpedScheduledFifth);
 
   const videoIds = useMemo(() => {
-    if (!lineup) return [];
-    return [lineup.now.video.id, ...lineup.waiting.map(slot => slot.video.id)];
-  }, [lineup]);
+    const ids = new Set<string>();
+    if (lineup) ids.add(lineup.now.video.id);
+    for (const slot of deckSlots) ids.add(slot.video.id);
+    if (waitingExpanded) {
+      for (const entry of waitingPoolVisible) ids.add(entry.video.id);
+    }
+    return [...ids];
+  }, [lineup, deckSlots, waitingExpanded, waitingPoolVisible]);
 
   const videoMeta = useStageVideoMeta(videoIds);
 
   useEffect(() => {
-    setVotedVideoId(readLineupVote(channel));
+    setWaitingExpanded(false);
   }, [channel]);
 
-  const castVote = useCallback((videoId: string) => {
-    if (votedVideoId) return;
-    writeLineupVote(channel, videoId);
-    setVotedVideoId(videoId);
-  }, [channel, votedVideoId]);
+  const handleSuggest = useCallback(async (value: string) => {
+    setSuggestError(null);
+    if (!parseLineupSuggestionYoutubeId(value)) {
+      setSuggestError('Paste a YouTube video link (youtube.com or youtu.be).');
+      return;
+    }
+    setSuggestBusy(true);
+    try {
+      const resolved = await resolveLineupSuggestionInput(value);
+      if (!resolved) {
+        setSuggestError('Could not load that YouTube video.');
+        return;
+      }
+
+      const onDeckIds = new Set([
+        lineup?.now.video.id,
+        ...deckSlots.map(slot => slot.video.id),
+      ]);
+      if (onDeckIds.has(resolved.video.id)) {
+        setSuggestError('That video is already on deck.');
+        return;
+      }
+      if (suggestions.some(entry => entry.video.id === resolved.video.id)) {
+        setSuggestError('That video is already in the waiting list.');
+        return;
+      }
+
+      appendSuggestion(resolved.video);
+    } catch {
+      setSuggestError('Could not load that YouTube video. Check the link and try again.');
+    } finally {
+      setSuggestBusy(false);
+    }
+  }, [lineup, deckSlots, suggestions, appendSuggestion]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -321,12 +542,27 @@ export function StageLineupPanel({ channel }: Props) {
         style={{
           flex: 1,
           minHeight: 0,
-          padding: '14px',
-          fontSize: 11,
-          color: 'rgba(255, 255, 255, 0.45)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        No lineup scheduled yet.
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            padding: '14px',
+            fontSize: 11,
+            color: 'rgba(255, 255, 255, 0.45)',
+          }}
+        >
+          No lineup scheduled yet.
+        </div>
+        <LineupSuggestForm
+          onSubmit={value => void handleSuggest(value)}
+          busy={suggestBusy}
+          error={suggestError}
+        />
       </div>
     );
   }
@@ -338,75 +574,137 @@ export function StageLineupPanel({ channel }: Props) {
 
   return (
     <div
-      className="stage-chatter-scroll"
       style={{
         flex: 1,
         minHeight: 0,
-        overflowY: 'auto',
-        padding: '14px 14px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      <style>{LINEUP_STYLES}</style>
-      <p
+      <div
+        className="stage-chatter-scroll"
         style={{
-          margin: '0 0 12px',
-          fontSize: 10,
-          lineHeight: 1.45,
-          color: 'rgba(255, 255, 255, 0.48)',
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          padding: '14px 14px 12px',
         }}
       >
-        Decide who plays next on stage. One vote per stage.
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-        <LineupRow
-          video={lineup.now.video}
-          meta={videoMeta.get(lineup.now.video.id)}
-          playing
-        />
-        {lineup.waiting.map((slot, queueIndex) => {
-          const baseProgress = lineupQueueProgressPct(queueIndex, nextProgress);
-          const voted = votedVideoId === slot.video.id;
-          const voteLocked = votedVideoId != null;
-
-          return (
-            <LineupRow
-              key={`${slot.index}-${slot.video.id}`}
-              video={slot.video}
-              meta={videoMeta.get(slot.video.id)}
-              statusLabel={lineupWaitingSubtitle(queueIndex, lineup.now.msUntilNext)}
-              progressPct={lineupProgressWithVoteBump(baseProgress, voted)}
-              progressColor={voted || queueIndex === 0 ? '#1D9E75' : '#888780'}
-              voteActive={voted}
-              voteDisabled={voteLocked && !voted}
-              onVote={() => castVote(slot.video.id)}
-            />
-          );
-        })}
-      </div>
-      {lineup.moreWaitingCount > 0 ? (
-        <button
-          type="button"
+        <style>{LINEUP_STYLES}</style>
+        <p
           style={{
-            width: '100%',
-            marginTop: 10,
-            fontSize: 11,
-            padding: '8px 10px',
-            borderRadius: 10,
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            background: 'rgba(255, 255, 255, 0.04)',
-            color: 'rgba(255, 255, 255, 0.55)',
-            cursor: 'default',
-            fontFamily: 'inherit',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
+            margin: '0 0 12px',
+            fontSize: 10,
+            lineHeight: 1.45,
+            color: 'rgba(255, 255, 255, 0.48)',
           }}
         >
-  
-          {lineup.moreWaitingCount} more waiting
-        </button>
-      ) : null}
+          Decide who plays next on stage. One vote per stage.
+          {!lineupConnected ? (
+            <span style={{ display: 'block', marginTop: 4, opacity: 0.75 }}>
+              Connecting to live votes…
+            </span>
+          ) : null}
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <LineupRow
+            video={lineup.now.video}
+            meta={videoMeta.get(lineup.now.video.id)}
+            playing
+          />
+          {deckSlots.map((slot, queueIndex) => {
+            const baseProgress = lineupQueueProgressPct(queueIndex, nextProgress);
+            const isFifth = queueIndex === deckSlots.length - 1;
+            const statusLabel = lineupWaitingSubtitle(queueIndex, lineup.now.msUntilNext)
+              ?? (isFifth && fifthFromVotes ? 'crowd pick' : null);
+            const canVoteOnDeck = queueIndex < 3;
+            const voted = voteState.myVote === slot.video.id;
+            const voteCount = voteState.counts[slot.video.id] ?? 0;
+
+            return (
+              <LineupRow
+                key={`deck-${slot.index}-${slot.video.id}`}
+                video={slot.video}
+                meta={videoMeta.get(slot.video.id)}
+                statusLabel={statusLabel}
+                progressPct={canVoteOnDeck
+                  ? lineupProgressWithVoteBump(baseProgress, voted, voteCount)
+                  : baseProgress}
+                progressColor={voted || queueIndex === 0 ? '#1D9E75' : '#888780'}
+                voteActive={voted}
+                voteDisabled={!lineupConnected}
+                onVote={() => castVote(slot.video.id)}
+                showVote={canVoteOnDeck}
+              />
+            );
+          })}
+        </div>
+        {waitingPoolVisible.length > 0 ? (
+          <>
+            <button
+              type="button"
+              aria-expanded={waitingExpanded}
+              onClick={() => setWaitingExpanded(open => !open)}
+              style={{
+                width: '100%',
+                marginTop: 10,
+                fontSize: 11,
+                padding: '8px 10px',
+                borderRadius: 10,
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: waitingExpanded
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(255, 255, 255, 0.04)',
+                color: 'rgba(255, 255, 255, 0.72)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+            >
+              <ChevronDownIcon flipped={waitingExpanded} />
+              {waitingExpanded
+                ? 'Hide waiting list'
+                : `${waitingPoolVisible.length} more waiting`}
+            </button>
+            {waitingExpanded ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
+                {waitingPoolVisible.map(entry => {
+                  const voted = voteState.myVote === entry.video.id;
+                  const voteCount = voteState.counts[entry.video.id] ?? 0;
+
+                  return (
+                    <LineupRow
+                      key={`wait-${entry.custom ? 'custom' : entry.index}-${entry.video.id}`}
+                      video={entry.video}
+                      meta={videoMeta.get(entry.video.id)}
+                      statusLabel={entry.custom ? 'suggested' : null}
+                      progressPct={lineupProgressWithVoteBump(
+                        entry.custom ? 12 : 20,
+                        voted,
+                        voteCount,
+                      )}
+                      progressColor={voted ? '#1D9E75' : '#888780'}
+                      voteActive={voted}
+                      voteDisabled={!lineupConnected}
+                      onVote={() => castVote(entry.video.id)}
+                      showVote
+                    />
+                  );
+                })}
+              </div>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+      <LineupSuggestForm
+        onSubmit={value => void handleSuggest(value)}
+        busy={suggestBusy}
+        error={suggestError}
+      />
     </div>
   );
 }

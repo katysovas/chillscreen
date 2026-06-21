@@ -268,6 +268,10 @@ export default function SFCity({
     const channel = stageChannelForRoute(effectiveVenueRoute);
     return isCuratedChannel(channel) ? channel : null;
   }, [creatorStage, effectiveVenueRoute]);
+  const stagePlaybackChannel = useMemo(() => {
+    if (creatorStage) return null;
+    return stageChannelForRoute(effectiveVenueRoute);
+  }, [creatorStage, effectiveVenueRoute]);
   const stageChatterWelcome = useMemo(() => {
     if (creatorStage) {
       return {
@@ -470,7 +474,7 @@ export default function SFCity({
     ...TEST_PLAYER_LOADOUT,
   }));
   const [playerCoins, setPlayerCoins] = useState(STARTING_COINS);
-  const [stageSidePanelTab, setStageSidePanelTab] = useState<StageSidePanelTab>('chat');
+  const [stageSidePanelTab, setStageSidePanelTab] = useState<StageSidePanelTab>('lineup');
   const [vendorShopDismissed, setVendorShopDismissed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<FestieSettingsTab>('customize');
@@ -2909,6 +2913,8 @@ export default function SFCity({
           onShopPurchase={handleVendorPurchase}
           onShopUnequip={handleVendorUnequip}
           stageChannel={curatedStageChannel}
+          playbackChannel={stagePlaybackChannel}
+          lineupMultiplayer={mp}
         />
       )}
 

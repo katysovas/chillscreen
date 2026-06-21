@@ -1,4 +1,4 @@
-import type { UserStagePublic, StageStream, StagePresetId, FeaturedStageSummary } from '@/lib/stages/types';
+import type { UserStagePublic, StageStream, StagePresetId, FeaturedStageSummary, StageSocialLinks } from '@/lib/stages/types';
 import type { StageStreamPasteMode } from '@/lib/stages/parseStream';
 import { stageStreamFromYoutubeSearch } from '@/lib/stages/parseStream';
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
@@ -102,6 +102,7 @@ export type CreateStagePayload = {
   streams: StageStream[];
   backdropUrl?: string | null;
   shuffleOnStart?: boolean;
+  socialLinks?: StageSocialLinks;
   festie?: {
     name: string;
     password: string;
@@ -174,6 +175,7 @@ export async function updateUserStage(
     backdropUrl?: string | null;
     shuffleOnStart?: boolean;
     description?: string | null;
+    socialLinks?: StageSocialLinks;
   },
 ): Promise<UserStagePublic> {
   const res = await fetch(`/api/stages/${encodeURIComponent(slug)}`, {

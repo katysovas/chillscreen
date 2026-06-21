@@ -1,34 +1,47 @@
-import type { StageChannel } from './stageVideos';
+/** UI helpers for lineup vote display — persistence is PartyKit + DB. */
 
-const STORAGE_PREFIX = 'stage-lineup-vote:';
+/** Small personal bump when you voted for a row. */
+export const LINEUP_VOTE_OWN_BUMP_PCT = 3;
 
-/** Fake bump added to the voted row's progress bar. */
-export const LINEUP_VOTE_BUMP_PCT = 18;
+export type LineupVoteState = {
+  myVote: string | null;
+  counts: Record<string, number>;
+};
 
-export function lineupVoteStorageKey(channel: StageChannel): string {
-  return `${STORAGE_PREFIX}${channel}`;
+export const EMPTY_LINEUP_VOTE_STATE: LineupVoteState = {
+  myVote: null,
+  counts: {},
+};
+
+/**
+ * Subtle progress boost from real vote counts — sqrt scaling so a few votes
+ * look like modest crowd momentum without jumping to 100%.
+ */
+export function lineupProgressWithVoteBump(
+  progressPct: number,
+  voted: boolean,
+  voteCount = 0,
+): number {
+  const crowdBoost = voteCount > 0
+    ? Math.min(22, 4 + Math.sqrt(voteCount) * 5)
+    : 0;
+  const ownBoost = voted ? LINEUP_VOTE_OWN_BUMP_PCT : 0;
+  return Math.min(100, progressPct + crowdBoost + ownBoost);
 }
 
-export function readLineupVote(channel: StageChannel): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(lineupVoteStorageKey(channel))?.trim();
-    return raw || null;
-  } catch {
-    return null;
+export function topVotedVideoId(
+  counts: Record<string, number>,
+  eligibleIds: Iterable<string>,
+): string | null {
+  const eligible = new Set(eligibleIds);
+  let bestId: string | null = null;
+  let bestCount = 0;
+  for (const id of eligible) {
+    const count = counts[id] ?? 0;
+    if (count > bestCount) {
+      bestCount = count;
+      bestId = id;
+    }
   }
-}
-
-export function writeLineupVote(channel: StageChannel, videoId: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(lineupVoteStorageKey(channel), videoId);
-  } catch {
-    /* storage blocked */
-  }
-}
-
-export function lineupProgressWithVoteBump(progressPct: number, voted: boolean): number {
-  if (!voted) return progressPct;
-  return Math.min(100, progressPct + LINEUP_VOTE_BUMP_PCT);
+  return bestId;
 }

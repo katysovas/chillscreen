@@ -42,12 +42,19 @@ import {
   validateStageDescription,
 } from '@/lib/stages/stageDescription';
 import {
+  emptyStageSocialLinks,
+  normalizeStageSocialLinks,
+  validateStageSocialLinks,
+} from '@/lib/stages/socialLinks';
+import type { StageSocialLinks } from '@/lib/stages/types';
+import {
   stageNameToSlug,
   validateStageSlugFormat,
 } from '@/lib/stages/slugValidation';
 import type { StagePresetId, StageStream } from '@/lib/stages/types';
 import { DEFAULT_STAGE_WALLPAPER_URL } from '@/lib/stages/wallpapers';
 import { StageSceneGallery, type StageGallerySelection } from '@/components/create/StageSceneGallery';
+import { StageSocialLinksFields } from '@/components/create/StageSocialLinksFields';
 import { LOGO_PATH, SITE_TAGLINE, SITE_URL } from '@/lib/site';
 import { ForgotPasswordPanel } from '@/components/auth/ForgotPasswordPanel';
 import { getPlayerSession, hydratePlayerSession } from '@/lib/player/session';
@@ -150,6 +157,7 @@ type Draft = {
   backdropUrl: string | null;
   streams: StageStream[];
   shuffleOnStart: boolean;
+  socialLinks: StageSocialLinks;
 };
 
 const DEFAULT_DRAFT: Draft = {
@@ -162,6 +170,7 @@ const DEFAULT_DRAFT: Draft = {
   backdropUrl: DEFAULT_STAGE_WALLPAPER_URL,
   streams: [],
   shuffleOnStart: false,
+  socialLinks: emptyStageSocialLinks(),
 };
 
 const FESTIE_BALLOON_COLOR = festiePresetById('ember').balloonColor;
@@ -445,6 +454,7 @@ export function CreateStageWizard() {
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [stageNameTouched, setStageNameTouched] = useState(false);
   const [stageDescriptionTouched, setStageDescriptionTouched] = useState(false);
+  const [socialLinksTouched, setSocialLinksTouched] = useState(false);
   const [pendingBackdropFile, setPendingBackdropFile] = useState<File | null>(null);
   const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backdropFileRef = useRef<HTMLInputElement>(null);
@@ -472,6 +482,13 @@ export function CreateStageWizard() {
   }, [stageDescriptionTouched, draft.stageDescription]);
 
   const stageDescriptionInvalid = stageDescriptionError != null;
+
+  const socialLinksError = useMemo(() => {
+    if (!socialLinksTouched && !Object.keys(draft.socialLinks).length) return null;
+    return validateStageSocialLinks(draft.socialLinks);
+  }, [socialLinksTouched, draft.socialLinks]);
+
+  const socialLinksInvalid = socialLinksError != null;
 
   useEffect(() => {
     let cancelled = false;
@@ -614,6 +631,7 @@ export function CreateStageWizard() {
       case 2:
         return validateStageDisplayName(draft.stageName) == null
           && validateStageDescription(draft.stageDescription) == null
+          && validateStageSocialLinks(draft.socialLinks) == null
           && validateStageSlugFormat(draft.slug) == null
           && slugStatus === 'ok';
       case 3:
@@ -775,6 +793,7 @@ export function CreateStageWizard() {
         slug: draft.slug.trim().toLowerCase(),
         displayName: draft.stageName.trim(),
         description: normalizeStageDescription(draft.stageDescription),
+        socialLinks: normalizeStageSocialLinks(draft.socialLinks),
         preset: draft.preset,
         streams: draft.streams,
         shuffleOnStart: draft.shuffleOnStart,
@@ -1163,6 +1182,32 @@ export function CreateStageWizard() {
                   >
                     {stageDescriptionInvalid ? stageDescriptionError : STAGE_DESCRIPTION_FIELD_HINT}
                   </p>
+
+                  <div style={{ marginTop: 22 }}>
+                    <label style={{ ...LABEL, color: 'rgba(255,255,255,0.82)' }}>
+                      Social &amp; custom links
+                    </label>
+                    <StageSocialLinksFields
+                      values={draft.socialLinks}
+                      invalid={socialLinksInvalid}
+                      compact
+                      onChange={next => {
+                        setDraft(d => ({ ...d, socialLinks: next }));
+                        setSocialLinksTouched(true);
+                      }}
+                    />
+                    {socialLinksInvalid ? (
+                      <p style={{
+                        margin: '8px 0 0',
+                        fontSize: 11,
+                        color: '#ff6b6b',
+                        fontFamily: 'system-ui,sans-serif',
+                      }}
+                      >
+                        {socialLinksError}
+                      </p>
+                    ) : null}
+                  </div>
                   {slugStatus === 'checking' && (
                     <p style={{
                       margin: '10px 0 0',

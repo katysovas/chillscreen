@@ -1,6 +1,9 @@
 import type { SkyPeriod } from '@/lib/skyTimeOfDay';
 import type { VenueRoute } from '@/lib/venueSlugs';
 import type { StageLifecycleTier } from '@/lib/stages/config';
+import type { StageSocialLinks } from '@/lib/stages/socialLinks';
+
+export type { StageSocialLinkKind, StageSocialLinks } from '@/lib/stages/socialLinks';
 
 export type StageStream = {
   url: string;
@@ -35,6 +38,7 @@ export type UserStageRow = {
   shuffle_on_start: boolean;
   backdrop_url: string | null;
   featured: boolean;
+  social_links: StageSocialLinks;
   created_at: Date;
   last_active_at: Date;
   taken_down_at: Date | null;
@@ -55,6 +59,7 @@ export type UserStagePublic = {
   shuffleOnStart: boolean;
   /** Custom City template skyline — public URL path. */
   backdropUrl?: string | null;
+  socialLinks?: StageSocialLinks;
   createdAt: number;
   lastActiveAt: number;
   tier: StageLifecycleTier;

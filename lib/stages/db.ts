@@ -1,10 +1,12 @@
 import { requireDb } from '@/lib/db';
 import { STAGE_CONFIG, stageLifecycleTier } from '@/lib/stages/config';
 import { parseStreamsJson, enrichStreamsChannelTitles } from '@/lib/stages/parseStream';
+import { normalizeStageSocialLinks, parseSocialLinksJson } from '@/lib/stages/socialLinks';
 import { stagePresetById, normalizeStagePresetId, DEFAULT_STAGE_PRESET } from '@/lib/stages/presets';
 import type {
   FeaturedStageSummary,
   StagePresetId,
+  StageSocialLinks,
   StageStream,
   UserStagePublic,
   UserStageRow,
@@ -34,6 +36,7 @@ function rowToPublic(row: UserStageRow, now = Date.now()): UserStagePublic {
     nowPlayingIndex: Number(row.now_playing_index) || 0,
     shuffleOnStart: Boolean(row.shuffle_on_start),
     backdropUrl: row.backdrop_url?.trim() || null,
+    socialLinks: normalizeStageSocialLinks(row.social_links),
     createdAt: new Date(row.created_at).getTime(),
     lastActiveAt,
     tier,
@@ -56,6 +59,7 @@ function parseRow(raw: Record<string, unknown>): UserStageRow {
     shuffle_on_start: Boolean(raw.shuffle_on_start),
     backdrop_url: raw.backdrop_url != null ? String(raw.backdrop_url) : null,
     featured: Boolean(raw.featured),
+    social_links: parseSocialLinksJson(raw.social_links),
     created_at: raw.created_at instanceof Date ? raw.created_at : new Date(String(raw.created_at)),
     last_active_at: raw.last_active_at instanceof Date
       ? raw.last_active_at
@@ -84,7 +88,7 @@ export async function getUserStageBySlug(slug: string): Promise<UserStageRow | n
   const sql = requireDb();
   const rows = await sql`
     SELECT slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
-           backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+           backdrop_url, featured, shuffle_on_start, social_links, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE slug = ${slug}
     LIMIT 1
@@ -109,7 +113,7 @@ export async function listUserStagesByOwnerId(ownerId: string): Promise<UserStag
   const sql = requireDb();
   const rows = await sql`
     SELECT slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
-           backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+           backdrop_url, featured, shuffle_on_start, social_links, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE owner_id = ${ownerId}::uuid AND taken_down_at IS NULL
     ORDER BY last_active_at DESC
@@ -141,6 +145,7 @@ export type CreateUserStageInput = {
   nowPlayingIndex?: number;
   backdropUrl?: string | null;
   shuffleOnStart?: boolean;
+  socialLinks?: StageSocialLinks;
 };
 
 export async function insertUserStage(input: CreateUserStageInput): Promise<UserStageRow> {
@@ -157,9 +162,10 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
 
   const enrichedStreams = await enrichStreamsChannelTitles(input.streams);
   const streamsJson = JSON.stringify(enrichedStreams);
+  const socialLinksJson = JSON.stringify(normalizeStageSocialLinks(input.socialLinks ?? {}));
   const rows = await sql`
     INSERT INTO user_stages (
-      slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index, backdrop_url, shuffle_on_start
+      slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index, backdrop_url, shuffle_on_start, social_links
     ) VALUES (
       ${input.slug},
       ${input.ownerId}::uuid,
@@ -171,10 +177,11 @@ export async function insertUserStage(input: CreateUserStageInput): Promise<User
       ${streamsJson}::jsonb,
       ${input.nowPlayingIndex ?? 0},
       ${input.backdropUrl ?? null},
-      ${input.shuffleOnStart ?? false}
+      ${input.shuffleOnStart ?? false},
+      ${socialLinksJson}::jsonb
     )
     RETURNING slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
-              backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+              backdrop_url, featured, shuffle_on_start, social_links, created_at, last_active_at, taken_down_at
   `;
   return parseRow(rows[0] as Record<string, unknown>);
 }
@@ -187,6 +194,7 @@ export type UpdateUserStagePatch = {
   backdropUrl?: string | null;
   shuffleOnStart?: boolean;
   description?: string | null;
+  socialLinks?: StageSocialLinks;
 };
 
 export async function updateUserStage(
@@ -215,6 +223,9 @@ export async function updateUserStage(
   const description = patch.description !== undefined
     ? patch.description
     : existing.description;
+  const socialLinks = patch.socialLinks !== undefined
+    ? normalizeStageSocialLinks(patch.socialLinks)
+    : normalizeStageSocialLinks(existing.social_links);
 
   const rows = await sql`
     UPDATE user_stages SET
@@ -225,10 +236,11 @@ export async function updateUserStage(
       backdrop_url = ${backdropUrl},
       shuffle_on_start = ${shuffleOnStart},
       description = ${description},
+      social_links = ${JSON.stringify(socialLinks)}::jsonb,
       last_active_at = now()
     WHERE slug = ${slug} AND owner_id = ${ownerId}::uuid AND taken_down_at IS NULL
     RETURNING slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
-              backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+              backdrop_url, featured, shuffle_on_start, social_links, created_at, last_active_at, taken_down_at
   `;
   if (!rows.length) return null;
   return parseRow(rows[0] as Record<string, unknown>);
@@ -282,7 +294,7 @@ export async function listFeaturedUserStages(now = Date.now()): Promise<Featured
   const sql = requireDb();
   const rows = await sql`
     SELECT slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
-           backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+           backdrop_url, featured, shuffle_on_start, social_links, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE featured = true AND taken_down_at IS NULL
     ORDER BY display_name ASC
@@ -331,7 +343,7 @@ export async function listIndexableStagesForSeo(now = Date.now()): Promise<UserS
   const activeSince = new Date(now - STAGE_CONFIG.DORMANCY_WINDOW_MS).toISOString();
   const rows = await sql`
     SELECT slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
-           backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+           backdrop_url, featured, shuffle_on_start, social_links, created_at, last_active_at, taken_down_at
     FROM user_stages
     WHERE taken_down_at IS NULL
       AND last_active_at >= ${activeSince}::timestamptz
@@ -376,7 +388,7 @@ export async function maybeShuffleStageOnStart(
       AND taken_down_at IS NULL
       AND shuffle_on_start = true
     RETURNING slug, owner_id, festie_id, display_name, description, preset, sky, streams, now_playing_index,
-              backdrop_url, featured, shuffle_on_start, created_at, last_active_at, taken_down_at
+              backdrop_url, featured, shuffle_on_start, social_links, created_at, last_active_at, taken_down_at
   `;
   if (!rows.length) return { stage: pub, shuffled: false };
   return { stage: rowToPublic(parseRow(rows[0] as Record<string, unknown>)), shuffled: true };

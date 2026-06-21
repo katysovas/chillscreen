@@ -30,6 +30,11 @@ import {
   normalizeStageDescription,
   validateStageDescription,
 } from '@/lib/stages/stageDescription';
+import {
+  normalizeStageSocialLinks,
+  parseSocialLinksJson,
+  validateStageSocialLinks,
+} from '@/lib/stages/socialLinks';
 import { parseStreamsJson } from '@/lib/stages/parseStream';
 import {
   normalizeStageSlug,
@@ -87,6 +92,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: descriptionErr }, { status: 400 });
     }
     const description = normalizeStageDescription(descriptionRaw);
+
+    const socialLinks = normalizeStageSocialLinks(
+      parseSocialLinksJson(body.socialLinks ?? body.social_links),
+    );
+    const socialLinksErr = validateStageSocialLinks(socialLinks);
+    if (socialLinksErr) {
+      return NextResponse.json({ error: socialLinksErr }, { status: 400 });
+    }
 
     const streams = parseStreamsJson(body.streams);
     if (!streams.length) {
@@ -147,6 +160,7 @@ export async function POST(req: Request) {
         nowPlayingIndex: 0,
         backdropUrl,
         shuffleOnStart,
+        socialLinks,
       });
 
       return NextResponse.json({
@@ -204,6 +218,7 @@ export async function POST(req: Request) {
       nowPlayingIndex: 0,
       backdropUrl,
       shuffleOnStart,
+      socialLinks,
     });
 
     const res = NextResponse.json({

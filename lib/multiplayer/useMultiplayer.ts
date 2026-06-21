@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import PartySocket from 'partysocket';
 import type { FestiePublic } from '@/lib/festie/types';
 import type { CreatorStageSyncPayload } from '@/lib/stages/stageSync';
+import type { LineupStatePayload } from '@/lib/lineup/types';
+import type { StageChannel, StageVideo } from '@/lib/stageVideos';
+import { getOrCreatePlayerId } from '@/lib/player/session';
 import { mergeNpcSyncMap } from '@/lib/npcPositionSync';
 import { spawnWorldXWithJitter } from '@/lib/playerSpawn';
 import {
@@ -197,6 +200,12 @@ export type Multiplayer = {
   registerCreatorStageSyncHandler: (
     handler: ((stage: CreatorStageSyncPayload) => void) | null,
   ) => void;
+  sendLineupSubscribe: (channel: StageChannel) => void;
+  sendLineupVote: (channel: StageChannel, videoId: string) => void;
+  sendLineupSuggest: (channel: StageChannel, video: StageVideo) => void;
+  registerLineupStateHandler: (
+    handler: ((state: LineupStatePayload) => void) | null,
+  ) => void;
   requestFestiesSync: () => void;
 };
 
@@ -220,6 +229,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   /** Messages sent before the socket handshake completes. */
   const pendingSendRef = useRef<object[]>([]);
   const creatorStageSyncHandlerRef = useRef<((stage: CreatorStageSyncPayload) => void) | null>(null);
+  const lineupStateHandlerRef = useRef<((state: LineupStatePayload) => void) | null>(null);
   const capabilityRef = useRef<NpcLeaderCapability | null>(null);
   const capabilityPendingRef = useRef<Promise<void> | null>(null);
 
@@ -518,6 +528,9 @@ export function useMultiplayer(opts: Options): Multiplayer {
         case 'creator-stage-sync':
           creatorStageSyncHandlerRef.current?.(msg.stage);
           break;
+        case 'lineup-state':
+          lineupStateHandlerRef.current?.(msg);
+          break;
       }
     };
 
@@ -594,12 +607,50 @@ export function useMultiplayer(opts: Options): Multiplayer {
     },
     [],
   );
+  const registerLineupStateHandler = useCallback(
+    (handler: ((state: LineupStatePayload) => void) | null) => {
+      lineupStateHandlerRef.current = handler;
+    },
+    [],
+  );
+  const lineupPlayerId = useCallback(
+    () => getOrCreatePlayerId(),
+    [],
+  );
+  const sendLineupSubscribe = useCallback(
+    (channel: StageChannel) => connectAndSend({
+      t: 'lineup-subscribe',
+      channel,
+      playerId: lineupPlayerId(),
+    }),
+    [connectAndSend, lineupPlayerId],
+  );
+  const sendLineupVote = useCallback(
+    (channel: StageChannel, videoId: string) => connectAndSend({
+      t: 'lineup-vote',
+      channel,
+      videoId,
+      playerId: lineupPlayerId(),
+    }),
+    [connectAndSend, lineupPlayerId],
+  );
+  const sendLineupSuggest = useCallback(
+    (channel: StageChannel, video: StageVideo) => connectAndSend({
+      t: 'lineup-suggest',
+      channel,
+      video,
+      playerId: lineupPlayerId(),
+    }),
+    [connectAndSend, lineupPlayerId],
+  );
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds, connectedUserIds,
     chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,
     isNpcLeader, npcSyncRef,
     sendMove, sendProfile, openPeerChat, closePeerChat, sendPeerTyping, sendPeerMessage,
     sendAmbientMessage, sendRoomChat, sendRoomTyping, sendHumansOnlyChatter, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
-    sendCreatorStageSync, registerCreatorStageSyncHandler, requestFestiesSync,
+    sendCreatorStageSync, registerCreatorStageSyncHandler,
+    sendLineupSubscribe, sendLineupVote, sendLineupSuggest, registerLineupStateHandler,
+    requestFestiesSync,
   };
 }
