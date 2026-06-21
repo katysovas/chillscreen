@@ -396,14 +396,15 @@ export function StageChatterPanel({
   const infoName = stageName?.trim() ?? '';
   const infoDescription = stageDescription?.trim() ?? '';
 
+  const selectTab = useCallback((tab: StageSidePanelTab) => {
+    setExpanded(true);
+    onTabChange(tab);
+  }, [onTabChange]);
+
   useEffect(() => () => {
     if (typingHideTimerRef.current) clearTimeout(typingHideTimerRef.current);
     onTypingChange?.(false);
   }, [onTypingChange]);
-
-  useEffect(() => {
-    if (activeTab === 'shop' || activeTab === 'lineup') setExpanded(true);
-  }, [activeTab]);
 
   useEffect(() => {
     if (expanded && activeTab === 'chat') {
@@ -481,7 +482,7 @@ export function StageChatterPanel({
               active={activeTab === 'lineup'}
               label="Lineup"
               icon={<LineupTabIcon />}
-              onClick={() => onTabChange('lineup')}
+              onClick={() => selectTab('lineup')}
             />
           ) : null}
           <SidePanelTab
@@ -489,19 +490,19 @@ export function StageChatterPanel({
             label="Chat"
             icon={<ChatTabIcon />}
             notify={chatUnread}
-            onClick={() => onTabChange('chat')}
+            onClick={() => selectTab('chat')}
           />
           <SidePanelTab
             active={activeTab === 'shop'}
             label="Shop"
             icon={<ShoppingCartIcon size={14} />}
-            onClick={() => onTabChange('shop')}
+            onClick={() => selectTab('shop')}
           />
           <SidePanelTab
             active={activeTab === 'info'}
             label="Info"
             icon={<InfoTabIcon />}
-            onClick={() => onTabChange('info')}
+            onClick={() => selectTab('info')}
           />
         </div>
 
