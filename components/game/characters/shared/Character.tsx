@@ -259,7 +259,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     return () => { cancelled = true; };
   }, [equippedItemIds]);
 
-  const mirrored = facing === 'left';
+  const mirrored = facingRef.current === 'left';
   const effectiveLoadout = forcedHat && loadout
     ? { ...loadout, hat: forcedHat }
     : loadout;
@@ -280,6 +280,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   useImperativeHandle(ref, () => ({
     setFacing(f) {
       if (!outerRef.current) return;
+      facingRef.current = f;
       const m = f === 'left';
       outerRef.current.style.transform = `translateX(-50%) scaleX(${m ? -1 : 1})`;
       outerRef.current.style.setProperty('--ch-mirror', m ? '-1' : '1');
