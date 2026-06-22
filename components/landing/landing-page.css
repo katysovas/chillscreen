@@ -50,12 +50,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 22px 36px;
+  background: rgba(8, 7, 6, 0.88);
+  backdrop-filter: blur(14px);
   transition: background 0.4s, backdrop-filter 0.4s;
 }
 
 .landing-page .nav.scrolled {
-  background: rgba(8, 7, 6, 0.88);
-  backdrop-filter: blur(14px);
+  background: rgba(8, 7, 6, 0.95);
 }
 
 .landing-page .nav-logo img {
@@ -139,82 +140,51 @@
 .landing-page .hero {
   position: relative;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 35%, #201508 0%, transparent 68%),
-    radial-gradient(ellipse 110% 90% at 50% 10%, #130e06 0%, #070605 100%);
+  background: #d1ebd4;
 }
 
-.landing-page .hero-stars {
+.landing-page .hero::after {
+  content: '';
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22%;
+  background: linear-gradient(to top, var(--lp-bg) 8%, transparent 100%);
+  z-index: 3;
   pointer-events: none;
 }
 
-.landing-page .hero-canvas-wrap {
+.landing-page .hero-backdrop {
   position: absolute;
   inset: 0;
-  pointer-events: none;
   z-index: 1;
-  opacity: 0.12;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-.landing-page .hero-canvas {
-  display: block;
+.landing-page .hero-backdrop .game-surface {
   width: 100%;
   height: 100%;
-}
-
-.landing-page .hero-glow-l {
-  position: absolute;
-  left: -8%;
-  bottom: 22%;
-  width: 560px;
-  height: 560px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(240, 124, 42, 0.13) 0%, transparent 62%);
-  pointer-events: none;
-}
-
-.landing-page .hero-glow-r {
-  position: absolute;
-  right: 4%;
-  top: 12%;
-  width: 280px;
-  height: 280px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(204, 242, 58, 0.09) 0%, transparent 62%);
-  pointer-events: none;
-  animation: lp-orb 5s ease-in-out infinite alternate;
-}
-
-@keyframes lp-orb {
-  from { opacity: 0.55; transform: scale(1); }
-  to { opacity: 1; transform: scale(1.12); }
+  animation: none;
+  touch-action: pan-y;
+  overscroll-behavior: auto;
 }
 
 .landing-page .hero-content {
-  position: relative;
-  z-index: 3;
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: clamp(36%, 41vh, 46%);
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 2.5vh;
-  padding-bottom: 8vh;
+  text-align: center;
   overflow: visible;
-  width: 100%;
-}
-
-@media (min-width: 901px) {
-  .landing-page .hero-content {
-    margin-top: 0;
-    padding-bottom: 0;
-  }
+  width: min(480px, 46vw);
+  pointer-events: auto;
 }
 
 .landing-page .hero-eyebrow {
@@ -236,18 +206,18 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: min(680px, 94vw);
-  margin-bottom: 8px;
+  max-width: 100%;
+  margin-bottom: 4px;
 }
 
 .landing-page .hero-title {
   font-family: var(--ff-display);
   font-weight: 800;
-  font-size: clamp(36px, 5.8vw, 72px);
+  font-size: clamp(28px, 4.2vw, 52px);
   line-height: 0.98;
   letter-spacing: -0.03em;
   color: var(--lp-text);
-  margin: 0 0 18px;
+  margin: 0 0 12px;
 }
 
 .landing-page .hero-title-line {
@@ -256,11 +226,11 @@
 }
 
 .landing-page .hero-subtitle {
-  margin: 0 0 28px;
-  font-size: clamp(14px, 1.85vw, 17px);
-  line-height: 1.58;
+  margin: 0 0 16px;
+  font-size: clamp(13px, 1.6vw, 15px);
+  line-height: 1.5;
   color: var(--lp-muted);
-  max-width: 520px;
+  max-width: 100%;
 }
 
 .landing-page .hero-cta-bar {
@@ -344,6 +314,11 @@
 }
 
 @media (max-width: 640px) {
+  .landing-page .hero-content {
+    width: min(340px, 92vw);
+    top: clamp(32%, 38vh, 42%);
+  }
+
   .landing-page .hero-cta-bar {
     flex-wrap: wrap;
     justify-content: center;
@@ -575,7 +550,7 @@
   bottom: 26px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 3;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   align-items: center;

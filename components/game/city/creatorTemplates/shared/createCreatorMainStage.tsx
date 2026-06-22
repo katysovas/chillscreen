@@ -471,10 +471,16 @@ ${beamKeyframes}
   function MainStage({
     live = false,
     playbackRoute,
+    heroScreen = false,
   }: {
     live?: boolean;
     playbackRoute?: VenueRoute;
+    /** Empty stage screen for landing hero copy (no video, no idle play UI). */
+    heroScreen?: boolean;
   }) {
+    if (heroScreen) {
+      return <CreatorStageShell idleScreen={false} artistMarquee={null} />;
+    }
     if (!live) return <CreatorStageShell />;
     return <CreatorStageLive playbackRoute={playbackRoute} />;
   }

@@ -11,10 +11,9 @@ import type { StagePickerTarget } from '@/lib/stagePickerOptions';
 import { LANDING_FAQ, LANDING_TRENDING_JOIN_LABEL } from './landingData';
 import { FeaturedStagesChart } from '@/components/stages/FeaturedStagesChart';
 import { LANDING_HERO } from './landingHeroCopy';
-import { LandingHeroCanvas } from './LandingHeroCanvas';
+import { LandingHeroBackdrop } from './LandingHeroBackdrop';
 import { LandingHeroCta } from './LandingHeroCta';
 import { LandingHeroHeader } from './LandingHeroHeader';
-import { LandingHeroStageLayer } from './LandingHeroScene';
 import './landing-page.css';
 
 const syne = Syne({ subsets: ['latin'], weight: ['700', '800'], variable: '--font-syne' });
@@ -31,31 +30,6 @@ type Props = {
   onSignIn: () => void;
   initialCreatorStageCount?: number;
 };
-
-function SpeakerSvg() {
-  return (
-    <svg width="110" height="152" viewBox="0 0 110 152" fill="none" aria-hidden>
-      <path d="M96 14 L112 24 L112 146 L96 138 Z" fill="#0a0804" />
-      <rect x="8" y="8" width="90" height="132" rx="14" fill="#1a160c" stroke="rgba(255,220,140,0.09)" strokeWidth="1.2" />
-      <ellipse cx="53" cy="62" rx="36" ry="6" fill="rgba(240,120,30,0.12)" />
-      <circle cx="53" cy="58" r="33" fill="#110e09" stroke="rgba(255,220,140,0.07)" strokeWidth="1.5" />
-      <circle cx="53" cy="58" r="26" fill="none" stroke="rgba(255,220,140,0.05)" strokeWidth="1" />
-      <circle cx="53" cy="58" r="20" fill="#0d0b07" stroke="rgba(255,220,140,0.05)" strokeWidth="1" />
-      <circle cx="53" cy="58" r="12" fill="#0a0805" />
-      <circle cx="53" cy="58" r="5" fill="#1e180d" />
-      <circle cx="53" cy="58" r="33" fill="none" stroke="rgba(240,120,30,0.55)" strokeWidth="2.5" />
-      <circle cx="53" cy="58" r="20" fill="none" stroke="rgba(240,120,30,0.18)" strokeWidth="1" />
-      <circle cx="53" cy="108" r="18" fill="#110e09" stroke="rgba(255,220,140,0.07)" strokeWidth="1.2" />
-      <circle cx="53" cy="108" r="12" fill="#0d0b07" />
-      <circle cx="53" cy="108" r="6" fill="#0a0805" />
-      <circle cx="53" cy="108" r="2.5" fill="#1a160c" />
-      <circle cx="20" cy="20" r="2.5" fill="#0d0b07" stroke="rgba(255,220,140,0.06)" strokeWidth="1" />
-      <circle cx="86" cy="20" r="2.5" fill="#0d0b07" stroke="rgba(255,220,140,0.06)" strokeWidth="1" />
-      <circle cx="20" cy="132" r="2.5" fill="#0d0b07" stroke="rgba(255,220,140,0.06)" strokeWidth="1" />
-      <circle cx="86" cy="132" r="2.5" fill="#0d0b07" stroke="rgba(255,220,140,0.06)" strokeWidth="1" />
-    </svg>
-  );
-}
 
 /*
 const GALLERY_ITEMS = [
@@ -74,34 +48,9 @@ export function LandingPage({
   onSignIn,
   initialCreatorStageCount = 0,
 }: Props) {
-  const starsRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [contactError, setContactError] = useState('');
-  useEffect(() => {
-    const container = starsRef.current;
-    if (!container) return;
-    const fragment = document.createDocumentFragment();
-    for (let i = 0; i < 110; i++) {
-      const star = document.createElement('div');
-      const size = Math.random() < 0.18 ? 2 : 1;
-      const so = (0.3 + Math.random() * 0.7).toFixed(2);
-      star.style.cssText = [
-        'position:absolute',
-        `left:${(Math.random() * 100).toFixed(1)}%`,
-        `top:${(Math.random() * 82).toFixed(1)}%`,
-        `width:${size}px`,
-        `height:${size}px`,
-        'border-radius:50%',
-        'background:#fff',
-        `--so:${so}`,
-        `animation:lp-star ${(2.5 + Math.random() * 4).toFixed(1)}s ${(Math.random() * 6).toFixed(1)}s ease-in-out infinite alternate`,
-        `opacity:${so}`,
-      ].join(';');
-      fragment.appendChild(star);
-    }
-    container.appendChild(fragment);
-  }, []);
 
   useEffect(() => {
     const nav = navRef.current;
@@ -214,15 +163,7 @@ export function LandingPage({
       </nav>
 
       <section className="hero" id="hero">
-        <div className="hero-stars" ref={starsRef} />
-        <LandingHeroCanvas />
-        <div className="hero-glow-l" />
-        <div className="hero-glow-r" />
-        <div className="hero-crescent" aria-hidden />
-        <div className="hero-dot-a" aria-hidden />
-        <div className="hero-dot-b" aria-hidden />
-
-        <LandingHeroStageLayer />
+        <LandingHeroBackdrop />
 
         <div className="hero-content">
           <LandingHeroHeader />
@@ -230,14 +171,6 @@ export function LandingPage({
             onScrollToStages={onScrollToStages}
             initialCreatorStageCount={initialCreatorStageCount}
           />
-        </div>
-
-        <svg className="hero-arc-svg" width="460" height="280" viewBox="0 0 460 280" fill="none" aria-hidden>
-          <ellipse cx="230" cy="220" rx="210" ry="160" stroke="white" strokeWidth="1.2" strokeDasharray="7 9" />
-        </svg>
-
-        <div className="hero-speaker-wrap" aria-hidden>
-          <SpeakerSvg />
         </div>
 
         <div className="hero-scroll" aria-hidden>

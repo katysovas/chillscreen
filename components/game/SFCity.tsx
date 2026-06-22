@@ -1,5 +1,8 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
+import { useLandingHero } from '@/components/landing/LandingHeroContext';
+import { LandingHeroWanderer } from '@/components/landing/LandingHeroWanderer';
+import { landingHeroWandererForRoute } from '@/lib/landing/heroWanderer';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Character from './Character';
 import { worldXToScreenPct } from './NPC';
@@ -245,6 +248,7 @@ export default function SFCity({
   homePreview = false,
   muted: mutedProp,
 }: SFCityProps) {
+  const landingHero = useLandingHero();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -304,6 +308,10 @@ export default function SFCity({
   const ambientSeed = useMemo(
     () => ambientSeedForRoute(effectiveVenueRoute),
     [effectiveVenueRoute],
+  );
+  const landingHeroWanderer = useMemo(
+    () => (landingHero ? landingHeroWandererForRoute(effectiveVenueRoute, ambientSeed) : null),
+    [landingHero, effectiveVenueRoute, ambientSeed],
   );
   // Generated crowd for this stage (+ local Buz). Falls back to legacy cast when
   // no generated NPCs are saved for the channel yet.
@@ -407,6 +415,7 @@ export default function SFCity({
   // Infinity until each NPC's RAF loop reports a live position — avoids
   // connecting to off-screen entry coords while the sprite is still hidden.
   const npcWorldXRefs     = useRef<number[]>(npcCast.map(() => Infinity));
+  const landingHeroNpcWorldXRef = useRef<number[]>([Infinity]);
   const npcWorldXByIdRef  = useRef<Map<string, number>>(new Map());
   const greetingRef       = useRef<number | null>(null);
   const nearNpcRef        = useRef<number | null>(null);
@@ -1515,11 +1524,11 @@ export default function SFCity({
 
     let cancelled = false;
     const dressCodeExtras = effectiveVenueRoute === 'silent-disco' ? ['hat-headphones'] : [];
+    const loadouts = landingHero
+      ? (landingHeroWanderer ? [landingHeroWanderer.loadout] : [])
+      : [playerLoadout, ...effectiveNpcCast.map(c => c.loadout)];
     void preloadCrowdLoadouts(
-      [
-        playerLoadout,
-        ...effectiveNpcCast.map(c => c.loadout),
-      ],
+      loadouts,
       dressCodeExtras,
     )
       .then(() => {
@@ -1530,7 +1539,7 @@ export default function SFCity({
       });
 
     return () => { cancelled = true; };
-  }, [homePreview, profileReady, effectiveVenueRoute, playerLoadout, effectiveNpcCast]);
+  }, [homePreview, profileReady, effectiveVenueRoute, playerLoadout, effectiveNpcCast, landingHero, landingHeroWanderer]);
 
   useEffect(() => {
     if (homePreview) return;
@@ -2357,7 +2366,7 @@ export default function SFCity({
     };
   }, [homePreview]);
 
-  // Home backdrop — keep stage video in sync without gameplay loop.
+  // Home backdrop — keep stage video in sync; landing hero also ticks one wanderer.
   useEffect(() => {
     if (!homePreview) return;
 
@@ -2365,6 +2374,13 @@ export default function SFCity({
       updateViewBoxes(worldRef.current);
       gameWorldOffRef.current = worldRef.current;
       playerWorldXRef.current = worldRef.current;
+      if (landingHero) {
+        runAllNpcMovementTicks(
+          worldRef.current,
+          window.innerWidth,
+          landingHeroNpcWorldXRef.current,
+        );
+      }
       rafRef.current = requestAnimationFrame(loop);
     };
 
@@ -2373,7 +2389,7 @@ export default function SFCity({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [homePreview]);
+  }, [homePreview, landingHero]);
 
   const npcPairOverlay = useMemo(() => {
     const convo = roomChatter.npcConvo ?? (() => {
@@ -2679,6 +2695,7 @@ export default function SFCity({
           bareGround={isDeepSpace}
           isolatedTileIndex={isolatedTile}
           deepLinkRoute={effectiveVenueRoute}
+          landingHero={landingHero}
         />
         {!isDeepSpace && effectiveVenueRoute !== 'tentaroo' && (
           <CabanaForegroundLayer
@@ -2751,6 +2768,10 @@ export default function SFCity({
             autopilotOn={autopilotOn}
             ownerFestieVendorAttractWx={ownerFestieVendorAttractWx}
           />
+        )}
+
+        {landingHero && crowdVisualsReady && landingHeroWanderer && (
+          <LandingHeroWanderer wanderer={landingHeroWanderer} />
         )}
 
         {!homePreview && mobileDevice && npcPairOverlay}

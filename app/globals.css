@@ -47,9 +47,9 @@
   50% { opacity: 0.72; }
 }
 
-/* Lock document scroll only while the full-screen game is mounted. */
-html:has(.game-surface),
-html:has(.game-surface) body {
+/* Lock document scroll only while the full-screen game is mounted (not LP hero backdrop). */
+html:has(.game-surface):not(:has(.landing-page)),
+html:has(.game-surface):not(:has(.landing-page)) body {
   overflow: hidden;
   height: 100%;
 }

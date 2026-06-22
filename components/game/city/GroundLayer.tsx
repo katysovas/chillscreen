@@ -3,12 +3,13 @@ import {
   CITY_GND_W,
   GND_F,
   gndOriginForTile,
-  gndWidthForTile,
   nearGndTiles,
 } from '@/lib/parallax';
+import { gndWidthForTile } from '@/lib/worldTileGeometry';
 import { nearIsolatedGndTiles } from '@/lib/isolatedCity';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
+import { VIEW_WIDTH } from '@/lib/venues';
 import { CITY_GRASS_DROP_Y } from './cinema/constants';
 import { FOREST_GRASS_DROP_Y } from './forest/constants';
 import { SEATTLE_GRASS_DROP_Y } from './seattle/constants';
@@ -21,7 +22,7 @@ import { skipGroundStreetLamp, skipGroundStreetProp, skipGroundStreetTree, type 
 import { SleepingCatsGround } from '../SleepingCat';
 import { StreetDogsGround } from '../StreetDog';
 import { ParallaxSvgLayer } from './shared/ParallaxSvgLayer';
-import { DECORATIVE_SHAPE } from './shared/parallaxLayerStyle';
+import { DECORATIVE_SHAPE, PARALLAX_LAYER_BASE } from './shared/parallaxLayerStyle';
 import { StreetTree } from './street/StreetTree';
 import { LampPost } from './street/LampPost';
 
@@ -31,6 +32,28 @@ const LAMP_XS = [380, 700, 1060, 1400, 1740, 2080, 2420, 2760, 3100];
 const HYDRANTS = [560, 1850, 3050];
 const BENCHES = [920, 2180, 3380];
 const BUS_STOPS = [880, 2200];
+
+function grassDropYForRoute(route: VenueRoute): number {
+  switch (route) {
+    case 'silent-disco':
+      return SILENT_DISCO_GRASS_DROP_Y;
+    case 'forest':
+      return FOREST_GRASS_DROP_Y;
+    case 'tentaroo':
+    case 'creator-chill':
+    case 'hula':
+      return TENTAROO_GRASS_DROP_Y;
+    case 'seattle-concerts':
+      return SEATTLE_GRASS_DROP_Y;
+    case 'outside-hands':
+    case 'cinema':
+      return SF_GRASS_DROP_Y;
+    case 'edc':
+      return VEGAS_GRASS_DROP_Y;
+    default:
+      return CITY_GRASS_DROP_Y;
+  }
+}
 
 /** Deterministic 0..1 for grass scatter (stable per index). */
 function grassRand(i: number, salt: number) {
@@ -82,21 +105,21 @@ function GrassGround({ w, tile, dropY }: { w: number; tile: number; dropY: numbe
           <stop offset="100%" stopColor="#8ecf7e" stopOpacity={0} />
         </linearGradient>
       </defs>
-      <rect x={0} y={top} width={w} height={h} fill={`url(#${gid}-fill)`} />
+      <rect x={0} y={top} width={w + 1} height={h} fill={`url(#${gid}-fill)`} />
       {Array.from({ length: Math.ceil(h / 52) }, (_, i) => (
         <rect
           key={`stripe-${i}`}
           x={0}
           y={top + i * 52}
-          width={w}
+          width={w + 1}
           height={26}
           fill={i % 2 === 0 ? '#ffffff' : '#1a3018'}
           opacity={0.035}
         />
       ))}
       <g opacity={0.9}>{tufts}</g>
-      <rect x={0} y={top} width={w} height={h} fill={`url(#${gid}-depth)`} />
-      <rect x={0} y={top} width={w} height={24} fill={`url(#${gid}-seam)`} />
+      <rect x={0} y={top} width={w + 1} height={h} fill={`url(#${gid}-depth)`} />
+      <rect x={0} y={top} width={w + 1} height={24} fill={`url(#${gid}-seam)`} />
     </>
   );
 }
@@ -145,6 +168,8 @@ type GroundLayerProps = {
   /** When set, only this city tile is rendered (isolated city mode). */
   isolatedTileIndex?: number;
   deepLinkRoute?: VenueRoute;
+  /** Landing page hero — viewport-aligned grass (no tile seams). */
+  landingHero?: boolean;
 };
 
 function groundTileContent(
@@ -160,19 +185,7 @@ function groundTileContent(
   // discrete art; just render fewer pieces in narrow tiles.
   const w = gndWidthForTile(tile);
   const grassGround = skipCtx?.route != null && isStaticCityTemplateRoute(skipCtx.route);
-  const grassDropY = skipCtx?.route === 'silent-disco'
-    ? SILENT_DISCO_GRASS_DROP_Y
-    : skipCtx?.route === 'forest'
-      ? FOREST_GRASS_DROP_Y
-      : skipCtx?.route === 'tentaroo'
-        ? TENTAROO_GRASS_DROP_Y
-        : skipCtx?.route === 'seattle-concerts'
-          ? SEATTLE_GRASS_DROP_Y
-          : skipCtx?.route === 'outside-hands' || skipCtx?.route === 'cinema'
-            ? SF_GRASS_DROP_Y
-            : skipCtx?.route === 'edc'
-              ? VEGAS_GRASS_DROP_Y
-              : CITY_GRASS_DROP_Y;
+  const grassDropY = skipCtx?.route != null ? grassDropYForRoute(skipCtx.route) : CITY_GRASS_DROP_Y;
   const gndY = grassGround ? GND_Y + grassDropY : GND_Y;
   // Keep a prop fully inside the tile (account for its art half-width).
   const fits = (x: number, halfW: number) => x <= w - halfW;
@@ -256,14 +269,45 @@ function groundTileContent(
 }
 
 export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
-  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, bareGround = false, isolatedTileIndex, deepLinkRoute }, ref) {
+  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, bareGround = false, isolatedTileIndex, deepLinkRoute, landingHero = false }, ref) {
     const vx = worldOff * GND_F;
-    const nearTiles = isolatedTileIndex != null
-      ? nearIsolatedGndTiles(isolatedTileIndex, deepLinkRoute)
-      : nearGndTiles;
     const skipCtx: GroundStreetSkipContext | undefined = deepLinkRoute
       ? { route: deepLinkRoute, cameraOff: worldOff }
       : undefined;
+
+    // Landing hero — one viewport-wide grass plane (tile origins do not match mid camera).
+    if (
+      landingHero
+      && deepLinkRoute
+      && isStaticCityTemplateRoute(deepLinkRoute)
+      && !bareGround
+    ) {
+      const tile = isolatedTileIndex ?? 0;
+      return (
+        <svg
+          ref={ref}
+          data-paraloid-svg
+          viewBox={`${vx} 0 ${VIEW_WIDTH} 900`}
+          width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid slice"
+          shapeRendering="optimizeSpeed"
+          style={{
+            ...PARALLAX_LAYER_BASE,
+            zIndex: 5,
+            pointerEvents: 'none',
+          }}
+        >
+          <g transform={`translate(${vx}, 0)`}>
+            <GrassGround w={VIEW_WIDTH} tile={tile} dropY={grassDropYForRoute(deepLinkRoute)} />
+          </g>
+        </svg>
+      );
+    }
+
+    const nearTiles = isolatedTileIndex != null
+      ? nearIsolatedGndTiles(isolatedTileIndex, deepLinkRoute)
+      : nearGndTiles;
 
     return (
       <ParallaxSvgLayer
