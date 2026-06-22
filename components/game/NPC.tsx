@@ -15,6 +15,7 @@ import {
 } from '@/lib/stageAnchor';
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
 import type { VenueRoute } from '@/lib/venueSlugs';
+import { isPaintingBrushLoadout } from '@/lib/easel/brushLoadout';
 import { easelNpcStandWorldX, easelNpcStandWorldXForCanvas } from '@/lib/easel/layout';
 import { setEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import { easelPaintingChatter, PAINTING_CHATTER_VISIBLE_MS } from '@/lib/easel/paintingLabel';
@@ -235,7 +236,12 @@ function NPC({
   // Ensures facing/walking DOM state survives React reconciliation.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
-    characterRef.current?.setFacing(greeting ? greetFacing : facingRef.current);
+    if (paintingBrushRef.current && !greeting) {
+      facingRef.current = 'right';
+    }
+    characterRef.current?.setFacing(
+      greeting ? greetFacing : facingRef.current,
+    );
     characterRef.current?.setWalking(!greeting && !paused && walkingRef.current);
     // Position is driven by the RAF loop — omit `left` from React style or
     // re-renders (dancing, ambient chat, jump) snap back to entry `startX`
@@ -268,6 +274,9 @@ function NPC({
     characterRef.current?.setWalking(w);
   };
 
+  const paintingBrushRef = useRef(isPaintingBrushLoadout(loadout));
+  paintingBrushRef.current = isPaintingBrushLoadout(loadout);
+
   const stationAtEasel = (worldX: number) => {
     easelStationedRef.current = true;
     setEaselStationed(true);
@@ -287,6 +296,10 @@ function NPC({
     applyFacing('right');
     applyWalking(false);
   };
+
+  useEffect(() => {
+    if (paintingBrushRef.current) applyFacing('right');
+  }, [loadout]);
 
   useEffect(() => {
     if (paused && !wasPausedRef.current) {
@@ -598,10 +611,10 @@ function NPC({
         worldXRef.current = standX;
         targetWorldRef.current = standX;
         stateRef.current = 'idle';
-        if (!pausedRef.current) {
-          applyFacing('right');
-        }
+        applyFacing('right');
         applyWalking(false);
+      } else if (paintingBrushRef.current && !heldForConvo && !pausedRef.current) {
+        applyFacing('right');
       } else if (stageAnchor && !heldForConvo) {
         const anchor = vendorAnchorGroundWorldX(stageAnchor, off, width);
         const visible = anchor != null;
