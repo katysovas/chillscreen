@@ -24,4 +24,6 @@ export type CreatorStageConstants = {
   WHICH_STAGE_SPEAKER_Y?: number;
   /** Video screen top Y — default 406. */
   WHICH_STAGE_SCREEN_Y?: number;
+  /** Landing hero — gap between truss bottom and speaker/screen row. */
+  WHICH_STAGE_HERO_ROW_GAP?: number;
 };

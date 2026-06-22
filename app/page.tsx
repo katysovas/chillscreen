@@ -10,6 +10,10 @@ import {
 } from '@/lib/landingSeo';
 import { buildPageMetadata } from '@/lib/siteMetadata';
 import { getLandingCreatorStageCount } from '@/lib/landing/stageStats';
+import {
+  CHILL_FOREST_LAYERS,
+  CREATOR_SCENE_HREF,
+} from '@/components/game/city/chill/constants';
 
 export const metadata: Metadata = buildPageMetadata({
   title: LANDING_PAGE_TITLE,
@@ -23,6 +27,10 @@ export default async function Home() {
 
   return (
     <>
+      {CHILL_FOREST_LAYERS.map(href => (
+        <link key={href} rel="preload" href={href} as="image" />
+      ))}
+      <link rel="preload" href={CREATOR_SCENE_HREF} as="image" />
       <JsonLd data={homePageGraphJsonLd(LANDING_FAQ)} />
       <HomeCityPicker initialCreatorStageCount={creatorStageCount} />
     </>

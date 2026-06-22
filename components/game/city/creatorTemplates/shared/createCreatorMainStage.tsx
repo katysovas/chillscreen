@@ -18,6 +18,8 @@ import { CreatorSpeakerTower } from './CreatorSpeakerTower';
 type StageShellProps = {
   idleScreen?: boolean;
   artistMarquee?: string | null;
+  /** Tighten landing-hero rig: lights down, screen/speakers up. */
+  heroLayout?: boolean;
 };
 
 function artistMarqueeForPlayback(
@@ -54,6 +56,8 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
   const trussY = C.WHICH_STAGE_TRUSS_Y ?? 368;
   const streamLabelY = C.WHICH_STAGE_STREAM_LABEL_Y ?? trussY + 38;
   const speakerY = C.WHICH_STAGE_SPEAKER_Y ?? trussY + 28;
+  const heroRowGap = C.WHICH_STAGE_HERO_ROW_GAP ?? 10;
+  const trussH = 22;
   const rigW = 480;
   const isChill = C.idPrefix === 'chill';
   const isCinema = C.idPrefix === 'cinema';
@@ -116,10 +120,18 @@ ${beamKeyframes}
 @media (prefers-reduced-motion: reduce){.${animRoot} *{animation:none!important}}
 `;
 
-  function CreatorStageShell({ idleScreen = true, artistMarquee: artistMarqueeProp }: StageShellProps) {
+  function CreatorStageShell({
+    idleScreen = true,
+    artistMarquee: artistMarqueeProp,
+    heroLayout = false,
+  }: StageShellProps) {
     const deck = GND;
     const creator = useOptionalCreatorStage();
     const artistMarquee = artistMarqueeProp ?? artistMarqueeForPlayback(creator, undefined, isCinema);
+    const rigTrussY = trussY;
+    const rigSpeakerY = heroLayout ? trussY + trussH + heroRowGap : speakerY;
+    const rigScrY = heroLayout ? rigSpeakerY + 10 : scrY;
+    const rigStreamLabelY = heroLayout ? rigSpeakerY - 4 : streamLabelY;
 
     return (
       <>
@@ -177,7 +189,7 @@ ${beamKeyframes}
             {[cx - 210, cx + 210].map((tx, i) => (
               <CreatorSpeakerTower
                 key={`spk-${i}`}
-                transform={`translate(${tx - 27},${speakerY})`}
+                transform={`translate(${tx - 27},${rigSpeakerY})`}
                 cabGradId={spkCabId}
                 coneGradId={spkConeId}
                 strokeColor={isChill ? 'rgba(46,61,69,0.55)' : 'rgba(56,245,176,.22)'}
@@ -192,7 +204,7 @@ ${beamKeyframes}
                 every frame). Rotation + fade are CSS transform/opacity now, and
                 each beam is promoted to its own layer via the `${P}-spin` class. */}
             {BEAMS.map((b, i) => (
-              <g key={i} transform={`translate(${b.x},${trussY + 14})`}>
+              <g key={i} transform={`translate(${b.x},${rigTrussY + 14})`}>
                 <polygon
                   className={`${P}-spin`}
                   points="-28,200 0,0 28,200"
@@ -214,7 +226,7 @@ ${beamKeyframes}
             {isChill && (
               <rect
                 x={cx - rigW / 2 - 4}
-                y={trussY + 24}
+                y={rigTrussY + 24}
                 width={rigW + 8}
                 height={6}
                 rx={3}
@@ -225,7 +237,7 @@ ${beamKeyframes}
 
             <rect
               x={cx - rigW / 2}
-              y={trussY}
+              y={rigTrussY}
               width={rigW}
               height={22}
               rx={4}
@@ -236,7 +248,7 @@ ${beamKeyframes}
             {isChill && (
               <rect
                 x={cx - rigW / 2 + 2}
-                y={trussY + 1}
+                y={rigTrussY + 1}
                 width={rigW - 4}
                 height={5}
                 rx={2}
@@ -249,20 +261,20 @@ ${beamKeyframes}
               return (
                 <g key={i}>
                   {isChill && (
-                    <circle cx={lx} cy={trussY + 11} r={9} fill="none" stroke="rgba(46,61,69,0.5)" strokeWidth={1} />
+                    <circle cx={lx} cy={rigTrussY + 11} r={9} fill="none" stroke="rgba(46,61,69,0.5)" strokeWidth={1} />
                   )}
                   {/* Static pre-blurred halo: filter runs ONCE, never re-runs while
                       animating (was the per-frame paint cost on the old lenses). */}
-                  <circle cx={lx} cy={trussY + 11} r={7} fill={col} filter={`url(#${glowId})`} opacity={0.5} />
+                  <circle cx={lx} cy={rigTrussY + 11} r={7} fill={col} filter={`url(#${glowId})`} opacity={0.5} />
                   {/* Sharp core carries the flicker via opacity only — no filter. */}
                   <circle
                     cx={lx}
-                    cy={trussY + 11}
+                    cy={rigTrussY + 11}
                     r={7}
                     fill={col}
                     style={{ animation: `${P}-lens ${lensDur}s ease-in-out infinite` }}
                   />
-                  <circle cx={lx} cy={trussY + 11} r={3.5} fill="#fff" opacity={0.85} />
+                  <circle cx={lx} cy={rigTrussY + 11} r={3.5} fill="#fff" opacity={0.85} />
                 </g>
               );
             })}
@@ -271,7 +283,7 @@ ${beamKeyframes}
               <g data-stage-artist-marquee>
                 <rect
                   x={cx - 172}
-                  y={streamLabelY}
+                  y={rigStreamLabelY}
                   width={344}
                   height={28}
                   rx={4}
@@ -281,7 +293,7 @@ ${beamKeyframes}
                 />
                 <rect
                   x={cx - 168}
-                  y={streamLabelY + 1}
+                  y={rigStreamLabelY + 1}
                   width={336}
                   height={3}
                   rx={1.5}
@@ -289,7 +301,7 @@ ${beamKeyframes}
                 />
                 <text
                   x={cx}
-                  y={streamLabelY + 19}
+                  y={rigStreamLabelY + 19}
                   textAnchor="middle"
                   fontFamily="system-ui, sans-serif"
                   fontWeight={700}
@@ -305,7 +317,7 @@ ${beamKeyframes}
 
             <rect
               x={scrX - 10}
-              y={scrY - 10}
+              y={rigScrY - 10}
               width={scrW + 20}
               height={scrH + 20}
               rx={10}
@@ -319,7 +331,7 @@ ${beamKeyframes}
                 cyan/magenta rects and cross-fade their opacity. */}
             <rect
               x={scrX - 4}
-              y={scrY - 4}
+              y={rigScrY - 4}
               width={scrW + 8}
               height={scrH + 8}
               rx={8}
@@ -329,13 +341,13 @@ ${beamKeyframes}
               opacity={isChill ? 0.55 : undefined}
               style={!isChill ? { animation: `${P}-border 6s ease-in-out infinite` } : undefined}
             />
-            <rect x={scrX} y={scrY} width={scrW} height={scrH} rx={6} fill="#020a07" stroke="#1b2a22" strokeWidth={2} />
+            <rect x={scrX} y={rigScrY} width={scrW} height={scrH} rx={6} fill="#020a07" stroke="#1b2a22" strokeWidth={2} />
 
             {idleScreen && (
               <>
                 <rect
                   x={scrX + 4}
-                  y={scrY + 4}
+                  y={rigScrY + 4}
                   width={scrW - 8}
                   height={scrH - 8}
                   rx={4}
@@ -345,7 +357,7 @@ ${beamKeyframes}
                   <rect
                     key={i}
                     x={scrX + 8}
-                    y={scrY + 10 + i * 26}
+                    y={rigScrY + 10 + i * 26}
                     width={scrW - 16}
                     height={2}
                     fill="rgba(255,255,255,.08)"
@@ -356,7 +368,7 @@ ${beamKeyframes}
                 <circle
                   className={`${P}-ctr`}
                   cx={cx}
-                  cy={scrY + scrH / 2}
+                  cy={rigScrY + scrH / 2}
                   r={36}
                   fill="none"
                   stroke={C.WHICH_NEON.green}
@@ -364,7 +376,7 @@ ${beamKeyframes}
                   style={{ animation: `${P}-screenPulse 2.4s ease-in-out infinite` }}
                 />
                 <polygon
-                  points={`${cx + 8},${scrY + scrH / 2 - 14} ${cx + 8},${scrY + scrH / 2 + 14} ${cx + 28},${scrY + scrH / 2}`}
+                  points={`${cx + 8},${rigScrY + scrH / 2 - 14} ${cx + 8},${rigScrY + scrH / 2 + 14} ${cx + 28},${rigScrY + scrH / 2}`}
                   fill={C.WHICH_NEON.green}
                   opacity={0.9}
                 />
@@ -479,7 +491,7 @@ ${beamKeyframes}
     heroScreen?: boolean;
   }) {
     if (heroScreen) {
-      return <CreatorStageShell idleScreen={false} artistMarquee={null} />;
+      return <CreatorStageShell idleScreen={false} artistMarquee={null} heroLayout />;
     }
     if (!live) return <CreatorStageShell />;
     return <CreatorStageLive playbackRoute={playbackRoute} />;

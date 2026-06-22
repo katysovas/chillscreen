@@ -6,6 +6,10 @@ import { WelcomePopup } from '@/components/game/WelcomePopup';
 import { LandingPage } from '@/components/landing/LandingPage';
 import { hydratePlayerSession } from '@/lib/player/session';
 import { identifyPlayer } from '@/lib/analytics';
+import {
+  preloadLandingHeroAssets,
+  warmLandingHeroSFCity,
+} from '@/lib/landing/preloadLandingHero';
 import { getPlayerName } from '@/lib/playerStorage';
 import {
   getSessionBalloonColor,
@@ -35,6 +39,9 @@ export function HomeCityPicker({
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
+
+    void preloadLandingHeroAssets();
+    void warmLandingHeroSFCity();
 
     void hydratePlayerSession()
       .then(profile => {

@@ -8,6 +8,10 @@ import {
 } from 'react';
 import { bootstrapStageSyncFromApi } from '@/lib/stageClock';
 import { stageChannelForRoute } from '@/lib/isolatedCity';
+import {
+  preloadLandingHeroAssets,
+  warmLandingHeroSFCity,
+} from '@/lib/landing/preloadLandingHero';
 import { preloadStageRouteAssets } from '@/lib/stagePreload';
 import { hideVenueBootOverlay, keepVenueBootOverlay } from '@/lib/venueBoot';
 import type { VenueRoute } from '@/lib/venueRoutes';
@@ -24,6 +28,9 @@ type SFCityProps = {
 type SFCityLoaderProps = SFCityProps & {
   /** True when `VenueBootOverlay` is server-rendered on the page. */
   serverBootOverlay?: boolean;
+  /** Landing-page hero — lightweight preload, no full-screen boot shell. */
+  landingHero?: boolean;
+  onSceneReady?: () => void;
 };
 
 const FADE_MS = 320;
@@ -60,6 +67,24 @@ async function importSFCity() {
   }
 }
 
+async function importSFCityForLoader(landingHero?: boolean) {
+  if (!landingHero) return importSFCity();
+  try {
+    return await warmLandingHeroSFCity();
+  } catch (err) {
+    if (isStaleChunkError(err) && reloadForStaleChunk()) {
+      return new Promise<typeof import('./SFCity')>(() => {});
+    }
+    throw err;
+  }
+}
+
+function preloadForLoader(venueRoute: VenueRoute, landingHero?: boolean): Promise<void> {
+  return landingHero
+    ? preloadLandingHeroAssets()
+    : preloadStageRouteAssets(venueRoute);
+}
+
 /** Code-split entry — keeps the main route JS small until the game is needed. */
 export default function SFCityLoader({
   spawnWorldOff,
@@ -67,6 +92,8 @@ export default function SFCityLoader({
   homePreview,
   muted,
   serverBootOverlay = false,
+  landingHero = false,
+  onSceneReady,
 }: SFCityLoaderProps) {
   const [Game, setGame] = useState<SFCityComponent | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -74,6 +101,7 @@ export default function SFCityLoader({
   const [shellVisible, setShellVisible] = useState(false);
   const [debugPin, setDebugPin] = useState(false);
   const loadedRef = useRef(false);
+  const sceneReadyRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -93,10 +121,14 @@ export default function SFCityLoader({
   }, []);
 
   useEffect(() => {
+    if (landingHero) {
+      void preloadLandingHeroAssets();
+      return;
+    }
     const channel = stageChannelForRoute(venueRoute);
     bootstrapStageSyncFromApi(channel);
     void preloadStageRouteAssets(venueRoute);
-  }, [venueRoute]);
+  }, [venueRoute, landingHero]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -107,7 +139,7 @@ export default function SFCityLoader({
 
     setDebugPin(keepVenueBootOverlay());
 
-    if (!serverBootOverlay) {
+    if (!serverBootOverlay && !landingHero) {
       setShowShell(true);
       raf = requestAnimationFrame(() => {
         if (!cancelled) setShellVisible(true);
@@ -115,8 +147,8 @@ export default function SFCityLoader({
     }
 
     Promise.all([
-      importSFCity(),
-      preloadStageRouteAssets(venueRoute),
+      importSFCityForLoader(landingHero),
+      preloadForLoader(venueRoute, landingHero),
     ]).then(([mod]) => {
       if (cancelled) return;
       if (typeof sessionStorage !== 'undefined') {
@@ -129,7 +161,7 @@ export default function SFCityLoader({
 
       if (serverBootOverlay) {
         hideVenueBootOverlay();
-      } else {
+      } else if (!landingHero) {
         setShellVisible(false);
         fadeTimer = setTimeout(() => {
           if (!cancelled) setShowShell(false);
@@ -145,13 +177,19 @@ export default function SFCityLoader({
       if (fadeTimer) clearTimeout(fadeTimer);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [mounted, venueRoute, serverBootOverlay]);
+  }, [mounted, venueRoute, serverBootOverlay, landingHero]);
 
-  const renderClientShell = mounted && !serverBootOverlay && (showShell || debugPin);
+  useEffect(() => {
+    if (!Game || !landingHero || sceneReadyRef.current) return;
+    sceneReadyRef.current = true;
+    onSceneReady?.();
+  }, [Game, landingHero, onSceneReady]);
+
+  const renderClientShell = mounted && !serverBootOverlay && !landingHero && (showShell || debugPin);
 
   return (
     <>
-      <GameCharacterStyles />
+      {(!landingHero || Game) && <GameCharacterStyles />}
       {renderClientShell && (
         <StageBootShell visible={debugPin || shellVisible} />
       )}

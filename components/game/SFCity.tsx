@@ -3,6 +3,14 @@ import { useState, useEffect, useRef, useCallback, useLayoutEffect, useMemo, use
 import { useLandingHero } from '@/components/landing/LandingHeroContext';
 import { LandingHeroWanderer } from '@/components/landing/LandingHeroWanderer';
 import { landingHeroWandererForRoute } from '@/lib/landing/heroWanderer';
+import {
+  DESKTOP_STATIC_PAR,
+  isMobileStaticViewport,
+  LANDING_HERO_DESKTOP_PAR,
+  LANDING_HERO_MOBILE_PAR,
+  landingHeroDesktopViewBox,
+  landingHeroMobileViewBox,
+} from '@/lib/staticCityViewport';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Character from './Character';
 import { worldXToScreenPct } from './NPC';
@@ -395,19 +403,46 @@ export default function SFCity({
     const skyVx = off * SKY_F;
     const midVx = off * MID_F;
     const gndVx = off * GND_F;
-    const vb    = (x: number) => `${x} 0 1400 900`;
+    const mobileLanding = landingHero && isMobileStaticViewport();
+    const desktopLanding = landingHero && !isMobileStaticViewport();
+    const vb = (x: number) => `${x} 0 1400 900`;
+    const midPar = mobileLanding
+      ? LANDING_HERO_MOBILE_PAR
+      : desktopLanding
+        ? LANDING_HERO_DESKTOP_PAR
+        : DESKTOP_STATIC_PAR;
+    const midVb = mobileLanding
+      ? landingHeroMobileViewBox(midVx)
+      : desktopLanding
+        ? landingHeroDesktopViewBox(midVx)
+        : vb(midVx);
+    const gndVb = mobileLanding
+      ? landingHeroMobileViewBox(gndVx)
+      : desktopLanding
+        ? landingHeroDesktopViewBox(gndVx)
+        : vb(gndVx);
+    const gndPar = mobileLanding
+      ? LANDING_HERO_MOBILE_PAR
+      : desktopLanding
+        ? LANDING_HERO_DESKTOP_PAR
+        : null;
 
     skyRef.current?.setAttribute('viewBox', vb(skyVx));
-    groundRef.current?.setAttribute('viewBox', vb(gndVx));
+    groundRef.current?.setAttribute('viewBox', gndVb);
+    if (gndPar) {
+      groundRef.current?.setAttribute('preserveAspectRatio', gndPar);
+    } else {
+      groundRef.current?.removeAttribute('preserveAspectRatio');
+    }
     cabanaRef.current?.setAttribute('viewBox', vb(gndVx));
     navSignsRef.current?.setAttribute('viewBox', vb(gndVx));
     cloudsRef.current?.setAttribute('viewBox', vb(skyVx));
-    midRef.current?.setAttribute('viewBox', vb(midVx));
-    midRef.current?.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-    midForegroundRef.current?.setAttribute('viewBox', vb(midVx));
-    midForegroundRef.current?.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-    midSkyLabelsRef.current?.setAttribute('viewBox', vb(midVx));
-    midSkyLabelsRef.current?.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    midRef.current?.setAttribute('viewBox', midVb);
+    midRef.current?.setAttribute('preserveAspectRatio', midPar);
+    midForegroundRef.current?.setAttribute('viewBox', midVb);
+    midForegroundRef.current?.setAttribute('preserveAspectRatio', midPar);
+    midSkyLabelsRef.current?.setAttribute('viewBox', midVb);
+    midSkyLabelsRef.current?.setAttribute('preserveAspectRatio', midPar);
   };
 
   // ── Greeting / collision ───────────────────────────────────────────────────
@@ -1524,9 +1559,18 @@ export default function SFCity({
 
     let cancelled = false;
     const dressCodeExtras = effectiveVenueRoute === 'silent-disco' ? ['hat-headphones'] : [];
-    const loadouts = landingHero
-      ? (landingHeroWanderer ? [landingHeroWanderer.loadout] : [])
-      : [playerLoadout, ...effectiveNpcCast.map(c => c.loadout)];
+    const showLandingWanderer = landingHero && !mobileDevice && landingHeroWanderer;
+    const loadouts = showLandingWanderer
+      ? [landingHeroWanderer.loadout]
+      : landingHero
+        ? []
+        : [playerLoadout, ...effectiveNpcCast.map(c => c.loadout)];
+
+    if (loadouts.length === 0) {
+      setCrowdVisualsReady(true);
+      return;
+    }
+
     void preloadCrowdLoadouts(
       loadouts,
       dressCodeExtras,
@@ -1539,7 +1583,7 @@ export default function SFCity({
       });
 
     return () => { cancelled = true; };
-  }, [homePreview, profileReady, effectiveVenueRoute, playerLoadout, effectiveNpcCast, landingHero, landingHeroWanderer]);
+  }, [homePreview, profileReady, effectiveVenueRoute, playerLoadout, effectiveNpcCast, landingHero, landingHeroWanderer, mobileDevice]);
 
   useEffect(() => {
     if (homePreview) return;
@@ -2565,11 +2609,11 @@ export default function SFCity({
     <div
       className="game-surface"
       style={{
-        width: '100vw',
-        height: '100vh',
+        width: landingHero ? '100%' : '100vw',
+        height: landingHero ? '100%' : '100vh',
         overflow: 'hidden',
         position: 'relative',
-        animation: 'fdi 1.5s ease',
+        animation: landingHero ? undefined : 'fdi 1.5s ease',
         touchAction: 'none',
         WebkitUserSelect: 'none',
         userSelect: 'none',
@@ -2770,7 +2814,7 @@ export default function SFCity({
           />
         )}
 
-        {landingHero && crowdVisualsReady && landingHeroWanderer && (
+        {landingHero && !mobileDevice && crowdVisualsReady && landingHeroWanderer && (
           <LandingHeroWanderer wanderer={landingHeroWanderer} />
         )}
 

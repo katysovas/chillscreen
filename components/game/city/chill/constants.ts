@@ -38,6 +38,9 @@ export const WHICH_STAGE_STREAM_LABEL_Y = 358;
 export const WHICH_STAGE_SPEAKER_Y = 358;
 export const WHICH_STAGE_SCREEN_Y = 406;
 
+/** Landing hero — gap below truss before speaker/screen row (tops aligned). */
+export const WHICH_STAGE_HERO_ROW_GAP = 10;
+
 const WHICH_STAGE_W = 500;
 
 export const WHICH_STAGE_HALF = Math.ceil((WHICH_STAGE_W * WHICH_STAGE_SCALE) / 2) + 28;

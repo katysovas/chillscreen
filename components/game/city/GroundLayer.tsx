@@ -10,6 +10,15 @@ import { nearIsolatedGndTiles } from '@/lib/isolatedCity';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { VIEW_WIDTH } from '@/lib/venues';
+import {
+  isMobileStaticViewport,
+  LANDING_HERO_DESKTOP_PAR,
+  LANDING_HERO_MOBILE_PAR,
+  landingHeroDesktopViewBox,
+  landingHeroMobileViewBox,
+  MOBILE_STATIC_VB_WIDTH,
+  staticMobileViewBoxX,
+} from '@/lib/staticCityViewport';
 import { CITY_GRASS_DROP_Y } from './cinema/constants';
 import { FOREST_GRASS_DROP_Y } from './forest/constants';
 import { SEATTLE_GRASS_DROP_Y } from './seattle/constants';
@@ -283,14 +292,28 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
       && !bareGround
     ) {
       const tile = isolatedTileIndex ?? 0;
+      const mobileLanding = landingHero && isMobileStaticViewport();
+      const desktopLanding = landingHero && !isMobileStaticViewport();
+      const vbW = mobileLanding ? MOBILE_STATIC_VB_WIDTH : VIEW_WIDTH;
+      const vb = mobileLanding
+        ? landingHeroMobileViewBox(vx)
+        : desktopLanding
+          ? landingHeroDesktopViewBox(vx)
+          : `${vx} 0 ${VIEW_WIDTH} 900`;
+      const grassX = mobileLanding ? staticMobileViewBoxX(vx) : vx;
+      const par = mobileLanding
+        ? LANDING_HERO_MOBILE_PAR
+        : desktopLanding
+          ? LANDING_HERO_DESKTOP_PAR
+          : 'xMidYMid slice';
       return (
         <svg
           ref={ref}
           data-paraloid-svg
-          viewBox={`${vx} 0 ${VIEW_WIDTH} 900`}
+          viewBox={vb}
           width="100%"
           height="100%"
-          preserveAspectRatio="xMidYMid slice"
+          preserveAspectRatio={par}
           shapeRendering="optimizeSpeed"
           style={{
             ...PARALLAX_LAYER_BASE,
@@ -298,8 +321,8 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
             pointerEvents: 'none',
           }}
         >
-          <g transform={`translate(${vx}, 0)`}>
-            <GrassGround w={VIEW_WIDTH} tile={tile} dropY={grassDropYForRoute(deepLinkRoute)} />
+          <g transform={`translate(${grassX}, 0)`}>
+            <GrassGround w={vbW} tile={tile} dropY={grassDropYForRoute(deepLinkRoute)} />
           </g>
         </svg>
       );

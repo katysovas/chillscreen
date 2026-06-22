@@ -14,6 +14,10 @@ import { LANDING_HERO } from './landingHeroCopy';
 import { LandingHeroBackdrop } from './LandingHeroBackdrop';
 import { LandingHeroCta } from './LandingHeroCta';
 import { LandingHeroHeader } from './LandingHeroHeader';
+import {
+  LANDING_HERO_SCREEN_HEIGHT_FRAC,
+  LANDING_HERO_SCREEN_TOP_FRAC,
+} from '@/lib/staticCityViewport';
 import './landing-page.css';
 
 const syne = Syne({ subsets: ['latin'], weight: ['700', '800'], variable: '--font-syne' });
@@ -162,7 +166,16 @@ export function LandingPage({
         </div>
       </nav>
 
-      <section className="hero" id="hero">
+      <section
+        className="hero"
+        id="hero"
+        style={
+          {
+            '--landing-hero-screen-top': LANDING_HERO_SCREEN_TOP_FRAC,
+            '--landing-hero-screen-height': LANDING_HERO_SCREEN_HEIGHT_FRAC,
+          } as React.CSSProperties
+        }
+      >
         <LandingHeroBackdrop />
 
         <div className="hero-content">
