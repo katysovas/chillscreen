@@ -1,6 +1,6 @@
 import {
   TENTAROO_GND,
-  WHICH_STAGE_HERO_ROW_GAP,
+  WHICH_STAGE_HERO_NAV_GAP,
   WHICH_STAGE_PUSH_Y,
   WHICH_STAGE_SCALE,
   WHICH_STAGE_TRUSS_Y,
@@ -8,7 +8,6 @@ import {
 import { VIEW_WIDTH } from '@/lib/venues';
 
 const LANDING_HERO_SCR_H = 192;
-const LANDING_HERO_TRUSS_H = 22;
 const LANDING_HERO_SCREEN_INSET = 10;
 
 function scaledChillY(unscaledY: number): number {
@@ -16,7 +15,7 @@ function scaledChillY(unscaledY: number): number {
 }
 
 function landingHeroScreenFracs(): { top: number; height: number } {
-  const rowTop = WHICH_STAGE_TRUSS_Y + LANDING_HERO_TRUSS_H + WHICH_STAGE_HERO_ROW_GAP;
+  const rowTop = WHICH_STAGE_TRUSS_Y + WHICH_STAGE_HERO_NAV_GAP;
   const outerH = LANDING_HERO_SCR_H + LANDING_HERO_SCREEN_INSET * 2;
   const screenTop = scaledChillY(rowTop) - LANDING_HERO_VB_Y;
   const screenH = scaledChillY(rowTop + outerH) - scaledChillY(rowTop);
@@ -48,8 +47,8 @@ export function staticMobileViewBox(
   return `${staticMobileViewBoxX(layerVx)} 0 ${MOBILE_STATIC_VB_WIDTH} ${MOBILE_STATIC_VB_HEIGHT}`;
 }
 
-/** Crop sky/forest above truss so stage lights sit flush under the nav. */
-export const LANDING_HERO_VB_Y = 85;
+/** Crop sky/forest above stage rig — leave room for nav-to-stage gap. */
+export const LANDING_HERO_VB_Y = 55;
 export const LANDING_HERO_VB_H = 900 - LANDING_HERO_VB_Y;
 
 /** Scaled Nature rig screen — matches createCreatorMainStage heroLayout geometry. */

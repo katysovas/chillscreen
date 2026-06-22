@@ -1559,7 +1559,7 @@ export default function SFCity({
 
     let cancelled = false;
     const dressCodeExtras = effectiveVenueRoute === 'silent-disco' ? ['hat-headphones'] : [];
-    const showLandingWanderer = landingHero && !mobileDevice && landingHeroWanderer;
+    const showLandingWanderer = landingHero && landingHeroWanderer;
     const loadouts = showLandingWanderer
       ? [landingHeroWanderer.loadout]
       : landingHero
@@ -2767,7 +2767,7 @@ export default function SFCity({
 
         {!homePreview && (
           <StageEaselsLayer
-            active={easelsActive}
+            active={easelsActive && crowdVisualsReady}
             stageSlug={easelStageSlug}
             layoutRoute={easelLayoutRoute}
             session={activeEaselSession}
@@ -2814,7 +2814,7 @@ export default function SFCity({
           />
         )}
 
-        {landingHero && !mobileDevice && crowdVisualsReady && landingHeroWanderer && (
+        {landingHero && crowdVisualsReady && landingHeroWanderer && (
           <LandingHeroWanderer wanderer={landingHeroWanderer} />
         )}
 

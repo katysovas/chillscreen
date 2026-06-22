@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
 
     return [
       {
+        source: '/doodles/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
         source: '/images/:path*',
         headers: [
           {

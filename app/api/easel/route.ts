@@ -13,13 +13,14 @@ import {
   syncEaselSessionForPlayers,
 } from '@/lib/easel/db';
 import { easelHoldExpired } from '@/lib/easel/lifecycle';
+import { slimSlotForSync } from '@/lib/easel/resolveProgram';
 import type { EaselRow } from '@/lib/easel/types';
 import { canonicalVenueSlug } from '@/lib/venueSlugs';
 
 function slotResponse(row: EaselRow) {
   return {
     ok: true,
-    ...rowToSlotSync(row),
+    ...slimSlotForSync(rowToSlotSync(row)),
   };
 }
 
@@ -31,14 +32,16 @@ export async function GET(req: Request) {
 
   const ensure = searchParams.get('ensure') === '1';
   const sync = searchParams.get('sync') === '1';
+  const fresh = searchParams.get('freshEasel') === '1'
+    && process.env.NODE_ENV === 'development';
 
   try {
     const rows = ensure
-      ? await ensureEaselSessionStarted(stageKey)
+      ? await ensureEaselSessionStarted(stageKey, { fresh })
       : sync
         ? await syncEaselSessionForPlayers(stageKey)
         : await getVisibleEasels(stageKey);
-    return NextResponse.json({ slots: rows.map(rowToSlotSync) });
+    return NextResponse.json({ slots: rows.map(row => slimSlotForSync(rowToSlotSync(row))) });
   } catch (err) {
     console.error('[easel] GET failed', err);
     return NextResponse.json({ slots: [] });
@@ -53,6 +56,7 @@ export async function POST(req: Request) {
       slot: number;
       segments_done?: number;
       npc?: string;
+      freshEasel?: boolean;
     };
 
     const { action, stage, slot } = body;
@@ -72,8 +76,9 @@ export async function POST(req: Request) {
 
     switch (action) {
       case 'ensureSession': {
-        const rows = await ensureEaselSessionStarted(stageKey);
-        return NextResponse.json({ ok: true, slots: rows.map(rowToSlotSync) });
+        const fresh = body.freshEasel === true && process.env.NODE_ENV === 'development';
+        const rows = await ensureEaselSessionStarted(stageKey, { fresh });
+        return NextResponse.json({ ok: true, slots: rows.map(row => slimSlotForSync(rowToSlotSync(row))) });
       }
       case 'advanceIfReady': {
         if (slot == null) return NextResponse.json({ ok: false }, { status: 400 });
@@ -83,7 +88,7 @@ export async function POST(req: Request) {
           return NextResponse.json(slotResponse(current));
         }
         if (!easelHoldExpired(current.completed_at)) {
-          return NextResponse.json({ ok: true, waiting: true, ...rowToSlotSync(current) });
+          return NextResponse.json({ ok: true, waiting: true, ...slimSlotForSync(rowToSlotSync(current)) });
         }
         const updated = await advanceEaselAfterHold(stageKey, slot);
         if (!updated) return NextResponse.json({ ok: false }, { status: 500 });

@@ -1,4 +1,4 @@
-/** Ambient NPC drawing — stroke program + easel state (spec v5). */
+/** Ambient NPC drawing — stroke program or image-gen sprite (spec v5 + doodle imagegen). */
 
 export type VenueCanvasPoint = [number, number];
 
@@ -24,6 +24,26 @@ export type DrawingProgram = {
   topic: string;
   strokes: DrawingStroke[];
 };
+
+/** Curated image-gen pixel sprite — faked stipple reveal at playback. */
+export type DoodleSpriteProgram = {
+  kind: 'doodle-sprite';
+  id: string;
+  npc: string;
+  model: string;
+  topic: string;
+  gridPath: string;
+  spritePath: string;
+  w: number;
+  h: number;
+  palette: string[];
+  bgHex: string;
+  revealMode: 'stipple' | 'band';
+};
+
+export type EaselArtProgram = DrawingProgram | DoodleSpriteProgram;
+
+export type DoodleRevealMode = DoodleSpriteProgram['revealMode'];
 
 export type NpcDrawingPool = {
   model: string;
@@ -59,7 +79,7 @@ export type EaselRow = {
   completed_at: string | null;
   hidden_at: string | null;
   topic: string | null;
-  program_json: DrawingProgram | null;
+  program_json: EaselArtProgram | null;
 };
 
 /** Broadcast baseline — clients compute liveDone from sessionStart. */
@@ -74,8 +94,8 @@ export type EaselSlotSync = {
   /** DB watched-clock anchor — used to restore progress after reload. */
   started_at?: string;
   topic?: string;
-  /** AI-generated or legacy stroke program — included in API responses. */
-  program?: DrawingProgram;
+  /** AI-generated stroke program or curated doodle sprite. */
+  program?: EaselArtProgram;
   /** Set when status is done — used for post-completion hold timer. */
   completed_at?: string;
 };

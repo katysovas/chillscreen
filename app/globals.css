@@ -575,3 +575,20 @@ html:has(.game-surface):not(:has(.landing-page)) body {
     display: none;
   }
 }
+
+/* ── Easel doodle — rare golden reveal shimmer ───────────────────────────── */
+
+.easel-doodle-golden {
+  animation: easel-golden-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes easel-golden-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .easel-doodle-golden {
+    animation: none;
+  }
+}

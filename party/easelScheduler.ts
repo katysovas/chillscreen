@@ -4,6 +4,7 @@ import { chatterAuthHeader } from '../lib/npcChatter/auth';
 import { chatterApiBase } from '../lib/npcChatter/apiBase';
 import { stageSlugForRoom } from '../lib/npcChatter/roomContext';
 import { easelHoldExpired, easelMaxVisibleExpired } from '../lib/easel/lifecycle';
+import { slimSlotForSync } from '../lib/easel/resolveProgram';
 import { liveSegmentsDone } from '../lib/easel/segments';
 import { pickVisibleEaselSlots } from '../lib/easel/visibleSlots';
 import type { EaselSessionSync, EaselSlotSync } from '../lib/easel/types';
@@ -89,7 +90,7 @@ export class EaselScheduler {
   }
 
   private broadcastSession() {
-    const slots = this.visibleSlots();
+    const slots = this.visibleSlots().map(slimSlotForSync);
     if (this.sessionStart == null || slots.length === 0) return;
     const msg: ServerMessage = {
       t: 'easel-session',
@@ -272,7 +273,7 @@ export class EaselScheduler {
   }
 
   syncToClient(send: (msg: ServerMessage) => void) {
-    const slots = this.visibleSlots();
+    const slots = this.visibleSlots().map(slimSlotForSync);
     if (this.sessionStart == null || slots.length === 0) return;
     send({
       t: 'easel-session',

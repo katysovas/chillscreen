@@ -1,0 +1,83 @@
+{
+  "cycle": "curated",
+  "stages": {
+    "forest": {
+      "easels": [
+        {
+          "id": "forest-jenna-curated-pinecone",
+          "npc": "jenna",
+          "subject": "pinecone",
+          "grid": "/doodles/forest/jenna/curated/grid.json",
+          "sprite": "/doodles/forest/jenna/curated/sprite.png",
+          "score": 8,
+          "w": 16,
+          "h": 16
+        }
+      ]
+    },
+    "lasvegas": {
+      "easels": [
+        {
+          "id": "lasvegas-ace-curated-slot-machine",
+          "npc": "ace",
+          "subject": "slot machine",
+          "grid": "/doodles/lasvegas/ace/curated/grid.json",
+          "sprite": "/doodles/lasvegas/ace/curated/sprite.png",
+          "score": 8,
+          "w": 16,
+          "h": 16
+        },
+        {
+          "id": "lasvegas-briar-curated-poker-chip",
+          "npc": "briar",
+          "subject": "poker chip",
+          "grid": "/doodles/lasvegas/briar/curated/grid.json",
+          "sprite": "/doodles/lasvegas/briar/curated/sprite.png",
+          "score": 8,
+          "w": 16,
+          "h": 16
+        },
+        {
+          "id": "lasvegas-cruz-curated-cherry",
+          "npc": "cruz",
+          "subject": "cherry",
+          "grid": "/doodles/lasvegas/cruz/curated/grid.json",
+          "sprite": "/doodles/lasvegas/cruz/curated/sprite.png",
+          "score": 8,
+          "w": 16,
+          "h": 16
+        },
+        {
+          "id": "lasvegas-daphne-curated-neon-heart",
+          "npc": "daphne",
+          "subject": "neon heart",
+          "grid": "/doodles/lasvegas/daphne/curated/grid.json",
+          "sprite": "/doodles/lasvegas/daphne/curated/sprite.png",
+          "score": 8,
+          "w": 16,
+          "h": 16
+        },
+        {
+          "id": "lasvegas-ellis-curated-dice",
+          "npc": "ellis",
+          "subject": "dice",
+          "grid": "/doodles/lasvegas/ellis/curated/grid.json",
+          "sprite": "/doodles/lasvegas/ellis/curated/sprite.png",
+          "score": 8,
+          "w": 16,
+          "h": 16
+        },
+        {
+          "id": "lasvegas-flora-curated-rocket",
+          "npc": "flora",
+          "subject": "rocket",
+          "grid": "/doodles/lasvegas/flora/curated/grid.json",
+          "sprite": "/doodles/lasvegas/flora/curated/sprite.png",
+          "score": 8,
+          "w": 16,
+          "h": 16
+        }
+      ]
+    }
+  }
+}

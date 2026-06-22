@@ -26,4 +26,6 @@ export type CreatorStageConstants = {
   WHICH_STAGE_SCREEN_Y?: number;
   /** Landing hero — gap between truss bottom and speaker/screen row. */
   WHICH_STAGE_HERO_ROW_GAP?: number;
+  /** Landing hero — push speakers/screen below the nav. */
+  WHICH_STAGE_HERO_NAV_GAP?: number;
 };

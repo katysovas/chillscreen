@@ -48,7 +48,7 @@ export const VEGAS_BACKDROP_FILL = '#0e0818';
 export const VEGAS_GRASS_DROP_Y = 30;
 
 /** Porta-potties sit this many px below the default sidewalk Y. */
-export const VEGAS_TOILET_DROP_Y = 40;
+export const VEGAS_TOILET_DROP_Y = 0;
 
 /** Neon palette — Strip signage at night. */
 export const NEON = {

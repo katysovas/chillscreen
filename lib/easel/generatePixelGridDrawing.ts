@@ -7,6 +7,7 @@ import type { ChatMessage } from '@/lib/npcChatter/openrouter';
 import { getChatterCharacter } from '@/lib/chatterCast';
 import { completeDrawingText } from './completeDrawing';
 import type { EaselDrawingContext } from './drawingContext';
+import type { DrawingProgram } from './types';
 import type { GeneratedDrawing } from './generateDrawing';
 import { buildRichFallbackProgram } from './fallbackSketches';
 import { logEaselContext, logEaselDrawing } from './logDrawing';
@@ -60,7 +61,7 @@ function backendModelLabel(backendModel: string): string {
 }
 
 type GridAttemptResult =
-  | { ok: true; program: GeneratedDrawing['program']; pixels: number }
+  | { ok: true; program: DrawingProgram; pixels: number }
   | { ok: false; critique: string; raw: string | null };
 
 async function attemptGridDrawing(
@@ -165,7 +166,7 @@ async function runGridGeneration(opts: {
   return null;
 }
 
-function fallbackProgram(npcId: string, userPrompt: string, backendModel: string): GeneratedDrawing['program'] {
+function fallbackProgram(npcId: string, userPrompt: string, backendModel: string): DrawingProgram {
   const npcKey = npcPoolKey(npcId);
   const ch = getChatterCharacter(npcId);
   const base = buildRichFallbackProgram({

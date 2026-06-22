@@ -19,6 +19,7 @@ import { isPaintingBrushLoadout } from '@/lib/easel/brushLoadout';
 import { easelNpcStandWorldX, easelNpcStandWorldXForCanvas } from '@/lib/easel/layout';
 import { setEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import { easelPaintingChatter, PAINTING_CHATTER_VISIBLE_MS } from '@/lib/easel/paintingLabel';
+import { subscribeEaselMilestones } from '@/lib/easel/milestoneBus';
 import {
   pickWorldXOutsideEaselBlock,
   shouldNpcAvoidEaselCanvas,
@@ -767,6 +768,19 @@ function NPC({
       if (paintingHideRef.current) clearTimeout(paintingHideRef.current);
     };
   }, [paintingLabel]);
+
+  useEffect(() => {
+    if (easelPaintingSlot == null) return;
+    return subscribeEaselMilestones(event => {
+      if (event.npcId !== characterId) return;
+      if (paintingHideRef.current) clearTimeout(paintingHideRef.current);
+      setPaintingMessages([createChatLine(event.line)]);
+      paintingHideRef.current = setTimeout(() => {
+        setPaintingMessages([]);
+        paintingHideRef.current = null;
+      }, PAINTING_CHATTER_VISIBLE_MS);
+    });
+  }, [easelPaintingSlot, characterId]);
 
   const showPaintingBubble = paintingMessages.length > 0;
   const showPublicBubble = Boolean(

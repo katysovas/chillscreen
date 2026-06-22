@@ -1,4 +1,5 @@
 import type { EaselSlotSync } from './types';
+import { freshEaselFromUrl } from './freshEasel';
 
 export type EaselCheckpointResult = {
   segments_done: number;
@@ -84,10 +85,11 @@ export async function advanceEaselIfReady(
 
 export async function ensureEaselSession(stage: string): Promise<EaselSlotSync[]> {
   try {
+    const freshEasel = freshEaselFromUrl();
     const res = await fetch('/api/easel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'ensureSession', stage }),
+      body: JSON.stringify({ action: 'ensureSession', stage, freshEasel }),
     });
     if (!res.ok) return [];
     const data = await res.json() as { slots?: EaselSlotSync[] };

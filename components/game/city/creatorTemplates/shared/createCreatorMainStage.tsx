@@ -18,7 +18,7 @@ import { CreatorSpeakerTower } from './CreatorSpeakerTower';
 type StageShellProps = {
   idleScreen?: boolean;
   artistMarquee?: string | null;
-  /** Tighten landing-hero rig: lights down, screen/speakers up. */
+  /** Landing hero — no truss/lights; speakers and screen start at truss Y. */
   heroLayout?: boolean;
 };
 
@@ -56,8 +56,6 @@ export function createCreatorMainStage(C: CreatorStageConstants) {
   const trussY = C.WHICH_STAGE_TRUSS_Y ?? 368;
   const streamLabelY = C.WHICH_STAGE_STREAM_LABEL_Y ?? trussY + 38;
   const speakerY = C.WHICH_STAGE_SPEAKER_Y ?? trussY + 28;
-  const heroRowGap = C.WHICH_STAGE_HERO_ROW_GAP ?? 10;
-  const trussH = 22;
   const rigW = 480;
   const isChill = C.idPrefix === 'chill';
   const isCinema = C.idPrefix === 'cinema';
@@ -129,7 +127,8 @@ ${beamKeyframes}
     const creator = useOptionalCreatorStage();
     const artistMarquee = artistMarqueeProp ?? artistMarqueeForPlayback(creator, undefined, isCinema);
     const rigTrussY = trussY;
-    const rigSpeakerY = heroLayout ? trussY + trussH + heroRowGap : speakerY;
+    const heroNavGap = C.WHICH_STAGE_HERO_NAV_GAP ?? 0;
+    const rigSpeakerY = heroLayout ? trussY + heroNavGap : speakerY;
     const rigScrY = heroLayout ? rigSpeakerY + 10 : scrY;
     const rigStreamLabelY = heroLayout ? rigSpeakerY - 4 : streamLabelY;
 
@@ -203,27 +202,28 @@ ${beamKeyframes}
             {/* Light beams: no mixBlendMode (was recompositing the whole backdrop
                 every frame). Rotation + fade are CSS transform/opacity now, and
                 each beam is promoted to its own layer via the `${P}-spin` class. */}
-            {BEAMS.map((b, i) => (
-              <g key={i} transform={`translate(${b.x},${rigTrussY + 14})`}>
-                <polygon
-                  className={`${P}-spin`}
-                  points="-28,200 0,0 28,200"
-                  fill={`url(#${beamId})`}
-                  style={{
-                    animation: `${P}-beam${i} ${b.dur}s ease-in-out infinite, ${P}-beamFade ${(b.dur * 0.65).toFixed(2)}s ease-in-out infinite`,
-                  }}
-                />
-                <polygon
-                  className={`${P}-spin`}
-                  points="-14,200 0,0 14,200"
-                  fill={b.c}
-                  opacity={0.32}
-                  style={{ animation: `${P}-beam${i} ${b.dur}s ease-in-out infinite` }}
-                />
-              </g>
-            ))}
+            {!heroLayout &&
+              BEAMS.map((b, i) => (
+                <g key={i} transform={`translate(${b.x},${rigTrussY + 14})`}>
+                  <polygon
+                    className={`${P}-spin`}
+                    points="-28,200 0,0 28,200"
+                    fill={`url(#${beamId})`}
+                    style={{
+                      animation: `${P}-beam${i} ${b.dur}s ease-in-out infinite, ${P}-beamFade ${(b.dur * 0.65).toFixed(2)}s ease-in-out infinite`,
+                    }}
+                  />
+                  <polygon
+                    className={`${P}-spin`}
+                    points="-14,200 0,0 14,200"
+                    fill={b.c}
+                    opacity={0.32}
+                    style={{ animation: `${P}-beam${i} ${b.dur}s ease-in-out infinite` }}
+                  />
+                </g>
+              ))}
 
-            {isChill && (
+            {isChill && !heroLayout && (
               <rect
                 x={cx - rigW / 2 - 4}
                 y={rigTrussY + 24}
@@ -235,49 +235,54 @@ ${beamKeyframes}
               />
             )}
 
-            <rect
-              x={cx - rigW / 2}
-              y={rigTrussY}
-              width={rigW}
-              height={22}
-              rx={4}
-              fill={`url(#${trussGradId})`}
-              stroke={isChill ? 'rgba(46,61,69,0.45)' : 'rgba(56,245,176,.18)'}
-              strokeWidth={1}
-            />
-            {isChill && (
-              <rect
-                x={cx - rigW / 2 + 2}
-                y={rigTrussY + 1}
-                width={rigW - 4}
-                height={5}
-                rx={2}
-                fill="rgba(255,255,255,0.07)"
-              />
-            )}
-            {LENS_COLORS.map((col, i) => {
-              const lx = cx - rigW / 2 + 36 + i * ((rigW - 72) / (LENS_COLORS.length - 1));
-              const lensDur = (2 + i * 0.35).toFixed(2);
-              return (
-                <g key={i}>
-                  {isChill && (
-                    <circle cx={lx} cy={rigTrussY + 11} r={9} fill="none" stroke="rgba(46,61,69,0.5)" strokeWidth={1} />
-                  )}
-                  {/* Static pre-blurred halo: filter runs ONCE, never re-runs while
-                      animating (was the per-frame paint cost on the old lenses). */}
-                  <circle cx={lx} cy={rigTrussY + 11} r={7} fill={col} filter={`url(#${glowId})`} opacity={0.5} />
-                  {/* Sharp core carries the flicker via opacity only — no filter. */}
-                  <circle
-                    cx={lx}
-                    cy={rigTrussY + 11}
-                    r={7}
-                    fill={col}
-                    style={{ animation: `${P}-lens ${lensDur}s ease-in-out infinite` }}
+            {!heroLayout && (
+              <>
+                <rect
+                  x={cx - rigW / 2}
+                  y={rigTrussY}
+                  width={rigW}
+                  height={22}
+                  rx={4}
+                  fill={`url(#${trussGradId})`}
+                  stroke={isChill ? 'rgba(46,61,69,0.45)' : 'rgba(56,245,176,.18)'}
+                  strokeWidth={1}
+                />
+                {isChill && (
+                  <rect
+                    x={cx - rigW / 2 + 2}
+                    y={rigTrussY + 1}
+                    width={rigW - 4}
+                    height={5}
+                    rx={2}
+                    fill="rgba(255,255,255,0.07)"
                   />
-                  <circle cx={lx} cy={rigTrussY + 11} r={3.5} fill="#fff" opacity={0.85} />
-                </g>
-              );
-            })}
+                )}
+              </>
+            )}
+            {!heroLayout &&
+              LENS_COLORS.map((col, i) => {
+                const lx = cx - rigW / 2 + 36 + i * ((rigW - 72) / (LENS_COLORS.length - 1));
+                const lensDur = (2 + i * 0.35).toFixed(2);
+                return (
+                  <g key={i}>
+                    {isChill && (
+                      <circle cx={lx} cy={rigTrussY + 11} r={9} fill="none" stroke="rgba(46,61,69,0.5)" strokeWidth={1} />
+                    )}
+                    {/* Static pre-blurred halo: filter runs ONCE, never re-runs while
+                        animating (was the per-frame paint cost on the old lenses). */}
+                    <circle cx={lx} cy={rigTrussY + 11} r={7} fill={col} filter={`url(#${glowId})`} opacity={0.5} />
+                    {/* Sharp core carries the flicker via opacity only — no filter. */}
+                    <circle
+                      cx={lx}
+                      cy={rigTrussY + 11}
+                      r={7}
+                      fill={col}
+                      style={{ animation: `${P}-lens ${lensDur}s ease-in-out infinite` }}
+                    />
+                    <circle cx={lx} cy={rigTrussY + 11} r={3.5} fill="#fff" opacity={0.85} />
+                  </g>
+                );
+              })}
 
             {artistMarquee && (
               <g data-stage-artist-marquee>

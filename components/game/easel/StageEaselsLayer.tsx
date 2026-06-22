@@ -1,8 +1,11 @@
 'use client';
 
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { CHAR_BOTTOM } from '@/components/game/groundLayout';
 import { worldXToScreenPct } from '@/components/game/NPC';
+import { preloadDoodleSprite } from '@/lib/easel/doodle/preloadSprite';
+import { isDoodleSpriteProgram } from '@/lib/easel/doodle/program';
+import { resolveSlotArt } from '@/lib/easel/doodle/resolveSlotArt';
 import { easelSlotWorldX } from '@/lib/easel/layout';
 import { useEaselPainterReady } from '@/lib/easel/painterReadyRegistry';
 import type { EaselSessionSync, EaselSlotSync } from '@/lib/easel/types';
@@ -78,6 +81,7 @@ function EaselSlotLayer({
     >
       <EaselSlotView
         stageSlug={stageSlug}
+        layoutRoute={layoutRoute}
         slot={slot}
         sessionStart={sessionStart}
         paused={onScreenPaused}
@@ -94,8 +98,22 @@ export const StageEaselsLayer = memo(function StageEaselsLayer({
   layoutRoute,
   session,
 }: Props) {
-  const visibleSlots = session ? pickVisibleEaselSlots(session.slots) : [];
+  const visibleSlots = useMemo(
+    () => (session ? pickVisibleEaselSlots(session.slots) : []),
+    [session],
+  );
   const sessionStart = session?.sessionStart ?? 0;
+
+  useEffect(() => {
+    if (!active || visibleSlots.length === 0) return;
+    for (const slot of visibleSlots) {
+      const resolved = resolveSlotArt(stageSlug, slot, layoutRoute);
+      if (resolved && isDoodleSpriteProgram(resolved.art)) {
+        void preloadDoodleSprite(resolved.art.spritePath);
+      }
+    }
+  }, [active, visibleSlots, stageSlug, layoutRoute]);
+
   if (!active || visibleSlots.length === 0) return null;
 
   return (

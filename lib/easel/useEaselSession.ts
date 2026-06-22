@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { EaselSessionSync, EaselSlotSync } from './types';
 import { easelClockStart } from './sessionClock';
+import { isDoodleSpriteProgram } from './doodle/program';
+import { freshEaselFromUrl } from './freshEasel';
 import { narrowEaselSession, pickVisibleEaselSlots } from './visibleSlots';
 
 function hasEaselSlots(session: EaselSessionSync | null | undefined): session is EaselSessionSync {
@@ -28,10 +30,13 @@ function mapSlotFromApi(s: Record<string, unknown>): EaselSlotSync {
 /** Local watched-clock session when PartyKit is offline or not yet running easels. */
 export function fetchLocalEaselSession(
   stageSlug: string,
-  opts?: { ensure?: boolean },
+  opts?: { ensure?: boolean; freshEasel?: boolean },
 ): Promise<EaselSessionSync | null> {
-  const ensureQs = opts?.ensure ? '&ensure=1' : '';
-  return fetch(`/api/easel?stage=${encodeURIComponent(stageSlug)}${ensureQs}`)
+  const qs = new URLSearchParams();
+  if (opts?.ensure) qs.set('ensure', '1');
+  if (opts?.freshEasel) qs.set('freshEasel', '1');
+  const query = qs.toString();
+  return fetch(`/api/easel?stage=${encodeURIComponent(stageSlug)}${query ? `&${query}` : ''}`)
     .then(r => (r.ok ? r.json() : null))
     .then((data: { slots?: Record<string, unknown>[] } | null) => {
       if (!data?.slots?.length) return null;
@@ -51,10 +56,17 @@ function mergeProgramData(party: EaselSessionSync, local: EaselSessionSync | nul
   const slots = party.slots.map(slot => {
     const hit = local.slots.find(s => s.slot === slot.slot);
     if (!hit) return slot;
+    const partyDoodle = isDoodleSpriteProgram(slot.program);
+    const localDoodle = isDoodleSpriteProgram(hit.program);
+    const program = partyDoodle
+      ? slot.program
+      : localDoodle
+        ? hit.program
+        : slot.program ?? hit.program;
     return {
       ...slot,
       topic: slot.topic ?? hit.topic,
-      program: slot.program ?? hit.program,
+      program,
     };
   });
   return { sessionStart: party.sessionStart, slots };
@@ -79,7 +91,8 @@ export function useEaselSession(
       return;
     }
     let cancelled = false;
-    void fetchLocalEaselSession(stageSlug, { ensure: true }).then(session => {
+    const freshEasel = freshEaselFromUrl();
+    void fetchLocalEaselSession(stageSlug, { ensure: true, freshEasel }).then(session => {
       if (!cancelled && session) setLocalSession(session);
     });
     return () => { cancelled = true; };
@@ -97,6 +110,9 @@ export function useEaselSession(
   }, [enabled, stageSlug]);
 
   return useMemo(() => {
+    if (freshEaselFromUrl() && hasEaselSlots(localSession)) {
+      return narrowEaselSession(localSession);
+    }
     if (hasEaselSlots(partySession)) {
       return narrowEaselSession(mergeProgramData(partySession, localSession));
     }

@@ -5,10 +5,12 @@ import { easelHoldExpired, easelMaxVisibleExpired } from './lifecycle';
 import { logEaselDrawing } from './logDrawing';
 import { pickNextEaselNpc } from './npcRotation';
 import { nextEaselSlot } from './stageAnchor';
+import { isDoodleSpriteProgram } from './doodle/program';
+import { manifestEntryForNpc } from './doodle/manifest';
 import { programFromRow, rowNeedsAiUpgrade, rowToSlotSync } from './resolveProgram';
 import { easelStageLookupSlugs, normalizeEaselStage } from './stageKey';
 import { pickVisibleEaselSlot, pickVisibleEaselSlots } from './visibleSlots';
-import type { DrawingProgram, EaselRow, EaselStatus } from './types';
+import type { DrawingProgram, EaselArtProgram, EaselRow, EaselStatus } from './types';
 import { EASEL_DEFAULT_RATE, EASEL_SLOTS_PER_STAGE } from './types';
 
 async function migrateLegacyStageRows(rows: EaselRow[]): Promise<void> {
@@ -25,13 +27,13 @@ async function migrateLegacyStageRows(rows: EaselRow[]): Promise<void> {
 }
 
 function rowFromDb(r: Record<string, unknown>): EaselRow {
-  let programJson: DrawingProgram | null = null;
+  let programJson: EaselArtProgram | null = null;
   const raw = r.program_json;
   if (raw && typeof raw === 'object') {
-    programJson = raw as DrawingProgram;
+    programJson = raw as EaselArtProgram;
   } else if (typeof raw === 'string') {
     try {
-      programJson = JSON.parse(raw) as DrawingProgram;
+      programJson = JSON.parse(raw) as EaselArtProgram;
     } catch {
       programJson = null;
     }
@@ -99,13 +101,31 @@ function logExistingEaselRow(row: EaselRow, stage: string): void {
   });
 }
 
+function shouldUpgradeStrokeToDoodle(row: EaselRow, stageKey: string): boolean {
+  if (isDoodleSpriteProgram(row.program_json)) return false;
+  if (!row.program_json) return false;
+  return manifestEntryForNpc(stageKey, row.npc, []) != null;
+}
+
+/** Hide visible easels and start a fresh drawing — dev/testing (`?freshEasel=1`). */
+export async function forceRefreshEaselSession(stage: string): Promise<EaselRow[]> {
+  const stageKey = normalizeEaselStage(stage);
+  const rows = await fetchVisibleEaselRows(stageKey);
+  for (const row of rows) {
+    await hideEasel(stageKey, row.slot);
+  }
+  const npc = await pickNextEaselNpc(stageKey);
+  await startNewEaselDrawing(stageKey, 0, npc);
+  return getEaselsForStage(stageKey);
+}
+
 async function upgradeEaselRowToAi(stage: string, row: EaselRow): Promise<EaselRow> {
   const stageKey = normalizeEaselStage(stage);
   console.log(
-    `[easel:server] replacing legacy drawing "${row.drawing_id}" with AI program for ${row.npc}`,
+    `[easel:server] replacing drawing "${row.drawing_id}" with manifest/AI program for ${row.npc}`,
   );
   const ctx = await buildEaselDrawingContext(row.npc, stageKey);
-  const { program, totalSegments: total } = await generateDrawingProgram(ctx);
+  const { program, totalSegments: total } = await generateDrawingProgram(ctx, stageKey);
   const wasDone = row.status === 'done';
   const sql = requireDb();
   const slugs = easelStageLookupSlugs(stageKey);
@@ -147,7 +167,7 @@ async function upgradeEaselRowToAi(stage: string, row: EaselRow): Promise<EaselR
 export async function getVisibleEasels(stage: string): Promise<EaselRow[]> {
   let rows = await fetchVisibleEaselRows(stage);
   for (const row of rows) {
-    if (rowNeedsAiUpgrade(row)) {
+    if (rowNeedsAiUpgrade(row) || shouldUpgradeStrokeToDoodle(row, normalizeEaselStage(stage))) {
       await upgradeEaselRowToAi(stage, row);
     }
   }
@@ -179,8 +199,14 @@ export async function syncEaselSessionForPlayers(stage: string): Promise<EaselRo
  * Start the easel when a real user is present and no visible canvas exists.
  * Also advances any easels past the post-completion hold.
  */
-export async function ensureEaselSessionStarted(stage: string): Promise<EaselRow[]> {
+export async function ensureEaselSessionStarted(
+  stage: string,
+  opts?: { fresh?: boolean },
+): Promise<EaselRow[]> {
   const stageKey = normalizeEaselStage(stage);
+  if (opts?.fresh) {
+    return forceRefreshEaselSession(stageKey);
+  }
   await syncEaselSessionForPlayers(stageKey);
   let rows = await getEaselsForStage(stageKey);
   if (rows.length === 0) {
@@ -293,12 +319,57 @@ export async function getEaselRow(stage: string, slot: number): Promise<EaselRow
   return row;
 }
 
+export type EaselGalleryItem = {
+  npc: string;
+  topic: string;
+  drawing_id: string;
+  spritePath: string | null;
+  completed_at: string | null;
+  status: EaselStatus;
+};
+
+/** Recent finished (and in-progress) easel drawings for the stage gallery. */
+export async function getEaselGalleryForStage(
+  stage: string,
+  limit = 24,
+): Promise<EaselGalleryItem[]> {
+  const stageKey = normalizeEaselStage(stage);
+  const slugs = easelStageLookupSlugs(stageKey);
+  try {
+    const sql = requireDb();
+    const rows = await sql`
+      SELECT npc, topic, drawing_id, program_json, status, completed_at
+      FROM easel
+      WHERE stage = ANY(${slugs})
+        AND hidden_at IS NULL
+        AND status IN ('done', 'painting')
+      ORDER BY COALESCE(completed_at, started_at) DESC
+      LIMIT ${limit}
+    ` as Record<string, unknown>[];
+
+    return rows.map(r => {
+      const program = r.program_json as EaselArtProgram | null;
+      const spritePath = isDoodleSpriteProgram(program) ? program.spritePath : null;
+      return {
+        npc: String(r.npc),
+        topic: String(r.topic ?? program?.topic ?? r.drawing_id),
+        drawing_id: String(r.drawing_id),
+        spritePath,
+        completed_at: r.completed_at != null ? String(r.completed_at) : null,
+        status: r.status as EaselStatus,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 /** Start a fresh AI drawing on a slot (after hide or admin reset). */
 export async function startNewEaselDrawing(stage: string, slot: number, npc: string): Promise<EaselRow | null> {
   const stageKey = normalizeEaselStage(stage);
   console.log(`[easel:server] starting fresh drawing for ${npc} @ ${stageKey} slot ${slot}`);
   const ctx = await buildEaselDrawingContext(npc, stageKey);
-  const { program, totalSegments: total } = await generateDrawingProgram(ctx);
+  const { program, totalSegments: total } = await generateDrawingProgram(ctx, stageKey);
   const sql = requireDb();
   await sql`
     INSERT INTO easel (stage, slot, npc, drawing_id, topic, program_json, total_segments, segments_done, rate, status)
