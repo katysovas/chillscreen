@@ -155,13 +155,16 @@ function SFCityCrowdLayer({
             } : undefined}
             publicMessages={npcPublicMessages.get(cfg.id)}
             spaceFloat={spaceFloat}
+            crowdSize={cast.length}
           />
         );
       })}
-      {remoteIds.map(pid => (
+      {remoteIds.map((pid, remoteIndex) => (
         <RemotePlayer
           key={pid}
           id={pid}
+          crowdIndex={cast.length + remoteIndex}
+          crowdTotal={cast.length + remoteIds.length}
           stateRef={remoteStateRef}
           ambientRef={ambientRef}
           greeting={peerChatId === pid}

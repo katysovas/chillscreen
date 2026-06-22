@@ -18,6 +18,11 @@ type ParallaxSvgLayerProps = {
    * background layers (sky, clouds, terrain) where aliasing is imperceptible.
    */
   shapeRendering?: SVGProps<SVGSVGElement>['shapeRendering'];
+  /** Mobile venue split — stage strip vs ground strip. */
+  parallaxLayer?: 'stage' | 'ground';
+  /** Override default viewBox (`${viewBoxX} 0 1400 900`). */
+  viewBox?: string;
+  preserveAspectRatio?: SVGProps<SVGSVGElement>['preserveAspectRatio'];
 };
 
 // ─── Memoized tile slot ────────────────────────────────────────────────────────
@@ -43,7 +48,7 @@ const TileSlot = memo(function TileSlot({
 /** Full-screen SVG layer with repeating world tiles. Exactly 3 tiles are drawn. */
 export const ParallaxSvgLayer = forwardRef<SVGSVGElement, ParallaxSvgLayerProps>(
   function ParallaxSvgLayer(
-    { viewBoxX, tileWidth, children, style, className, defs, tileOrigin, nearTileIndices, shapeRendering },
+    { viewBoxX, tileWidth, children, style, className, defs, tileOrigin, nearTileIndices, shapeRendering, parallaxLayer, viewBox: viewBoxOverride, preserveAspectRatio = 'xMidYMid slice' },
     ref,
   ) {
     // nearTiles / nearMidTiles / nearGndTiles all return exactly [t-1, t, t+1] — 3 tiles.
@@ -54,11 +59,12 @@ export const ParallaxSvgLayer = forwardRef<SVGSVGElement, ParallaxSvgLayerProps>
       <svg
         ref={ref}
         data-paraloid-svg
+        data-paraloid-layer={parallaxLayer}
         className={className}
-        viewBox={`${viewBoxX} 0 1400 900`}
+        viewBox={viewBoxOverride ?? `${viewBoxX} 0 1400 900`}
         width="100%"
         height="100%"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio={preserveAspectRatio}
         shapeRendering={shapeRendering}
         style={{
           ...PARALLAX_LAYER_BASE,

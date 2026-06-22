@@ -5,6 +5,14 @@ import {
   WHICH_STAGE_SCALE,
   WHICH_STAGE_TRUSS_Y,
 } from '@/components/game/city/chill/constants';
+import { CITY_GRASS_DROP_Y } from '@/components/game/city/cinema/constants';
+import { FOREST_GRASS_DROP_Y } from '@/components/game/city/forest/constants';
+import { SEATTLE_GRASS_DROP_Y } from '@/components/game/city/seattle/constants';
+import { SF_GRASS_DROP_Y } from '@/components/game/city/sf/constants';
+import { VEGAS_GRASS_DROP_Y } from '@/components/game/city/lasvegas/constants';
+import { TENTAROO_GRASS_DROP_Y } from '@/components/game/city/tentaroo/constants';
+import { SILENT_DISCO_GRASS_DROP_Y } from '@/components/game/city/silent-disco/constants';
+import type { VenueRoute } from '@/lib/venueRoutes';
 import { VIEW_WIDTH } from '@/lib/venues';
 
 const LANDING_HERO_SCR_H = 192;
@@ -69,3 +77,56 @@ export const LANDING_HERO_MOBILE_PAR = 'xMidYMin meet' as const;
 /** Landing hero desktop — pin truss/lights just under nav header. */
 export const LANDING_HERO_DESKTOP_PAR = 'xMidYMin slice' as const;
 export const DESKTOP_STATIC_PAR = 'xMidYMid slice' as const;
+/** In-game mobile — show full stage width, pin rig below top controls. */
+export const MOBILE_VENUE_PAR = 'xMidYMin meet' as const;
+/** Mobile ground — stretch lawn to fill the area below the stage. */
+export const MOBILE_VENUE_GROUND_PAR = 'xMidYMin slice' as const;
+/** Ground-line y in the 900-tall city viewBox (matches GND_Y in GroundLayer). */
+export const MOBILE_VENUE_GROUND_Y = 685;
+/** Grass plane starts slightly above the sidewalk (GroundLayer GRASS_TOP). */
+export const MOBILE_VENUE_GROUND_VB_Y = MOBILE_VENUE_GROUND_Y - 8;
+/** Screen gap between stage strip and grass strip on mobile. */
+export const MOBILE_VENUE_GROUND_GAP_PX = 100;
+/** Stage-only viewBox height — crops grass out of sky/mid layers. */
+export const MOBILE_VENUE_STAGE_VB_H = MOBILE_VENUE_GROUND_Y;
+export const MOBILE_VENUE_GROUND_VB_H = MOBILE_STATIC_VB_HEIGHT - MOBILE_VENUE_GROUND_VB_Y;
+
+/** Grass plane top in the 900-tall viewBox (GroundLayer GRASS_TOP). */
+export const MOBILE_GRASS_PLANE_TOP = MOBILE_VENUE_GROUND_Y - 8;
+
+function mobileGrassDropYForRoute(route: VenueRoute): number {
+  switch (route) {
+    case 'silent-disco':
+      return SILENT_DISCO_GRASS_DROP_Y;
+    case 'forest':
+      return FOREST_GRASS_DROP_Y;
+    case 'tentaroo':
+    case 'creator-chill':
+    case 'hula':
+      return TENTAROO_GRASS_DROP_Y;
+    case 'seattle-concerts':
+      return SEATTLE_GRASS_DROP_Y;
+    case 'outside-hands':
+    case 'cinema':
+      return SF_GRASS_DROP_Y;
+    case 'edc':
+      return VEGAS_GRASS_DROP_Y;
+    default:
+      return CITY_GRASS_DROP_Y;
+  }
+}
+
+/** Mobile ground crop — starts exactly at the painted grass plane (no transparent band). */
+export function mobileGrassPlaneYForRoute(route: VenueRoute): number {
+  return MOBILE_GRASS_PLANE_TOP + mobileGrassDropYForRoute(route);
+}
+
+export function staticMobileStageViewBox(layerVx: number): string {
+  return `${staticMobileViewBoxX(layerVx)} 0 ${MOBILE_STATIC_VB_WIDTH} ${MOBILE_VENUE_STAGE_VB_H}`;
+}
+
+export function staticMobileGroundViewBox(layerVx: number, route: VenueRoute): string {
+  const vbY = mobileGrassPlaneYForRoute(route);
+  const vbH = MOBILE_STATIC_VB_HEIGHT - vbY;
+  return `${staticMobileViewBoxX(layerVx)} ${vbY} ${MOBILE_STATIC_VB_WIDTH} ${vbH}`;
+}

@@ -39,6 +39,7 @@ export const SkyCloudsLayer = memo(forwardRef<SVGSVGElement, SkyCloudsLayerProps
         viewBoxX={initialViewBoxX}
         tileWidth={SKY_TILE}
         shapeRendering="optimizeSpeed"
+        parallaxLayer="stage"
         style={{ pointerEvents: 'none' }}
       >
         {renderTile}

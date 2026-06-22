@@ -6,6 +6,7 @@ export type StageSocialLinkKind =
   | 'instagram'
   | 'soundcloud'
   | 'tiktok'
+  | 'patreon'
   | 'website';
 
 export type StageSocialLinks = Partial<Record<StageSocialLinkKind, string>>;
@@ -16,6 +17,7 @@ export const STAGE_SOCIAL_LINK_KINDS: StageSocialLinkKind[] = [
   'instagram',
   'soundcloud',
   'tiktok',
+  'patreon',
   'website',
 ];
 
@@ -29,6 +31,7 @@ export const STAGE_SOCIAL_LINK_FIELDS: ReadonlyArray<{
   { kind: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/handle' },
   { kind: 'soundcloud', label: 'SoundCloud', placeholder: 'https://soundcloud.com/artist' },
   { kind: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@handle' },
+  { kind: 'patreon', label: 'Patreon', placeholder: 'https://patreon.com/creator' },
   { kind: 'website', label: 'Website', placeholder: 'https://yoursite.com' },
 ];
 
@@ -40,6 +43,7 @@ const HOST_CHECKS: Record<Exclude<StageSocialLinkKind, 'website'>, RegExp> = {
   instagram: /^(www\.)?instagram\.com$/i,
   soundcloud: /^(www\.)?soundcloud\.com$/i,
   tiktok: /^(www\.)?(tiktok\.com|vm\.tiktok\.com)$/i,
+  patreon: /^(www\.)?patreon\.com$/i,
 };
 
 export const STAGE_SOCIAL_LINKS_HINT =

@@ -73,6 +73,10 @@ type Props = {
     | 'sendLineupSuggest'
     | 'registerLineupStateHandler'
   > | null;
+  /** Mobile — panel hidden until chat control opens it. */
+  isMobile?: boolean;
+  mobileOpen?: boolean;
+  onMobileOpenChange?: (open: boolean) => void;
 };
 
 function formatTime(ts: number): string {
@@ -254,6 +258,9 @@ export function StageChatterPanel({
   stageChannel = null,
   playbackChannel = null,
   lineupMultiplayer = null,
+  isMobile = false,
+  mobileOpen = false,
+  onMobileOpenChange,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
@@ -381,7 +388,25 @@ export function StageChatterPanel({
   const selectTab = useCallback((tab: StageSidePanelTab) => {
     setExpanded(true);
     onTabChange(tab);
-  }, [onTabChange]);
+    if (isMobile) onMobileOpenChange?.(true);
+  }, [isMobile, onMobileOpenChange, onTabChange]);
+
+  const toggleExpanded = useCallback(() => {
+    if (isMobile) {
+      if (expanded) {
+        onMobileOpenChange?.(false);
+        return;
+      }
+      setExpanded(true);
+      onMobileOpenChange?.(true);
+      return;
+    }
+    setExpanded(prev => !prev);
+  }, [expanded, isMobile, onMobileOpenChange]);
+
+  useEffect(() => {
+    if (isMobile && mobileOpen) setExpanded(true);
+  }, [isMobile, mobileOpen]);
 
   useEffect(() => () => {
     if (typingHideTimerRef.current) clearTimeout(typingHideTimerRef.current);
@@ -418,7 +443,7 @@ export function StageChatterPanel({
 
   if (hidden) return null;
 
-  const panelVisibleOnMobile = activeTab === 'shop';
+  const panelVisibleOnMobile = mobileOpen;
 
   return (
     <div
@@ -426,12 +451,15 @@ export function StageChatterPanel({
       className={panelVisibleOnMobile ? 'flex' : 'hidden md:flex'}
       style={{
         position: 'absolute',
-        right: 14,
-        top: 20,
+        right: isMobile ? 'max(14px, env(safe-area-inset-right, 0px))' : 14,
+        left: isMobile ? 'max(14px, env(safe-area-inset-left, 0px))' : undefined,
+        top: isMobile ? 'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)' : 20,
         zIndex: Z_CONTROLS,
-        width: 320,
-        height: expanded ? 800 : 'auto',
-        maxHeight: expanded ? 'calc(100vh - 220px)' : undefined,
+        width: isMobile ? undefined : 320,
+        height: expanded ? (isMobile ? 'min(72vh, 640px)' : 800) : 'auto',
+        maxHeight: expanded
+          ? (isMobile ? 'min(72vh, 640px)' : 'calc(100vh - 220px)')
+          : undefined,
         flexDirection: 'column',
         borderRadius: 16,
         background: 'linear-gradient(165deg, rgba(12, 8, 28, 0.82) 0%, rgba(20, 12, 36, 0.88) 100%)',
@@ -491,9 +519,9 @@ export function StageChatterPanel({
 
         <button
           type="button"
-          onClick={() => setExpanded(prev => !prev)}
+          onClick={toggleExpanded}
           aria-expanded={expanded}
-          aria-label={expanded ? 'Collapse stage panel' : 'Expand stage panel'}
+          aria-label={expanded ? 'Close stage panel' : 'Expand stage panel'}
           style={{
             display: 'flex',
             alignItems: 'center',

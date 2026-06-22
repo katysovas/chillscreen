@@ -10,13 +10,18 @@ import {
   LANDING_HERO_MOBILE_PAR,
   landingHeroDesktopViewBox,
   landingHeroMobileViewBox,
+  MOBILE_VENUE_PAR,
+  MOBILE_VENUE_GROUND_PAR,
+  staticMobileGroundViewBox,
+  staticMobileStageViewBox,
+  staticMobileViewBox,
 } from '@/lib/staticCityViewport';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Character from './Character';
 import { worldXToScreenPct } from './NPC';
 import { AmbientPlayerOverlay, NpcPairChatOverlay, PlayerChatOverlay } from './ConnectChatOverlay';
 import { playerBubbleSide } from './ChatBubble';
-import { CHAR_BOTTOM, crowdDepthOffsetPx } from './groundLayout';
+import { CHAR_BOTTOM, crowdDepthForSeed } from './groundLayout';
 import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/parallax';
 import { scheduleIdleCallback } from '@/lib/scheduleIdleCallback';
 import { setAudioMuted } from '@/lib/audioMute';
@@ -381,16 +386,16 @@ export default function SFCity({
    * - ViewBox width: 900 (fits Concert at 887 SVG units, +7 margin each side)
    * - ViewBox height: 900 (square — forces scale = min(vw/900, vh/900) = vw/900 ≈ 0.433,
    *   which is width-constrained so all 900 units are shown)
-   * - preserveAspectRatio = "xMidYMax meet": the 390×390 rendered scene anchors to the
-   *   screen bottom, which puts SVG y=685 (ground/sidewalk) at CSS y≈751 px — exactly
-   *   matching CHAR_BOTTOM=11% on an 844 px screen. Characters align with stage ground.
+   * - preserveAspectRatio = "xMidYMin meet": scene anchors below the top control bar
+   *   (see `--mobile-scene-top` in globals.css) so the stage rig sits under Settings /
+   *   Autopilot / Chat. Character feet align via `--mobile-char-bottom`.
    * - ViewBox X offset: +250 re-centres the 900-wide window on the same world centre that
    *   the desktop 1400-wide window uses (desktop centre = midVx+700, mobile = midVx+250+450).
    */
   const staticViewBoxKey = (off: number) => {
     if (typeof window === 'undefined') return String(off);
     if (window.innerWidth <= 767) {
-      return `${off}|${window.innerWidth}|${window.innerHeight}`;
+      return `${off}|${window.innerWidth}|${window.innerHeight}|${effectiveVenueRoute}`;
     }
     return String(off);
   };
@@ -405,38 +410,45 @@ export default function SFCity({
     const gndVx = off * GND_F;
     const mobileLanding = landingHero && isMobileStaticViewport();
     const desktopLanding = landingHero && !isMobileStaticViewport();
+    const mobileVenue = isMobileStaticViewport() && !landingHero;
+    const mobileGrassLayout = mobileVenue && effectiveVenueRoute !== 'deep-space';
     const vb = (x: number) => `${x} 0 1400 900`;
-    const midPar = mobileLanding
+    const staticPar = mobileLanding
       ? LANDING_HERO_MOBILE_PAR
-      : desktopLanding
-        ? LANDING_HERO_DESKTOP_PAR
-        : DESKTOP_STATIC_PAR;
-    const midVb = mobileLanding
-      ? landingHeroMobileViewBox(midVx)
-      : desktopLanding
-        ? landingHeroDesktopViewBox(midVx)
-        : vb(midVx);
-    const gndVb = mobileLanding
-      ? landingHeroMobileViewBox(gndVx)
-      : desktopLanding
-        ? landingHeroDesktopViewBox(gndVx)
-        : vb(gndVx);
-    const gndPar = mobileLanding
-      ? LANDING_HERO_MOBILE_PAR
-      : desktopLanding
-        ? LANDING_HERO_DESKTOP_PAR
-        : null;
+      : mobileVenue
+        ? MOBILE_VENUE_PAR
+        : desktopLanding
+          ? LANDING_HERO_DESKTOP_PAR
+          : DESKTOP_STATIC_PAR;
+    const staticVb = (layerVx: number) => mobileLanding
+      ? landingHeroMobileViewBox(layerVx)
+      : mobileVenue
+        ? staticMobileViewBox(layerVx)
+        : desktopLanding
+          ? landingHeroDesktopViewBox(layerVx)
+          : vb(layerVx);
+    const stageVb = (layerVx: number) => mobileVenue
+      ? staticMobileStageViewBox(layerVx)
+      : staticVb(layerVx);
+    const groundVb = (layerVx: number) => mobileGrassLayout
+      ? staticMobileGroundViewBox(layerVx, effectiveVenueRoute)
+      : staticVb(layerVx);
+    const midPar = staticPar;
+    const gndPar = mobileGrassLayout ? MOBILE_VENUE_GROUND_PAR : staticPar;
+    const midVb = stageVb(midVx);
+    const gndVb = groundVb(gndVx);
+    const skyVb = stageVb(skyVx);
 
-    skyRef.current?.setAttribute('viewBox', vb(skyVx));
+    skyRef.current?.setAttribute('viewBox', skyVb);
+    skyRef.current?.setAttribute('preserveAspectRatio', staticPar);
     groundRef.current?.setAttribute('viewBox', gndVb);
-    if (gndPar) {
-      groundRef.current?.setAttribute('preserveAspectRatio', gndPar);
-    } else {
-      groundRef.current?.removeAttribute('preserveAspectRatio');
-    }
-    cabanaRef.current?.setAttribute('viewBox', vb(gndVx));
-    navSignsRef.current?.setAttribute('viewBox', vb(gndVx));
-    cloudsRef.current?.setAttribute('viewBox', vb(skyVx));
+    groundRef.current?.setAttribute('preserveAspectRatio', gndPar);
+    cabanaRef.current?.setAttribute('viewBox', gndVb);
+    cabanaRef.current?.setAttribute('preserveAspectRatio', gndPar);
+    navSignsRef.current?.setAttribute('viewBox', gndVb);
+    navSignsRef.current?.setAttribute('preserveAspectRatio', gndPar);
+    cloudsRef.current?.setAttribute('viewBox', skyVb);
+    cloudsRef.current?.setAttribute('preserveAspectRatio', staticPar);
     midRef.current?.setAttribute('viewBox', midVb);
     midRef.current?.setAttribute('preserveAspectRatio', midPar);
     midForegroundRef.current?.setAttribute('viewBox', midVb);
@@ -522,6 +534,7 @@ export default function SFCity({
   }));
   const [playerCoins, setPlayerCoins] = useState(STARTING_COINS);
   const [stageSidePanelTab, setStageSidePanelTab] = useState<StageSidePanelTab>('lineup');
+  const [mobileStagePanelOpen, setMobileStagePanelOpen] = useState(false);
   const [vendorShopDismissed, setVendorShopDismissed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<FestieSettingsTab>('customize');
@@ -853,6 +866,7 @@ export default function SFCity({
   const easelStageSlug = creatorStage?.slug ?? stageSlugFromVenueRoute(effectiveVenueRoute);
   const easelLayoutRoute = effectiveVenueRoute;
   const easelSessionEnabled = !homePreview;
+  const easelDrawingEnabled = easelSessionEnabled && !mobileDevice;
   const easelUserActive = TEST_EASEL_ON_LOAD || mp.connected || (!showWelcome && !showCityPicker);
   const activeEaselSession = useEaselSession(
     easelStageSlug,
@@ -864,14 +878,21 @@ export default function SFCity({
   useEaselHoldAdvance(
     easelStageSlug,
     activeEaselSession,
-    easelSessionEnabled && easelUserActive && !partyDrivesEasel,
+    easelDrawingEnabled && easelUserActive && !partyDrivesEasel,
   );
   useEaselMaxVisible(
     easelStageSlug,
     activeEaselSession,
-    easelSessionEnabled && easelUserActive && !partyDrivesEasel,
+    easelDrawingEnabled && easelUserActive && !partyDrivesEasel,
   );
   const [easelCastReady, setEaselCastReady] = useState(false);
+
+  useEffect(() => {
+    if (!easelDrawingEnabled) {
+      setChatNpcDrawings([]);
+      setActiveEaselCanvasBlockZones([]);
+    }
+  }, [easelDrawingEnabled]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -912,15 +933,15 @@ export default function SFCity({
   }, [homePreview, crowdVisualsReady]);
 
   useEffect(() => {
-    if (!easelSessionEnabled || partyDrivesEasel || TEST_DRAW_MODEL_COMPARE) return;
+    if (!easelDrawingEnabled || partyDrivesEasel || TEST_DRAW_MODEL_COMPARE) return;
     if (!easelUserActive) return;
     void ensureEaselSession(easelStageSlug).then(slots => {
       if (slots.length > 0) notifyEaselUpdated();
     });
-  }, [easelSessionEnabled, easelStageSlug, easelUserActive, partyDrivesEasel]);
+  }, [easelDrawingEnabled, easelStageSlug, easelUserActive, partyDrivesEasel]);
 
   useEffect(() => {
-    if (!easelSessionEnabled) {
+    if (!easelDrawingEnabled) {
       setEaselCastReady(false);
       return;
     }
@@ -929,15 +950,19 @@ export default function SFCity({
       if (!cancelled) setEaselCastReady(true);
     });
     return () => { cancelled = true; };
-  }, [effectiveVenueRoute, easelChannel, easelSessionEnabled]);
+  }, [effectiveVenueRoute, easelChannel, easelDrawingEnabled]);
 
   const easelsActive =
-    easelSessionEnabled
+    easelDrawingEnabled
     && !TEST_DRAW_MODEL_COMPARE
     && (TEST_EASEL_ON_LOAD || (!showWelcome && !showCityPicker))
     && Boolean(activeEaselSession?.slots.length);
 
   useEffect(() => {
+    if (!easelDrawingEnabled) {
+      setActiveEaselCanvasBlockZones([]);
+      return;
+    }
     const syncBlockZones = () => {
       const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
       const cameraOff = gameWorldOffRef.current;
@@ -963,7 +988,7 @@ export default function SFCity({
     };
     syncBlockZones();
     return subscribeEaselPainterReady(syncBlockZones);
-  }, [activeEaselSession, easelStageSlug, easelLayoutRoute, chatNpcDrawings]);
+  }, [easelDrawingEnabled, activeEaselSession, easelStageSlug, easelLayoutRoute, chatNpcDrawings]);
 
   const controlMode = useSyncExternalStore(
     subscribeFestieControlMode,
@@ -1038,14 +1063,14 @@ export default function SFCity({
       ...npcCast,
       ...festieDefs,
     ];
-    if (!easelSessionEnabled) return base;
+    if (!easelDrawingEnabled) return base;
     if (!easelCastReady && !TEST_EASEL_ON_LOAD) return base;
     return mergeEaselOwnersIntoCast(
       base,
       easelChannel,
       activePainterNpcIds(activeEaselSession),
     );
-  }, [npcCast, syncedStageFesties, effectiveVenueRoute, easelCastReady, activeEaselSession, easelSessionEnabled, easelChannel, autopilotOn, ownerFestieNpcId, ownerFestieSpawnWx, myColor, playerLoadout, mp.connectedUserIds]);
+  }, [npcCast, syncedStageFesties, effectiveVenueRoute, easelCastReady, activeEaselSession, easelDrawingEnabled, easelChannel, autopilotOn, ownerFestieNpcId, ownerFestieSpawnWx, myColor, playerLoadout, mp.connectedUserIds]);
 
   const ownerFestieVendorAttractWx = useMemo(() => {
     if (!autopilotOn) return undefined;
@@ -1542,8 +1567,8 @@ export default function SFCity({
 
   useEffect(() => {
     installGameInputAnalytics();
-    setPlayerDepthY(crowdDepthOffsetPx(getOrCreatePlayerId()));
-  }, []);
+    setPlayerDepthY(crowdDepthForSeed(getOrCreatePlayerId(), { orbitFloat: isDeepSpace }).depthY);
+  }, [isDeepSpace]);
 
   useEffect(() => {
     setVenueDressCode(effectiveVenueRoute);
@@ -1801,7 +1826,7 @@ export default function SFCity({
       return;
     }
 
-    const drawSubject = greetingNpc !== null ? parseDrawPrompt(safe) : null;
+    const drawSubject = greetingNpc !== null && easelDrawingEnabled ? parseDrawPrompt(safe) : null;
     if (drawSubject && greetingNpc !== null) {
       const idx = greetingNpc;
       const npc = effectiveNpcCastRef.current[idx];
@@ -2563,7 +2588,19 @@ export default function SFCity({
       }
       return tab;
     });
-  }, [warmVendorShop]);
+    if (mobileDevice) setMobileStagePanelOpen(true);
+  }, [mobileDevice, warmVendorShop]);
+
+  const handleToggleMobileStagePanel = useCallback(() => {
+    setMobileStagePanelOpen(open => {
+      const next = !open;
+      if (next) {
+        setStageSidePanelTab('chat');
+        mpRef.current?.requestConnect();
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (!showVendorShop) setVendorShopDismissed(false);
@@ -2579,8 +2616,9 @@ export default function SFCity({
     if (showVendorShop && !vendorShopDismissed) {
       setStageSidePanelTab('shop');
       warmVendorShop();
+      if (mobileDevice) setMobileStagePanelOpen(true);
     }
-  }, [showVendorShop, vendorShopDismissed, warmVendorShop]);
+  }, [showVendorShop, vendorShopDismissed, warmVendorShop, mobileDevice]);
 
   useEffect(() => {
     if (nearNpc === null) return;
@@ -2608,6 +2646,8 @@ export default function SFCity({
   return (
     <div
       className="game-surface"
+      data-mobile-venue={mobileDevice && !landingHero && !homePreview ? '' : undefined}
+      data-deep-space={mobileDevice && !landingHero && !homePreview && isDeepSpace ? '' : undefined}
       style={{
         width: landingHero ? '100%' : '100vw',
         height: landingHero ? '100%' : '100vh',
@@ -2617,6 +2657,20 @@ export default function SFCity({
         touchAction: 'none',
         WebkitUserSelect: 'none',
         userSelect: 'none',
+        ...(mobileDevice && !landingHero && !homePreview
+          ? {
+              ['--mobile-scene-top' as string]:
+                'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)',
+              ['--mobile-ground-gap' as string]: '100px',
+              ['--mobile-stage-strip-height' as string]: 'calc((685 / 900) * 100vw)',
+              ['--mobile-lawn-fill-top' as string]:
+                'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height))',
+              ['--mobile-grass-top' as string]:
+                'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height) + var(--mobile-ground-gap))',
+              ['--mobile-char-bottom' as string]:
+                'calc(100dvh - var(--mobile-grass-top) - (8 / 900) * 100vw)',
+            }
+          : {}),
       }}
     >
       <div>
@@ -2731,6 +2785,10 @@ export default function SFCity({
           isolatedTileIndex={isolatedTile}
           creatorBackdropUrl={staticStageBackdropUrl ?? stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null}
         />
+        {mobileDevice && !landingHero && !homePreview && !isDeepSpace && (
+          <div aria-hidden className="mobile-venue-grass-fill" />
+        )}
+        {!(mobileDevice && isDeepSpace) && (
         <GroundLayer
           ref={groundRef}
           worldOff={gndScrollWorldOff}
@@ -2740,7 +2798,9 @@ export default function SFCity({
           isolatedTileIndex={isolatedTile}
           deepLinkRoute={effectiveVenueRoute}
           landingHero={landingHero}
+          mobileLawn={mobileDevice && !landingHero && !homePreview && !isDeepSpace}
         />
+        )}
         {!isDeepSpace && effectiveVenueRoute !== 'tentaroo' && (
           <CabanaForegroundLayer
             ref={cabanaRef}
@@ -2756,7 +2816,7 @@ export default function SFCity({
           />
         )}
 
-        {!homePreview && (
+        {!homePreview && !mobileDevice && (
           <CityNavSigns
             ref={navSignsRef}
             route={effectiveVenueRoute}
@@ -2765,7 +2825,7 @@ export default function SFCity({
           />
         )}
 
-        {!homePreview && (
+        {!homePreview && easelDrawingEnabled && (
           <StageEaselsLayer
             active={easelsActive && crowdVisualsReady}
             stageSlug={easelStageSlug}
@@ -2774,7 +2834,7 @@ export default function SFCity({
           />
         )}
 
-        {!homePreview && (
+        {!homePreview && easelDrawingEnabled && (
           <NpcPromptCanvasLayer
             sessions={chatNpcDrawings}
             onSessionComplete={handleChatDrawingComplete}
@@ -2791,11 +2851,11 @@ export default function SFCity({
             npcChatLabel={npcChatLabel}
             isNpcChatConnected={isNpcChatConnected}
             isNpcInPairConvo={isNpcInPairConvo}
-            activeEaselSession={activeEaselSession}
+            activeEaselSession={easelDrawingEnabled ? activeEaselSession : null}
             easelStageSlug={easelStageSlug}
             easelLayoutRoute={easelLayoutRoute}
-            chatNpcDrawings={chatNpcDrawings}
-            compareDrawPins={compareDrawPins}
+            chatNpcDrawings={easelDrawingEnabled ? chatNpcDrawings : []}
+            compareDrawPins={easelDrawingEnabled ? compareDrawPins : []}
             festieDimNpcIds={festieDimNpcIds}
             spaceFloat={isDeepSpace}
             onEaselStationed={handleEaselStationed}
@@ -2888,7 +2948,7 @@ export default function SFCity({
 
       {!homePreview && (
       <>
-      {festieSignedIn && ownerFestie && (
+      {(!homePreview && (festieSignedIn && ownerFestie || mobileDevice)) && (
         <FestieLifeCorner
           festie={ownerFestie}
           settingsOpen={settingsOpen}
@@ -2899,10 +2959,12 @@ export default function SFCity({
           }
           hidden={showWelcome || showCityPicker}
           isMobile={mobileDevice}
-          onOpenSettings={toggleSettings}
+          onOpenSettings={festieSignedIn ? toggleSettings : undefined}
           onControlModeChange={mode => {
             setOwnerFestie(prev => (prev ? { ...prev, control_mode: mode } : prev));
           }}
+          stagePanelOpen={mobileStagePanelOpen}
+          onOpenStagePanel={mobileDevice ? handleToggleMobileStagePanel : undefined}
         />
       )}
 
@@ -3003,6 +3065,9 @@ export default function SFCity({
           stageChannel={curatedStageChannel}
           playbackChannel={stagePlaybackChannel}
           lineupMultiplayer={mp}
+          isMobile={mobileDevice}
+          mobileOpen={mobileStagePanelOpen}
+          onMobileOpenChange={setMobileStagePanelOpen}
         />
       )}
 
@@ -3096,15 +3161,9 @@ export default function SFCity({
       {!showWelcome && !showCityPicker && !stageLineupOpen && !isChatterDebugMode() && (
         <MobileGameControls
           muted={muted}
-          vendorShopOpen={vendorShopOpen}
-          onToggleVendorShop={toggleVendorShop}
-          onVendorShopWarm={warmVendorShop}
           onOpenStageSwap={() => setShowCityPicker(true)}
-          onOpenAmbientChat={mobileDevice && AMBIENT_CHAT_ENABLED ? handleOpenAmbientChat : undefined}
-          ambientChatOpen={AMBIENT_CHAT_ENABLED && chatMode === 'ambient'}
           onToggleMute={() => setMuted(m => !m)}
           showMute={false}
-          showCreateStage={showCreateStageButton}
         />
       )}
 

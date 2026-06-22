@@ -99,58 +99,95 @@ html:has(.game-surface):not(:has(.landing-page)) body {
     height: 56px;
     border-radius: 12px;
   }
-}
 
-/* Mobile lounge — same composition as desktop (sky + stage + ground), zoomed to fit. */
-@media (max-width: 767px) {
-  .game-surface[data-mobile-lounge] .mobile-lounge-scene {
+  /* Mobile venue — stage strip below controls; lawn fills the rest of the screen. */
+  .game-surface[data-mobile-venue]:not([data-deep-space]) {
+    background: #5a9c4e;
+  }
+
+  .game-surface[data-mobile-venue] .space-parallax-stars,
+  .game-surface[data-mobile-venue] [data-paraloid-layer="stage"] {
+    top: var(--mobile-scene-top, calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    height: var(--mobile-stage-strip-height, calc((685 / 900) * 100vw)) !important;
+  }
+
+  /* Deep Space — stars bleed through the full lower viewport (no black gap). */
+  .game-surface[data-mobile-venue][data-deep-space] .space-parallax-stars {
+    top: var(--mobile-scene-top, calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)) !important;
+    bottom: 0 !important;
+    height: auto !important;
+  }
+
+  /* Continuous lawn under stage — base fill + depth vignette (matches GrassGround). */
+  .mobile-venue-grass-fill {
     position: absolute;
-    inset: 0;
-    overflow: visible;
-    transform: scale(var(--lounge-scale, 1.08));
-    transform-origin: 50% var(--lounge-origin-y, 56%);
+    left: 0;
+    right: 0;
+    top: var(--mobile-lawn-fill-top, calc(
+      var(--mobile-scene-top, calc(max(env(safe-area-inset-top, 0px), 8px) + 72px))
+      + var(--mobile-stage-strip-height, calc((685 / 900) * 100vw))
+    ));
+    bottom: 0;
+    z-index: 4;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(26, 48, 24, 0) 0%,
+        rgba(26, 48, 24, 0.14) 55%,
+        rgba(26, 48, 24, 0.22) 100%
+      ),
+      repeating-linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.028) 0px,
+        rgba(255, 255, 255, 0.028) 26px,
+        rgba(26, 48, 24, 0.028) 26px,
+        rgba(26, 48, 24, 0.028) 52px
+      ),
+      linear-gradient(
+        180deg,
+        #6eb860 0%,
+        #5a9c4e 45%,
+        #4a853f 72%,
+        #3f7238 100%
+      );
   }
 
-  /* Scene zoom sits feet below the sidewalk — nudge player + NPCs up. */
-  .game-surface[data-mobile-lounge] .game-character {
-    bottom: var(--char-bottom-mobile, 20%) !important;
+  .game-surface[data-mobile-venue]:not([data-deep-space]) [data-paraloid-layer="ground"] {
+    background: #5a9c4e;
+    top: var(--mobile-grass-top, calc(
+      var(--mobile-scene-top, calc(max(env(safe-area-inset-top, 0px), 8px) + 72px))
+      + var(--mobile-stage-strip-height, calc((685 / 900) * 100vw))
+      + var(--mobile-ground-gap, 100px)
+    )) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: auto !important;
   }
 
-  /* Chat bubbles — fit narrow viewports, wrap fully (never clip text). */
-  .game-surface .game-chat-bubble {
-    max-width: min(280px, calc(100vw - 32px)) !important;
-    min-width: 0 !important;
-    overflow: visible !important;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    white-space: normal;
+  .game-surface[data-mobile-venue]:not([data-deep-space]) .game-character,
+  .game-surface[data-mobile-venue]:not([data-deep-space]) [data-cinema-canvas-layer] {
+    bottom: var(--mobile-char-bottom, 11%) !important;
   }
 
-  .game-surface .game-chat-pair-overlay,
-  .game-surface .game-chat-thread-overlay {
-    max-width: min(320px, calc(100vw - 32px)) !important;
-    box-sizing: border-box;
+  .game-surface[data-mobile-venue][data-deep-space] .game-character,
+  .game-surface[data-mobile-venue][data-deep-space] [data-cinema-canvas-layer] {
+    bottom: 11% !important;
   }
 
-  .game-surface .game-chat-pair-overlay .game-chat-bubble,
-  .game-surface .game-chat-thread-overlay .game-chat-bubble {
-    max-width: 100% !important;
-    box-sizing: border-box;
+  .game-surface[data-mobile-venue]:not([data-deep-space]) .game-chat-pair-overlay,
+  .game-surface[data-mobile-venue]:not([data-deep-space]) .game-chat-thread-overlay {
+    bottom: calc(var(--mobile-char-bottom, 11%) + 98px) !important;
   }
 
-  .game-surface .game-chat-input-bubble {
-    max-width: min(280px, calc(100vw - 32px)) !important;
-    min-width: min(200px, calc(100vw - 48px)) !important;
-    width: min(280px, calc(100vw - 32px));
-    box-sizing: border-box;
+  .game-surface[data-mobile-venue][data-deep-space] .game-chat-pair-overlay,
+  .game-surface[data-mobile-venue][data-deep-space] .game-chat-thread-overlay {
+    bottom: calc(11% + 98px) !important;
   }
-
-  .game-surface .game-character .game-chat-anchor {
-    z-index: 50 !important;
-    overflow: visible !important;
-    max-width: min(320px, calc(100vw - 16px));
-  }
-
 }
 
 /* ── SFCity scene (clouds, signs, chat, sky creatures) ─────────────────────── */

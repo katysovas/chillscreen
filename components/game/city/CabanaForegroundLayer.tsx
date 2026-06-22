@@ -20,6 +20,8 @@ export const CabanaForegroundLayer = memo(forwardRef<SVGSVGElement, CabanaForegr
     return (
       <svg
         ref={ref}
+        data-paraloid-svg
+        data-paraloid-layer="ground"
         viewBox={`${vx} 0 1400 900`}
         width="100%"
         height="100%"

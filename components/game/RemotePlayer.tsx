@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState, memo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, memo } from 'react';
 import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
-import { CHAR_BOTTOM, crowdDepthOffsetPx, crowdDepthZIndex } from './groundLayout';
+import { CHAR_BOTTOM, crowdDepthForSeed } from './groundLayout';
 import { screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef, worldXToScreenPct } from '@/lib/gameWorldRef';
 import type {
@@ -34,6 +34,8 @@ type RemotePlayerProps = {
   publicMessages?: ChatLine[];
   /** Deep Space — zero-G float visuals instead of walk cycle. */
   spaceFloat?: boolean;
+  crowdIndex?: number;
+  crowdTotal?: number;
 };
 
 /** How quickly the rendered position eases toward the latest networked target. */
@@ -47,8 +49,19 @@ const LERP = 0.22;
  */
 function RemotePlayer({
   id, stateRef, scale = 0.34, greeting = false, greetingChat, chatConnected = false, ambientRef,
-  publicMessages, spaceFloat = false,
+  publicMessages, spaceFloat = false, crowdIndex, crowdTotal,
 }: RemotePlayerProps) {
+  const { depthY, depthZ } = useMemo(
+    () => crowdDepthForSeed(id, {
+      crowdIndex,
+      crowdTotal,
+      orbitFloat: spaceFloat,
+    }),
+    [id, crowdIndex, crowdTotal, spaceFloat],
+  );
+  const depthYRef = useRef(depthY);
+  depthYRef.current = depthY;
+
   const divRef       = useRef<HTMLDivElement>(null);
   const characterRef = useRef<CharacterHandle>(null);
   const renderXRef   = useRef<number | null>(null);
@@ -125,9 +138,8 @@ function RemotePlayer({
         screenXRef.current = pct;
         if (divRef.current) {
           divRef.current.style.left = `${pct}%`;
-          const depthY = crowdDepthOffsetPx(id);
           const spread = chatConnectedRef.current ? chatConnectSpreadPx(pct) : 0;
-          divRef.current.style.transform = `translate(${spread}px, ${depthY}px)`;
+          divRef.current.style.transform = `translate(${spread}px, ${depthYRef.current}px)`;
         }
 
         const hasOverlay = !greetingRef.current
@@ -167,8 +179,6 @@ function RemotePlayer({
     }
   }, [greeting, overlayMessages.length, publicMessages?.length, ambientMessages.length]);
 
-  const depthY = crowdDepthOffsetPx(id);
-  const depthZ = crowdDepthZIndex(depthY);
   const hasPublicOverlay = !greeting && overlayMessages.length > 0;
   const boostedPublicZ = usePublicChatBubbleZ(`player:${id}`, depthZ);
 
@@ -217,6 +227,8 @@ function areRemotePlayerPropsEqual(
   if (prev.greeting !== next.greeting) return false;
   if (prev.chatConnected !== next.chatConnected) return false;
   if (prev.spaceFloat !== next.spaceFloat) return false;
+  if (prev.crowdIndex !== next.crowdIndex) return false;
+  if (prev.crowdTotal !== next.crowdTotal) return false;
   if (prev.scale !== next.scale) return false;
   if (prev.stateRef !== next.stateRef) return false;
   if (prev.ambientRef !== next.ambientRef) return false;

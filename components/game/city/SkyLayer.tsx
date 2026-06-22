@@ -113,6 +113,7 @@ export const SkyLayer = memo(forwardRef<SVGSVGElement, SkyLayerProps>(
         tileWidth={SKY_TILE}
         defs={skyDefs}
         shapeRendering="optimizeSpeed"
+        parallaxLayer="stage"
         style={{
           pointerEvents: 'none',
           transition: 'opacity .8s ease',

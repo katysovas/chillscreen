@@ -175,6 +175,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
           nearTileIndices={nearTiles}
           defs={atmoDefs}
           shapeRendering="optimizeSpeed"
+          parallaxLayer="stage"
           style={{ zIndex: 2 }}
         >
           {renderTile}
@@ -187,6 +188,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             tileOrigin={midOriginForTile}
             nearTileIndices={nearTiles}
             shapeRendering="optimizeSpeed"
+            parallaxLayer="stage"
             style={{ pointerEvents: 'none', zIndex: 4 }}
           >
             {renderMidForeground}
@@ -200,6 +202,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             tileOrigin={midOriginForTile}
             nearTileIndices={nearTiles}
             shapeRendering="optimizeSpeed"
+            parallaxLayer="stage"
             style={{ pointerEvents: 'none', zIndex: 6 }}
           >
             {renderMidSkyLabels}

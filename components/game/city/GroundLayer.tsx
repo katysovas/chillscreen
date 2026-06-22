@@ -17,6 +17,8 @@ import {
   landingHeroDesktopViewBox,
   landingHeroMobileViewBox,
   MOBILE_STATIC_VB_WIDTH,
+  MOBILE_VENUE_GROUND_PAR,
+  staticMobileGroundViewBox,
   staticMobileViewBoxX,
 } from '@/lib/staticCityViewport';
 import { CITY_GRASS_DROP_Y } from './cinema/constants';
@@ -70,17 +72,29 @@ function grassRand(i: number, salt: number) {
 }
 
 /** City template experiment — lawn instead of road/sidewalk. */
-function GrassGround({ w, tile, dropY }: { w: number; tile: number; dropY: number }) {
+function GrassGround({
+  w,
+  tile,
+  dropY,
+  skipTopSeam = false,
+}: {
+  w: number;
+  tile: number;
+  dropY: number;
+  /** Mobile crop — omit the bright top seam that reads as a horizontal divider. */
+  skipTopSeam?: boolean;
+}) {
   const top = GRASS_TOP + dropY;
   const h = 900 - top;
   const gid = `city-grass-${tile}`;
 
-  const tufts = Array.from({ length: Math.ceil(w / 28) }, (_, i) => {
+  const tuftSpacing = skipTopSeam ? 22 : 28;
+  const tufts = Array.from({ length: Math.ceil(w / tuftSpacing) }, (_, i) => {
     const r0 = grassRand(i + tile * 97, 1);
     const r1 = grassRand(i + tile * 97, 2);
     const r2 = grassRand(i + tile * 97, 3);
-    const cx = i * 28 + r0 * 18;
-    const cy = top + 36 + r1 * (h - 48);
+    const cx = i * tuftSpacing + r0 * 14;
+    const cy = top + (skipTopSeam ? 12 : 36) + r1 * (h - (skipTopSeam ? 24 : 48));
     const rx = 10 + r2 * 14;
     const ry = 4 + grassRand(i + tile * 97, 4) * 5;
     const fill = r2 > 0.66 ? '#3d6b35' : r2 > 0.33 ? '#4a853f' : '#6aad5c';
@@ -128,7 +142,9 @@ function GrassGround({ w, tile, dropY }: { w: number; tile: number; dropY: numbe
       ))}
       <g opacity={0.9}>{tufts}</g>
       <rect x={0} y={top} width={w + 1} height={h} fill={`url(#${gid}-depth)`} />
-      <rect x={0} y={top} width={w + 1} height={24} fill={`url(#${gid}-seam)`} />
+      {!skipTopSeam && (
+        <rect x={0} y={top} width={w + 1} height={24} fill={`url(#${gid}-seam)`} />
+      )}
     </>
   );
 }
@@ -179,6 +195,8 @@ type GroundLayerProps = {
   deepLinkRoute?: VenueRoute;
   /** Landing page hero — viewport-aligned grass (no tile seams). */
   landingHero?: boolean;
+  /** Mobile lawn — flat continuous grass without stripe/seam artifacts. */
+  mobileLawn?: boolean;
 };
 
 function groundTileContent(
@@ -187,6 +205,7 @@ function groundTileContent(
   hideStreetDogs = false,
   bareGround = false,
   skipCtx?: GroundStreetSkipContext,
+  mobileLawn = false,
 ) {
   // Draw the road/sidewalk at the tile's natural width and show only the props
   // that fit. Short town tiles previously squeezed everything with a non-uniform
@@ -206,7 +225,11 @@ function groundTileContent(
 
   return (
     <g {...DECORATIVE_SHAPE}>
-      {grassGround ? <GrassGround w={w} tile={tile} dropY={grassDropY} /> : <StreetGround w={w} />}
+      {grassGround ? (
+        <GrassGround w={w} tile={tile} dropY={grassDropY} skipTopSeam={mobileLawn} />
+      ) : (
+        <StreetGround w={w} />
+      )}
       {!hideTrees && GROUND_TREE_XS.map((x, i) => (
         fits(x, 90) && !skipGroundStreetTree(tile, x, w, skipCtx) ? (
           <ellipse key={`sh${i}`} cx={x + 28} cy={gndY + 8} rx={50} ry={11} fill="rgba(20,50,0,.2)" />
@@ -278,7 +301,7 @@ function groundTileContent(
 }
 
 export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
-  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, bareGround = false, isolatedTileIndex, deepLinkRoute, landingHero = false }, ref) {
+  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, bareGround = false, isolatedTileIndex, deepLinkRoute, landingHero = false, mobileLawn = false }, ref) {
     const vx = worldOff * GND_F;
     const skipCtx: GroundStreetSkipContext | undefined = deepLinkRoute
       ? { route: deepLinkRoute, cameraOff: worldOff }
@@ -333,15 +356,18 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
       : nearGndTiles;
 
     return (
-      <ParallaxSvgLayer
-        ref={ref}
-        viewBoxX={vx}
-        tileWidth={CITY_GND_W}
-        tileOrigin={gndOriginForTile}
-        nearTileIndices={nearTiles}
-        shapeRendering="optimizeSpeed"
-        style={{ zIndex: 5, pointerEvents: 'none' }}
-        children={tile => groundTileContent(tile, hideTrees, hideStreetDogs, bareGround, skipCtx)}
+        <ParallaxSvgLayer
+          ref={ref}
+          viewBoxX={vx}
+          viewBox={mobileLawn && deepLinkRoute ? staticMobileGroundViewBox(vx, deepLinkRoute) : undefined}
+          preserveAspectRatio={mobileLawn ? MOBILE_VENUE_GROUND_PAR : 'xMidYMid slice'}
+          tileWidth={CITY_GND_W}
+          tileOrigin={gndOriginForTile}
+          nearTileIndices={nearTiles}
+          shapeRendering="optimizeSpeed"
+          parallaxLayer="ground"
+          style={{ zIndex: 5, pointerEvents: 'none' }}
+        children={tile => groundTileContent(tile, hideTrees, hideStreetDogs, bareGround, skipCtx, mobileLawn)}
       />
     );
   },

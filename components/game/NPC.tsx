@@ -4,7 +4,7 @@ import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
-import { CHAR_BOTTOM, crowdDepthOffsetPx, crowdDepthZIndex } from './groundLayout';
+import { CHAR_BOTTOM, crowdDepthForSeed } from './groundLayout';
 import { AttachedChatEmojiIndicator, screenXToBubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import {
@@ -113,6 +113,8 @@ type NPCProps = NPCConfig & {
   spawnWorldX?: number;
   /** Owner festie hidden while the human player avatar is on stage. */
   ownerAvatarSuppressed?: boolean;
+  /** Total on-screen crowd — even mobile depth distribution. */
+  crowdSize?: number;
 };
 
 function rndBetween(min: number, max: number) {
@@ -159,9 +161,16 @@ function NPC({
   spaceFloat = false,
   spawnWorldX,
   ownerAvatarSuppressed = false,
+  crowdSize,
 }: NPCProps) {
-  const depthY = useMemo(() => crowdDepthOffsetPx(characterId), [characterId]);
-  const depthZ = crowdDepthZIndex(depthY);
+  const { depthY, depthZ } = useMemo(
+    () => crowdDepthForSeed(characterId, {
+      crowdIndex: index,
+      crowdTotal: crowdSize,
+      orbitFloat: spaceFloat,
+    }),
+    [characterId, index, crowdSize, spaceFloat],
+  );
 
   // ── React state: only for infrequent visual changes ─────────────────────────
   const [jumping,   setJumping]  = useState(false);
@@ -933,6 +942,7 @@ function areNpcPropsEqual(prev: NPCProps, next: NPCProps): boolean {
     && prev.spaceFloat === next.spaceFloat
     && prev.spawnWorldX === next.spawnWorldX
     && prev.ownerAvatarSuppressed === next.ownerAvatarSuppressed
+    && prev.crowdSize === next.crowdSize
     && prev.publicMessages === next.publicMessages
     && greetingChatEqual(prev.greetingChat, next.greetingChat);
 }

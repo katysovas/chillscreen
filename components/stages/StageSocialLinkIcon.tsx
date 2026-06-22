@@ -62,6 +62,15 @@ export function StageSocialLinkIcon({ kind, size = 18 }: Props) {
           />
         </svg>
       );
+    case 'patreon':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden style={{ flexShrink: 0, display: 'block' }}>
+          <path
+            fill="#FF424D"
+            d="M15.386 2.25H18v19.5h-2.614V2.25zM9.614 6.863A5.137 5.137 0 1 0 9.614 17.14a5.137 5.137 0 0 0 0-10.277z"
+          />
+        </svg>
+      );
     case 'website':
     default:
       return (

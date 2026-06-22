@@ -239,6 +239,7 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
       <svg
         ref={ref}
         data-paraloid-svg
+        data-paraloid-layer="ground"
         viewBox={`${worldOff * GND_F} 0 1400 900`}
         width="100%"
         height="100%"
