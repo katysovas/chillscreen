@@ -1,13 +1,13 @@
+/** Edge nav signs (prev/next stage) — below crowd, player, and canvases; sign glyphs re-enable pointer-events. */
+export const Z_NAV_SIGNS = 12;
+
 /** Local player — always above crowd depth rows and the desktop bottom control panel (z-index 38). */
 export const Z_PLAYER_CHARACTER = 45;
 
-/** Edge nav signs (prev/next stage) — above crowd, below easels and ambient chat. */
-export const Z_NAV_SIGNS = Z_PLAYER_CHARACTER + 1;
+/** Stage easels and NPC drawing canvases — above crowd and player. */
+export const Z_EASEL = 47;
 
-/** Stage easels and NPC drawing canvases — above nav signs. */
-export const Z_EASEL = Z_NAV_SIGNS + 1;
-
-/** Visible ambient/public chat bubbles — above easels and nav signs; latest bumps to Z_CHAT_OVERLAY. */
+/** Visible ambient/public chat bubbles — above easels; latest bumps to Z_CHAT_OVERLAY. */
 export const Z_AMBIENT_CHAT = Z_EASEL + 1;
 
 /** In-world chat overlays and conversation character lifts — below modals. */

@@ -248,6 +248,8 @@ html:has(.game-surface):not(:has(.landing-page)) body {
 
 .game-surface .game-character {
   overflow: visible;
+  /* Decorative — movement is keyboard/mobile controls; keeps edge nav signs clickable underneath. */
+  pointer-events: none;
 }
 
 
