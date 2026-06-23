@@ -2814,7 +2814,7 @@ export default function SFCity({
           ref={groundRef}
           worldOff={gndScrollWorldOff}
           hideTrees={mobileDevice || isDeepSpace || isLasVegas || isHeadliner}
-          hideStreetDogs={effectiveVenueRoute === 'silent-disco' || effectiveVenueRoute === 'forest' || effectiveVenueRoute === 'tentaroo' || effectiveVenueRoute === 'outside-hands' || effectiveVenueRoute === 'cinema' || effectiveVenueRoute === 'hula' || effectiveVenueRoute === 'headliner' || effectiveVenueRoute === 'edc' || effectiveVenueRoute === 'seattle-concerts' || isDeepSpace}
+          hideStreetDogs={effectiveVenueRoute === 'silent-disco' || effectiveVenueRoute === 'forest' || effectiveVenueRoute === 'tentaroo' || effectiveVenueRoute === 'outside-hands' || effectiveVenueRoute === 'cinema' || effectiveVenueRoute === 'hula' || effectiveVenueRoute === 'edc' || effectiveVenueRoute === 'seattle-concerts' || isDeepSpace}
           bareGround={isDeepSpace}
           isolatedTileIndex={isolatedTile}
           deepLinkRoute={effectiveVenueRoute}
