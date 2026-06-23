@@ -103,6 +103,13 @@ export const MOBILE_LOUNGE_STAGES: MobileLoungeStageOption[] = [
     originYPercent: 54,
   },
   {
+    route: 'headliner',
+    title: 'The Headliner',
+    tagline: 'Starry night main stage',
+    scale: 1.08,
+    originYPercent: 57,
+  },
+  {
     route: 'deep-space',
     title: 'Deep Space',
     tagline: 'Cosmic orbit stage',

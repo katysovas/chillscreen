@@ -1,0 +1,261 @@
+.headliner-sky-backdrop {
+  --headliner-day-cycle: 240s;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.headliner-sky__sky,
+.headliner-sky__ground {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 220px;
+  background: green;
+}
+
+.headliner-sky__sky {
+  top: 0;
+  bottom: auto;
+  height: 75%;
+  z-index: 2;
+  box-shadow: 0 0 10px rgba(254, 252, 234, 1);
+  border-bottom-right-radius: 50% 180px;
+  border-bottom-left-radius: 50% 180px;
+  background-color: rgb(1, 74, 127);
+  filter: brightness(1) grayscale(0);
+  animation: headliner-sky-cycle var(--headliner-day-cycle) linear infinite;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(1, 74, 127, 1) 0%,
+    rgba(1, 72, 124, 1) 0%,
+    rgba(1, 83, 139, 1) 7%,
+    rgba(0, 100, 152, 1) 15%,
+    rgba(0, 118, 166, 1) 23%,
+    rgba(0, 115, 169, 1) 23%,
+    rgba(0, 118, 168, 1) 23%,
+    rgba(1, 118, 172, 1) 23%,
+    rgba(0, 114, 166, 1) 23%,
+    rgba(0, 118, 168, 1) 23%,
+    rgba(0, 130, 179, 1) 30%,
+    rgba(0, 132, 180, 1) 30%,
+    rgba(2, 147, 192, 1) 37%,
+    rgba(7, 145, 192, 1) 37%,
+    rgba(9, 147, 194, 1) 37%,
+    rgba(10, 146, 194, 1) 37%,
+    rgba(9, 154, 199, 1) 37%,
+    rgba(0, 142, 188, 1) 37%,
+    rgba(51, 163, 203, 1) 44%,
+    rgba(44, 162, 198, 1) 44%,
+    rgba(43, 159, 200, 1) 44%,
+    rgba(46, 159, 199, 1) 44%,
+    rgba(46, 164, 202, 1) 44%,
+    rgba(76, 175, 206, 1) 51%,
+    rgba(74, 173, 205, 1) 51%,
+    rgba(82, 175, 208, 1) 51%,
+    rgba(77, 176, 207, 1) 51%,
+    rgba(109, 187, 209, 1) 58%,
+    rgba(104, 186, 207, 1) 58%,
+    rgba(139, 200, 205, 1) 65%,
+    rgba(136, 196, 204, 1) 65%,
+    rgba(138, 199, 204, 1) 65%,
+    rgba(163, 203, 195, 1) 71%,
+    rgba(158, 199, 193, 1) 71%,
+    rgba(161, 202, 198, 1) 71%,
+    rgba(159, 199, 191, 1) 71%,
+    rgba(177, 200, 180, 1) 77%,
+    rgba(179, 204, 183, 1) 77%,
+    rgba(180, 204, 182, 1) 77%,
+    rgba(178, 203, 182, 1) 77%,
+    rgba(176, 201, 180, 1) 77%,
+    rgba(192, 195, 164, 1) 83%,
+    rgba(195, 199, 166, 1) 83%,
+    rgba(194, 197, 166, 1) 83%,
+    rgba(211, 182, 140, 1) 89%,
+    rgba(209, 185, 141, 1) 89%,
+    rgba(208, 179, 135, 1) 89%,
+    rgba(215, 183, 136, 1) 95%,
+    rgba(213, 181, 134, 1) 95%,
+    rgba(213, 179, 133, 1) 100%,
+    rgba(213, 179, 133, 1) 100%,
+    rgba(216, 182, 136, 1) 100%
+  );
+}
+
+.headliner-sky__sky::after {
+  content: '';
+  display: block;
+  position: absolute;
+  opacity: 0.6;
+  bottom: 0;
+  z-index: -1;
+  left: 50%;
+  margin-left: -30px;
+  width: 60px;
+  height: 0;
+  box-shadow: 0 0 0 0 yellow;
+  animation: headliner-sunset var(--headliner-day-cycle) linear infinite;
+  border-top-right-radius: 50% 100%;
+  border-top-left-radius: 50% 100%;
+  background-color: rgb(255, 198, 98);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 198, 98, 1) 0%,
+    rgba(253, 203, 90, 1) 8%,
+    rgba(255, 194, 91, 1) 14%,
+    rgba(255, 176, 91, 1) 18%,
+    rgba(252, 165, 88, 1) 23%,
+    rgba(255, 171, 94, 1) 23%,
+    rgba(252, 157, 89, 1) 28%,
+    rgba(250, 153, 84, 1) 35%,
+    rgba(255, 158, 93, 1) 35%,
+    rgba(255, 146, 90, 1) 42%,
+    rgba(249, 138, 85, 1) 48%,
+    rgba(254, 143, 90, 1) 54%,
+    rgba(254, 143, 90, 1) 60%,
+    rgba(253, 142, 87, 1) 67%,
+    rgba(249, 131, 91, 1) 74%,
+    rgba(246, 129, 86, 1) 81%,
+    rgba(244, 126, 86, 1) 87%,
+    rgba(245, 127, 87, 1) 95%,
+    rgba(240, 124, 87, 1) 100%
+  );
+}
+
+.headliner-sky__ground {
+  height: 100%;
+  z-index: 1;
+  filter: brightness(1) grayscale(0);
+  animation: headliner-ground-cycle var(--headliner-day-cycle) linear infinite;
+  box-shadow: inset 0 -1px 200px 10px rgba(0, 0, 0, 0.5);
+}
+
+.headliner-sky__star {
+  position: absolute;
+  display: block;
+  color: #ffe0bc;
+  z-index: 10;
+  opacity: 0.25;
+  width: 0;
+  height: 0;
+  border-right: 10px solid transparent;
+  border-bottom: 7px solid #ffe0bc;
+  border-left: 10px solid transparent;
+  animation: headliner-shine 5s infinite;
+  transform: rotate(35deg) scale(0);
+  transition: transform 5s;
+}
+
+.headliner-sky__star--size1 {
+  transform: rotate(35deg) scale(0.3);
+}
+
+.headliner-sky__star--size2 {
+  transform: rotate(35deg) scale(0.4);
+}
+
+.headliner-sky__star--size3 {
+  transform: rotate(35deg) scale(0.5);
+}
+
+.headliner-sky__star::before {
+  border-bottom: 8px solid #ffe0bc;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  position: absolute;
+  height: 0;
+  width: 0;
+  top: -4.5px;
+  left: -6.5px;
+  display: block;
+  content: '';
+  transform: rotate(-35deg);
+}
+
+.headliner-sky__star::after {
+  position: absolute;
+  display: block;
+  color: #ffe0bc;
+  top: 0.3px;
+  left: -10.5px;
+  width: 0;
+  height: 0;
+  border-right: 10px solid transparent;
+  border-bottom: 7px solid #ffe0bc;
+  border-left: 10px solid transparent;
+  transform: rotate(-70deg);
+  content: '';
+}
+
+@keyframes headliner-sunset {
+  0%, 100% {
+    margin-left: -40px;
+    width: 80px;
+    height: 10px;
+    box-shadow: 0 -10px 200px 40px yellow;
+    opacity: 0.6;
+  }
+  50% {
+    margin-left: -30px;
+    width: 60px;
+    height: 0;
+    box-shadow: 0 0 0 0 yellow;
+    opacity: 0.25;
+  }
+}
+
+@keyframes headliner-sky-cycle {
+  0%, 100% {
+    filter: brightness(1) grayscale(0);
+    box-shadow: 0 0 10px rgba(254, 252, 234, 1);
+  }
+  50% {
+    filter: brightness(0.2) grayscale(1);
+    box-shadow: 0 0 4px rgba(254, 252, 234, 0.15);
+  }
+}
+
+@keyframes headliner-ground-cycle {
+  0%, 100% {
+    filter: brightness(1) grayscale(0);
+  }
+  50% {
+    filter: brightness(0.4) grayscale(0.5);
+  }
+}
+
+@keyframes headliner-shine {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(30deg);
+  }
+}
+
+.game-surface[data-headliner-sky] {
+  background: #1a1c22;
+}
+
+.game-surface[data-headliner-sky] [data-paraloid-layer='ground'] {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .headliner-sky__sky,
+  .headliner-sky__ground,
+  .headliner-sky__sky::after,
+  .headliner-sky__star {
+    animation: none !important;
+  }
+
+  .headliner-sky__sky {
+    filter: brightness(0.35) grayscale(0.6);
+  }
+
+  .headliner-sky__ground {
+    filter: brightness(0.55) grayscale(0.35);
+  }
+}

@@ -44,6 +44,7 @@ const CHANNEL_IMPORTS: Record<
   forest: () => import('@/data/stage-playlists/channels/forest.json').then(m => ({ default: m.default as ChannelFile })),
   'silent-disco': () => import('@/data/stage-playlists/channels/silent-disco.json').then(m => ({ default: m.default as ChannelFile })),
   hula: () => import('@/data/stage-playlists/channels/hula.json').then(m => ({ default: m.default as ChannelFile })),
+  headliner: () => import('@/data/stage-playlists/channels/headliner.json').then(m => ({ default: m.default as ChannelFile })),
 };
 
 const cache = new Map<StageChannel, StageVideo[]>();

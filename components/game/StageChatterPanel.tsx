@@ -77,6 +77,9 @@ type Props = {
   isMobile?: boolean;
   mobileOpen?: boolean;
   onMobileOpenChange?: (open: boolean) => void;
+  /** Headliner lawn layout — panel anchored below stage strip. */
+  panelTop?: number | string;
+  panelMaxHeight?: string;
 };
 
 function formatTime(ts: number): string {
@@ -261,6 +264,8 @@ export function StageChatterPanel({
   isMobile = false,
   mobileOpen = false,
   onMobileOpenChange,
+  panelTop,
+  panelMaxHeight,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
@@ -453,12 +458,14 @@ export function StageChatterPanel({
         position: 'absolute',
         right: isMobile ? 'max(14px, env(safe-area-inset-right, 0px))' : 14,
         left: isMobile ? 'max(14px, env(safe-area-inset-left, 0px))' : undefined,
-        top: isMobile ? 'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)' : 20,
+        top: isMobile
+          ? 'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)'
+          : (panelTop ?? 20),
         zIndex: Z_CONTROLS,
         width: isMobile ? undefined : 320,
         height: expanded ? (isMobile ? 'min(72vh, 640px)' : 800) : 'auto',
         maxHeight: expanded
-          ? (isMobile ? 'min(72vh, 640px)' : 'calc(100vh - 220px)')
+          ? (panelMaxHeight ?? (isMobile ? 'min(72vh, 640px)' : 'calc(100vh - 220px)'))
           : undefined,
         flexDirection: 'column',
         borderRadius: 16,

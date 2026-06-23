@@ -85,6 +85,7 @@
         { "slug": "the-forest", "name": "The Forest", "description": "lights in the trees, lose your friends", "existing": true, "venueRoute": "forest" },
         { "slug": "outside-hands", "name": "Outside Hands", "description": "fog, bridge, bay air", "existing": true, "venueRoute": "outside-hands" },
         { "slug": "hulaween", "name": "Hulaween", "description": "spanish moss, costumes, late sets", "existing": true, "venueRoute": "hula" },
+        { "slug": "the-headliner", "name": "The Headliner", "description": "nature clearing, main-stage energy", "existing": true, "venueRoute": "headliner" },
         { "slug": "tentaroo", "name": "Tentaroo", "description": "tent city, no sleep, all heart", "existing": true, "venueRoute": "tentaroo" },
         { "slug": "the-meadow", "name": "The Meadow", "description": "tapestries, someone hooping, no schedule", "existing": false },
         { "slug": "the-barn", "name": "The Barn", "description": "old wood, fiddle, hay", "existing": false },

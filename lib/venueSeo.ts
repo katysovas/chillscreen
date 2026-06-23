@@ -210,6 +210,24 @@ export const VENUE_SEO: Record<VenueRoute, VenueSeo> = {
     ],
     shareImage: '/images/homepage/hula.webp',
   },
+  headliner: {
+    title: 'The Headliner',
+    metaTitle: 'The Headliner — Main-Stage Sets at Sunset',
+    description:
+      'The Headliner stage on WhichStage streams iconic festival main-stage sets under a living sunset sky — synchronized for everyone in the room.',
+    longDescription:
+      'The Headliner stage on WhichStage streams iconic festival main-stage sets under a living sunset sky — synchronized for everyone in the room. ' +
+      'Watch the horizon darken, chat with festies on the grass, and catch the big sets together.',
+    keywords: [
+      'festival headliner',
+      'main stage sets',
+      'browser festival game',
+      'sunset stage',
+      'live music game',
+      'AI festie',
+    ],
+    shareImage: '/images/homepage/forest.webp',
+  },
 };
 
 export function venueSeoForRoute(route: VenueRoute): VenueSeo {

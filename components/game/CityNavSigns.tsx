@@ -17,7 +17,7 @@ import type { VenueRoute } from '@/lib/venueRoutes';
 import { Z_NAV_SIGNS } from '@/lib/zLayers';
 import { CITY_GRASS_DROP_Y } from '@/components/game/city/cinema/constants';
 import { FOREST_GRASS_DROP_Y } from '@/components/game/city/forest/constants';
-import { TENTAROO_GRASS_DROP_Y } from '@/components/game/city/tentaroo/constants';
+import { CHILL_GRASS_DROP_Y } from '@/components/game/city/chill/constants';
 import { SEATTLE_GRASS_DROP_Y } from '@/components/game/city/seattle/constants';
 import { SF_GRASS_DROP_Y } from '@/components/game/city/sf/constants';
 import { VEGAS_GRASS_DROP_Y } from '@/components/game/city/lasvegas/constants';
@@ -42,6 +42,7 @@ const SIGN_STYLE: Record<VenueRoute, { icon: string; accent: string }> = {
   'creator-chill': { icon: '🎸', accent: '#50b87a' },
   'creator-cinema': { icon: '🌆', accent: '#50b87a' },
   hula: { icon: '🎃', accent: '#50b87a' },
+  headliner: { icon: '🌅', accent: '#ffc662' },
 };
 
 type EdgeSignProps = {
@@ -218,8 +219,8 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
       ? SILENT_DISCO_GRASS_DROP_Y
       : route === 'forest'
         ? FOREST_GRASS_DROP_Y
-        : route === 'tentaroo'
-          ? TENTAROO_GRASS_DROP_Y
+        : route === 'tentaroo' || route === 'creator-chill' || route === 'hula' || route === 'headliner'
+          ? CHILL_GRASS_DROP_Y
           : route === 'seattle-concerts'
             ? SEATTLE_GRASS_DROP_Y
             : route === 'outside-hands' || route === 'cinema'

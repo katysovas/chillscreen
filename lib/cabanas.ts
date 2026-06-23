@@ -129,6 +129,7 @@ const NO_WHICH_STAGE_CABANA_ROUTES = new Set([
   'creator-chill',
   'creator-cinema',
   'hula',
+  'headliner',
   'tentaroo',
   'forest',
   'silent-disco',

@@ -18,6 +18,7 @@ export const STAGE_CHANNEL_META: StageChannelMeta[] = [
   { id: 'silent-disco', label: 'Silent Disco', description: 'Silent Disco — headphone rave main rig' },
   { id: 'bumbershoot', label: 'Seattle', description: 'Seattle outdoor concert stage' },
   { id: 'hula', label: 'Hulaween', description: 'Suwannee Hulaween festival sets' },
+  { id: 'headliner', label: 'The Headliner', description: 'Main-stage sets under the sunset sky' },
 ];
 
 export const STAGE_CHANNEL_IDS = STAGE_CHANNEL_META.map(c => c.id);

@@ -140,6 +140,7 @@ import { WelcomePopup } from './WelcomePopup';
 import { StagePicker } from './StagePicker';
 import { SkyCreaturesLayer } from './SkyCreatures';
 import { SkyLayer } from './city/SkyLayer';
+import { HeadlinerSkyBackdrop } from './city/headliner-sky';
 import { SpaceParallaxStars } from './city/orbit';
 import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 import { MidLayer } from './city/MidLayer';
@@ -155,6 +156,7 @@ import { purgeChatterSenderInRoom } from '@/lib/moderation/client';
 import { isSuperAdminFestieName } from '@/lib/superAdmin';
 import { useStageChatter } from './hooks/useStageChatter';
 import { StageChatterPanel, type StageSidePanelTab } from './StageChatterPanel';
+import { StageLineupMultiplayerProvider } from './StageLineupMultiplayerContext';
 import { npcChatLabelForId } from '@/lib/npcRoster';
 import { applyNpcDancing } from '@/lib/npcDancingRegistry';
 import { MobileGameControls } from './MobileGameControls';
@@ -306,6 +308,12 @@ export default function SFCity({
     };
   }, [creatorStage, effectiveVenueRoute]);
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
+  const isHeadliner = effectiveVenueRoute === 'headliner';
+  const splitGrassLayout =
+    !landingHero
+    && !homePreview
+    && effectiveVenueRoute !== 'deep-space'
+    && mobileDevice;
   const isCreatorChill = effectiveVenueRoute === 'creator-chill';
   const isCreatorCinema = effectiveVenueRoute === 'creator-cinema' || effectiveVenueRoute === 'hula';
   const isSilentDisco = effectiveVenueRoute === 'silent-disco';
@@ -315,7 +323,7 @@ export default function SFCity({
   const isChillCinema = effectiveVenueRoute === 'cinema';
   const isLasVegas = effectiveVenueRoute === 'edc';
   const isSeattle = effectiveVenueRoute === 'seattle-concerts';
-  const isCreatorCustomSky = isCreatorChill || isCreatorCinema || isSilentDisco || isForest || isTentaroo || isSanFrancisco || isChillCinema || isLasVegas || isSeattle;
+  const isCreatorCustomSky = isCreatorChill || isHeadliner || isCreatorCinema || isSilentDisco || isForest || isTentaroo || isSanFrancisco || isChillCinema || isLasVegas || isSeattle;
   const staticStageBackdropUrl = effectiveVenueRoute === 'hula' ? '/images/stages/hula.webp' : null;
   /** Stable per tab session — matches stage picker crowd counts. */
   const ambientSeed = useMemo(
@@ -411,30 +419,31 @@ export default function SFCity({
     const mobileLanding = landingHero && isMobileStaticViewport();
     const desktopLanding = landingHero && !isMobileStaticViewport();
     const mobileVenue = isMobileStaticViewport() && !landingHero;
-    const mobileGrassLayout = mobileVenue && effectiveVenueRoute !== 'deep-space';
+    const splitGrassLayout =
+      mobileVenue && effectiveVenueRoute !== 'deep-space';
     const vb = (x: number) => `${x} 0 1400 900`;
     const staticPar = mobileLanding
       ? LANDING_HERO_MOBILE_PAR
-      : mobileVenue
+      : splitGrassLayout
         ? MOBILE_VENUE_PAR
         : desktopLanding
           ? LANDING_HERO_DESKTOP_PAR
           : DESKTOP_STATIC_PAR;
     const staticVb = (layerVx: number) => mobileLanding
       ? landingHeroMobileViewBox(layerVx)
-      : mobileVenue
+      : splitGrassLayout
         ? staticMobileViewBox(layerVx)
         : desktopLanding
           ? landingHeroDesktopViewBox(layerVx)
           : vb(layerVx);
-    const stageVb = (layerVx: number) => mobileVenue
+    const stageVb = (layerVx: number) => splitGrassLayout
       ? staticMobileStageViewBox(layerVx)
       : staticVb(layerVx);
-    const groundVb = (layerVx: number) => mobileGrassLayout
+    const groundVb = (layerVx: number) => splitGrassLayout
       ? staticMobileGroundViewBox(layerVx, effectiveVenueRoute)
       : staticVb(layerVx);
     const midPar = staticPar;
-    const gndPar = mobileGrassLayout ? MOBILE_VENUE_GROUND_PAR : staticPar;
+    const gndPar = splitGrassLayout ? MOBILE_VENUE_GROUND_PAR : staticPar;
     const midVb = stageVb(midVx);
     const gndVb = groundVb(gndVx);
     const skyVb = stageVb(skyVx);
@@ -2578,6 +2587,11 @@ export default function SFCity({
     mpRef.current?.requestConnect();
   }, [showStageChatterPanel, stageSidePanelTab]);
 
+  useEffect(() => {
+    if (!isHeadliner || homePreview || showWelcome || showCityPicker) return;
+    mpRef.current?.requestConnect();
+  }, [isHeadliner, homePreview, showWelcome, showCityPicker]);
+
   const handleStageSidePanelTabChange = useCallback((tab: StageSidePanelTab) => {
     setStageSidePanelTab(prev => {
       if (tab === 'shop') {
@@ -2644,9 +2658,11 @@ export default function SFCity({
     : null;
 
   return (
+    <StageLineupMultiplayerProvider value={mp}>
     <div
       className="game-surface"
       data-mobile-venue={mobileDevice && !landingHero && !homePreview ? '' : undefined}
+      data-headliner-sky={isHeadliner && !landingHero && !homePreview ? '' : undefined}
       data-deep-space={mobileDevice && !landingHero && !homePreview && isDeepSpace ? '' : undefined}
       style={{
         width: landingHero ? '100%' : '100vw',
@@ -2657,24 +2673,28 @@ export default function SFCity({
         touchAction: 'none',
         WebkitUserSelect: 'none',
         userSelect: 'none',
-        ...(mobileDevice && !landingHero && !homePreview
+        ...(splitGrassLayout
           ? {
-              ['--mobile-scene-top' as string]:
-                'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)',
-              ['--mobile-ground-gap' as string]: '100px',
+              ['--mobile-scene-top' as string]: mobileDevice
+                ? 'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)'
+                : '0px',
+              ['--mobile-ground-gap' as string]: mobileDevice ? '100px' : '0px',
               ['--mobile-stage-strip-height' as string]: 'calc((685 / 900) * 100vw)',
               ['--mobile-lawn-fill-top' as string]:
                 'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height))',
               ['--mobile-grass-top' as string]:
                 'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height) + var(--mobile-ground-gap))',
-              ['--mobile-char-bottom' as string]:
-                'calc(100dvh - var(--mobile-grass-top) - (8 / 900) * 100vw)',
+              ['--mobile-char-bottom' as string]: mobileDevice
+                ? 'calc(100dvh - var(--mobile-grass-top) - (8 / 900) * 100vw)'
+                : 'calc(100vh - var(--mobile-grass-top) - (8 / 900) * min(100vw, calc(100vh * (900 / 685))))',
             }
           : {}),
       }}
     >
-      <div>
-        {isCreatorChill ? (
+      <div className="game-scene-layers">
+        {isHeadliner ? (
+          <HeadlinerSkyBackdrop />
+        ) : isCreatorChill ? (
           <div
             aria-hidden
             style={{
@@ -2781,24 +2801,24 @@ export default function SFCity({
           skyLabelsRef={midSkyLabelsRef}
           worldOff={midScrollWorldOff}
           deepLinkRoute={effectiveVenueRoute}
-          hideTrees={mobileDevice || isDeepSpace || isLasVegas}
+          hideTrees={mobileDevice || isDeepSpace || isLasVegas || isHeadliner}
           isolatedTileIndex={isolatedTile}
           creatorBackdropUrl={staticStageBackdropUrl ?? stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null}
         />
-        {mobileDevice && !landingHero && !homePreview && !isDeepSpace && (
+        {splitGrassLayout && !isDeepSpace && !isHeadliner && (
           <div aria-hidden className="mobile-venue-grass-fill" />
         )}
-        {!(mobileDevice && isDeepSpace) && (
+        {!(mobileDevice && isDeepSpace) && !isHeadliner && (
         <GroundLayer
           ref={groundRef}
           worldOff={gndScrollWorldOff}
-          hideTrees={mobileDevice || isDeepSpace || isLasVegas}
-          hideStreetDogs={effectiveVenueRoute === 'silent-disco' || effectiveVenueRoute === 'forest' || effectiveVenueRoute === 'tentaroo' || effectiveVenueRoute === 'outside-hands' || effectiveVenueRoute === 'cinema' || effectiveVenueRoute === 'hula' || effectiveVenueRoute === 'edc' || effectiveVenueRoute === 'seattle-concerts' || isDeepSpace}
+          hideTrees={mobileDevice || isDeepSpace || isLasVegas || isHeadliner}
+          hideStreetDogs={effectiveVenueRoute === 'silent-disco' || effectiveVenueRoute === 'forest' || effectiveVenueRoute === 'tentaroo' || effectiveVenueRoute === 'outside-hands' || effectiveVenueRoute === 'cinema' || effectiveVenueRoute === 'hula' || effectiveVenueRoute === 'headliner' || effectiveVenueRoute === 'edc' || effectiveVenueRoute === 'seattle-concerts' || isDeepSpace}
           bareGround={isDeepSpace}
           isolatedTileIndex={isolatedTile}
           deepLinkRoute={effectiveVenueRoute}
           landingHero={landingHero}
-          mobileLawn={mobileDevice && !landingHero && !homePreview && !isDeepSpace}
+          mobileLawn={splitGrassLayout}
         />
         )}
         {!isDeepSpace && effectiveVenueRoute !== 'tentaroo' && (
@@ -2948,7 +2968,7 @@ export default function SFCity({
 
       {!homePreview && (
       <>
-      {(!homePreview && (festieSignedIn && ownerFestie || mobileDevice)) && (
+      {(festieSignedIn && ownerFestie || mobileDevice) && (
         <FestieLifeCorner
           festie={ownerFestie}
           settingsOpen={settingsOpen}
@@ -2984,6 +3004,34 @@ export default function SFCity({
         showSignOut={festieSignedIn}
         onSignOut={openSignOutConfirm}
       />
+
+      {showStageChatterPanel && (
+        <StageChatterPanel
+          messages={stageChatter.messages}
+          typingSenders={stageChatter.typingSenders}
+          resolveName={resolveStageChatterName}
+          resolveGlow={resolveStageChatterGlow}
+          onSend={handleStageChatterSend}
+          onTypingChange={handleStageChatterTyping}
+          stageName={stageChatterWelcome.stageName}
+          stageDescription={stageChatterWelcome.stageDescription}
+          isStageOwner={isCreatorStageOwner}
+          isSuperAdmin={isSuperAdmin}
+          onPurgeChatterSender={isSuperAdmin ? handlePurgeChatterSender : undefined}
+          activeTab={stageSidePanelTab}
+          onTabChange={handleStageSidePanelTabChange}
+          shopLoadout={playerLoadout}
+          shopCoins={playerCoins}
+          onShopPurchase={handleVendorPurchase}
+          onShopUnequip={handleVendorUnequip}
+          stageChannel={curatedStageChannel}
+          playbackChannel={stagePlaybackChannel}
+          lineupMultiplayer={mp}
+          isMobile={mobileDevice}
+          mobileOpen={mobileStagePanelOpen}
+          onMobileOpenChange={setMobileStagePanelOpen}
+        />
+      )}
 
       {stageLineupOpen && canManageCreatorLineup && (
         <CreatorStageLineupModal onClose={() => setStageLineupOpen(false)} />
@@ -3040,34 +3088,6 @@ export default function SFCity({
             mpRef.current?.requestFestiesSync();
           }}
           ownedStage={ownedStage ?? null}
-        />
-      )}
-
-      {showStageChatterPanel && (
-        <StageChatterPanel
-          messages={stageChatter.messages}
-          typingSenders={stageChatter.typingSenders}
-          resolveName={resolveStageChatterName}
-          resolveGlow={resolveStageChatterGlow}
-          onSend={handleStageChatterSend}
-          onTypingChange={handleStageChatterTyping}
-          stageName={stageChatterWelcome.stageName}
-          stageDescription={stageChatterWelcome.stageDescription}
-          isStageOwner={isCreatorStageOwner}
-          isSuperAdmin={isSuperAdmin}
-          onPurgeChatterSender={isSuperAdmin ? handlePurgeChatterSender : undefined}
-          activeTab={stageSidePanelTab}
-          onTabChange={handleStageSidePanelTabChange}
-          shopLoadout={playerLoadout}
-          shopCoins={playerCoins}
-          onShopPurchase={handleVendorPurchase}
-          onShopUnequip={handleVendorUnequip}
-          stageChannel={curatedStageChannel}
-          playbackChannel={stagePlaybackChannel}
-          lineupMultiplayer={mp}
-          isMobile={mobileDevice}
-          mobileOpen={mobileStagePanelOpen}
-          onMobileOpenChange={setMobileStagePanelOpen}
         />
       )}
 
@@ -3177,5 +3197,6 @@ export default function SFCity({
       }} />
 
     </div>
+    </StageLineupMultiplayerProvider>
   );
 }

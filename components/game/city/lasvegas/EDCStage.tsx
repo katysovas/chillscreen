@@ -11,6 +11,7 @@ import {
 } from './constants';
 import { Flame, laserFan } from './helpers';
 import { setEdcNowPlaying } from '@/lib/edcNowPlaying';
+import type { StageChannel } from '@/lib/stageVideos';
 import { useStagePlayer } from '../../useStagePlayer';
 import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
 
@@ -163,7 +164,15 @@ function EDCStageShell({
 }
 
 /** Live EDC — shell + synchronized YouTube player. */
-function EDCStageLive({ midX = EDC_STAGE_MID_X, scale = EDC_STAGE_SCALE }: EDCStageLayout) {
+function EDCStageLive({
+  midX = EDC_STAGE_MID_X,
+  scale = EDC_STAGE_SCALE,
+  channel = 'edc',
+  onNowPlaying = setEdcNowPlaying,
+}: EDCStageLayout & {
+  channel?: StageChannel;
+  onNowPlaying?: (title: string | null) => void;
+}) {
   const cx = midX;
   const stageY = GND;
   const scrW = 440;
@@ -173,9 +182,9 @@ function EDCStageLive({ midX = EDC_STAGE_MID_X, scale = EDC_STAGE_SCALE }: EDCSt
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
-    channel: 'edc',
+    channel,
     iframeRef,
-    onNowPlaying: setEdcNowPlaying,
+    onNowPlaying,
   });
 
   const S = scale;
@@ -226,10 +235,12 @@ function EDCStageLive({ midX = EDC_STAGE_MID_X, scale = EDC_STAGE_SCALE }: EDCSt
 
 type EDCStageProps = EDCStageLayout & {
   live?: boolean;
+  channel?: StageChannel;
+  onNowPlaying?: (title: string | null) => void;
 };
 
 /** EDC "Electric Daze" kineticFIELD-style owl megastage with synchronized YouTube when live. */
-export function EDCStage({ live = false, midX, scale }: EDCStageProps) {
+export function EDCStage({ live = false, midX, scale, channel, onNowPlaying }: EDCStageProps) {
   if (!live) return <EDCStageShell midX={midX} scale={scale} />;
-  return <EDCStageLive midX={midX} scale={scale} />;
+  return <EDCStageLive midX={midX} scale={scale} channel={channel} onNowPlaying={onNowPlaying} />;
 }

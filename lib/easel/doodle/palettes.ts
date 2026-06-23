@@ -60,6 +60,11 @@ export const STAGE_DOODLE_PALETTE: Record<StageChannel, StageDoodlePalette> = {
     bgHex: EASEL_BG_HEX,
     gridSize: 24,
   },
+  headliner: {
+    palette: ['#014a7f', '#ffc662', '#f07c57', '#5a9c4e', '#ffe0bc', '#216182', '#f1e2c4'],
+    bgHex: '#014a7f',
+    gridSize: 24,
+  },
 };
 
 export function paletteForStageChannel(channel: StageChannel): StageDoodlePalette {

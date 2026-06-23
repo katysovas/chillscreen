@@ -68,6 +68,15 @@ export const LANDING_STAGES: LandingStage[] = [
     bgImage: '/images/homepage/hula.webp',
   },
   {
+    route: 'headliner',
+    name: 'The Headliner',
+    desc: 'Iconic main-stage sets under a starry night forest.',
+    layout: 'small',
+    background: 'radial-gradient(ellipse at 50% 80%,#0e1a08 0%,#090e06 100%)',
+    accent: '#50b87a',
+    bgImage: '/images/homepage/forest.webp',
+  },
+  {
     route: 'silent-disco',
     name: 'Silent Disco',
     desc: 'Headsets on, dance till the sun comes up.',

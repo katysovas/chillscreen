@@ -10,6 +10,7 @@ export type VenueRoute =
   | 'forest'
   | 'silent-disco'
   | 'hula'
+  | 'headliner'
   | 'creator-chill'
   | 'creator-cinema';
 
@@ -21,6 +22,7 @@ export function isCreatorTemplateRoute(route: VenueRoute): boolean {
 export function isStaticCityTemplateRoute(route: VenueRoute): boolean {
   return route === 'creator-cinema'
     || route === 'hula'
+    || route === 'headliner'
     || route === 'silent-disco'
     || route === 'forest'
     || route === 'tentaroo'
@@ -56,6 +58,8 @@ export function venueSlugForRoute(route: VenueRoute): string {
       return 'silent-disco';
     case 'hula':
       return 'hula';
+    case 'headliner':
+      return 'headliner';
     case 'creator-chill':
       return 'creator-chill';
     case 'creator-cinema':
@@ -75,6 +79,7 @@ export const VENUE_SLUGS = [
   'forest',
   'silent-disco',
   'hula',
+  'headliner',
 ] as const;
 
 const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
@@ -93,6 +98,8 @@ const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
   silentdisco: 'silent-disco',
   hula: 'hula',
   hulaween: 'hula',
+  headliner: 'headliner',
+  'the-headliner': 'headliner',
   'creator-chill': 'creator-chill',
   'creator-cinema': 'creator-cinema',
 };

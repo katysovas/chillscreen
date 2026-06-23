@@ -32,6 +32,7 @@ const LEGACY_VENUE_REDIRECTS: Record<string, string> = {
   silentdisco: 'silent-disco',
   silent_disco: 'silent-disco',
   hulaween: 'hula',
+  'the-headliner': 'headliner',
 };
 
 export async function proxy(request: NextRequest) {

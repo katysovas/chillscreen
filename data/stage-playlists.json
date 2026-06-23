@@ -888,6 +888,152 @@
           "durationSec": 3678
         }
       ]
+    },
+    "headliner": {
+      "label": "The Headliner",
+      "source": "curated",
+      "videos": [
+        {
+          "id": "1hgXZAHonLs",
+          "title": "Radiohead — Bonnaroo 2006",
+          "durationSec": 3503
+        },
+        {
+          "id": "1OpJa-QNopU",
+          "title": "Chappell Roan — Bonnaroo 2024",
+          "durationSec": 3503
+        },
+        {
+          "id": "8qXhFMkxDXM",
+          "title": "Pretty Lights — Bonnaroo Sunrise 2024",
+          "durationSec": 7475
+        },
+        {
+          "id": "dIXy-upkD-w",
+          "title": "Cage The Elephant Live at Bonnaroo Music and Arts Festival 2017",
+          "durationSec": 3663
+        },
+        {
+          "id": "-Ctylz7Yi90",
+          "title": "GRiZ - Chasing The Golden Hour (Full Set) - Live at Bonnaroo 2023",
+          "durationSec": 3473
+        },
+        {
+          "id": "oUuur5PwDKw",
+          "title": "Paramore - Live At Bonnaroo Music Festival 2023 (Full Concert HD)",
+          "durationSec": 4282
+        },
+        {
+          "id": "z1bgqUlMerI",
+          "title": "Vulfpeck Live at Bonnaroo",
+          "durationSec": 4517
+        },
+        {
+          "id": "djbWbdXujRE",
+          "title": "The White Stripes - Bonnaroo 2007 - Full Show",
+          "durationSec": 4796
+        },
+        {
+          "id": "1nEemZY9a2s",
+          "title": "Cage the Elephant Bonnaroo 2024 Live",
+          "durationSec": 4022
+        },
+        {
+          "id": "OpCrHc37syo",
+          "title": "Knocked Loose - Live At Bonnaroo Festival 2023 - Full Set HD",
+          "durationSec": 2559
+        },
+        {
+          "id": "iVbtnKsYcdQ",
+          "title": "Insane Clown Posse Bonnaroo 2025",
+          "durationSec": 3084
+        },
+        {
+          "id": "pdeF8dHCnkM",
+          "title": "Foo Fighters @ Bonnaroo Music & Arts Festival 2023, Manchester, TN, USA (Complete show)",
+          "durationSec": 7044
+        },
+        {
+          "id": "7_OREgfO1ro",
+          "title": "Korn - Lollapalooza 2025 - Full Set",
+          "durationSec": 5090
+        },
+        {
+          "id": "21cQUBOJlI4",
+          "title": "KoRn - Bonnaroo 2023 - Full Show HD",
+          "durationSec": 2301
+        },
+        {
+          "id": "Dx5WO-9WIQg",
+          "title": "Death Cab for Cutie - Live at Bonnaroo 2016",
+          "durationSec": 3451
+        },
+        {
+          "id": "Eokqh2NXqIw",
+          "title": "Mumford and Sons - Complete Bonnaroo 2011",
+          "durationSec": 5017
+        },
+        {
+          "id": "24tG0rYBbAg",
+          "title": "Widespread Panic - Never Miss A Sunday Show - 6/17/2007 at Bonnaroo Music Festival",
+          "durationSec": 12106
+        },
+        {
+          "id": "URK_45Xis_g",
+          "title": "POST MALONE LIVE @ BONNAROO 2024 FULL SET",
+          "durationSec": 5536
+        },
+        {
+          "id": "4x_GKhZ6e8I",
+          "title": "Primus - Bonnaroo Festival - 2011-06-10 (Full Show) [1080p]",
+          "durationSec": 5805
+        },
+        {
+          "id": "RhMgieH_6Nw",
+          "title": "THUNDERCAT LIVE @ BONNAROO 2024 FULL SET",
+          "durationSec": 4592
+        },
+        {
+          "id": "ghJX0SFn4Eo",
+          "title": "Elton John LIVE FULL HD - Bonnaroo Festival | 2014",
+          "durationSec": 7650
+        },
+        {
+          "id": "BlilOlvHSLU",
+          "title": "Bad Suns Bonnaroo 2017 Full Performance",
+          "durationSec": 3390
+        },
+        {
+          "id": "MQuiiIkI2q0",
+          "title": "Nine Inch Nails 2009-06-13 Manchester, Bonnaroo Music Festival - Full Show - NIN Live Archive",
+          "durationSec": 7829
+        },
+        {
+          "id": "5BJjekLsWT4",
+          "title": "BONNAROO MAIN STAGE - Full Set - Pretty Lights Live - 2024 - Manchester, TN - 🎛️  Remastered Audio",
+          "durationSec": 11138
+        },
+        {
+          "id": "XhhonU_HeGA",
+          "title": "Joey Valence & Brae | Bonnaroo 2025 | FULL SET",
+          "durationSec": 3219
+        },
+        {
+          "id": "Jrvdy4vwRgY",
+          "title": "MILKY CHANCE LIVE @ BONNAROO 2024 FULL SET",
+          "durationSec": 3479
+        },
+        {
+          "id": "4A3wNNljx0g",
+          "title": "Phish @ BONNAROO 2012 - Set 1 (HD)",
+          "durationSec": 4738
+        },
+        {
+          "id": "YS-Olwzwg7M",
+          "title": "Beastie Boys - Live Bonnaroo Music and Arts Festival, 2009 (Last Performance)",
+          "durationSec": 4813
+        }
+      ]
     }
   }
 }

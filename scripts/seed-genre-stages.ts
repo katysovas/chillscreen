@@ -75,6 +75,7 @@ const VENUE_THUMBNAILS: Partial<Record<VenueRoute, string>> = {
   forest: '/images/homepage/forest.webp',
   'outside-hands': '/images/homepage/sf.webp',
   hula: '/images/homepage/hula.webp',
+  headliner: '/images/homepage/forest.webp',
   coachella: '/images/homepage/thedesert.webp',
 };
 

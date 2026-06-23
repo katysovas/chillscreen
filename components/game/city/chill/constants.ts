@@ -22,6 +22,9 @@ export const CHILL_FOREST_LAYERS = [
 /** Truss stage name color. */
 export const CHILL_STAGE_TITLE_COLOR = '#2e3d45';
 
+/** Grass + sidewalk props sit this many px lower than default GND_Y. */
+export const CHILL_GRASS_DROP_Y = 52;
+
 /** Ground line on creator Chill tiles (farm-derived layout). */
 export const TENTAROO_GND = 660;
 

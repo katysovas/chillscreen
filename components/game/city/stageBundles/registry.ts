@@ -18,6 +18,7 @@ export const STAGE_MID_BUNDLE_LOADERS: Record<
   'creator-chill': () => import('./creator-chill'),
   'creator-cinema': () => import('./creator-cinema'),
   hula: () => import('./creator-cinema'),
+  headliner: () => import('./headliner'),
 };
 
 const cache = new Map<VenueRoute, StageMidBundleModule>();

@@ -56,6 +56,7 @@ export function cityTileForRoute(route: VenueRoute): number {
     case 'creator-chill':
     case 'creator-cinema':
     case 'hula':
+    case 'headliner':
       return cityTileIndex('tentaroo');
     case 'forest':
       return cityTileIndex('forest');
@@ -146,7 +147,7 @@ const EDGE_ORDER: VenueRoute[] = [
 ];
 
 function edgeIndexForRoute(route: VenueRoute): number {
-  if (isCreatorTemplateRoute(route) || route === 'hula') return EDGE_ORDER.indexOf('tentaroo');
+  if (isCreatorTemplateRoute(route) || route === 'hula' || route === 'headliner') return EDGE_ORDER.indexOf('tentaroo');
   const i = EDGE_ORDER.indexOf(route);
   return i === -1 ? 0 : i; // cinema shares the SF tile
 }
@@ -180,6 +181,8 @@ export function stageAnchorForRoute(route: VenueRoute): StageAnchorKind | null {
     case 'creator-cinema':
     case 'hula':
       return 'which-stage';
+    case 'headliner':
+      return null;
     case 'forest':
       return 'forest';
     case 'silent-disco':
@@ -192,7 +195,7 @@ export function stageAnchorForRoute(route: VenueRoute): StageAnchorKind | null {
 
 /** Synced playback channel for this page's venue (audio stays on city-wide). */
 export function stageChannelForRoute(route: VenueRoute):
-  'cinema' | 'deep-space' | 'bumbershoot' | 'outside-lands' | 'coachella' | 'edc' | 'which-stage' | 'forest' | 'silent-disco' | 'hula' {
+  'cinema' | 'deep-space' | 'bumbershoot' | 'outside-lands' | 'coachella' | 'edc' | 'which-stage' | 'forest' | 'silent-disco' | 'hula' | 'headliner' {
   switch (route) {
     case 'outside-hands': return 'outside-lands';
     case 'seattle-concerts': return 'bumbershoot';
@@ -204,6 +207,7 @@ export function stageChannelForRoute(route: VenueRoute):
     case 'creator-chill': return 'which-stage';
     case 'creator-cinema': return 'which-stage';
     case 'hula': return 'hula';
+    case 'headliner': return 'headliner';
     case 'forest': return 'forest';
     case 'silent-disco': return 'silent-disco';
   }

@@ -27,6 +27,7 @@ import { SEATTLE_GRASS_DROP_Y } from './seattle/constants';
 import { SF_GRASS_DROP_Y } from './sf/constants';
 import { VEGAS_GRASS_DROP_Y } from './lasvegas/constants';
 import { TENTAROO_GRASS_DROP_Y } from './tentaroo/constants';
+import { CHILL_GRASS_DROP_Y } from './chill/constants';
 import { SILENT_DISCO_GRASS_DROP_Y } from './silent-disco/constants';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
 import { skipGroundStreetLamp, skipGroundStreetProp, skipGroundStreetTree, type GroundStreetSkipContext } from '@/lib/stageTreeExclusion';
@@ -53,7 +54,8 @@ function grassDropYForRoute(route: VenueRoute): number {
     case 'tentaroo':
     case 'creator-chill':
     case 'hula':
-      return TENTAROO_GRASS_DROP_Y;
+    case 'headliner':
+      return CHILL_GRASS_DROP_Y;
     case 'seattle-concerts':
       return SEATTLE_GRASS_DROP_Y;
     case 'outside-hands':

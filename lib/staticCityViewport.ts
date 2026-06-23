@@ -11,6 +11,7 @@ import { SEATTLE_GRASS_DROP_Y } from '@/components/game/city/seattle/constants';
 import { SF_GRASS_DROP_Y } from '@/components/game/city/sf/constants';
 import { VEGAS_GRASS_DROP_Y } from '@/components/game/city/lasvegas/constants';
 import { TENTAROO_GRASS_DROP_Y } from '@/components/game/city/tentaroo/constants';
+import { CHILL_GRASS_DROP_Y } from '@/components/game/city/chill/constants';
 import { SILENT_DISCO_GRASS_DROP_Y } from '@/components/game/city/silent-disco/constants';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { VIEW_WIDTH } from '@/lib/venues';
@@ -103,7 +104,8 @@ function mobileGrassDropYForRoute(route: VenueRoute): number {
     case 'tentaroo':
     case 'creator-chill':
     case 'hula':
-      return TENTAROO_GRASS_DROP_Y;
+    case 'headliner':
+      return CHILL_GRASS_DROP_Y;
     case 'seattle-concerts':
       return SEATTLE_GRASS_DROP_Y;
     case 'outside-hands':

@@ -39,6 +39,9 @@ const STAGE_FIXATION: Record<StageChannel, string[]> = {
   hula: [
     'pumpkin', 'candy corn', 'bat', 'cauldron', 'ghost', 'spider', 'lantern', 'witch hat',
   ],
+  headliner: [
+    'sun', 'star', 'guitar', 'microphone', 'cloud', 'moon', 'speaker', 'flower crown',
+  ],
 };
 
 /** Per-NPC preferred subject when available in the stage pool. */

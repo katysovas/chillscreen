@@ -4,6 +4,10 @@ import CHARACTERS, { type CharacterDef } from '@/components/game/characters';
 import { sampledGeneratedCharactersForChannel } from '@/lib/generatedNpcsClient';
 import { stageAnchorForRoute, stageChannelForRoute } from '@/lib/isolatedCity';
 import type { VenueRoute } from '@/lib/venueSlugs';
+import type { StageChannel } from '@/lib/stageVideos';
+
+/** Channels with an explicit empty crowd — skip legacy CHARACTERS fallback. */
+const EMPTY_CROWD_CHANNELS = new Set<StageChannel>(['headliner']);
 
 /**
  * NPCs for one isolated city page.
@@ -20,6 +24,7 @@ export function npcCastForVenue(route: VenueRoute, ambientSeed: number): Charact
     : [];
   const generated = sampledGeneratedCharactersForChannel(channel, ambientSeed);
   if (generated.length > 0) return [...vendors, ...generated];
+  if (EMPTY_CROWD_CHANNELS.has(channel)) return vendors;
   return CHARACTERS;
 }
 

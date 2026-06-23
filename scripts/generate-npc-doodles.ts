@@ -39,6 +39,7 @@ const CHANNEL_STAGE_SLUG: Record<StageChannel, string> = {
   'deep-space': 'deep-space',
   'which-stage': 'tentaroo',
   hula: 'hula',
+  headliner: 'headliner',
 };
 
 const MAX_RETRIES = 2;
