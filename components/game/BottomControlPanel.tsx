@@ -1,8 +1,11 @@
 'use client';
 
+import {
+  BOTTOM_CONTROL_LOGO_HEIGHT,
+  BOTTOM_CONTROL_LOGO_WIDTH,
+  LOGO_BOTTOM_BAR_PATH,
+} from '@/lib/site';
 import './GameControlBar.css';
-
-const LOGO_SRC = '/images/logos/logo_transparent.png';
 
 type BottomControlPanelProps = {
   hidden?: boolean;
@@ -172,26 +175,29 @@ export function BottomControlPanel({
   return (
     <div
       data-paraloid-ui
-      className="hidden md:block bottom-5"
+      className="hidden md:flex absolute bottom-5 left-0 right-0 justify-center"
       style={{
-        position: 'absolute',
-        left: '50%',
-        transform: 'translateX(-50%)',
         zIndex: 38,
-        pointerEvents: 'auto',
+        pointerEvents: 'none',
       }}
     >
-      <div className="game-control-bar">
-        <button
-          type="button"
-          className="game-control-bar__logo-btn"
-          onClick={onOpenCityPicker}
-          aria-label="Switch stage"
-          title="Switch stage"
-        >
-          <img src={LOGO_SRC} alt="Which Stage" draggable={false} />
-        </button>
-      </div>
+      <button
+        type="button"
+        className="game-control-bar__logo-btn game-control-bar__logo-pill"
+        onClick={onOpenCityPicker}
+        aria-label="Switch stage"
+        title="Switch stage"
+        style={{ pointerEvents: 'auto' }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={LOGO_BOTTOM_BAR_PATH}
+          alt="Which Stage"
+          width={BOTTOM_CONTROL_LOGO_WIDTH}
+          height={BOTTOM_CONTROL_LOGO_HEIGHT}
+          draggable={false}
+        />
+      </button>
     </div>
   );
 }

@@ -439,7 +439,7 @@ export function StageChatterPanel({
     }
   }, [messages.length, expanded, activeTab]);
 
-  const showLineupTab = Boolean(stageChannel);
+  const showLineupTab = false;
 
   if (hidden) return null;
 

@@ -34,14 +34,14 @@ function topicKnowledgeRule(topics: string[] | undefined): string {
 
 function voiceRules(extra = '', topics?: string[], lengthHint?: string): string {
   return [
-    'Voice rules (viral quote-tweet energy — screenshot-worthy):',
-    `- one line only — usually 2–8 words; hard cap ${NPC_LINE_MAX_WORDS} words.`,
-    '- default SHORT — micro-replies, one-liners, quick ? questions. longer takes (9–12 words) are rare spice, not the norm.',
+    'Voice rules (festival crowd SHOUTOUT — overheard one-liner, not a conversation):',
+    `- one shout only — 1–4 words ideal; hard cap ${NPC_LINE_MAX_WORDS} words, never more.`,
+    '- think arena chant / group-chat reaction, not explaining yourself.',
     lengthHint ? `- ${lengthHint}` : '',
     '- one thought per line — no compound sentences, no semicolons, no "and also".',
-    '- questions are good — ask follow-ups, challenge a take, wonder out loud. end with ? when you are actually asking (~1 in 3–4 lines in a convo is fine).',
-    '- finish the thought cleanly — never end with a period or dot; no trailing clauses, no cut-off endings.',
-    '- write like a late-night group chat after the headliner — lowercase, casual, slang is fine.',
+    '- questions ok if tiny — end with ? when asking ("vip scam?", "who booked that?").',
+    '- finish cleanly — never end with a period or dot.',
+    '- lowercase, casual, slang is fine.',
     '- no curse words (light ok: shit, dumb, stupid, dumbass, etc.). use clean internet slang instead ("bruh", "dude", "cooked", "unhinged", "lowkey", "rent free", "ate", "ate my face", "cringe", "main character", "down bad", "its giving", "touch grass", "crash out", "crashing out", "aura", "aura points", "negative aura", "brainrot", "looksmaxxing", "glazing", "yapping", "yap session", "valid", "based", "mid", "dead", "im dead", "screaming", "not me", "the way", "say less", "bet", "deadass", "sheesh", "ick", "gave me the ick", "bestie", "era", "understood the assignment", "hits different", "sending it", "full send", "headliner energy", "gates open", "drop incoming", "filthy drop", "dirty mix", "festie bestie", "totem", "camp fam", "sunrise set", "day one", "b2b", "melted my face", "feral", "going feral", "lineup szn", "womp womp", "L take", "ratio", "chopped", "six seven", "let him cook", "crying in the club", "be so for real", "be serious", "girl bye", "its not giving", "flopped", "washed").',
     '- plain words only. no fancy vocabulary, no corporate or journalist tone.',
     '- no special characters: no semicolons, em dashes, ellipses, asterisks, or emoji.',
@@ -54,14 +54,13 @@ function voiceRules(extra = '', topics?: string[], lengthHint?: string): string 
     '- never explain or summarize the topic back. react like you already have a take locked in.',
     '- do not reuse phrases already in the transcript — never repeat an exact line from recent chatter.',
     '',
-    'good: "wait who booked them for sunset"',
-    'good: "why would anyone rail that early"',
-    'good: "bet"',
     'good: "vip is a scam"',
     'good: "that drop was filthy"',
     'good: "front rail at noon?"',
-    'good: "lost my festie bestie"',
+    'good: "bet"',
     'good: "security took my totem"',
+    'good: "who booked that"',
+    'bad: "wait who booked them for sunset" (too long — max 5 words)',
     'bad: "yeah extreme weather is concerning for outdoor festivals" (too polite, sounds like a press release)',
     'bad: "scarlet fire hits different; man i miss 77" (semicolon, two thoughts)',
     'bad: "festivals have pros and cons" (hedging, no take)',
@@ -117,7 +116,7 @@ export function buildLineSystemPrompt(opts: {
   if (isOpener && seed) {
     parts.push(`Open the conversation reacting to this topic (secondhand — speculate): ${seed}`);
   } else if (isOpener) {
-    parts.push('Open with a spicy festival or culture hot take — no specific topic given, make it screenshot-worthy.');
+    parts.push('Open with a spicy festival shoutout — one hot take in 5 words or fewer.');
   }
 
   if (transcript.length > 0) {
@@ -126,11 +125,11 @@ export function buildLineSystemPrompt(opts: {
   }
 
   if (isCloser) {
-    parts.push('wrap it up — one tiny punchy final line (under 6 words), screenshot-worthy.');
+    parts.push('land the shout — 1–3 words max, punchy mic-drop energy.');
   }
 
   parts.push(
-    `Reply with one chat line (${NPC_LINE_MAX_WORDS} words max). Prefer 2–6 words. Questions with ? are fine. No quotes, no name prefix, no special characters, no period at the end.`,
+    `Reply with one shout (${NPC_LINE_MAX_WORDS} words max, never more). Prefer 1–4 words. Questions with ? are fine. No quotes, no name prefix, no special characters, no period at the end.`,
   );
 
   return parts.filter(Boolean).join('\n\n');
@@ -144,12 +143,11 @@ export function formatStageRecentChat(lines: RoomChatLine[]): string {
 
 function stageVoiceRules(intent: StageChatterIntent, topics?: string[], lengthHint?: string): string {
   return [
-    'Stage chatter voice (group chat sidebar — fast, casual, readable):',
+    'Stage chatter voice (sidebar shoutouts — not paragraphs):',
     `- your job: ${intent}.`,
-    '- default tiny — 1–6 words. 7–12 only when the thought truly needs it.',
+    `- default tiny — 1–4 words. never exceed ${STAGE_LINE_MAX_WORDS} words.`,
     lengthHint ? `- ${lengthHint}` : '',
-    '- one burst only — no compound sentences ("sure", "agreed", "what happened?", "k", "bet", "deadass", "explain?").',
-    `- never exceed ${STAGE_LINE_MAX_WORDS} words total.`,
+    '- one burst only — no compound sentences ("sure", "bet", "deadass", "explain?").',
     '- questions welcome — if your job is to ask, end with ?. otherwise mix statements and questions naturally.',
     '- lowercase, chatty, internet-casual. react to the latest lines — do not recap them.',
     '- never end with a period or dot (questions with ? are fine).',
@@ -182,7 +180,7 @@ export function buildStageChatterSystemPrompt(opts: {
     streamNote,
     `Recent stage chatter (newest last):\n${formatStageRecentChat(recentChat)}`,
     stageVoiceRules(intent, npc.topics, lengthHint),
-    `Write your next stage chatter line only (${STAGE_LINE_MAX_WORDS} words max). Prefer 2–6 words. Questions with ? are fine. No period at the end.`,
+    `Write your next stage shout only (${STAGE_LINE_MAX_WORDS} words max, never more). Prefer 1–4 words. Questions with ? are fine. No period at the end.`,
   ].filter(Boolean).join('\n\n');
 }
 
@@ -208,6 +206,6 @@ export function buildSingleReplySystemPrompt(opts: {
     INJECTION_GUARD,
     voiceRules('', npc.topics, lengthHint),
     `Someone in the room said something that caught your ear: "${triggerText}"`,
-    `Reply with one chat line (${NPC_LINE_MAX_WORDS} words max). Prefer 2–6 words. Questions with ? are fine. No quotes, no name prefix, no special characters, no period at the end.`,
+    `Reply with one shout (${NPC_LINE_MAX_WORDS} words max, never more). Prefer 1–4 words. Questions with ? are fine. No quotes, no name prefix, no special characters, no period at the end.`,
   ].join('\n\n');
 }

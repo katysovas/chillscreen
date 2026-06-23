@@ -1191,6 +1191,7 @@ export function CreateStageWizard() {
                       values={draft.socialLinks}
                       invalid={socialLinksInvalid}
                       compact
+                      columns={2}
                       onChange={next => {
                         setDraft(d => ({ ...d, socialLinks: next }));
                         setSocialLinksTouched(true);

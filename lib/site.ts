@@ -39,9 +39,19 @@ export const SITE_KEYWORDS = [
 
 export const FAVICON_PATH = '/images/logos/fav_white.png';
 export const LOGO_PATH = '/images/logos/logo_dark.png';
-/** Display size for boot shell logo (818×138 source PNG). */
+export const LOGO_TRANSPARENT_PATH = '/images/logos/logo_transparent.png';
+/** Source PNG dimensions — shared by boot shell and full-size logos. */
+export const LOGO_SOURCE_WIDTH = 818;
+export const LOGO_SOURCE_HEIGHT = 138;
+/** Display size for boot shell logo. */
 export const LOGO_DISPLAY_WIDTH = 260;
 export const LOGO_DISPLAY_HEIGHT = 44;
+/** Pre-downscaled 2× asset for the bottom control pill (260×44 → 130×22 CSS px). */
+export const LOGO_BOTTOM_BAR_PATH = '/images/logos/logo_bottom_bar.png';
+export const LOGO_BOTTOM_BAR_SOURCE_WIDTH = 260;
+export const LOGO_BOTTOM_BAR_SOURCE_HEIGHT = 44;
+export const BOTTOM_CONTROL_LOGO_WIDTH = LOGO_BOTTOM_BAR_SOURCE_WIDTH / 2;
+export const BOTTOM_CONTROL_LOGO_HEIGHT = LOGO_BOTTOM_BAR_SOURCE_HEIGHT / 2;
 export const VENUE_BOOT_OVERLAY_ID = 'venue-boot-overlay';
 
 /** Composed from logo_social.png in app/opengraph-image.tsx — 1200×630 for OG / X cards. */

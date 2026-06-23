@@ -533,7 +533,7 @@ export default function SFCity({
     ...TEST_PLAYER_LOADOUT,
   }));
   const [playerCoins, setPlayerCoins] = useState(STARTING_COINS);
-  const [stageSidePanelTab, setStageSidePanelTab] = useState<StageSidePanelTab>('lineup');
+  const [stageSidePanelTab, setStageSidePanelTab] = useState<StageSidePanelTab>('chat');
   const [mobileStagePanelOpen, setMobileStagePanelOpen] = useState(false);
   const [vendorShopDismissed, setVendorShopDismissed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);

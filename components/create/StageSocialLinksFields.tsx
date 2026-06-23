@@ -28,6 +28,7 @@ type Props = {
   disabled?: boolean;
   invalid?: boolean;
   compact?: boolean;
+  columns?: 1 | 2;
 };
 
 export function StageSocialLinksFields({
@@ -36,6 +37,7 @@ export function StageSocialLinksFields({
   disabled = false,
   invalid = false,
   compact = false,
+  columns = 1,
 }: Props) {
   const rowGap = compact ? 8 : 10;
   const iconSize = compact ? 16 : 18;
@@ -53,7 +55,13 @@ export function StageSocialLinksFields({
       >
         {STAGE_SOCIAL_LINKS_HINT}
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: columns === 2 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+          gap: rowGap,
+        }}
+      >
         {STAGE_SOCIAL_LINK_FIELDS.map(field => {
           const filled = Boolean(values[field.kind]?.trim());
           return (

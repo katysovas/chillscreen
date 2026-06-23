@@ -211,6 +211,7 @@ export function CreatorStageScenePanel() {
           disabled={busy}
           invalid={Boolean(error) && socialLinksDirty}
           compact
+          columns={2}
           onChange={next => {
             setSocialLinks(next);
             setSocialLinksDirty(true);

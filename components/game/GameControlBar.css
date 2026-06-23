@@ -1,4 +1,6 @@
 .game-control-bar {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -7,11 +9,26 @@
   padding: 4px 8px;
   gap: 0;
   border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-sizing: border-box;
+}
+
+.game-control-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
   background: rgba(0, 0, 0, 0.42);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.game-control-bar > * {
+  position: relative;
+  z-index: 1;
 }
 
 .game-control-bar--open {
@@ -67,13 +84,29 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.game-control-bar__logo-pill {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.game-control-bar__logo-pill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
 .game-control-bar__logo-btn img {
+  position: relative;
+  z-index: 1;
   display: block;
-  height: 18px;
-  width: auto;
-  max-width: 110px;
   object-fit: contain;
-  opacity: 0.88;
 }
 
 .game-control-bar__mono {
