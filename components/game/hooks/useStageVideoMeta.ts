@@ -5,9 +5,15 @@ import type { StageVideoDisplayMeta } from '@/lib/stageVideoMeta';
 
 const cache = new Map<string, StageVideoDisplayMeta>();
 const inflight = new Map<string, Promise<void>>();
+const subscriberLookupAttempted = new Set<string>();
 
 function idsNeedingFetch(ids: string[]): string[] {
-  return ids.filter(id => !cache.has(id));
+  return ids.filter(id => {
+    const cached = cache.get(id);
+    if (!cached) return true;
+    if (cached.subscriberCount != null && cached.channelDescription?.trim()) return false;
+    return !subscriberLookupAttempted.has(id);
+  });
 }
 
 async function fetchVideoMeta(ids: string[]): Promise<void> {
@@ -23,10 +29,12 @@ async function fetchVideoMeta(ids: string[]): Promise<void> {
 
   const promise = (async () => {
     const res = await fetch(`/api/stage/video-meta?ids=${encodeURIComponent(missing.join(','))}`);
+    for (const id of missing) subscriberLookupAttempted.add(id);
     if (!res.ok) return;
     const data = await res.json() as { videos?: Record<string, StageVideoDisplayMeta> };
     for (const [id, meta] of Object.entries(data.videos ?? {})) {
-      cache.set(id, meta);
+      const prev = cache.get(id);
+      cache.set(id, prev ? { ...prev, ...meta } : meta);
     }
   })().finally(() => {
     inflight.delete(key);

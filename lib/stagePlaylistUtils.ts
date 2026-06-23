@@ -1,7 +1,11 @@
 import type { StageChannel, StageChannelConfig, StageVideo } from './stageVideos';
 
+import type { MatchupStageConfig } from './matchup/normalize';
+
 export type StagePlaylistChannelEntry = StageChannelConfig & {
   label?: string;
+  /** King-of-the-hill vote buckets (per-streamer video lists). */
+  matchup?: MatchupStageConfig;
 };
 
 export type StagePlaylistsFile = {
@@ -21,6 +25,16 @@ export function formatDurationSec(sec: number | undefined | null): string {
 
 export function youtubeThumbnailUrl(videoId: string): string {
   return `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+}
+
+export function youtubeWatchUrl(videoId: string): string {
+  return `https://www.youtube.com/watch?v=${videoId}`;
+}
+
+/** Prefer channel page when stored on the video; otherwise open the video. */
+export function videoBrowseUrl(video: StageVideo): string {
+  if (video.channelUrl?.trim()) return video.channelUrl.trim();
+  return youtubeWatchUrl(video.id);
 }
 
 /** Videos stored for a channel (curated list or youtube-api fallbacks). */

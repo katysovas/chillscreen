@@ -77,6 +77,66 @@ export async function upsertLineupVote(
   `;
 }
 
+/** Matchup swap votes — re-tap refreshes weight (side stored as video_id: 'a' | 'b'). */
+export async function upsertMatchupVote(
+  roomId: string,
+  channel: string,
+  voterId: string,
+  side: 'a' | 'b',
+): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+
+  await db`
+    INSERT INTO lineup_votes (room_id, channel, voter_id, video_id, updated_at)
+    VALUES (${roomId}, ${channel}, ${voterId}, ${side}, now())
+    ON CONFLICT (room_id, channel, voter_id)
+    DO UPDATE SET video_id = EXCLUDED.video_id, updated_at = now()
+  `;
+}
+
+export async function fetchMatchupVotes(
+  roomId: string,
+  channel: string,
+): Promise<Record<string, { side: 'a' | 'b'; ts: number }>> {
+  const db = getDb();
+  if (!db) return {};
+
+  const rows = await db`
+    SELECT voter_id, video_id, updated_at
+    FROM lineup_votes
+    WHERE room_id = ${roomId} AND channel = ${channel}
+  `;
+
+  const votes: Record<string, { side: 'a' | 'b'; ts: number }> = {};
+  for (const row of rows) {
+    const voterId = String(row.voter_id ?? '').trim();
+    const side = String(row.video_id ?? '').trim();
+    if (!voterId || (side !== 'a' && side !== 'b')) continue;
+    const updatedAt = row.updated_at instanceof Date
+      ? row.updated_at.getTime()
+      : Date.parse(String(row.updated_at));
+    votes[voterId] = {
+      side,
+      ts: Number.isFinite(updatedAt) ? updatedAt : Date.now(),
+    };
+  }
+  return votes;
+}
+
+/** Clear matchup a/b votes when a track boundary resets the poll. */
+export async function clearMatchupVotes(roomId: string, channel: string): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+
+  await db`
+    DELETE FROM lineup_votes
+    WHERE room_id = ${roomId}
+      AND channel = ${channel}
+      AND video_id IN ('a', 'b')
+  `;
+}
+
 export async function upsertLineupSuggestion(
   roomId: string,
   channel: string,

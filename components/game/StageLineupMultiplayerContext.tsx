@@ -11,6 +11,9 @@ export type StageLineupMultiplayer = Pick<
   | 'sendLineupVote'
   | 'sendLineupSuggest'
   | 'registerLineupStateHandler'
+  | 'sendMatchupSubscribe'
+  | 'sendMatchupVote'
+  | 'registerMatchupStateHandler'
 >;
 
 const StageLineupMultiplayerContext = createContext<StageLineupMultiplayer | null>(null);

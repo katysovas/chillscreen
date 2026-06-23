@@ -4,7 +4,7 @@ import {
   resolveStagePlaylists,
   STAGE_PLAYLIST_CACHE_SECONDS,
 } from '@/lib/resolveStagePlaylists';
-import { DEFAULT_DURATION_MS, STAGE_EPOCH, type StageChannel } from '@/lib/stageVideos';
+import { DEFAULT_DURATION_MS, STAGE_EPOCH, STAGE_MATCHUP_CONFIG, type StageChannel } from '@/lib/stageVideos';
 
 /** Align with the 1-hour resolver cache — playlists change slowly. */
 export const revalidate = 3600;
@@ -51,6 +51,9 @@ export async function GET(request: Request) {
         epoch: STAGE_EPOCH,
         defaultDurationMs: DEFAULT_DURATION_MS,
         playlists: payloadPlaylists,
+        matchup: channel
+          ? (STAGE_MATCHUP_CONFIG[channel] ? { [channel]: STAGE_MATCHUP_CONFIG[channel] } : {})
+          : STAGE_MATCHUP_CONFIG,
       },
     },
     {

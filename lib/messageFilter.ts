@@ -58,9 +58,18 @@ export function scrubProfanity(text: string): string {
     .trim();
 }
 
+/** Strip HTML/XML-like tags LLMs sometimes leak into chat lines. */
+export function stripNpcMarkupTags(text: string): string {
+  return text
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<\/?[a-z][a-z0-9:-]*(?:\s[^>]*)?\/?>/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Remove sentence-ending periods — NPC chat voice never uses dots. Keeps ? ! and decimals (3.5). */
 export function stripNpcChatterDots(text: string): string {
-  return text
+  return stripNpcMarkupTags(text)
     .replace(/(?<!\d)\.(?!\d)/g, '')
     .replace(/\s+/g, ' ')
     .trim();

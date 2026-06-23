@@ -4,10 +4,13 @@ import { clearStagePlaylistCache } from '@/lib/resolveStagePlaylists';
 import {
   channelStoredVideos,
   readStagePlaylistsFile,
+  updateChannelMatchup,
   updateChannelVideos,
   writeStagePlaylistsFile,
   type StagePlaylistsFile,
 } from '@/lib/stagePlaylistFile';
+import type { MatchupStageConfig } from '@/lib/matchup/normalize';
+import { normalizeMatchupConfig } from '@/lib/matchup/normalize';
 import type { StageChannel, StageVideo } from '@/lib/stageVideos';
 
 export const dynamic = 'force-dynamic';
@@ -45,23 +48,35 @@ export async function GET(request: Request) {
 
 type SaveBody = {
   channel: StageChannel;
-  videos: StageVideo[];
+  videos?: StageVideo[];
+  matchup?: MatchupStageConfig;
   /** When true, saves as a fixed curated list (recommended). */
   asCurated?: boolean;
 };
 
-/** Save one channel's playlist to `data/stage-playlists.json`. */
+/** Save one channel's playlist and/or matchup buckets to JSON. */
 export async function PUT(request: Request) {
   try {
     assertLocalAdminRequest(request);
     const body = (await request.json()) as SaveBody;
-    if (!body.channel || !Array.isArray(body.videos)) {
-      return NextResponse.json({ error: 'channel and videos required' }, { status: 400 });
+    if (!body.channel) {
+      return NextResponse.json({ error: 'channel required' }, { status: 400 });
+    }
+    if (!Array.isArray(body.videos) && !body.matchup) {
+      return NextResponse.json({ error: 'videos or matchup required' }, { status: 400 });
     }
 
-    const file = updateChannelVideos(body.channel, body.videos, {
-      source: body.asCurated === false ? 'youtube-api' : 'curated',
-    });
+    let file: StagePlaylistsFile;
+    if (Array.isArray(body.videos)) {
+      file = updateChannelVideos(body.channel, body.videos, {
+        source: body.asCurated === false ? 'youtube-api' : 'curated',
+      });
+    } else {
+      file = readStagePlaylistsFile();
+    }
+    if (body.matchup) {
+      file = updateChannelMatchup(body.channel, normalizeMatchupConfig(body.matchup) ?? body.matchup);
+    }
     clearStagePlaylistCache();
     return NextResponse.json({ ok: true, updatedAt: file.updatedAt });
   } catch (err) {

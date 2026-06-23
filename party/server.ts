@@ -28,11 +28,19 @@ import {
   createChatSpamState,
   type ChatSpamState,
 } from './chatSpamLimit';
-import { DEFAULT_DURATION_MS, STAGE_EPOCH, type StageSync } from '../lib/stageVideos';
+import {
+  DEFAULT_DURATION_MS,
+  STAGE_EPOCH,
+  STAGE_MATCHUP_CONFIG,
+  type StageSync,
+} from '../lib/stageVideos';
 import type { PlayerViewSnapshot } from '../lib/npcProximity';
 import { NpcChatterScheduler } from './npcChatterScheduler';
 import { EaselScheduler } from './easelScheduler';
 import { LineupStore, resolveLineupVoterId } from './lineupStore';
+import { MatchupStore } from './matchupStore';
+import { isMatchupChannel } from '../lib/matchup/config';
+import { isSuperAdminFestieName, superAdminMatchupVoterId } from '../lib/superAdmin';
 import { clientIpFromRequest, isConnectionBlocked } from './blocklistCache';
 
 /**
@@ -78,9 +86,14 @@ export default class WhichStageServer implements Party.Server {
   private chatter: NpcChatterScheduler;
   private easels: EaselScheduler;
   private lineup: LineupStore;
+  private matchup: MatchupStore;
+  /** Cached HuskyNights check for signed-in user ids. */
+  private superAdminByUserId = new Map<string, boolean>();
+  private superAdminVoteNonce = 0;
 
   constructor(readonly room: Party.Room) {
     this.lineup = new LineupStore(room.storage, room.id);
+    this.matchup = new MatchupStore(room.storage, room.id);
     this.chatter = new NpcChatterScheduler({
       room: this.room,
       broadcast: msg => this.room.broadcast(encode(msg)),
@@ -123,7 +136,12 @@ export default class WhichStageServer implements Party.Server {
     }
 
     const playlists = await resolveStagePlaylists(this.room.env.YOUTUBE_API_KEY as string | undefined);
-    this.stageSync = { epoch: STAGE_EPOCH, defaultDurationMs: DEFAULT_DURATION_MS, playlists };
+    this.stageSync = {
+      epoch: STAGE_EPOCH,
+      defaultDurationMs: DEFAULT_DURATION_MS,
+      playlists,
+      matchup: STAGE_MATCHUP_CONFIG,
+    };
     const festies = await this.fetchFesties();
     this.electNpcLeader();
     const welcome: ServerMessage = {
@@ -178,10 +196,9 @@ export default class WhichStageServer implements Party.Server {
         };
         this.players.set(sender.id, player);
         if (msg.userId?.trim()) {
-          const uid = msg.userId.trim();
-          this.connUserIds.set(sender.id, uid);
-          this.cancelFestieSeen(uid);
-          void this.postFestiePresence(uid, true);
+          this.bindConnUserId(sender.id, msg.userId);
+          this.cancelFestieSeen(msg.userId.trim());
+          void this.postFestiePresence(msg.userId.trim(), true);
         }
         if (msg.chatterMuted) {
           this.chatterMutedPlayers.add(sender.id);
@@ -241,6 +258,11 @@ export default class WhichStageServer implements Party.Server {
           id: sender.id,
           profile: msg.profile,
         });
+        break;
+      }
+
+      case 'auth-sync': {
+        this.bindConnUserId(sender.id, msg.userId);
         break;
       }
 
@@ -443,11 +465,62 @@ export default class WhichStageServer implements Party.Server {
         sender.send(encode({ t: 'lineup-state', ...payload }));
         break;
       }
+
+      case 'matchup-subscribe': {
+        if (!isMatchupChannel(msg.channel) || !this.stageSync) break;
+        this.bindConnUserId(sender.id, msg.userId);
+        const now = Date.now();
+        const voterId = await this.resolveMatchupVoterId(sender.id, msg.playerId, now);
+        const state = await this.matchup.loadChannel(
+          msg.channel,
+          this.stageSync,
+          now,
+          this.festiesApiBase(),
+          this.partyEnv().NPC_CHATTER_SECRET,
+        );
+        const payload = this.matchup.toPayload(msg.channel, state, now, voterId);
+        sender.send(encode({ t: 'matchup-state', ...payload }));
+        void this.matchup.scheduleTrackAlarm(this.room.storage);
+        break;
+      }
+
+      case 'matchup-vote': {
+        if (!isMatchupChannel(msg.channel) || !this.stageSync) break;
+        this.bindConnUserId(sender.id, msg.userId);
+        const now = Date.now();
+        const voterId = await this.resolveMatchupVoterId(sender.id, msg.playerId, now);
+        const payload = await this.matchup.castVote(
+          msg.channel,
+          voterId,
+          msg.side,
+          this.stageSync,
+          now,
+          this.festiesApiBase(),
+          this.partyEnv().NPC_CHATTER_SECRET,
+        );
+        this.room.broadcast(
+          encode({ t: 'matchup-state', ...payload, myVote: undefined }),
+          [sender.id],
+        );
+        sender.send(encode({ t: 'matchup-state', ...payload }));
+        void this.matchup.scheduleTrackAlarm(this.room.storage);
+        break;
+      }
     }
   }
 
   async onAlarm() {
+    const now = Date.now();
+    await this.matchup.resolveAllDue(
+      this.stageSync,
+      now,
+      this.festiesApiBase(),
+      this.partyEnv().NPC_CHATTER_SECRET,
+      payload => this.room.broadcast(encode({ t: 'matchup-state', ...payload, myVote: null })),
+    );
+    void this.matchup.scheduleTrackAlarm(this.room.storage);
     await this.chatter.onAlarm();
+    void this.matchup.scheduleTrackAlarm(this.room.storage);
   }
 
   onClose(conn: Party.Connection) {
@@ -639,6 +712,81 @@ export default class WhichStageServer implements Party.Server {
 
   private festiesApiBase(): string {
     return chatterApiBase(this.room.env as Record<string, string | undefined>);
+  }
+
+  private bindConnUserId(connId: string, userId: string | undefined): void {
+    const uid = userId?.trim();
+    if (!uid) return;
+    const existing = this.connUserIds.get(connId);
+    if (existing && existing !== uid) return;
+    if (existing === uid) return;
+    this.connUserIds.set(connId, uid);
+    const player = this.players.get(connId);
+    if (player) player.userId = uid;
+    void this.userIsSuperAdmin(uid, connId);
+  }
+
+  private async superAdminFromFesties(userId: string): Promise<boolean> {
+    try {
+      const festies = await this.fetchFesties();
+      const festie = festies.find(f => f.owner_user_id?.trim() === userId);
+      return isSuperAdminFestieName(festie?.name);
+    } catch {
+      return false;
+    }
+  }
+
+  private async userIsSuperAdmin(userId: string, connId?: string): Promise<boolean> {
+    const uid = userId.trim();
+    if (!uid) return false;
+    const cached = this.superAdminByUserId.get(uid);
+    if (cached === true) return true;
+    if (cached === false) return false;
+
+    const env = this.room.env as Record<string, string | undefined>;
+    try {
+      const params = new URLSearchParams({ userId: uid });
+      const res = await fetch(`${this.festiesApiBase()}/api/stage/superadmin?${params}`, {
+        headers: chatterAuthHeader(env.NPC_CHATTER_SECRET),
+      });
+      if (res.ok) {
+        const data = await res.json() as { superAdmin?: boolean };
+        const ok = Boolean(data.superAdmin);
+        this.superAdminByUserId.set(uid, ok);
+        return ok;
+      }
+    } catch {
+      // fall through to roster / display-name fallback
+    }
+
+    if (await this.superAdminFromFesties(uid)) {
+      this.superAdminByUserId.set(uid, true);
+      return true;
+    }
+
+    if (connId) {
+      const player = this.players.get(connId);
+      if (player && isSuperAdminFestieName(player.name) && this.connUserIds.get(connId) === uid) {
+        this.superAdminByUserId.set(uid, true);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /** One vote per account — unless HuskyNights (each tap stacks weight). */
+  private async resolveMatchupVoterId(
+    connId: string,
+    playerId: string | undefined,
+    now: number,
+  ): Promise<string> {
+    const userId = this.connUserIds.get(connId);
+    const base = resolveLineupVoterId(connId, userId, playerId);
+    if (userId && await this.userIsSuperAdmin(userId, connId)) {
+      return superAdminMatchupVoterId(userId, now, ++this.superAdminVoteNonce);
+    }
+    return base;
   }
 
   private onlineUserIds(): string[] {

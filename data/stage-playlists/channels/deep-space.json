@@ -3,15 +3,6 @@
   "source": "curated",
   "videos": [
     {
-      "id": "St-wdSyB6YA",
-      "title": "Chill Corner - Electro, Very Chilled, Pseric, Hypnotic, Groove Set",
-      "durationSec": 4347
-    },
-    {
-      "id": "sF80I-TQiW0",
-      "title": "90's Chill Lofi ☕️ Study Music Lofi Rain Chillhop Beats ☔️ Lofi Rain Playlist"
-    },
-    {
       "id": "7rgG3sboipg",
       "title": "Cosmic City - Space Music For Cosmic Drift",
       "durationSec": 7207
@@ -52,28 +43,544 @@
       "durationSec": 5802
     },
     {
-      "id": "6JeZR13dLLI",
-      "title": "- Folding Space - Generative Modular Ambient // 4 Hour Relaxation",
-      "durationSec": 15302
-    },
-    {
       "id": "pLBda_P7leU",
       "title": "🎵 Interstellar Journey into Deep Space | Ambient Music and Deep Space Sounds | 4K | 10 hours"
-    },
-    {
-      "id": "8V71sATDTqs",
-      "title": "- Fragments - Unattended Generative Modular Ambient // 4 Hour Relaxation",
-      "durationSec": 14600
-    },
-    {
-      "id": "qRitf7c3-nQ",
-      "title": "Contact ⧫ Deep Space Ambient Music ⧫ Cinematic Sci-Fi Atmosphere for Relaxation & Focus",
-      "durationSec": 7200
-    },
-    {
-      "id": "Dvwaq1rwioQ",
-      "title": "CITADEL Mountain Outpost | Relaxing Sci-Fi Ambience for Focus & Sleep 4K",
-      "durationSec": 7201
     }
-  ]
+  ],
+  "matchup": {
+    "streamers": [
+      {
+        "id": "a",
+        "name": "DEKEL",
+        "videos": [
+          {
+            "id": "UuU-Go8GoeY",
+            "title": "DEKEL Downtempo @ The Dome - Ozora Festival 2023 (Full Movie)",
+            "durationSec": 4872
+          },
+          {
+            "id": "fBq1VlQxvQY",
+            "title": "DEKEL @ Ozora Festival 2025 (Full Set Movie)",
+            "channelTitle": "DEKEL",
+            "channelUrl": "https://www.youtube.com/channel/UCP32qW-bmamwCREG16VsWyQ",
+            "durationSec": 6160
+          },
+          {
+            "id": "N7rbufsQ1L4",
+            "title": "DEKEL & GOLANSKI @ Ozora Festival 2024 / PUMPUI [ Full Video ]",
+            "channelTitle": "DEKEL",
+            "channelUrl": "https://www.youtube.com/channel/UCP32qW-bmamwCREG16VsWyQ",
+            "durationSec": 7508
+          },
+          {
+            "id": "xXcTWvLvdGw",
+            "title": "DEKEL - SOL - Full Album",
+            "channelTitle": "DEKEL",
+            "channelUrl": "https://www.youtube.com/channel/UCP32qW-bmamwCREG16VsWyQ",
+            "durationSec": 4653
+          }
+        ]
+      },
+      {
+        "id": "b",
+        "name": "Michael Burmeister",
+        "videos": [
+          {
+            "id": "7Dwo1plTtb0",
+            "title": "Dynamic Hypnotic Techno with a mystical atmosphere - Red Moor",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 5496
+          },
+          {
+            "id": "UA3WRt-pp0U",
+            "title": "Chilled Hypnotic Techno Over Frankfurt’s Skyline",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 3738
+          },
+          {
+            "id": "Thf6aeTzcWA",
+            "title": "Pure Hypnotic Techno | Deep Mindflow Set",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4144
+          },
+          {
+            "id": "rickhb7N80M",
+            "title": "Chillout - Cosy Street - Hypnotic Chill Techno",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4280
+          },
+          {
+            "id": "mDo18ZR5qSI",
+            "title": "Deep Resonance – Hypnotic Chill-out Techno",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4212
+          },
+          {
+            "id": "klj8-jShBKY",
+            "title": "NO CHILL -  Harder Mindtrip Hypnotic Techno Club Set",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4200
+          },
+          {
+            "id": "teALZascqEA",
+            "title": "Visions of Dreamfloor - Hypnotic Techno",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4181
+          },
+          {
+            "id": "7oUaF6nRoCs",
+            "title": "NO DANCE - Neroberg - Ambient Electronica Set",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4811
+          },
+          {
+            "id": "hz6wpNZ6zRA",
+            "title": "Chill  Garden Corner - Hypnotic Techno Garden Set - Very relaxed, hypnotic, and driving",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4778
+          },
+          {
+            "id": "YQa2021kCOo",
+            "title": "Chill Garden - Deep Chillout Hypnotic Techno Set",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4687
+          },
+          {
+            "id": "1fTM1H_P6Ek",
+            "title": "Heisenberg's Chemistry Lab - A very special (Techno) mixing",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4657
+          },
+          {
+            "id": "Ao2DJtVJBIQ",
+            "title": "NO DANCE - Reflections in the Midnight Wash – A Hypnotic Ambient Journey",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4387
+          },
+          {
+            "id": "xra56zS_nQI",
+            "title": "NO DANCE - Comedown Mindtrip - Ambient Electro",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 5758
+          },
+          {
+            "id": "bH4_e4uM9mI",
+            "title": "The Techno-feeling of Sun, Flowers and Bees - Melodic Hypnotic Techno Set",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4812
+          },
+          {
+            "id": "JR1DZARd6KY",
+            "title": "The Underground Dark Hypnotic Techno Set",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4142
+          },
+          {
+            "id": "mivTJNy1LiY",
+            "title": "Into the Space - Hypnotic Techno",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4002
+          },
+          {
+            "id": "IDz8NKaJVpI",
+            "title": "Dark Techno - Hypnotic Club Set",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4304
+          },
+          {
+            "id": "St-wdSyB6YA",
+            "title": "Chill Corner - Electro, Very Chilled, Pseric, Hypnotic, Groove Set",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4347
+          },
+          {
+            "id": "TFyCenH6-fk",
+            "title": "Techno Room -  Hypnotic Groove Electro Set",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 3937
+          },
+          {
+            "id": "rjudX0nGfjc",
+            "title": "Fast minimal techno, approximately 140 BPM  - Dance Floor",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 4551
+          },
+          {
+            "id": "KHaFc1HTnWM",
+            "title": "Dreamscape - Electro Hypnotic Chill Floor",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 7295
+          },
+          {
+            "id": "HJp8iEdjogM",
+            "title": "Electro-Garden II",
+            "channelTitle": "Michael Burmeister",
+            "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+            "durationSec": 10904
+          }
+        ]
+      },
+      {
+        "id": "streamer-3",
+        "name": "Orbital Odyssey",
+        "videos": [
+          {
+            "id": "YRIX-nYK6LM",
+            "title": "A R I E S ⧫ Space Ambient for Cosmic Drifting ⧫ Deep & Calming Atmospheric Sci-Fi Soundscapes",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "b7TGGIqezsQ",
+            "title": "A Z U R E ⧫ Tranquil Deep Space Aqua Sanctuary ⧫ Ambient Sci-Fi Music for Cosmic Focus",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "JtaSDgBYCAw",
+            "title": "Sakura ⧫ Zen Space Garden ⧫ SciFi Ambient Music for Deep Rest & Stillness",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "jzhuMltELK0",
+            "title": "Orion ⧫ Infinite Universe Ambient ⧫ Deep Space Soundscapes for Focus & Relaxation ⧫ 4K",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "yOXSPwAMQz0",
+            "title": "E R O S ⧫ Serene Space Ambient Music ⧫ Deeply Soothing & Ethereal Sci-Fi Soundscapes",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "XpENoAXsmdQ",
+            "title": "Andromeda ⧫ Deep Space Luxury Research Cruiser ⧫ Serene SciFi Ambient Music ⧫ 4K",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "juANwfCpVHA",
+            "title": "Aphrodite ⧫ Luxury Space Resort ⧫ Deeply Soothing & Intimate Sci-Fi Ambient Music",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "B_Sf4t2nwpQ",
+            "title": "Protocol ⧫ Deep Space Ambient Outpost ⧫ Ethereal Scifi Ambient Music For Deep Focus",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "SlmeD1Bdpy0",
+            "title": "P R Y Z M ⧫ Deep Space Luxury Ambient ⧫ Serene SciFi Soundscape For Relaxation",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "99Nj45_SU2w",
+            "title": "Cosmosis ⧫ Deep Ethereal Space Ambient Music ⧫ Soothing Soundscape for Focus & Sleep",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "Qx6SXe4vhoQ",
+            "title": "Calliope ⧫ Dreamy Ambient SciFi Soundscape ⧫ Deep Atmosphere for Immersive Relaxation",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "619O4OVPqrs",
+            "title": "Y Ū G E N ⧫ Cozy Retro-Future Cabin Ambience ⧫ Soothing Sci-Fi Soundscapes For Deep Rest",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "XyBVl7bluQc",
+            "title": "Orbitalis ⧫ Deep Space Ambient Soundscape ⧫ Otherworldly SciFi Music For Relaxation",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "WtzIRtJQ1qU",
+            "title": "Royale ⧫ Deep Luxury Spaceship Ambience ⧫ Soothing SciFi Soundscape For Cosmic Resting",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "O-Kv1hcodoQ",
+            "title": "Arcadia ⧫ Gliding Above the Utopian Valley ⧫ SciFi Relaxation Soundscape for Study and Deep Rest",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "ttMGu4L_Ykw",
+            "title": "E A R T H : 2 0 2 6 ⧫ Deep Space Ambient Music ⧫ The Soundtrack to the End of The World",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "DJu8vhz5D7E",
+            "title": "Overwatch ⧫ Deeply Calm SciFi Soundscape ⧫ Soothing Winter Ambient Music Above a Dystopian Haven",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "h82AVEywg30",
+            "title": "Nivalis ⧫ Deep Calm SciFi Winter Soundscape ⧫ Warm Ambient Atmosphere for Supreme Relaxation",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "sRQtTFLAh8w",
+            "title": "Thermalis ⧫ Soothing SciFi Spa Soundscape ⧫ Warming Winter Ambience Focus & Stress Relief",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "XSaCcpwBD7U",
+            "title": "Altitude ⧫ Snowy SciFi Luxury Spa Atmosphere ⧫ Deeply Calming Winter Ambient Music",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "toGhL1vP6G8",
+            "title": "Orbital Outpost [POV] ⧫ Deeply Immersive Space Ambient Music ⧫ Weightless Atmosphere For Cosmic Rest",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 28800
+          },
+          {
+            "id": "E_dmYq8LiAw",
+            "title": "Helios ⧫ Peaceful SciFi Ambient Retreat ⧫ Ambient Music for Deep Rest & Stress Relief",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "v9C9DL4ayYA",
+            "title": "Cloud 9 ⧫ Tranquil Ambient Cloud Escape ⧫ Relaxing SciFi Music for Focus & Stress Relief",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          },
+          {
+            "id": "e-AYI5VQDaA",
+            "title": "Kapuseru カプセル ⧫ Deep Relaxing SciFi Soundscape ⧫ Cozy Cyberpunk Capsule Ambience for Focus & Calm",
+            "channelTitle": "Orbital Odyssey",
+            "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+            "durationSec": 7200
+          }
+        ]
+      },
+      {
+        "id": "streamer-4",
+        "videos": [
+          {
+            "id": "tmXmKXHXW9E",
+            "title": "Live Stream // Ambient Experiments",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 6056
+          },
+          {
+            "id": "ZImbaaHwwpk",
+            "title": "Echelon Protocol - State Azure (1 Hour Ambient Mix)",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 4196
+          },
+          {
+            "id": "AGkEM4PXXHQ",
+            "title": "Live Stream // Ambient Production",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 9849
+          },
+          {
+            "id": "uFVGRuPb0ms",
+            "title": "Live Stream // Longform Ambient",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 10051
+          },
+          {
+            "id": "CRrf8TOBa7A",
+            "title": "Live Stream // FAWM 2026 tracks from scratch",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 12794
+          },
+          {
+            "id": "CCt-VzK9nxM",
+            "title": "Live Stream // Minimal Ambient Sketches",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 15932
+          },
+          {
+            "id": "pLWXWdrmyCw",
+            "title": "Live Stream // Xmas Eve Ambient Stream",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 14872
+          },
+          {
+            "id": "FvdhOop4LFA",
+            "title": "Live Stream // More Ambient Stream",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 21642
+          },
+          {
+            "id": "oQmCyFWgfZI",
+            "title": "Live Stream // Ambient Stream",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 16384
+          },
+          {
+            "id": "qxRP1Teab5E",
+            "title": "Live Stream // Ambient Jungle Atmospheres",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 14633
+          },
+          {
+            "id": "8yWYSBSkpUI",
+            "title": "Live Stream // Ambient Sketches",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 17872
+          },
+          {
+            "id": "Zzuxk2Ui6AY",
+            "title": "Live Stream // More Lo-fi/Liminal Ambient Sketches",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 15185
+          },
+          {
+            "id": "yAyURI4tK2U",
+            "title": "Live Stream // Late Night Sketches",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 9105
+          },
+          {
+            "id": "f73_8FBoTXc",
+            "title": "Live Stream // Longform Ambient with Omnisphere 3",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 10574
+          },
+          {
+            "id": "lozoz8KEjNI",
+            "title": "Live Stream // Ambient with Omnisphere 3",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 19824
+          },
+          {
+            "id": "vqNWnXLQz_M",
+            "title": "Live Stream // Checking out Omnisphere 3",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 4285
+          },
+          {
+            "id": "-9d0BaK8DkA",
+            "title": "Live Stream // Sunday Piano Improvisation/Practice",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 3493
+          },
+          {
+            "id": "2MUAePMGTtY",
+            "title": "Live Stream // Late Night Piano Improvisations",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 5236
+          },
+          {
+            "id": "SWnstyHYE1I",
+            "title": "Live Stream // Trying some liminal/lo-fi ambient",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 9322
+          },
+          {
+            "id": "DVYQ1bts-qo",
+            "title": "Live Stream // Trying some Ambient Techno/House in Bitwig 6",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 8690
+          },
+          {
+            "id": "YNLodnBOTV0",
+            "title": "Live Stream // Trying some Ambient Techno/House in Bitwig 6",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 13387
+          },
+          {
+            "id": "B3L26aNf4to",
+            "title": "Live Stream // Longform/Drone Ambient Experiments",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 10261
+          },
+          {
+            "id": "PA55BZzTwRs",
+            "title": "Live Stream // Late night random session",
+            "channelTitle": "State Azure",
+            "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+            "durationSec": 7577
+          }
+        ]
+      }
+    ]
+  }
 }

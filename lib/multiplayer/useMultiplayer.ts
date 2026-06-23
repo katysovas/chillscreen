@@ -5,8 +5,9 @@ import PartySocket from 'partysocket';
 import type { FestiePublic } from '@/lib/festie/types';
 import type { CreatorStageSyncPayload } from '@/lib/stages/stageSync';
 import type { LineupStatePayload } from '@/lib/lineup/types';
+import type { MatchupStatePayload } from '@/lib/matchup/types';
 import type { StageChannel, StageVideo } from '@/lib/stageVideos';
-import { getOrCreatePlayerId } from '@/lib/player/session';
+import { getOrCreatePlayerId, getPlayerSession } from '@/lib/player/session';
 import { mergeNpcSyncMap } from '@/lib/npcPositionSync';
 import { spawnWorldXWithJitter } from '@/lib/playerSpawn';
 import {
@@ -204,6 +205,11 @@ export type Multiplayer = {
   registerLineupStateHandler: (
     handler: ((state: LineupStatePayload) => void) | null,
   ) => void;
+  sendMatchupSubscribe: (channel: StageChannel) => void;
+  sendMatchupVote: (channel: StageChannel, side: 'a' | 'b') => void;
+  registerMatchupStateHandler: (
+    handler: ((state: MatchupStatePayload) => void) | null,
+  ) => void;
   requestFestiesSync: () => void;
 };
 
@@ -228,6 +234,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
   const pendingSendRef = useRef<object[]>([]);
   const creatorStageSyncHandlerRef = useRef<((stage: CreatorStageSyncPayload) => void) | null>(null);
   const lineupStateHandlerRef = useRef<((state: LineupStatePayload) => void) | null>(null);
+  const matchupStateHandlersRef = useRef(new Set<(state: MatchupStatePayload) => void>());
   const capabilityRef = useRef<NpcLeaderCapability | null>(null);
   const capabilityPendingRef = useRef<Promise<void> | null>(null);
 
@@ -274,6 +281,25 @@ export function useMultiplayer(opts: Options): Multiplayer {
     }
     pendingSendRef.current.push(data);
   }, []);
+
+  const lastAuthSyncUserIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!shouldConnect) {
+      lastAuthSyncUserIdRef.current = null;
+      return;
+    }
+    const tick = () => {
+      const uid = userIdRef?.current?.trim();
+      if (!uid || uid === lastAuthSyncUserIdRef.current) return;
+      if (socketRef.current?.readyState !== WebSocket.OPEN) return;
+      lastAuthSyncUserIdRef.current = uid;
+      sendNow({ t: 'auth-sync', userId: uid });
+    };
+    tick();
+    const id = setInterval(tick, 400);
+    return () => clearInterval(id);
+  }, [shouldConnect, userIdRef, sendNow]);
 
   const flushPending = useCallback(() => {
     const s = socketRef.current;
@@ -357,6 +383,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
 
     const onClose = (e: CloseEvent) => {
       setConnected(false);
+      lastAuthSyncUserIdRef.current = null;
       if (e.code !== 1000 && e.code !== 1001) {
         iwarn('[partykit] disconnected', opts.roomId, { code: e.code, reason: e.reason || '(none)' });
       }
@@ -527,6 +554,9 @@ export function useMultiplayer(opts: Options): Multiplayer {
         case 'lineup-state':
           lineupStateHandlerRef.current?.(msg);
           break;
+        case 'matchup-state':
+          for (const handler of matchupStateHandlersRef.current) handler(msg);
+          break;
       }
     };
 
@@ -635,6 +665,41 @@ export function useMultiplayer(opts: Options): Multiplayer {
     }),
     [connectAndSend, lineupPlayerId],
   );
+  const registerMatchupStateHandler = useCallback(
+    (handler: ((state: MatchupStatePayload) => void) | null) => {
+      if (handler) {
+        matchupStateHandlersRef.current.add(handler);
+        return () => { matchupStateHandlersRef.current.delete(handler); };
+      }
+      return () => {};
+    },
+    [],
+  );
+  const sendMatchupSubscribe = useCallback(
+    (channel: StageChannel) => {
+      const userId = getPlayerSession().userId?.trim();
+      connectAndSend({
+        t: 'matchup-subscribe',
+        channel,
+        playerId: lineupPlayerId(),
+        ...(userId ? { userId } : {}),
+      });
+    },
+    [connectAndSend, lineupPlayerId],
+  );
+  const sendMatchupVote = useCallback(
+    (channel: StageChannel, side: 'a' | 'b') => {
+      const userId = getPlayerSession().userId?.trim();
+      connectAndSend({
+        t: 'matchup-vote',
+        channel,
+        side,
+        playerId: lineupPlayerId(),
+        ...(userId ? { userId } : {}),
+      });
+    },
+    [connectAndSend, lineupPlayerId],
+  );
   return {
     selfId, connected, requestConnect, remoteStateRef, ambientRef, remoteIds, connectedUserIds,
     chatPairs, remoteNpcChats, npcConvoPairs, festies, easelSession,
@@ -643,6 +708,7 @@ export function useMultiplayer(opts: Options): Multiplayer {
     sendAmbientMessage, sendRoomChat, sendRoomTyping, sendNpcChat, sendNpcPositions, sendEaselPainterReady,
     sendCreatorStageSync, registerCreatorStageSyncHandler,
     sendLineupSubscribe, sendLineupVote, sendLineupSuggest, registerLineupStateHandler,
+    sendMatchupSubscribe, sendMatchupVote, registerMatchupStateHandler,
     requestFestiesSync,
   };
 }

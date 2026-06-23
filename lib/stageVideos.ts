@@ -24,7 +24,10 @@
 
 import rawStagePlaylists from '../data/stage-playlists.json';
 
-type StagePlaylistChannelEntry = StageChannelConfig & { label?: string };
+type StagePlaylistChannelEntry = StageChannelConfig & {
+  label?: string;
+  matchup?: import('./matchup/normalize').MatchupStageConfig;
+};
 
 const stagePlaylistsFile = rawStagePlaylists as {
   version: 1;
@@ -73,6 +76,7 @@ export type StagePlaylistRules = {
 export type CuratedChannelConfig = StagePlaylistRules & {
   source: 'curated';
   videos: StageVideo[];
+  matchup?: import('./matchup/normalize').MatchupStageConfig;
 };
 
 export type YoutubeApiChannelConfig = StagePlaylistRules & {
@@ -178,13 +182,31 @@ export type StageSync = {
   /** Fallback slot length (ms) for videos without `durationSec`. */
   defaultDurationMs: number;
   playlists: Record<StageChannel, StageVideo[]>;
+  /** Per-streamer buckets for king-of-the-hill matchup stages. */
+  matchup?: Partial<Record<StageChannel, import('./matchup/normalize').MatchupStageConfig>>;
 };
+
+import { normalizeMatchupConfig } from './matchup/normalize';
+
+function matchupConfigFromFile(): Partial<Record<StageChannel, import('./matchup/normalize').MatchupStageConfig>> {
+  const out: Partial<Record<StageChannel, import('./matchup/normalize').MatchupStageConfig>> = {};
+  for (const channel of Object.keys(stagePlaylistsFile.channels) as StageChannel[]) {
+    const entry = stagePlaylistsFile.channels[channel];
+    if (entry.matchup) {
+      out[channel] = normalizeMatchupConfig(entry.matchup) ?? entry.matchup;
+    }
+  }
+  return out;
+}
+
+export const STAGE_MATCHUP_CONFIG = matchupConfigFromFile();
 
 /** Fallback used before (or without) a server handshake — works single-player. */
 export const DEFAULT_STAGE_SYNC: StageSync = {
   epoch: STAGE_EPOCH,
   defaultDurationMs: DEFAULT_DURATION_MS,
   playlists: STAGE_PLAYLISTS,
+  matchup: STAGE_MATCHUP_CONFIG,
 };
 
 export function isCuratedChannel(channel: StageChannel): boolean {

@@ -47,7 +47,7 @@ const HOST_CHECKS: Record<Exclude<StageSocialLinkKind, 'website'>, RegExp> = {
 };
 
 export const STAGE_SOCIAL_LINKS_HINT =
-  'Optional. Paste full profile links — shown on your stage Info tab.';
+  'Optional. Paste full profile links — shown on your stage Now Playing tab.';
 
 export function emptyStageSocialLinks(): StageSocialLinks {
   return {};

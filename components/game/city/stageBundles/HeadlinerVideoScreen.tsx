@@ -10,13 +10,11 @@ import { EDC_STAGE_PUSH_Y } from '../lasvegas/constants';
 import { minStageScale } from '@/lib/stageViewport';
 import { useStagePlayer } from '../../useStagePlayer';
 import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
-import { StageVoteStrip, STAGE_VOTE_STRIP_HEIGHT } from '../../stage-vote/StageVoteStrip';
 
 const MID_X = WHICH_STAGE_MID_X;
 const GND = TENTAROO_GND;
 const SCR_W = 440;
 const SCR_H = 248;
-const STACK_H = SCR_H + STAGE_VOTE_STRIP_HEIGHT;
 const SCALE = minStageScale(1.5);
 const PUSH_Y = EDC_STAGE_PUSH_Y;
 const SCR_Y = 320;
@@ -36,7 +34,7 @@ function HeadlinerStageShell({ children }: { children?: React.ReactNode }) {
           x={scrX - 3}
           y={SCR_Y - 3}
           width={SCR_W + 6}
-          height={STACK_H + 6}
+          height={SCR_H + 6}
           rx={8}
           fill="#121318"
           stroke="rgba(255,255,255,0.14)"
@@ -85,25 +83,6 @@ function HeadlinerVideoScreenLive() {
             height={SCR_H}
             borderRadius={6}
           />
-        </div>
-      </foreignObject>
-      <foreignObject
-        x={scrX}
-        y={SCR_Y + SCR_H}
-        width={SCR_W}
-        height={STAGE_VOTE_STRIP_HEIGHT}
-        data-stage-vote-fo
-        style={STAGE_VIDEO_FO_STYLE}
-      >
-        <div
-          {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
-          style={{
-            width: SCR_W,
-            height: STAGE_VOTE_STRIP_HEIGHT,
-            ...STAGE_VIDEO_WRAPPER_STYLE,
-          }}
-        >
-          <StageVoteStrip channel="headliner" width={SCR_W} />
         </div>
       </foreignObject>
     </HeadlinerStageShell>

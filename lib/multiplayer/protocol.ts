@@ -10,6 +10,7 @@
 import type { FestiePublic } from '../festie/types';
 import type { StageChatterMessage } from '../stageChatter/types';
 import type { LineupStatePayload } from '../lineup/types';
+import type { MatchupStatePayload } from '../matchup/types';
 import type { StoredLineupSuggestion } from '../lineup/types';
 import type { StageChannel, StageSync, StageVideo } from '../stageVideos';
 import type { EaselSessionSync, EaselSlotSync } from '../easel/types';
@@ -77,6 +78,8 @@ export type ClientMessage =
     }
   | { t: 'move'; worldX: number; facing: Facing; walking: boolean }
   | { t: 'profile'; profile: PlayerProfile }
+  /** Late auth — user id was not ready when the socket joined. */
+  | { t: 'auth-sync'; userId: string }
   // 1:1 proximity chat — addressed to a specific connection id.
   | { t: 'chat-open'; to: string }
   | { t: 'chat-close'; to: string }
@@ -107,7 +110,11 @@ export type ClientMessage =
   /** Cast one vote toward a lineup video (deck or waiting pool). */
   | { t: 'lineup-vote'; channel: StageChannel; videoId: string; playerId?: string }
   /** Suggest a custom video for the waiting pool. */
-  | { t: 'lineup-suggest'; channel: StageChannel; video: StageVideo; playerId?: string };
+  | { t: 'lineup-suggest'; channel: StageChannel; video: StageVideo; playerId?: string }
+  /** Subscribe to king-of-the-hill matchup state for a stage channel. */
+  | { t: 'matchup-subscribe'; channel: StageChannel; playerId?: string; userId?: string }
+  /** Cast keep (a) or swap (b) vote — re-tap refreshes weight. */
+  | { t: 'matchup-vote'; channel: StageChannel; side: 'a' | 'b'; playerId?: string; userId?: string };
 
 /** Debug metadata for NPC↔NPC pair convos. */
 export type NpcConvoMeta = {
@@ -174,9 +181,11 @@ export type ServerMessage =
   /** Creator stage lineup / scene update from owner or shuffle. */
   | { t: 'creator-stage-sync'; stage: CreatorStageSyncPayload }
   /** Shared curated-stage lineup vote counts + suggestions. */
-  | { t: 'lineup-state'; channel: StageChannel; myVote?: string | null; counts: Record<string, number>; suggestions: StoredLineupSuggestion[] };
+  | { t: 'lineup-state'; channel: StageChannel; myVote?: string | null; counts: Record<string, number>; suggestions: StoredLineupSuggestion[] }
+  /** King-of-the-hill holder/challenger matchup + decay-weighted slider. */
+  | ({ t: 'matchup-state' } & MatchupStatePayload);
 
-export type { EaselSessionSync, EaselSlotSync, LineupStatePayload, StoredLineupSuggestion };
+export type { EaselSessionSync, EaselSlotSync, LineupStatePayload, MatchupStatePayload, StoredLineupSuggestion };
 
 /** Stable key for a player↔player chat pair. */
 export function chatPairKey(a: string, b: string): string {

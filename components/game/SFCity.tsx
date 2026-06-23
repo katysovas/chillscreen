@@ -156,6 +156,7 @@ import { purgeChatterSenderInRoom } from '@/lib/moderation/client';
 import { isSuperAdminFestieName } from '@/lib/superAdmin';
 import { useStageChatter } from './hooks/useStageChatter';
 import { StageChatterPanel, type StageSidePanelTab } from './StageChatterPanel';
+import { StageVoteStrip } from './stage-vote/StageVoteStrip';
 import { StageLineupMultiplayerProvider } from './StageLineupMultiplayerContext';
 import { npcChatLabelForId } from '@/lib/npcRoster';
 import { applyNpcDancing } from '@/lib/npcDancingRegistry';
@@ -304,7 +305,7 @@ export default function SFCity({
     const seo = venueSeoForRoute(effectiveVenueRoute);
     return {
       stageName: seo.title,
-      stageDescription: seo.description,
+      stageDescription: seo.longDescription,
     };
   }, [creatorStage, effectiveVenueRoute]);
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
@@ -314,6 +315,7 @@ export default function SFCity({
     && !homePreview
     && effectiveVenueRoute !== 'deep-space'
     && mobileDevice;
+  const mobileVenueLayout = mobileDevice && !landingHero && !homePreview;
   const isCreatorChill = effectiveVenueRoute === 'creator-chill';
   const isCreatorCinema = effectiveVenueRoute === 'creator-cinema' || effectiveVenueRoute === 'hula';
   const isSilentDisco = effectiveVenueRoute === 'silent-disco';
@@ -2673,20 +2675,19 @@ export default function SFCity({
         touchAction: 'none',
         WebkitUserSelect: 'none',
         userSelect: 'none',
-        ...(splitGrassLayout
+        ...(mobileVenueLayout
           ? {
-              ['--mobile-scene-top' as string]: mobileDevice
-                ? 'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)'
-                : '0px',
-              ['--mobile-ground-gap' as string]: mobileDevice ? '100px' : '0px',
+              ['--mobile-scene-top' as string]: 'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)',
+              ['--mobile-ground-gap' as string]: splitGrassLayout ? '100px' : '0px',
               ['--mobile-stage-strip-height' as string]: 'calc((685 / 900) * 100vw)',
               ['--mobile-lawn-fill-top' as string]:
                 'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height))',
-              ['--mobile-grass-top' as string]:
-                'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height) + var(--mobile-ground-gap))',
-              ['--mobile-char-bottom' as string]: mobileDevice
+              ['--mobile-grass-top' as string]: splitGrassLayout
+                ? 'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height) + var(--mobile-ground-gap))'
+                : 'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height))',
+              ['--mobile-char-bottom' as string]: splitGrassLayout
                 ? 'calc(100dvh - var(--mobile-grass-top) - (8 / 900) * 100vw)'
-                : 'calc(100vh - var(--mobile-grass-top) - (8 / 900) * min(100vw, calc(100vh * (900 / 685))))',
+                : 'calc(100dvh - var(--mobile-scene-top) - var(--mobile-stage-strip-height) - 12%)',
             }
           : {}),
       }}
@@ -3004,6 +3005,12 @@ export default function SFCity({
         showSignOut={festieSignedIn}
         onSignOut={openSignOutConfirm}
       />
+
+      {mobileVenueLayout && isDeepSpace && !showWelcome && !showCityPicker && (
+        <div className="mobile-stage-vote-strip" data-paraloid-ui>
+          <StageVoteStrip channel="deep-space" width="100%" layout="mobile" />
+        </div>
+      )}
 
       {showStageChatterPanel && (
         <StageChatterPanel

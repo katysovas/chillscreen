@@ -135,6 +135,24 @@ html:has(.game-surface):not(:has(.landing-page)) body {
     border-radius: 12px;
   }
 
+  .game-surface[data-mobile-venue] [data-stage-vote-fo] {
+    display: none !important;
+  }
+
+  .mobile-stage-vote-strip {
+    position: absolute;
+    z-index: 8;
+    left: 0;
+    right: 0;
+    width: 100%;
+    top: calc(
+      var(--mobile-scene-top, calc(max(env(safe-area-inset-top, 0px), 8px) + 72px))
+      + var(--mobile-stage-strip-height, calc((685 / 900) * 100vw))
+    );
+    pointer-events: auto;
+    touch-action: manipulation;
+  }
+
   /* Mobile venue — stage strip below controls; lawn fills the rest of the screen. */
   .game-surface[data-mobile-venue]:not([data-deep-space]) {
     background: #5a9c4e;

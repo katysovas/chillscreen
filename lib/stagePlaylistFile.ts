@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
+import type { MatchupStageConfig } from './matchup/normalize';
 import type { StageChannel, StageVideo } from './stageVideos';
 import type { StagePlaylistsFile } from './stagePlaylistUtils';
 import { channelStoredVideos } from './stagePlaylistUtils';
@@ -50,6 +51,7 @@ export function updateChannelVideos(
       label: prev.label,
       source: 'curated',
       videos,
+      ...(prev.matchup ? { matchup: prev.matchup } : {}),
     };
   } else {
     const apiPrev = prev.source === 'youtube-api' ? prev : null;
@@ -63,6 +65,18 @@ export function updateChannelVideos(
     };
   }
 
+  file.updatedAt = new Date().toISOString();
+  writeStagePlaylistsFile(file);
+  return file;
+}
+
+export function updateChannelMatchup(
+  channel: StageChannel,
+  matchup: MatchupStageConfig,
+): StagePlaylistsFile {
+  const file = readStagePlaylistsFile();
+  const prev = file.channels[channel];
+  file.channels[channel] = { ...prev, matchup };
   file.updatedAt = new Date().toISOString();
   writeStagePlaylistsFile(file);
   return file;

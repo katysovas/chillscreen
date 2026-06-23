@@ -152,7 +152,7 @@ function LineupTabIcon({ size = 14 }: { size?: number }) {
   );
 }
 
-function InfoTabIcon({ size = 14 }: { size?: number }) {
+function NowPlayingTabIcon({ size = 14 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -164,10 +164,8 @@ function InfoTabIcon({ size = 14 }: { size?: number }) {
     >
       <circle cx={12} cy={12} r={9} stroke="currentColor" strokeWidth={1.6} />
       <path
-        d="M12 11v5.5M12 8.25h.01"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        strokeLinecap="round"
+        d="M10 8.2v7.6l6.2-3.8L10 8.2Z"
+        fill="currentColor"
       />
     </svg>
   );
@@ -387,9 +385,6 @@ export function StageChatterPanel({
       : `Welcome to ${name}`;
   }, [isStageOwner, stageDescription, stageName]);
 
-  const infoName = stageName?.trim() ?? '';
-  const infoDescription = stageDescription?.trim() ?? '';
-
   const selectTab = useCallback((tab: StageSidePanelTab) => {
     setExpanded(true);
     onTabChange(tab);
@@ -517,8 +512,8 @@ export function StageChatterPanel({
           />
           <SidePanelTab
             active={activeTab === 'info'}
-            label="Info"
-            icon={<InfoTabIcon />}
+            label="Now Playing"
+            icon={<NowPlayingTabIcon />}
             onClick={() => selectTab('info')}
           />
         </div>
@@ -784,44 +779,11 @@ export function StageChatterPanel({
             padding: '14px 14px 16px',
           }}
         >
-          {infoName ? (
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 14,
-                fontWeight: 700,
-                lineHeight: 1.35,
-                color: 'rgba(255, 240, 250, 0.95)',
-              }}
-            >
-              {infoName}
-            </h2>
-          ) : null}
-          {infoDescription ? (
-            <p
-              style={{
-                margin: infoName ? '10px 0 0' : 0,
-                fontSize: 11,
-                lineHeight: 1.55,
-                color: 'rgba(255, 255, 255, 0.72)',
-              }}
-            >
-              {infoDescription}
-            </p>
-          ) : null}
-          <StageInfoPanel playbackChannel={playbackChannel} />
-          {!infoName && !infoDescription ? (
-            <p
-              style={{
-                margin: '12px 4px 0',
-                fontSize: 11,
-                lineHeight: 1.5,
-                color: 'rgba(255, 255, 255, 0.38)',
-              }}
-            >
-              No stage information yet.
-            </p>
-          ) : null}
+          <StageInfoPanel
+            stageName={stageName}
+            stageDescription={stageDescription}
+            playbackChannel={playbackChannel}
+          />
         </div>
       )}
     </div>

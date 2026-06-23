@@ -40,22 +40,24 @@ export function applyServerStageSync(
   serverNow: number,
   sync: Pick<StageSync, 'epoch' | 'defaultDurationMs'> & {
     playlists: Partial<Record<StageChannel, StageVideo[]>>;
+    matchup?: Partial<StageSync['matchup']>;
   },
   source?: SyncSource,
 ) {
   const playlists = serverSync
     ? mergeStageSyncPlaylists(serverSync.playlists, sync.playlists)
     : mergeStageSyncPlaylists(undefined, sync.playlists);
+  const matchup = { ...serverSync?.matchup, ...sync.matchup };
 
   // PartyKit owns the clock once connected; API can still upgrade fallback playlists.
   if (source === 'api' && syncSource === 'partykit' && serverSync) {
-    serverSync = { ...serverSync, playlists };
+    serverSync = { ...serverSync, playlists, matchup };
     for (const notify of listeners) notify();
     return;
   }
 
   clockOffsetMs = serverNow - Date.now();
-  serverSync = { ...sync, playlists };
+  serverSync = { ...sync, playlists, matchup };
   if (source) syncSource = source;
 
   for (const notify of listeners) notify();

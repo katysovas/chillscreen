@@ -1,9 +1,12 @@
-import type { HTMLAttributes } from 'react';
+'use client';
+
+import { useSyncExternalStore, type HTMLAttributes } from 'react';
 import DeepSpaceStage, { DeepSpaceShell } from '../../DeepSpaceStage';
 import {
   DEEP_SPACE_HEIGHT,
   DEEP_SPACE_SCALE,
   DEEP_SPACE_STAGE_LIFT_Y,
+  DEEP_SPACE_VIDEO_HEIGHT,
   DEEP_SPACE_WIDTH,
 } from '@/lib/stageVideoLayout';
 import { STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from '../../StageVideoFrame';
@@ -11,7 +14,13 @@ import { deepSpaceMidX } from '@/lib/venues';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isVenueLive } from '@/lib/venueRoutes';
 import { STAGE_ANCHOR_Y } from '@/lib/stageLayout';
+import { isMobileStaticViewport } from '@/lib/staticCityViewport';
 import type { VenueFocus } from './types';
+
+function subscribeViewport(cb: () => void) {
+  window.addEventListener('resize', cb);
+  return () => window.removeEventListener('resize', cb);
+}
 
 export type DeepSpaceVenueBlockProps = {
   tileIndex: number;
@@ -28,6 +37,11 @@ export function DeepSpaceVenueBlock({
   focus,
   deepLinkRoute,
 }: DeepSpaceVenueBlockProps) {
+  const mobile = useSyncExternalStore(
+    subscribeViewport,
+    () => isMobileStaticViewport(),
+    () => false,
+  );
   const deepSpaceX = deepSpaceMidX(t);
   if (deepSpaceX == null) return null;
 
@@ -35,8 +49,9 @@ export function DeepSpaceVenueBlock({
     'deep-space', t, cinemaLive, concertLive, 0, 0, 0, 0, 0, focus, deepLinkRoute,
   );
 
+  const stageHeight = mobile ? DEEP_SPACE_VIDEO_HEIGHT : DEEP_SPACE_HEIGHT;
   const deepSpaceFoW = DEEP_SPACE_WIDTH * DEEP_SPACE_SCALE;
-  const deepSpaceFoH = DEEP_SPACE_HEIGHT * DEEP_SPACE_SCALE;
+  const deepSpaceFoH = stageHeight * DEEP_SPACE_SCALE;
   const deepSpaceFoY = STAGE_ANCHOR_Y - deepSpaceFoH - DEEP_SPACE_STAGE_LIFT_Y;
   const deepSpaceGlowY = 670 - DEEP_SPACE_STAGE_LIFT_Y;
   const deepSpaceGlowInnerY = 674 - DEEP_SPACE_STAGE_LIFT_Y;
@@ -76,7 +91,9 @@ export function DeepSpaceVenueBlock({
             ...(deepSpaceLiveNow ? STAGE_VIDEO_WRAPPER_STYLE : { pointerEvents: 'none' }),
           }}
         >
-          {deepSpaceLiveNow ? <DeepSpaceStage live /> : <DeepSpaceShell />}
+          {deepSpaceLiveNow
+            ? <DeepSpaceStage live embedVoteStrip={!mobile} />
+            : <DeepSpaceShell />}
         </div>
       </foreignObject>
     </>

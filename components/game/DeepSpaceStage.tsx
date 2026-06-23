@@ -1,10 +1,15 @@
 'use client';
 
-import { useRef, type ReactNode } from 'react';
+import { useRef, type HTMLAttributes, type ReactNode } from 'react';
 import { setDeepSpaceNowPlaying } from '@/lib/deepSpaceNow';
 import { minStageScale } from '@/lib/stageViewport';
 import { useStagePlayer } from './useStagePlayer';
-import { StageVideoFrame } from './StageVideoFrame';
+import { StageVideoFrame, STAGE_VIDEO_FO_STYLE, STAGE_VIDEO_WRAPPER_STYLE } from './StageVideoFrame';
+import { StageVoteStrip, STAGE_VOTE_STRIP_HEIGHT } from './stage-vote/StageVoteStrip';
+import {
+  DEEP_SPACE_VIDEO_HEIGHT,
+  DEEP_SPACE_VOTE_STRIP_HEIGHT,
+} from '@/lib/stageVideoLayout';
 
 const IFRAME_W = 540;
 const IFRAME_H = 304;
@@ -116,6 +121,11 @@ const S = `
     background: #030508;
     overflow: hidden;
   }
+  .ds-vote-fo {
+    width: 100%;
+    height: ${STAGE_VOTE_STRIP_HEIGHT}px;
+    border-top: 1px solid rgba(125,240,221,.12);
+  }
   .ds-screen::before {
     content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
     background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 38%);
@@ -221,7 +231,7 @@ export function DeepSpaceShell() {
   );
 }
 
-function DeepSpaceLive() {
+function DeepSpaceLive({ embedVoteStrip = true }: { embedVoteStrip?: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
@@ -237,33 +247,46 @@ function DeepSpaceLive() {
       titleKey={vidKey}
       videoTitle={videoTitle}
       screen={
-        video && src ? (
-          <StageVideoFrame
-            iframeRef={iframeRef}
-            src={src}
-            vidKey={vidKey}
-            title={video.title}
-            onIframeLoad={onIframeLoad}
-            width={IFRAME_W}
-            height={IFRAME_H}
-          />
-        ) : (
-          <div
-            className="ds-iframe"
-            style={{ width: IFRAME_W, height: IFRAME_H, background: '#030508' }}
-          />
-        )
+        <>
+          {video && src ? (
+            <StageVideoFrame
+              iframeRef={iframeRef}
+              src={src}
+              vidKey={vidKey}
+              title={video.title}
+              onIframeLoad={onIframeLoad}
+              width={IFRAME_W}
+              height={IFRAME_H}
+            />
+          ) : (
+            <div
+              className="ds-iframe"
+              style={{ width: IFRAME_W, height: IFRAME_H, background: '#030508' }}
+            />
+          )}
+          {embedVoteStrip ? (
+            <div className="ds-vote-fo" data-stage-vote-fo>
+              <StageVoteStrip channel="deep-space" width={IFRAME_W} />
+            </div>
+          ) : null}
+        </>
       }
     />
   );
 }
 
-export default function DeepSpaceStage({ live = true }: { live?: boolean }) {
+export default function DeepSpaceStage({
+  live = true,
+  embedVoteStrip = true,
+}: {
+  live?: boolean;
+  embedVoteStrip?: boolean;
+}) {
   if (!live) return <DeepSpaceShell />;
-  return <DeepSpaceLive />;
+  return <DeepSpaceLive embedVoteStrip={embedVoteStrip} />;
 }
 
 export const DEEP_SPACE_WIDTH = STAGE_W;
 export const DEEP_SPACE_SCALE = minStageScale(1.32);
-/** ds-wrap total height at scale 1 */
-export const DEEP_SPACE_HEIGHT = 452;
+/** ds-wrap total height at scale 1 — video + optional vote strip */
+export const DEEP_SPACE_HEIGHT = DEEP_SPACE_VIDEO_HEIGHT + DEEP_SPACE_VOTE_STRIP_HEIGHT;

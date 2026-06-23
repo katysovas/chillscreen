@@ -24,5 +24,7 @@ export function resolveStageVideoDisplayMeta(
     channelTitle,
     avatarUrl,
     channelUrl: fetched?.channelUrl?.trim() || video.channelUrl?.trim() || undefined,
+    subscriberCount: fetched?.subscriberCount,
+    channelDescription: fetched?.channelDescription?.trim() || undefined,
   };
 }

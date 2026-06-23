@@ -262,6 +262,110 @@ export async function fetchYoutubeChannelVideoIds(
   return fetchYoutubePlaylistVideoIds(uploadsPlaylistId, apiKey, maxResults);
 }
 
+export type YoutubeAdminChannelVideos = {
+  channelTitle?: string;
+  channelUrl?: string;
+  results: YoutubeAdminSearchResult[];
+  /** Uploads examined before duration/embed filter. */
+  scannedCount?: number;
+  minDurationSec?: number;
+};
+
+/** Default long-form cutoff for admin channel imports (40 minutes). */
+export const ADMIN_CHANNEL_DEFAULT_MIN_DURATION_SEC = 40 * 60;
+
+const CHANNEL_UPLOAD_SCAN_CAP = 200;
+
+/** Fetch recent uploads from a channel for localhost admin curation. */
+export async function fetchYoutubeAdminChannelVideos(
+  input: string,
+  apiKey: string,
+  maxResults = 24,
+  minDurationSec = 0,
+): Promise<YoutubeAdminChannelVideos> {
+  const ref = parseYoutubeChannelRef(input);
+  if (!ref) {
+    throw new Error('Could not parse channel — paste a @handle, channel URL, or UC… id');
+  }
+
+  const channelsUrl = new URL('https://www.googleapis.com/youtube/v3/channels');
+  channelsUrl.searchParams.set('part', 'snippet,contentDetails');
+  channelsUrl.searchParams.set('key', apiKey);
+  if (ref.kind === 'id') {
+    channelsUrl.searchParams.set('id', ref.channelId);
+  } else {
+    channelsUrl.searchParams.set('forHandle', ref.handle);
+  }
+
+  const channelRes = await fetch(channelsUrl);
+  if (!channelRes.ok) {
+    const body = await channelRes.text();
+    const err = new Error(
+      isYoutubeQuotaError(channelRes.status, body)
+        ? 'YouTube API quota exceeded. Try again tomorrow or add videos by URL.'
+        : `YouTube channel failed: ${channelRes.status} ${body}`,
+    );
+    (err as Error & { quotaExceeded?: boolean }).quotaExceeded = isYoutubeQuotaError(channelRes.status, body);
+    throw err;
+  }
+
+  const channelData = await channelRes.json() as {
+    items?: {
+      id?: string;
+      snippet?: { title?: string };
+      contentDetails?: { relatedPlaylists?: { uploads?: string } };
+    }[];
+  };
+
+  const channel = channelData.items?.[0];
+  const playlistId = channel?.contentDetails?.relatedPlaylists?.uploads;
+  const channelId = channel?.id;
+  if (!playlistId || !channelId) {
+    throw new Error('Channel not found or has no public uploads.');
+  }
+
+  const channelTitle = channel.snippet?.title?.trim();
+  const channelUrl = `https://www.youtube.com/channel/${channelId}`;
+
+  const cap = Math.min(50, Math.max(1, maxResults));
+  const scanCap = minDurationSec > 0 ? CHANNEL_UPLOAD_SCAN_CAP : cap;
+  const ids = await fetchYoutubePlaylistVideoIds(playlistId, apiKey, scanCap);
+  if (!ids.length) {
+    return {
+      ...(channelTitle ? { channelTitle } : {}),
+      channelUrl,
+      results: [],
+      scannedCount: 0,
+      ...(minDurationSec > 0 ? { minDurationSec } : {}),
+    };
+  }
+
+  const byId = new Map<string, YoutubeAdminSearchResult>();
+  for (let i = 0; i < ids.length; i += 50) {
+    const chunk = await fetchYoutubeVideosListDetails(ids.slice(i, i + 50), apiKey);
+    for (const [id, detail] of chunk) byId.set(id, detail);
+  }
+
+  const results: YoutubeAdminSearchResult[] = [];
+  for (const id of ids) {
+    const detail = byId.get(id);
+    if (!detail?.embeddable) continue;
+    if (minDurationSec > 0) {
+      if (detail.durationSec == null || detail.durationSec < minDurationSec) continue;
+    }
+    results.push(detail);
+    if (results.length >= cap) break;
+  }
+
+  return {
+    ...(channelTitle ? { channelTitle } : {}),
+    channelUrl,
+    results,
+    scannedCount: ids.length,
+    ...(minDurationSec > 0 ? { minDurationSec } : {}),
+  };
+}
+
 function isYoutubeQuotaError(status: number, body: string): boolean {
   return status === 429 || (status === 403 && body.toLowerCase().includes('quota'));
 }
@@ -378,9 +482,71 @@ export type YoutubeVideoDisplayMeta = {
   avatarUrl: string;
   /** YouTube channel page — from channel id or oEmbed author_url. */
   channelUrl?: string;
+  subscriberCount?: number;
+  /** Channel about text — for lineup info tooltips. */
+  channelDescription?: string;
 };
 
+export function formatFollowerCount(count: number): string {
+  if (!Number.isFinite(count) || count <= 0) return '';
+  if (count >= 1_000_000) {
+    const millions = count / 1_000_000;
+    const rounded = millions >= 10 ? Math.round(millions) : Math.round(millions * 10) / 10;
+    return `${String(rounded).replace(/\.0$/, '')}M followers`;
+  }
+  if (count >= 1_000) {
+    return `${Math.round(count / 1_000)}K followers`;
+  }
+  return `${count} followers`;
+}
+
 const YOUTUBE_VIDEO_ID_RE = /^[\w-]{11}$/;
+
+async function fetchYoutubeChannelDescription(
+  ref: YoutubeChannelRef,
+  apiKey: string,
+): Promise<string | undefined> {
+  const channelsUrl = new URL('https://www.googleapis.com/youtube/v3/channels');
+  channelsUrl.searchParams.set('part', 'snippet');
+  channelsUrl.searchParams.set('key', apiKey);
+  if (ref.kind === 'id') {
+    channelsUrl.searchParams.set('id', ref.channelId);
+  } else {
+    channelsUrl.searchParams.set('forHandle', ref.handle);
+  }
+
+  const res = await fetch(channelsUrl);
+  if (!res.ok) return undefined;
+
+  const data = await res.json() as { items?: { snippet?: { description?: string } }[] };
+  const desc = data.items?.[0]?.snippet?.description?.trim();
+  return desc || undefined;
+}
+
+async function fetchYoutubeChannelSubscriberCount(
+  ref: YoutubeChannelRef,
+  apiKey: string,
+): Promise<number | undefined> {
+  const channelsUrl = new URL('https://www.googleapis.com/youtube/v3/channels');
+  channelsUrl.searchParams.set('part', 'statistics');
+  channelsUrl.searchParams.set('key', apiKey);
+  if (ref.kind === 'id') {
+    channelsUrl.searchParams.set('id', ref.channelId);
+  } else {
+    channelsUrl.searchParams.set('forHandle', ref.handle);
+  }
+
+  const res = await fetch(channelsUrl);
+  if (!res.ok) return undefined;
+
+  const data = await res.json() as {
+    items?: { statistics?: { subscriberCount?: string; hiddenSubscriberCount?: boolean } }[];
+  };
+  const stats = data.items?.[0]?.statistics;
+  if (!stats || stats.hiddenSubscriberCount) return undefined;
+  const subs = Number(stats.subscriberCount);
+  return Number.isFinite(subs) && subs > 0 ? subs : undefined;
+}
 
 /** Channel avatar + uploader name for curated lineup rows. */
 export async function fetchYoutubeVideoDisplayMeta(
@@ -448,9 +614,11 @@ export async function fetchYoutubeVideoDisplayMeta(
         }
 
         const channelAvatars = new Map<string, string>();
+        const channelSubscribers = new Map<string, number>();
+        const channelDescriptions = new Map<string, string>();
         if (channelIds.size) {
           const channelsUrl = new URL('https://www.googleapis.com/youtube/v3/channels');
-          channelsUrl.searchParams.set('part', 'snippet');
+          channelsUrl.searchParams.set('part', 'snippet,statistics');
           channelsUrl.searchParams.set('id', [...channelIds].join(','));
           channelsUrl.searchParams.set('key', apiKey);
 
@@ -460,8 +628,10 @@ export async function fetchYoutubeVideoDisplayMeta(
               items?: {
                 id: string;
                 snippet?: {
+                  description?: string;
                   thumbnails?: { default?: { url?: string }; medium?: { url?: string } };
                 };
+                statistics?: { subscriberCount?: string };
               }[];
             };
             for (const channel of channelsData.items ?? []) {
@@ -469,6 +639,12 @@ export async function fetchYoutubeVideoDisplayMeta(
                 channel.snippet?.thumbnails?.medium?.url
                 ?? channel.snippet?.thumbnails?.default?.url;
               if (avatar) channelAvatars.set(channel.id, avatar);
+              const desc = channel.snippet?.description?.trim();
+              if (desc) channelDescriptions.set(channel.id, desc);
+              const subs = Number(channel.statistics?.subscriberCount);
+              if (Number.isFinite(subs) && subs > 0) {
+                channelSubscribers.set(channel.id, subs);
+              }
             }
           }
         }
@@ -480,6 +656,12 @@ export async function fetchYoutubeVideoDisplayMeta(
             channelTitle: row.channelTitle,
             avatarUrl: (row.channelId ? channelAvatars.get(row.channelId) : undefined) ?? row.videoThumb,
             ...(row.channelId ? { channelUrl: `https://www.youtube.com/channel/${row.channelId}` } : {}),
+            ...(row.channelId && channelSubscribers.has(row.channelId)
+              ? { subscriberCount: channelSubscribers.get(row.channelId) }
+              : {}),
+            ...(row.channelId && channelDescriptions.has(row.channelId)
+              ? { channelDescription: channelDescriptions.get(row.channelId) }
+              : {}),
           });
           pending.delete(row.id);
         }
@@ -502,12 +684,31 @@ export async function fetchYoutubeVideoDisplayMeta(
         author_url?: string;
         thumbnail_url?: string;
       };
+      let subscriberCount: number | undefined;
+      let channelDescription: string | undefined;
+      if (apiKey && data.author_url?.trim()) {
+        const ref = parseYoutubeChannelRef(data.author_url.trim());
+        if (ref) {
+          try {
+            subscriberCount = await fetchYoutubeChannelSubscriberCount(ref, apiKey);
+          } catch {
+            /* optional enrichment */
+          }
+          try {
+            channelDescription = await fetchYoutubeChannelDescription(ref, apiKey);
+          } catch {
+            /* optional enrichment */
+          }
+        }
+      }
       out.set(id, {
         videoId: id,
         videoTitle: data.title?.trim() || id,
         channelTitle: data.author_name?.trim() || data.title?.trim() || id,
         avatarUrl: data.thumbnail_url ?? `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
         ...(data.author_url?.trim() ? { channelUrl: data.author_url.trim() } : {}),
+        ...(subscriberCount != null ? { subscriberCount } : {}),
+        ...(channelDescription ? { channelDescription } : {}),
       });
     } catch {
       /* skip unavailable ids */

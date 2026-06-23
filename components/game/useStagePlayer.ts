@@ -16,6 +16,8 @@ import {
   stageEmbedSrc,
 } from '@/lib/youtubePlayer';
 import { useCreatorStagePlayer } from './useCreatorStagePlayer';
+import { useMatchupStagePlayback } from './hooks/useMatchupStagePlayback';
+import { isMatchupChannel } from '@/lib/matchup/config';
 import type { UserStagePublic } from '@/lib/stages/types';
 
 export type { StageVideo } from '@/lib/stageVideos';
@@ -73,7 +75,16 @@ const EMPTY_CREATOR_STAGE: UserStagePublic = {
 function useSyncedStagePlayer({
   live, channel, iframeRef, onNowPlaying, alwaysMuted = false, enabled = true,
 }: UseStagePlayerOptions & { enabled?: boolean }): UseStagePlayerResult {
-  const { video, vidKey } = useStageChannel(channel, live && enabled);
+  const matchupChannel = isMatchupChannel(channel);
+  const matchupPlayback = useMatchupStagePlayback(channel, live && enabled && matchupChannel);
+  const syncedChannel = useStageChannel(channel, live && enabled && !matchupChannel);
+  const video = matchupPlayback?.video ?? syncedChannel.video;
+  const vidKey = matchupPlayback?.vidKey ?? syncedChannel.vidKey;
+  const embedOffset = useMemo(() => {
+    if (matchupPlayback) return matchupPlayback.offsetSec;
+    return currentSchedule(channel)?.offsetSec ?? 0;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- offset is fixed per track (vidKey)
+  }, [vidKey, matchupChannel, channel]);
   const [embedReady, setEmbedReady] = useState(false);
 
   useEffect(() => {
@@ -103,11 +114,11 @@ function useSyncedStagePlayer({
 
   const src = useMemo(() => {
     if (!enabled || !live || !embedReady || !video) return '';
-    const sched = currentSchedule(channel);
-    const url = stageEmbedSrc(video.id, sched?.offsetSec ?? 0);
-    console.log(`[${channel}] embed`, video.id, video.title, sched?.offsetSec ?? 0, url);
+    const offsetSec = embedOffset;
+    const url = stageEmbedSrc(video.id, offsetSec);
+    console.log(`[${channel}] embed`, video.id, video.title, offsetSec, url);
     return url;
-  }, [enabled, live, embedReady, video?.id, video?.title, channel, vidKey]);
+  }, [enabled, live, embedReady, video?.id, video?.title, channel, vidKey, embedOffset]);
 
   useEffect(() => {
     if (!live || !video) {
@@ -159,9 +170,9 @@ function useSyncedStagePlayer({
   }, [live, src, vidKey, nudgePlayback]);
 
   useEffect(() => {
-    if (!live || !src) return;
+    if (!live || !src || matchupChannel) return;
     return subscribeStageSync(nudgePlayback);
-  }, [live, src, nudgePlayback]);
+  }, [live, src, nudgePlayback, matchupChannel]);
 
   useEffect(() => {
     if (alwaysMuted) return;

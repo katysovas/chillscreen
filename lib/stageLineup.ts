@@ -6,6 +6,7 @@ import {
   type StageVideo,
 } from './stageVideos';
 import { resolveStageVideoDisplayMeta, type StageVideoDisplayMeta } from './stageVideoMeta';
+import { formatFollowerCount } from './youtubeApi';
 import { topVotedVideoId } from './stageLineupVote';
 
 export type StageLineupSlot = {
@@ -233,14 +234,22 @@ export function lineupAvatarLetter(title: string): string {
 export function lineupDisplayForVideo(
   video: StageVideo,
   fetched?: StageVideoDisplayMeta,
-): { name: string; subtitle: string; avatarUrl: string; avatarLetter: string; channelUrl?: string } {
+): { name: string; subtitle: string; followersLabel: string; avatarUrl: string; avatarLetter: string; channelUrl?: string; channelDescription?: string } {
   const meta = resolveStageVideoDisplayMeta(video, fetched);
+  const followersLabel = meta.subscriberCount
+    ? formatFollowerCount(meta.subscriberCount)
+    : '';
+  const channelDescription = meta.channelDescription
+    ? lineupTitleLabel(meta.channelDescription, 160)
+    : undefined;
   return {
     name: lineupTitleLabel(meta.channelTitle, 28),
     subtitle: lineupTitleLabel(meta.videoTitle, 42),
+    followersLabel,
     avatarUrl: meta.avatarUrl,
     avatarLetter: lineupAvatarLetter(meta.channelTitle),
     channelUrl: meta.channelUrl,
+    channelDescription,
   };
 }
 
