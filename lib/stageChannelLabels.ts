@@ -1,4 +1,5 @@
 import type { StageChannel } from './stageVideos';
+import { isHiddenStageChannel } from './hiddenVenues';
 
 export type StageChannelMeta = {
   id: StageChannel;
@@ -6,8 +7,7 @@ export type StageChannelMeta = {
   description: string;
 };
 
-/** Display metadata for admin UI and docs. */
-export const STAGE_CHANNEL_META: StageChannelMeta[] = [
+const STAGE_CHANNEL_META_ALL: StageChannelMeta[] = [
   { id: 'cinema', label: 'Chill Cinema', description: 'San Francisco outdoor cinema' },
   { id: 'deep-space', label: 'Deep Space', description: 'Cosmic orbit stage' },
   { id: 'outside-lands', label: 'San Francisco', description: 'Outside Hands concert stage' },
@@ -20,6 +20,11 @@ export const STAGE_CHANNEL_META: StageChannelMeta[] = [
   { id: 'hula', label: 'Hulaween', description: 'Suwannee Hulaween festival sets' },
   { id: 'headliner', label: 'The Headliner', description: 'Main-stage sets under the sunset sky' },
 ];
+
+/** Display metadata for admin UI and docs. */
+export const STAGE_CHANNEL_META = STAGE_CHANNEL_META_ALL.filter(
+  meta => !isHiddenStageChannel(meta.id),
+);
 
 export const STAGE_CHANNEL_IDS = STAGE_CHANNEL_META.map(c => c.id);
 

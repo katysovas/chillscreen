@@ -2,6 +2,7 @@ import type { VenueRoute } from '@/lib/venueRoutes';
 import type { StagePickerTarget } from '@/lib/stagePickerOptions';
 import type { FeaturedStageSummary, StagePresetId } from '@/lib/stages/types';
 import { stagePresetById } from '@/lib/stages/presets';
+import { isHiddenVenueRoute } from '@/lib/hiddenVenues';
 
 export const LANDING_TRENDING_JOIN_LABEL = 'Join the stage';
 
@@ -26,7 +27,7 @@ export type LandingStage = {
   bgImage?: string;
 };
 
-export const LANDING_STAGES: LandingStage[] = [
+const LANDING_STAGES_ALL: LandingStage[] = [
   {
     route: 'deep-space',
     name: 'Deep Space',
@@ -131,6 +132,10 @@ export const LANDING_STAGES: LandingStage[] = [
     bgImage: '/images/homepage/seatlle.webp',
   },
 ];
+
+export const LANDING_STAGES = LANDING_STAGES_ALL.filter(
+  stage => !isHiddenVenueRoute(stage.route),
+);
 
 /** Thumbnail for a featured creator stage on the landing page. */
 export function landingImageForCreatorPreset(preset: StagePresetId): string {

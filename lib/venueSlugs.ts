@@ -1,3 +1,5 @@
+import { HIDDEN_VENUE_SLUGS } from './hiddenVenues';
+
 /** Deep-linkable venue destinations. */
 export type VenueRoute =
   | 'coachella'
@@ -68,7 +70,7 @@ export function venueSlugForRoute(route: VenueRoute): string {
 }
 
 /** Static paths for `[venue]` pages and sitemap. */
-export const VENUE_SLUGS = [
+const VENUE_SLUGS_ALL = [
   'thedesert',
   'lasvegas',
   'sanfrancisco',
@@ -81,6 +83,10 @@ export const VENUE_SLUGS = [
   'hula',
   'headliner',
 ] as const;
+
+export const VENUE_SLUGS = VENUE_SLUGS_ALL.filter(
+  slug => !(HIDDEN_VENUE_SLUGS as readonly string[]).includes(slug),
+);
 
 const SLUG_TO_ROUTE: Record<string, VenueRoute> = {
   thedesert: 'coachella',

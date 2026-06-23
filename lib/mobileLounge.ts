@@ -1,4 +1,5 @@
 import type { VenueRoute } from '@/lib/venueRoutes';
+import { isHiddenVenueRoute } from '@/lib/hiddenVenues';
 
 const STORAGE_KEY = 'whichstage-mobile-lounge';
 
@@ -38,7 +39,7 @@ export type MobileLoungeStageOption = {
 };
 
 /** Pickable destinations for mobile lounge (no walking — stage-focused). */
-export const MOBILE_LOUNGE_STAGES: MobileLoungeStageOption[] = [
+const MOBILE_LOUNGE_STAGES_ALL: MobileLoungeStageOption[] = [
   {
     route: 'outside-hands',
     title: 'San Francisco',
@@ -117,6 +118,10 @@ export const MOBILE_LOUNGE_STAGES: MobileLoungeStageOption[] = [
     originYPercent: 54,
   },
 ];
+
+export const MOBILE_LOUNGE_STAGES = MOBILE_LOUNGE_STAGES_ALL.filter(
+  stage => !isHiddenVenueRoute(stage.route),
+);
 
 export function mobileLoungeStageOption(route: VenueRoute): MobileLoungeStageOption {
   return MOBILE_LOUNGE_STAGES.find(s => s.route === route) ?? MOBILE_LOUNGE_STAGES[0]!;
