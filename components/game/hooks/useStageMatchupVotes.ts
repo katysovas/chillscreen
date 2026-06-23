@@ -8,6 +8,7 @@ import { isMatchupChannel } from '@/lib/matchup/config';
 import { matchupDisplayPercents } from '@/lib/matchup/display';
 import { lineupDisplayForVideo } from '@/lib/stageLineup';
 import { matchupConfigFor, localMatchupVotePreview } from '@/lib/matchup/playlists';
+import { trackDurationMs } from '@/lib/matchup/lineups';
 import { getStageSync, subscribeStageSync, syncedNow } from '@/lib/stageClock';
 import type { StageChannel, StageVideo } from '@/lib/stageVideos';
 import {
@@ -28,6 +29,13 @@ type MatchupMultiplayer = Pick<
   | 'registerMatchupStateHandler'
 >;
 
+function localCountdownMs(channel: StageChannel): number {
+  const preview = localMatchupVotePreview(channel, getStageSync());
+  if (!preview?.voteA.youtubeId) return 0;
+  const sync = getStageSync();
+  return trackDurationMs(preview.voteA, sync.defaultDurationMs);
+}
+
 export function useStageMatchupVotes(
   channel: StageChannel,
   mp: MatchupMultiplayer | null,
@@ -37,6 +45,7 @@ export function useStageMatchupVotes(
   const [msUntilNext, setMsUntilNext] = useState(0);
   const endsAtRef = useRef<number | null>(null);
   const [sessionReady, setSessionReady] = useState(isPlayerSessionReady);
+  const [localMyVote, setLocalMyVote] = useState<'a' | 'b' | null>(null);
   const [swapPendingLive, setSwapPendingLive] = useState(false);
   const swapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,6 +67,8 @@ export function useStageMatchupVotes(
   useEffect(() => {
     if (!mp || !isMatchupChannel(channel)) {
       setPayload(null);
+      setShareSynced(false);
+      endsAtRef.current = null;
       return;
     }
 
@@ -69,6 +80,8 @@ export function useStageMatchupVotes(
       setPayload(prev => {
         const boundaryChanged = prev != null
           && prev.current.startedAt !== msg.current.startedAt;
+        if (boundaryChanged) setLocalMyVote(null);
+        else if (msg.myVote !== undefined) setLocalMyVote(msg.myVote ?? null);
         return {
           ...msg,
           myVote: msg.myVote !== undefined
@@ -81,9 +94,28 @@ export function useStageMatchupVotes(
     };
 
     const off = mp.registerMatchupStateHandler(onState);
-    if (sessionReady && mp.connected) mp.sendMatchupSubscribe(channel);
     return off;
+  }, [channel, mp]);
+
+  useEffect(() => {
+    if (!mp || !isMatchupChannel(channel) || !sessionReady) return;
+    mp.sendMatchupSubscribe(channel);
+  }, [channel, mp, sessionReady]);
+
+  useEffect(() => {
+    if (!mp?.connected || !isMatchupChannel(channel) || !sessionReady) return;
+    mp.sendMatchupSubscribe(channel);
   }, [channel, mp, sessionReady, mp?.connected]);
+
+  useEffect(() => {
+    if (!isMatchupChannel(channel)) return;
+    if (payload) return;
+
+    const durMs = localCountdownMs(channel);
+    if (durMs <= 0) return;
+    endsAtRef.current = syncedNow() + durMs;
+    setMsUntilNext(durMs);
+  }, [channel, payload]);
 
   useEffect(() => {
     if (!isMatchupChannel(channel)) return;
@@ -91,7 +123,14 @@ export function useStageMatchupVotes(
 
     const tick = () => {
       const endsAt = endsAtRef.current;
-      if (endsAt == null) return;
+      if (endsAt == null) {
+        const durMs = localCountdownMs(channel);
+        if (durMs > 0) {
+          endsAtRef.current = syncedNow() + durMs;
+          setMsUntilNext(durMs);
+        }
+        return;
+      }
       setMsUntilNext(Math.max(0, endsAt - syncedNow()));
     };
 
@@ -101,7 +140,7 @@ export function useStageMatchupVotes(
       if (timer) clearInterval(timer);
       unsub();
     };
-  }, [channel, mp]);
+  }, [channel, mp, payload]);
 
   useEffect(() => {
     if (swapTimerRef.current) {
@@ -127,6 +166,7 @@ export function useStageMatchupVotes(
     const session = getPlayerSession();
     const isSuperAdmin = isSuperAdminFestieName(session.festie?.name);
     if (!isSuperAdmin) {
+      setLocalMyVote(side);
       setPayload(prev => (prev ? { ...prev, myVote: side } : prev));
     }
     mp.sendMatchupVote(channel, side);
@@ -142,6 +182,7 @@ export function useStageMatchupVotes(
 
   const effectiveVoteA = payload?.voteA ?? localPreview?.voteA;
   const effectiveVoteB = payload?.voteB ?? localPreview?.voteB ?? null;
+  const myVote = payload?.myVote ?? localMyVote;
 
   const toVideo = (track: MatchupStatePayload['voteA'] | null | undefined): StageVideo | null => {
     if (!track?.youtubeId) return null;
@@ -199,9 +240,11 @@ export function useStageMatchupVotes(
     msUntilNext,
     swapPendingLive,
     castVote,
+    myVote,
     isSuperAdmin: isSuperAdminFestieName(getPlayerSession().festie?.name),
     connected: mp?.connected ?? false,
     sessionReady,
+    canVote: Boolean(mp && sessionReady),
     playerId: getOrCreatePlayerId(),
     refresh: () => mp?.sendMatchupSubscribe(channel),
   };

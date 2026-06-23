@@ -1,7 +1,9 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import type { MatchupStageConfig } from './matchup/normalize';
+import { flattenMatchupVideos, normalizeMatchupConfig } from './matchup/normalize';
 import type { StageChannel, StageVideo } from './stageVideos';
+import { STAGE_MATCHUP_CONFIG } from './stageVideos';
 import type { StagePlaylistsFile } from './stagePlaylistUtils';
 import { channelStoredVideos } from './stagePlaylistUtils';
 
@@ -76,8 +78,26 @@ export function updateChannelMatchup(
 ): StagePlaylistsFile {
   const file = readStagePlaylistsFile();
   const prev = file.channels[channel];
-  file.channels[channel] = { ...prev, matchup };
+  const videos = flattenMatchupVideos(matchup);
+  file.channels[channel] = { ...prev, matchup, videos, source: 'curated' };
   file.updatedAt = new Date().toISOString();
   writeStagePlaylistsFile(file);
   return file;
+}
+
+/** Fresh matchup buckets from disk — PartyKit reads this on connect (no restart needed). */
+export function readMatchupConfigFromDisk(): Partial<Record<StageChannel, MatchupStageConfig>> {
+  try {
+    const file = readStagePlaylistsFile();
+    const out: Partial<Record<StageChannel, MatchupStageConfig>> = {};
+    for (const channel of Object.keys(file.channels) as StageChannel[]) {
+      const raw = file.channels[channel].matchup;
+      if (!raw) continue;
+      const normalized = normalizeMatchupConfig(raw);
+      if (normalized) out[channel] = normalized;
+    }
+    return out;
+  } catch {
+    return STAGE_MATCHUP_CONFIG;
+  }
 }

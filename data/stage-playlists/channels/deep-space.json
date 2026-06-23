@@ -3,48 +3,807 @@
   "source": "curated",
   "videos": [
     {
-      "id": "7rgG3sboipg",
-      "title": "Cosmic City - Space Music For Cosmic Drift",
-      "durationSec": 7207
-    },
-    {
-      "id": "6phNZu4n2UM",
-      "title": "Space City - Cosmic Music For Space Traveling",
-      "durationSec": 7207
-    },
-    {
       "id": "UuU-Go8GoeY",
       "title": "DEKEL Downtempo @ The Dome - Ozora Festival 2023 (Full Movie)",
       "durationSec": 4872
     },
     {
-      "id": "rJTnDeCEG8Q",
-      "title": "”LOWSYNC” Downtempo,Electronic,World DJ MIX / tsubasabclrs / by MUSIC LOUNGE STRUT at Koenji, Tokyo",
-      "durationSec": 3050
+      "id": "fBq1VlQxvQY",
+      "title": "DEKEL @ Ozora Festival 2025 (Full Set Movie)",
+      "channelTitle": "DEKEL",
+      "channelUrl": "https://www.youtube.com/channel/UCP32qW-bmamwCREG16VsWyQ",
+      "durationSec": 6160
     },
     {
-      "id": "KTDJVwB_A3Y",
-      "title": "Kalya Scintilla LIVE @ OZORA Dome 2025 (World Fusion BassMusic Downtempo Electronica)",
-      "durationSec": 7018
+      "id": "N7rbufsQ1L4",
+      "title": "DEKEL & GOLANSKI @ Ozora Festival 2024 / PUMPUI [ Full Video ]",
+      "channelTitle": "DEKEL",
+      "channelUrl": "https://www.youtube.com/channel/UCP32qW-bmamwCREG16VsWyQ",
+      "durationSec": 7508
     },
     {
-      "id": "-ljOpZ03x1I",
-      "title": "Joris Voorn Vinyl DJ Mix | Classic Dub Techno & More",
-      "durationSec": 5000
+      "id": "xXcTWvLvdGw",
+      "title": "DEKEL - SOL - Full Album",
+      "channelTitle": "DEKEL",
+      "channelUrl": "https://www.youtube.com/channel/UCP32qW-bmamwCREG16VsWyQ",
+      "durationSec": 4653
     },
     {
-      "id": "oDKKs3eu84s",
-      "title": "Jade Sebire - Dub Techno / Deep Techno vinyl dj set.",
-      "durationSec": 5315
+      "id": "7Dwo1plTtb0",
+      "title": "Dynamic Hypnotic Techno with a mystical atmosphere - Red Moor",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 5496
+    },
+    {
+      "id": "UA3WRt-pp0U",
+      "title": "Chilled Hypnotic Techno Over Frankfurt’s Skyline",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 3738
+    },
+    {
+      "id": "Thf6aeTzcWA",
+      "title": "Pure Hypnotic Techno | Deep Mindflow Set",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4144
+    },
+    {
+      "id": "rickhb7N80M",
+      "title": "Chillout - Cosy Street - Hypnotic Chill Techno",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4280
+    },
+    {
+      "id": "mDo18ZR5qSI",
+      "title": "Deep Resonance – Hypnotic Chill-out Techno",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4212
+    },
+    {
+      "id": "klj8-jShBKY",
+      "title": "NO CHILL -  Harder Mindtrip Hypnotic Techno Club Set",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4200
+    },
+    {
+      "id": "teALZascqEA",
+      "title": "Visions of Dreamfloor - Hypnotic Techno",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4181
+    },
+    {
+      "id": "7oUaF6nRoCs",
+      "title": "NO DANCE - Neroberg - Ambient Electronica Set",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4811
+    },
+    {
+      "id": "hz6wpNZ6zRA",
+      "title": "Chill  Garden Corner - Hypnotic Techno Garden Set - Very relaxed, hypnotic, and driving",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4778
+    },
+    {
+      "id": "YQa2021kCOo",
+      "title": "Chill Garden - Deep Chillout Hypnotic Techno Set",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4687
+    },
+    {
+      "id": "1fTM1H_P6Ek",
+      "title": "Heisenberg's Chemistry Lab - A very special (Techno) mixing",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4657
+    },
+    {
+      "id": "Ao2DJtVJBIQ",
+      "title": "NO DANCE - Reflections in the Midnight Wash – A Hypnotic Ambient Journey",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4387
+    },
+    {
+      "id": "xra56zS_nQI",
+      "title": "NO DANCE - Comedown Mindtrip - Ambient Electro",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 5758
+    },
+    {
+      "id": "bH4_e4uM9mI",
+      "title": "The Techno-feeling of Sun, Flowers and Bees - Melodic Hypnotic Techno Set",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4812
+    },
+    {
+      "id": "JR1DZARd6KY",
+      "title": "The Underground Dark Hypnotic Techno Set",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4142
+    },
+    {
+      "id": "mivTJNy1LiY",
+      "title": "Into the Space - Hypnotic Techno",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4002
+    },
+    {
+      "id": "IDz8NKaJVpI",
+      "title": "Dark Techno - Hypnotic Club Set",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4304
+    },
+    {
+      "id": "St-wdSyB6YA",
+      "title": "Chill Corner - Electro, Very Chilled, Pseric, Hypnotic, Groove Set",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4347
+    },
+    {
+      "id": "TFyCenH6-fk",
+      "title": "Techno Room -  Hypnotic Groove Electro Set",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 3937
+    },
+    {
+      "id": "rjudX0nGfjc",
+      "title": "Fast minimal techno, approximately 140 BPM  - Dance Floor",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 4551
+    },
+    {
+      "id": "KHaFc1HTnWM",
+      "title": "Dreamscape - Electro Hypnotic Chill Floor",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 7295
+    },
+    {
+      "id": "HJp8iEdjogM",
+      "title": "Electro-Garden II",
+      "channelTitle": "Michael Burmeister",
+      "channelUrl": "https://www.youtube.com/channel/UCO4ZN3_WDIDD2HbytexL1-w",
+      "durationSec": 10904
+    },
+    {
+      "id": "YRIX-nYK6LM",
+      "title": "A R I E S ⧫ Space Ambient for Cosmic Drifting ⧫ Deep & Calming Atmospheric Sci-Fi Soundscapes",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "b7TGGIqezsQ",
+      "title": "A Z U R E ⧫ Tranquil Deep Space Aqua Sanctuary ⧫ Ambient Sci-Fi Music for Cosmic Focus",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "JtaSDgBYCAw",
+      "title": "Sakura ⧫ Zen Space Garden ⧫ SciFi Ambient Music for Deep Rest & Stillness",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "jzhuMltELK0",
+      "title": "Orion ⧫ Infinite Universe Ambient ⧫ Deep Space Soundscapes for Focus & Relaxation ⧫ 4K",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "yOXSPwAMQz0",
+      "title": "E R O S ⧫ Serene Space Ambient Music ⧫ Deeply Soothing & Ethereal Sci-Fi Soundscapes",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "XpENoAXsmdQ",
+      "title": "Andromeda ⧫ Deep Space Luxury Research Cruiser ⧫ Serene SciFi Ambient Music ⧫ 4K",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "juANwfCpVHA",
+      "title": "Aphrodite ⧫ Luxury Space Resort ⧫ Deeply Soothing & Intimate Sci-Fi Ambient Music",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "B_Sf4t2nwpQ",
+      "title": "Protocol ⧫ Deep Space Ambient Outpost ⧫ Ethereal Scifi Ambient Music For Deep Focus",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "SlmeD1Bdpy0",
+      "title": "P R Y Z M ⧫ Deep Space Luxury Ambient ⧫ Serene SciFi Soundscape For Relaxation",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "99Nj45_SU2w",
+      "title": "Cosmosis ⧫ Deep Ethereal Space Ambient Music ⧫ Soothing Soundscape for Focus & Sleep",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "Qx6SXe4vhoQ",
+      "title": "Calliope ⧫ Dreamy Ambient SciFi Soundscape ⧫ Deep Atmosphere for Immersive Relaxation",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "619O4OVPqrs",
+      "title": "Y Ū G E N ⧫ Cozy Retro-Future Cabin Ambience ⧫ Soothing Sci-Fi Soundscapes For Deep Rest",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "XyBVl7bluQc",
+      "title": "Orbitalis ⧫ Deep Space Ambient Soundscape ⧫ Otherworldly SciFi Music For Relaxation",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "WtzIRtJQ1qU",
+      "title": "Royale ⧫ Deep Luxury Spaceship Ambience ⧫ Soothing SciFi Soundscape For Cosmic Resting",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "O-Kv1hcodoQ",
+      "title": "Arcadia ⧫ Gliding Above the Utopian Valley ⧫ SciFi Relaxation Soundscape for Study and Deep Rest",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "ttMGu4L_Ykw",
+      "title": "E A R T H : 2 0 2 6 ⧫ Deep Space Ambient Music ⧫ The Soundtrack to the End of The World",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "DJu8vhz5D7E",
+      "title": "Overwatch ⧫ Deeply Calm SciFi Soundscape ⧫ Soothing Winter Ambient Music Above a Dystopian Haven",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "h82AVEywg30",
+      "title": "Nivalis ⧫ Deep Calm SciFi Winter Soundscape ⧫ Warm Ambient Atmosphere for Supreme Relaxation",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "sRQtTFLAh8w",
+      "title": "Thermalis ⧫ Soothing SciFi Spa Soundscape ⧫ Warming Winter Ambience Focus & Stress Relief",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "XSaCcpwBD7U",
+      "title": "Altitude ⧫ Snowy SciFi Luxury Spa Atmosphere ⧫ Deeply Calming Winter Ambient Music",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "toGhL1vP6G8",
+      "title": "Orbital Outpost [POV] ⧫ Deeply Immersive Space Ambient Music ⧫ Weightless Atmosphere For Cosmic Rest",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 28800
+    },
+    {
+      "id": "E_dmYq8LiAw",
+      "title": "Helios ⧫ Peaceful SciFi Ambient Retreat ⧫ Ambient Music for Deep Rest & Stress Relief",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "v9C9DL4ayYA",
+      "title": "Cloud 9 ⧫ Tranquil Ambient Cloud Escape ⧫ Relaxing SciFi Music for Focus & Stress Relief",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "e-AYI5VQDaA",
+      "title": "Kapuseru カプセル ⧫ Deep Relaxing SciFi Soundscape ⧫ Cozy Cyberpunk Capsule Ambience for Focus & Calm",
+      "channelTitle": "Orbital Odyssey",
+      "channelUrl": "https://www.youtube.com/channel/UC__tsEo5uu-3tKBJ2P0eK0A",
+      "durationSec": 7200
+    },
+    {
+      "id": "tmXmKXHXW9E",
+      "title": "Live Stream // Ambient Experiments",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 6056
+    },
+    {
+      "id": "ZImbaaHwwpk",
+      "title": "Echelon Protocol - State Azure (1 Hour Ambient Mix)",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 4196
+    },
+    {
+      "id": "AGkEM4PXXHQ",
+      "title": "Live Stream // Ambient Production",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 9849
+    },
+    {
+      "id": "uFVGRuPb0ms",
+      "title": "Live Stream // Longform Ambient",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 10051
+    },
+    {
+      "id": "CRrf8TOBa7A",
+      "title": "Live Stream // FAWM 2026 tracks from scratch",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 12794
+    },
+    {
+      "id": "CCt-VzK9nxM",
+      "title": "Live Stream // Minimal Ambient Sketches",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 15932
+    },
+    {
+      "id": "pLWXWdrmyCw",
+      "title": "Live Stream // Xmas Eve Ambient Stream",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 14872
+    },
+    {
+      "id": "FvdhOop4LFA",
+      "title": "Live Stream // More Ambient Stream",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 21642
+    },
+    {
+      "id": "oQmCyFWgfZI",
+      "title": "Live Stream // Ambient Stream",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 16384
+    },
+    {
+      "id": "qxRP1Teab5E",
+      "title": "Live Stream // Ambient Jungle Atmospheres",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 14633
+    },
+    {
+      "id": "8yWYSBSkpUI",
+      "title": "Live Stream // Ambient Sketches",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 17872
+    },
+    {
+      "id": "Zzuxk2Ui6AY",
+      "title": "Live Stream // More Lo-fi/Liminal Ambient Sketches",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 15185
+    },
+    {
+      "id": "yAyURI4tK2U",
+      "title": "Live Stream // Late Night Sketches",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 9105
+    },
+    {
+      "id": "f73_8FBoTXc",
+      "title": "Live Stream // Longform Ambient with Omnisphere 3",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 10574
+    },
+    {
+      "id": "lozoz8KEjNI",
+      "title": "Live Stream // Ambient with Omnisphere 3",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 19824
+    },
+    {
+      "id": "vqNWnXLQz_M",
+      "title": "Live Stream // Checking out Omnisphere 3",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 4285
+    },
+    {
+      "id": "-9d0BaK8DkA",
+      "title": "Live Stream // Sunday Piano Improvisation/Practice",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 3493
+    },
+    {
+      "id": "2MUAePMGTtY",
+      "title": "Live Stream // Late Night Piano Improvisations",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 5236
+    },
+    {
+      "id": "SWnstyHYE1I",
+      "title": "Live Stream // Trying some liminal/lo-fi ambient",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 9322
+    },
+    {
+      "id": "DVYQ1bts-qo",
+      "title": "Live Stream // Trying some Ambient Techno/House in Bitwig 6",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 8690
+    },
+    {
+      "id": "YNLodnBOTV0",
+      "title": "Live Stream // Trying some Ambient Techno/House in Bitwig 6",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 13387
+    },
+    {
+      "id": "B3L26aNf4to",
+      "title": "Live Stream // Longform/Drone Ambient Experiments",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 10261
+    },
+    {
+      "id": "PA55BZzTwRs",
+      "title": "Live Stream // Late night random session",
+      "channelTitle": "State Azure",
+      "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
+      "durationSec": 7577
+    },
+    {
+      "id": "Kt4Lr2kaSDI",
+      "title": "Andrey Pushkarev pres. Deep Mix Radio : The Archives Podcast [FULL MIX]",
+      "channelTitle": "Andrey PUSHKAREV",
+      "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+      "durationSec": 3860
+    },
+    {
+      "id": "rpeu2ovr1Ng",
+      "title": "Andrey Pushkarev | Ambient, downtempo & dub techno DJ SET @ Bar Ton, Bucharest",
+      "channelTitle": "Andrey PUSHKAREV",
+      "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+      "durationSec": 7143
+    },
+    {
+      "id": "y6kQe8LwHL8",
+      "title": "Andrey Pushkarev DJ SET | Bali - Morabito Art Villa (Dub & Deep Techno)",
+      "channelTitle": "Andrey PUSHKAREV",
+      "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+      "durationSec": 4868
     },
     {
       "id": "C_VAhfhwN4Y",
       "title": "Andrey Pushkarev - Vinyl DJ Mix | Recorded in a pressing plant (Dub & Deep Techno)",
+      "channelTitle": "Andrey PUSHKAREV",
+      "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
       "durationSec": 5802
     },
     {
-      "id": "pLBda_P7leU",
-      "title": "🎵 Interstellar Journey into Deep Space | Ambient Music and Deep Space Sounds | 4K | 10 hours"
+      "id": "CI_AoIWMAWw",
+      "title": "Andrey Pushkarev & Eli Verveine (Among Trees) - live from Kiosk Radio",
+      "channelTitle": "Andrey PUSHKAREV",
+      "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+      "durationSec": 3761
+    },
+    {
+      "id": "oVA-sg8eoOk",
+      "title": "Andrey Pushkarev & Eli Verveine (Among Trees) - live at Soundscapes, Zanzibar",
+      "channelTitle": "Andrey PUSHKAREV",
+      "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+      "durationSec": 5595
+    },
+    {
+      "id": "HfHPBHKMaKs",
+      "title": "Andrey Pushkarev DJ SET @ Rinse France (14.01.2023) [Vinyl Only]",
+      "channelTitle": "Andrey PUSHKAREV",
+      "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+      "durationSec": 3829
+    },
+    {
+      "id": "ce3Ps7YHg8U",
+      "title": "Dub Techno Vinyl Only 8 hours Live Stream part 2 at Who I Am Gallery 30.05.2020",
+      "channelTitle": "Andrey PUSHKAREV",
+      "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+      "durationSec": 12928
+    },
+    {
+      "id": "CtuX2e0knos",
+      "title": "Analog City Dreams",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "Ud2va7kxyJ8",
+      "title": "This Place Was Meant for Dreams",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "wS6ZD4dGMz8",
+      "title": "The Sound Of A City Sleeping Among The Stars",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "N7HKGXjcxrw",
+      "title": "Midnight In Elysia | Space Ambient For Sleep",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "AIPaix5DhZ0",
+      "title": "Azure Clouds | Soft Future Ambient Music For Relaxation",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "PUo9WGbBf6Q",
+      "title": "You Found the Most Peaceful Planet - Space Music For Cosmic Escapes",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "lUtW5Sa7tN4",
+      "title": "You Have Been Looking For This Place - Sci Fi Music For Relaxation",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "YqJ2ATDDF1E",
+      "title": "This Place Was Waiting For You",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "oMol6L4D9_I",
+      "title": "Tonight You're Staying Here",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "vGh9EY_HPk8",
+      "title": "You Always Wanted To Come Here",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "xuwMw_81L6Q",
+      "title": "You Want To Stay Here A Little Longer | Space Music For Relaxation",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "cMZcTNItXn0",
+      "title": "The Day Was Long. You Need Rest.",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "Ufhj6Eqg8kI",
+      "title": "You Fell Asleep Somewhere In Space",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "VAUifx_U1a4",
+      "title": "A Place Far Beyond Tomorrow",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "-HmKlKh8Z4Q",
+      "title": "The Future That Still Exists Somewhere",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "pQtroUiyKJE",
+      "title": "Resting Somewhere In The Cosmos",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "97el10GpvsA",
+      "title": "You Found Yourself In A Quiet Planet",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "H7iLIU-sKZU",
+      "title": "Where Planets Drift in Silence",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "BcIM3BCjq50",
+      "title": "Elaris: Space Music For Daydreaming",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "yPR3XmzAjE4",
+      "title": "Our Future Lives Among The Stars",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "yEYw2SEfGJk",
+      "title": "You Remember This Future",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "LgfawP8FKxU",
+      "title": "Where You Came to Be Alone With the Stars",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "DY2blti7BBU",
+      "title": "We Did Not Mean To Lose Ourselves | Sci-Fi Ambient Music",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "Yx7wzrFNDSU",
+      "title": "A Room That Drifts Between Worlds",
+      "channelTitle": "Future City Music",
+      "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+      "durationSec": 7207
+    },
+    {
+      "id": "oDKKs3eu84s",
+      "title": "Jade Sebire - Dub Techno / Deep Techno vinyl dj set.",
+      "channelTitle": "Jade Sebire",
+      "channelUrl": "https://www.youtube.com/channel/UCFYLnm8ww8SkG8OecHX3rrw",
+      "durationSec": 5315
+    },
+    {
+      "id": "-sOosbywEo4",
+      "title": "Joris Voorn - Melatonin Live at ARTIS Planetarium Amsterdam",
+      "channelTitle": "Joris Voorn",
+      "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+      "durationSec": 5661
+    },
+    {
+      "id": "yQXb-bD8w1c",
+      "title": "Joris Voorn Live at Green Valley - Camboriú, Brasil [2026 Full Set]",
+      "channelTitle": "Joris Voorn",
+      "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+      "durationSec": 6642
+    },
+    {
+      "id": "MWYSXrp4yK0",
+      "title": "Joris Voorn - BBC Radio 1 Essential Mix 2025 [Full Ableton Session]",
+      "channelTitle": "Joris Voorn",
+      "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+      "durationSec": 7156
+    },
+    {
+      "id": "gkM1ELn7tqs",
+      "title": "Joris Voorn Live at Baum Festival 2025 - Bogotá, Colombia [Full Set]",
+      "channelTitle": "Joris Voorn",
+      "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+      "durationSec": 5271
+    },
+    {
+      "id": "OI20ddk6How",
+      "title": "Joris Voorn Live at A’DAM Rooftop Sessions - Amsterdam SAIL Week 2025 [Full Set]",
+      "channelTitle": "Joris Voorn",
+      "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+      "durationSec": 7094
+    },
+    {
+      "id": "tRvEpOnhKH4",
+      "title": "Joris Voorn SEROTONIN Live at Paradiso Amsterdam [Full Set]",
+      "channelTitle": "Joris Voorn",
+      "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+      "durationSec": 5793
+    },
+    {
+      "id": "wTJebRv4Z3A",
+      "title": "Joris Voorn Live at Movement Festival - Detroit, USA [Full Set]",
+      "channelTitle": "Joris Voorn",
+      "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+      "durationSec": 6253
+    },
+    {
+      "id": "hN6QDVDCLgM",
+      "title": "Joris Voorn Live Set | Resistance Ultra Miami 2025",
+      "channelTitle": "Joris Voorn",
+      "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+      "durationSec": 4205
+    },
+    {
+      "id": "WEpvjxAYF6Q",
+      "title": "Joris Voorn at Sziget – City Takeover Budapest 2024",
+      "channelTitle": "Joris Voorn",
+      "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+      "durationSec": 8536
     }
   ],
   "matchup": {
@@ -578,6 +1337,315 @@
             "channelTitle": "State Azure",
             "channelUrl": "https://www.youtube.com/channel/UClKIjbgtWGzHtXhBDS_I0pg",
             "durationSec": 7577
+          }
+        ]
+      },
+      {
+        "id": "streamer-5",
+        "videos": [
+          {
+            "id": "Kt4Lr2kaSDI",
+            "title": "Andrey Pushkarev pres. Deep Mix Radio : The Archives Podcast [FULL MIX]",
+            "channelTitle": "Andrey PUSHKAREV",
+            "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+            "durationSec": 3860
+          },
+          {
+            "id": "rpeu2ovr1Ng",
+            "title": "Andrey Pushkarev | Ambient, downtempo & dub techno DJ SET @ Bar Ton, Bucharest",
+            "channelTitle": "Andrey PUSHKAREV",
+            "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+            "durationSec": 7143
+          },
+          {
+            "id": "y6kQe8LwHL8",
+            "title": "Andrey Pushkarev DJ SET | Bali - Morabito Art Villa (Dub & Deep Techno)",
+            "channelTitle": "Andrey PUSHKAREV",
+            "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+            "durationSec": 4868
+          },
+          {
+            "id": "C_VAhfhwN4Y",
+            "title": "Andrey Pushkarev - Vinyl DJ Mix | Recorded in a pressing plant (Dub & Deep Techno)",
+            "channelTitle": "Andrey PUSHKAREV",
+            "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+            "durationSec": 5802
+          },
+          {
+            "id": "CI_AoIWMAWw",
+            "title": "Andrey Pushkarev & Eli Verveine (Among Trees) - live from Kiosk Radio",
+            "channelTitle": "Andrey PUSHKAREV",
+            "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+            "durationSec": 3761
+          },
+          {
+            "id": "oVA-sg8eoOk",
+            "title": "Andrey Pushkarev & Eli Verveine (Among Trees) - live at Soundscapes, Zanzibar",
+            "channelTitle": "Andrey PUSHKAREV",
+            "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+            "durationSec": 5595
+          },
+          {
+            "id": "HfHPBHKMaKs",
+            "title": "Andrey Pushkarev DJ SET @ Rinse France (14.01.2023) [Vinyl Only]",
+            "channelTitle": "Andrey PUSHKAREV",
+            "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+            "durationSec": 3829
+          },
+          {
+            "id": "ce3Ps7YHg8U",
+            "title": "Dub Techno Vinyl Only 8 hours Live Stream part 2 at Who I Am Gallery 30.05.2020",
+            "channelTitle": "Andrey PUSHKAREV",
+            "channelUrl": "https://www.youtube.com/channel/UC6UMzQHfh0XDyBsycP2GJGA",
+            "durationSec": 12928
+          }
+        ]
+      },
+      {
+        "id": "streamer-6",
+        "videos": [
+          {
+            "id": "CtuX2e0knos",
+            "title": "Analog City Dreams",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "Ud2va7kxyJ8",
+            "title": "This Place Was Meant for Dreams",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "wS6ZD4dGMz8",
+            "title": "The Sound Of A City Sleeping Among The Stars",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "N7HKGXjcxrw",
+            "title": "Midnight In Elysia | Space Ambient For Sleep",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "AIPaix5DhZ0",
+            "title": "Azure Clouds | Soft Future Ambient Music For Relaxation",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "PUo9WGbBf6Q",
+            "title": "You Found the Most Peaceful Planet - Space Music For Cosmic Escapes",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "lUtW5Sa7tN4",
+            "title": "You Have Been Looking For This Place - Sci Fi Music For Relaxation",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "YqJ2ATDDF1E",
+            "title": "This Place Was Waiting For You",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "oMol6L4D9_I",
+            "title": "Tonight You're Staying Here",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "vGh9EY_HPk8",
+            "title": "You Always Wanted To Come Here",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "xuwMw_81L6Q",
+            "title": "You Want To Stay Here A Little Longer | Space Music For Relaxation",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "cMZcTNItXn0",
+            "title": "The Day Was Long. You Need Rest.",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "Ufhj6Eqg8kI",
+            "title": "You Fell Asleep Somewhere In Space",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "VAUifx_U1a4",
+            "title": "A Place Far Beyond Tomorrow",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "-HmKlKh8Z4Q",
+            "title": "The Future That Still Exists Somewhere",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "pQtroUiyKJE",
+            "title": "Resting Somewhere In The Cosmos",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "97el10GpvsA",
+            "title": "You Found Yourself In A Quiet Planet",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "H7iLIU-sKZU",
+            "title": "Where Planets Drift in Silence",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "BcIM3BCjq50",
+            "title": "Elaris: Space Music For Daydreaming",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "yPR3XmzAjE4",
+            "title": "Our Future Lives Among The Stars",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "yEYw2SEfGJk",
+            "title": "You Remember This Future",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "LgfawP8FKxU",
+            "title": "Where You Came to Be Alone With the Stars",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "DY2blti7BBU",
+            "title": "We Did Not Mean To Lose Ourselves | Sci-Fi Ambient Music",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          },
+          {
+            "id": "Yx7wzrFNDSU",
+            "title": "A Room That Drifts Between Worlds",
+            "channelTitle": "Future City Music",
+            "channelUrl": "https://www.youtube.com/channel/UC2e1MRnt4IT5KEUh_-iP-Ug",
+            "durationSec": 7207
+          }
+        ]
+      },
+      {
+        "id": "streamer-7",
+        "videos": [
+          {
+            "id": "oDKKs3eu84s",
+            "title": "Jade Sebire - Dub Techno / Deep Techno vinyl dj set.",
+            "channelTitle": "Jade Sebire",
+            "channelUrl": "https://www.youtube.com/channel/UCFYLnm8ww8SkG8OecHX3rrw",
+            "durationSec": 5315
+          },
+          {
+            "id": "-sOosbywEo4",
+            "title": "Joris Voorn - Melatonin Live at ARTIS Planetarium Amsterdam",
+            "channelTitle": "Joris Voorn",
+            "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+            "durationSec": 5661
+          },
+          {
+            "id": "yQXb-bD8w1c",
+            "title": "Joris Voorn Live at Green Valley - Camboriú, Brasil [2026 Full Set]",
+            "channelTitle": "Joris Voorn",
+            "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+            "durationSec": 6642
+          },
+          {
+            "id": "MWYSXrp4yK0",
+            "title": "Joris Voorn - BBC Radio 1 Essential Mix 2025 [Full Ableton Session]",
+            "channelTitle": "Joris Voorn",
+            "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+            "durationSec": 7156
+          },
+          {
+            "id": "gkM1ELn7tqs",
+            "title": "Joris Voorn Live at Baum Festival 2025 - Bogotá, Colombia [Full Set]",
+            "channelTitle": "Joris Voorn",
+            "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+            "durationSec": 5271
+          },
+          {
+            "id": "OI20ddk6How",
+            "title": "Joris Voorn Live at A’DAM Rooftop Sessions - Amsterdam SAIL Week 2025 [Full Set]",
+            "channelTitle": "Joris Voorn",
+            "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+            "durationSec": 7094
+          },
+          {
+            "id": "tRvEpOnhKH4",
+            "title": "Joris Voorn SEROTONIN Live at Paradiso Amsterdam [Full Set]",
+            "channelTitle": "Joris Voorn",
+            "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+            "durationSec": 5793
+          },
+          {
+            "id": "wTJebRv4Z3A",
+            "title": "Joris Voorn Live at Movement Festival - Detroit, USA [Full Set]",
+            "channelTitle": "Joris Voorn",
+            "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+            "durationSec": 6253
+          },
+          {
+            "id": "hN6QDVDCLgM",
+            "title": "Joris Voorn Live Set | Resistance Ultra Miami 2025",
+            "channelTitle": "Joris Voorn",
+            "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+            "durationSec": 4205
+          },
+          {
+            "id": "WEpvjxAYF6Q",
+            "title": "Joris Voorn at Sziget – City Takeover Budapest 2024",
+            "channelTitle": "Joris Voorn",
+            "channelUrl": "https://www.youtube.com/channel/UCXn-jxml9VfSPdnuPfjwRtg",
+            "durationSec": 8536
           }
         ]
       }

@@ -23,6 +23,7 @@
  */
 
 import rawStagePlaylists from '../data/stage-playlists.json';
+import { normalizeMatchupConfig, flattenMatchupVideos } from './matchup/normalize';
 
 type StagePlaylistChannelEntry = StageChannelConfig & {
   label?: string;
@@ -66,6 +67,13 @@ export type StageChannel =
   | 'silent-disco'
   | 'hula'
   | 'headliner';
+
+/** Stages with king-of-the-hill bucket playback (keep in sync with `lib/matchup/config.ts`). */
+const MATCHUP_STAGE_CHANNELS = new Set<StageChannel>(['deep-space']);
+
+function isMatchupStageChannel(channel: StageChannel): boolean {
+  return MATCHUP_STAGE_CHANNELS.has(channel);
+}
 
 /** Per-stage playlist rules — matched against video titles (case-insensitive). */
 export type StagePlaylistRules = {
@@ -144,22 +152,33 @@ function fallbackPlaylist(cfg: StageChannelConfig): StageVideo[] {
   return filterStageVideos(raw, cfg.excludeTitlePatterns);
 }
 
+function channelPlaylist(cfg: StageChannelConfig, channel: StageChannel): StageVideo[] {
+  if (cfg.source === 'curated' && cfg.matchup && isMatchupStageChannel(channel)) {
+    const normalized = normalizeMatchupConfig(cfg.matchup);
+    if (normalized) {
+      const flat = flattenMatchupVideos(normalized);
+      if (flat.length) return filterStageVideos(flat, cfg.excludeTitlePatterns);
+    }
+  }
+  return fallbackPlaylist(cfg);
+}
+
 /**
  * Fallback playlists (curated + API-channel fallbacks). The live resolver
  * replaces `youtube-api` channels when YOUTUBE_API_KEY is available.
  */
 export const STAGE_PLAYLISTS: Record<StageChannel, StageVideo[]> = {
-  cinema: fallbackPlaylist(STAGE_CHANNEL_CONFIG.cinema),
-  'deep-space': fallbackPlaylist(STAGE_CHANNEL_CONFIG['deep-space']),
-  bumbershoot: fallbackPlaylist(STAGE_CHANNEL_CONFIG.bumbershoot),
-  'outside-lands': fallbackPlaylist(STAGE_CHANNEL_CONFIG['outside-lands']),
-  coachella: fallbackPlaylist(STAGE_CHANNEL_CONFIG.coachella),
-  edc: fallbackPlaylist(STAGE_CHANNEL_CONFIG.edc),
-  'which-stage': fallbackPlaylist(STAGE_CHANNEL_CONFIG['which-stage']),
-  forest: fallbackPlaylist(STAGE_CHANNEL_CONFIG.forest),
-  'silent-disco': fallbackPlaylist(STAGE_CHANNEL_CONFIG['silent-disco']),
-  hula: fallbackPlaylist(STAGE_CHANNEL_CONFIG.hula),
-  headliner: fallbackPlaylist(STAGE_CHANNEL_CONFIG.headliner),
+  cinema: channelPlaylist(STAGE_CHANNEL_CONFIG.cinema, 'cinema'),
+  'deep-space': channelPlaylist(STAGE_CHANNEL_CONFIG['deep-space'], 'deep-space'),
+  bumbershoot: channelPlaylist(STAGE_CHANNEL_CONFIG.bumbershoot, 'bumbershoot'),
+  'outside-lands': channelPlaylist(STAGE_CHANNEL_CONFIG['outside-lands'], 'outside-lands'),
+  coachella: channelPlaylist(STAGE_CHANNEL_CONFIG.coachella, 'coachella'),
+  edc: channelPlaylist(STAGE_CHANNEL_CONFIG.edc, 'edc'),
+  'which-stage': channelPlaylist(STAGE_CHANNEL_CONFIG['which-stage'], 'which-stage'),
+  forest: channelPlaylist(STAGE_CHANNEL_CONFIG.forest, 'forest'),
+  'silent-disco': channelPlaylist(STAGE_CHANNEL_CONFIG['silent-disco'], 'silent-disco'),
+  hula: channelPlaylist(STAGE_CHANNEL_CONFIG.hula, 'hula'),
+  headliner: channelPlaylist(STAGE_CHANNEL_CONFIG.headliner, 'headliner'),
 };
 
 /**
@@ -185,8 +204,6 @@ export type StageSync = {
   /** Per-streamer buckets for king-of-the-hill matchup stages. */
   matchup?: Partial<Record<StageChannel, import('./matchup/normalize').MatchupStageConfig>>;
 };
-
-import { normalizeMatchupConfig } from './matchup/normalize';
 
 function matchupConfigFromFile(): Partial<Record<StageChannel, import('./matchup/normalize').MatchupStageConfig>> {
   const out: Partial<Record<StageChannel, import('./matchup/normalize').MatchupStageConfig>> = {};
@@ -309,6 +326,8 @@ export function scheduleFor(
   now: number,
   sync: StageSync = DEFAULT_STAGE_SYNC,
 ): ScheduledVideo | null {
+  if (isMatchupStageChannel(channel)) return null;
+
   const list = mergeStagePlaylists(sync.playlists)[channel];
   if (!list.length) return null;
 

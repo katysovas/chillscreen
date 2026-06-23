@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { currentSchedule, syncedNow } from '@/lib/stageClock';
+import { syncedNow, getStageSync } from '@/lib/stageClock';
+import { localMatchupVotePreview } from '@/lib/matchup/playlists';
+import { trackDurationMs } from '@/lib/matchup/lineups';
 import { isMatchupChannel } from '@/lib/matchup/config';
 import type { MatchupStatePayload } from '@/lib/matchup/types';
 import type { StageChannel, StageVideo } from '@/lib/stageVideos';
@@ -55,9 +57,13 @@ export function useMatchupStagePlayback(
     };
 
     const off = mp.registerMatchupStateHandler(onState);
-    mp.sendMatchupSubscribe(channel);
     return off;
   }, [channel, live, mp]);
+
+  useEffect(() => {
+    if (!live || !isMatchupChannel(channel) || !mp) return;
+    mp.sendMatchupSubscribe(channel);
+  }, [channel, live, mp, mp?.connected]);
 
   useEffect(() => {
     if (!live || !isMatchupChannel(channel) || !mp || !trackIdentity) return;
@@ -104,15 +110,17 @@ export function useMatchupStagePlayback(
       };
     }
 
-    const sched = currentSchedule(channel);
-    if (!sched) return null;
+    const preview = localMatchupVotePreview(channel, getStageSync());
+    if (!preview?.voteA.youtubeId) return null;
+    const { voteA } = preview;
+    const sync = getStageSync();
+    const durMs = trackDurationMs(voteA, sync.defaultDurationMs);
     const now = syncedNow();
-    const startedAt = now - sched.offsetSec * 1000;
     return {
-      video: sched.video,
-      offsetSec: sched.offsetSec,
-      msUntilNext: sched.msUntilNext,
-      vidKey: startedAt,
+      video: toStageVideo(voteA),
+      offsetSec: 0,
+      msUntilNext: durMs,
+      vidKey: now,
     };
   }, [channel, live, trackIdentity]);
 }

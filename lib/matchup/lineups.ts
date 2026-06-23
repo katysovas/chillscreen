@@ -32,7 +32,9 @@ export function representativeVideoForCreator(
 }
 
 export function trackDurationMs(track: MatchupTrack, defaultDurationMs: number): number {
-  return (track.durationSec ?? defaultDurationMs / 1000) * 1000;
+  const sec = track.durationSec;
+  if (sec == null || sec <= 0) return defaultDurationMs;
+  return sec * 1000;
 }
 
 /** Next-up track in the challenger's rotation (vote strip preview). */

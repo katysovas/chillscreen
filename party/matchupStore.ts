@@ -8,6 +8,7 @@ import {
   localMatchupVotePreview,
   normalizeMatchupStreamerId,
   repairMatchupRoster,
+  listMatchupStreamerIds,
 } from '../lib/matchup/playlists';
 import { createInitialRoomState, resolveAt } from '../lib/matchup/resolve';
 import type { MatchupStatePayload, MatchupVote, RoomState, VoteSide } from '../lib/matchup/types';
@@ -160,6 +161,20 @@ export class MatchupStore {
         state = { ...state, votes: fromDb };
       }
       await this.saveChannel(channel, state);
+    }
+
+    const roster = listMatchupStreamerIds(channel, sync);
+    if (roster.length >= 2) {
+      const repaired = repairMatchupRoster(normalizeRoomState(state, sync), sync);
+      const broken = !repaired.challenger
+        || !repaired.voteA?.youtubeId
+        || !repaired.voteB?.youtubeId;
+      if (broken) {
+        state = normalizeRoomState(createInitialRoomState(channel, sync, now), sync);
+        await this.saveChannel(channel, state);
+      } else {
+        state = repaired;
+      }
     }
 
     const before = state;

@@ -5,7 +5,6 @@ import { AdminNav } from './AdminNav';
 import { isMatchupChannel } from '@/lib/matchup/config';
 import {
   bucketAdminLabel,
-  defaultMatchupFromPlaylist,
   newStreamerBucket,
   type MatchupStageConfig,
   type MatchupStreamerBucket,
@@ -46,6 +45,17 @@ function toStageVideo(
   };
 }
 
+function channelVideoCount(
+  channel: StageChannel,
+  state: ChannelState | undefined,
+): number {
+  if (!state) return 0;
+  if (isMatchupChannel(channel) && state.matchup) {
+    return state.matchup.streamers.reduce((n, s) => n + s.videos.length, 0);
+  }
+  return state.videos.length;
+}
+
 export function StagePlaylistAdmin() {
   const [activeChannel, setActiveChannel] = useState<StageChannel>('which-stage');
   const [channels, setChannels] = useState<Partial<Record<StageChannel, ChannelState>>>({});
@@ -74,7 +84,6 @@ export function StagePlaylistAdmin() {
   const [channelResults, setChannelResults] = useState<YoutubeAdminSearchResult[]>([]);
   const [channelScannedCount, setChannelScannedCount] = useState<number | null>(null);
   const [activeStreamerIndex, setActiveStreamerIndex] = useState(0);
-  const [editTarget, setEditTarget] = useState<'playlist' | 'matchup'>('matchup');
 
   const loadPlaylists = useCallback(async () => {
     setLoadError(null);
@@ -107,7 +116,6 @@ export function StagePlaylistAdmin() {
   }, [loadPlaylists]);
 
   useEffect(() => {
-    setEditTarget(isMatchupChannel(activeChannel) ? 'matchup' : 'playlist');
     setActiveStreamerIndex(0);
   }, [activeChannel]);
 
@@ -117,12 +125,11 @@ export function StagePlaylistAdmin() {
   const matchup = useMemo(() => {
     if (!matchupMode) return null;
     if (active?.matchup) return active.matchup;
-    return defaultMatchupFromPlaylist(activeVideos);
-  }, [active?.matchup, activeVideos, matchupMode]);
+    return { streamers: [newStreamerBucket([])] };
+  }, [active?.matchup, matchupMode]);
 
   const activeStreamer = matchup?.streamers[activeStreamerIndex];
-  const editingMatchup = matchupMode && editTarget === 'matchup';
-  const bucketVideos = editingMatchup && activeStreamer
+  const bucketVideos = matchupMode && activeStreamer
     ? activeStreamer.videos
     : activeVideos;
   const activeIds = useMemo(() => new Set(bucketVideos.map(v => v.id)), [bucketVideos]);
@@ -183,7 +190,7 @@ export function StagePlaylistAdmin() {
     });
   };
 
-  const setListVideos = editingMatchup ? setBucketVideos : setActiveVideos;
+  const setListVideos = matchupMode ? setBucketVideos : setActiveVideos;
 
   const addVideo = (video: StageVideo) => {
     if (activeIds.has(video.id)) return;
@@ -297,11 +304,10 @@ export function StagePlaylistAdmin() {
     setSaveStatus(null);
     try {
       const body: Record<string, unknown> = { channel: activeChannel, asCurated: true };
-      if (!matchupMode || editTarget === 'playlist') {
-        body.videos = activeVideos;
-      }
-      if (matchupMode && matchup && editTarget === 'matchup') {
+      if (matchupMode && matchup) {
         body.matchup = matchup;
+      } else {
+        body.videos = activeVideos;
       }
       const res = await fetch('/api/admin/stage-playlists', {
         method: 'PUT',
@@ -312,7 +318,7 @@ export function StagePlaylistAdmin() {
       if (!res.ok) throw new Error(data.error ?? res.statusText);
       const label = STAGE_CHANNEL_META.find(c => c.id === activeChannel)?.label ?? activeChannel;
       setSaveStatus(
-        matchupMode && editingMatchup
+        matchupMode
           ? `Saved ${label} matchup buckets`
           : `Saved ${label} playlist`,
       );
@@ -358,7 +364,7 @@ export function StagePlaylistAdmin() {
           >
             {meta.label}
             <span style={{ opacity: 0.55, marginLeft: 6, fontSize: 11 }}>
-              ({channels[meta.id]?.videos.length ?? 0})
+              ({channelVideoCount(meta.id, channels[meta.id])})
             </span>
           </button>
         ))}
@@ -376,54 +382,36 @@ export function StagePlaylistAdmin() {
               {saving ? 'Saving…' : 'Save to JSON'}
             </button>
           </div>
-          {matchupMode && (
+          {matchupMode && matchup && (
             <>
               <p style={{ margin: '0 0 12px', color: '#9aa0a6', fontSize: 12, lineHeight: 1.45 }}>
                 King-of-the-hill playback rotates through each streamer&apos;s bucket in order, then loops.
                 The winner keeps playing only from their list.
               </p>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => setEditTarget('matchup')}
-                  style={tabStyle(editTarget === 'matchup')}
-                >
-                  Matchup buckets
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditTarget('playlist')}
-                  style={tabStyle(editTarget === 'playlist')}
-                >
-                  Stage schedule
-                </button>
-              </div>
-              {editTarget === 'matchup' && matchup && (
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {matchup.streamers.map((streamer, index) => (
-                    <button
-                      key={streamer.id}
-                      type="button"
-                      onClick={() => setActiveStreamerIndex(index)}
-                      style={tabStyle(activeStreamerIndex === index)}
-                    >
-                      {bucketAdminLabel(streamer)}
-                      <span style={{ opacity: 0.55, marginLeft: 6, fontSize: 11 }}>
-                        ({streamer.videos.length})
-                      </span>
-                    </button>
-                  ))}
-                  <button type="button" onClick={addStreamer} style={ghostBtn}>
-                    + Streamer
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                {matchup.streamers.map((streamer, index) => (
+                  <button
+                    key={streamer.id}
+                    type="button"
+                    onClick={() => setActiveStreamerIndex(index)}
+                    style={tabStyle(activeStreamerIndex === index)}
+                  >
+                    {bucketAdminLabel(streamer)}
+                    <span style={{ opacity: 0.55, marginLeft: 6, fontSize: 11 }}>
+                      ({streamer.videos.length})
+                    </span>
                   </button>
-                  {matchup.streamers.length > 1 && (
-                    <button type="button" onClick={removeStreamer} style={{ ...ghostBtn, color: '#f87171' }}>
-                      Remove
-                    </button>
-                  )}
-                </div>
-              )}
-              {editTarget === 'matchup' && activeStreamer && (
+                ))}
+                <button type="button" onClick={addStreamer} style={ghostBtn}>
+                  + Streamer
+                </button>
+                {matchup.streamers.length > 1 && (
+                  <button type="button" onClick={removeStreamer} style={{ ...ghostBtn, color: '#f87171' }}>
+                    Remove
+                  </button>
+                )}
+              </div>
+              {activeStreamer && (
                 <label style={{ display: 'block', marginBottom: 12 }}>
                   <span style={{ fontSize: 12, color: '#9aa0a6', display: 'block', marginBottom: 4 }}>
                     Tab label (optional — vote UI uses YouTube channel names)
@@ -444,7 +432,7 @@ export function StagePlaylistAdmin() {
           {bucketVideos.length === 0 ? (
             <p style={{ color: '#9aa0a6', fontSize: 14 }}>
               No videos yet — search and add from the right.
-              {editingMatchup && ' Videos play in list order, then loop.'}
+              {matchupMode && ' Videos play in list order, then loop.'}
             </p>
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -591,7 +579,7 @@ export function StagePlaylistAdmin() {
                 </span>
               </div>
               <button type="button" onClick={addAllChannelVideos} style={primaryBtn}>
-                Add all to {editingMatchup ? 'bucket' : 'playlist'}
+                Add all to {matchupMode ? 'bucket' : 'playlist'}
               </button>
             </div>
           )}

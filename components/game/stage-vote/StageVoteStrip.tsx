@@ -138,7 +138,7 @@ const VOTE_BTN_CSS = `
     left: 50%;
     transform: translateX(-50%);
     width: max-content;
-    max-width: 118px;
+    max-width: min(140px, 36vw);
     padding: 4px 6px;
     border-radius: 4px;
     background: rgba(12, 14, 20, 0.96);
@@ -156,6 +156,13 @@ const VOTE_BTN_CSS = `
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.15s ease, visibility 0.15s ease;
+  }
+  .stage-vote-strip--mobile .stage-vote-info-popover {
+    max-width: min(200px, 44vw);
+    padding: 6px 8px;
+    font-size: 8px;
+    line-height: 1.4;
+    bottom: calc(100% + 6px);
   }
   .stage-vote-info-tip[data-align="end"] .stage-vote-info-popover {
     left: auto;
@@ -278,6 +285,7 @@ function CreatorOption({
   disabled,
   onVote,
   avatarSide = 'start',
+  columnSide = 'left',
   voteLabel = 'Vote',
   layout = 'embedded',
 }: {
@@ -287,6 +295,8 @@ function CreatorOption({
   disabled: boolean;
   onVote: () => void;
   avatarSide?: 'start' | 'end';
+  /** Which half of the vote strip — controls info popover direction. */
+  columnSide?: 'left' | 'right';
   voteLabel?: string;
   layout?: 'embedded' | 'mobile';
 }) {
@@ -398,7 +408,7 @@ function CreatorOption({
       <ChannelInfoTip
         description={display.channelDescription}
         theme={theme}
-        align={avatarSide === 'end' ? 'end' : 'start'}
+        align={columnSide === 'right' ? 'end' : 'start'}
       />
     </div>
   );
@@ -413,6 +423,7 @@ function CreatorOption({
           flexDirection: 'column',
           alignItems: 'center',
           gap: 4,
+          overflow: 'visible',
         }}
       >
         {avatar}
@@ -440,7 +451,7 @@ function CreatorOption({
   );
 
   return (
-    <div style={{ ...rowFlex, flex: '1 1 0%', minWidth: 0 }}>
+    <div style={{ ...rowFlex, flex: '1 1 0%', minWidth: 0, overflow: 'visible' }}>
       {avatarSide === 'end' ? (
         <>
           {copy}
@@ -542,14 +553,14 @@ export function StageVoteStrip({ channel, width = 440, layout = 'embedded' }: Pr
   const voteBarBackground = `linear-gradient(90deg, #5aa6d8 0%, #8ed4ff ${pctA}%, #f0a868 ${pctA}%, #e08a3a 100%)`;
 
   const votedA = matchupMode
-    ? (matchupVotes.isSuperAdmin ? false : matchupVotes.payload?.myVote === 'a')
+    ? (matchupVotes.isSuperAdmin ? false : matchupVotes.myVote === 'a')
     : lineupVotes.voteState.myVote === optionA!.video.id;
   const votedB = matchupMode
-    ? (matchupVotes.isSuperAdmin ? false : matchupVotes.payload?.myVote === 'b')
+    ? (matchupVotes.isSuperAdmin ? false : matchupVotes.myVote === 'b')
     : lineupVotes.voteState.myVote === optionB!.video.id;
 
   const voteReady = matchupMode
-    ? matchupVotes.connected && matchupVotes.sessionReady
+    ? matchupVotes.canVote
     : lineupVotes.connected && lineupVotes.sessionReady;
   const voteDisabled = matchupMode
     ? !voteReady
@@ -606,13 +617,14 @@ export function StageVoteStrip({ channel, width = 440, layout = 'embedded' }: Pr
         Vote who&apos;s playing next
       </div>
 
-      <div style={{ ...rowFlex, alignItems: 'center' }}>
+      <div style={{ ...rowFlex, alignItems: 'center', overflow: 'visible' }}>
         <CreatorOption
           display={displayA}
           theme={THEME_A}
           voted={votedA}
           disabled={voteDisabled}
           avatarSide="end"
+          columnSide="left"
           voteLabel={matchupMode ? 'keep playing' : 'Vote'}
           layout={layout}
           onVote={onVoteA}
@@ -659,6 +671,7 @@ export function StageVoteStrip({ channel, width = 440, layout = 'embedded' }: Pr
           theme={THEME_B}
           voted={votedB}
           disabled={voteDisabled}
+          columnSide="right"
           voteLabel={matchupMode ? 'play next' : 'Vote'}
           layout={layout}
           onVote={onVoteB}

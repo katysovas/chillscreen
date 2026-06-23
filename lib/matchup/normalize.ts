@@ -50,3 +50,17 @@ export function normalizeMatchupConfig(raw: unknown): MatchupStageConfig | null 
 
   return null;
 }
+
+/** All videos from matchup streamer buckets (deduped, bucket order). */
+export function flattenMatchupVideos(matchup: MatchupStageConfig): StageVideo[] {
+  const seen = new Set<string>();
+  const out: StageVideo[] = [];
+  for (const streamer of matchup.streamers) {
+    for (const video of streamer.videos) {
+      if (seen.has(video.id)) continue;
+      seen.add(video.id);
+      out.push(video);
+    }
+  }
+  return out;
+}

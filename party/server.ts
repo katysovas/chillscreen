@@ -21,6 +21,7 @@ import { chatterApiBase } from '../lib/npcChatter/apiBase';
 import { chatterAuthHeader } from '../lib/npcChatter/auth';
 import { venueSlugFromRoomId } from '../lib/npcChatter/roomContext';
 import { resolveStagePlaylists } from '../lib/resolveStagePlaylists';
+import { readMatchupConfigFromDisk } from '../lib/stagePlaylistFile';
 import { filterChatMessage } from '../lib/messageFilter';
 import {
   checkChatMessage,
@@ -31,7 +32,6 @@ import {
 import {
   DEFAULT_DURATION_MS,
   STAGE_EPOCH,
-  STAGE_MATCHUP_CONFIG,
   type StageSync,
 } from '../lib/stageVideos';
 import type { PlayerViewSnapshot } from '../lib/npcProximity';
@@ -140,7 +140,7 @@ export default class WhichStageServer implements Party.Server {
       epoch: STAGE_EPOCH,
       defaultDurationMs: DEFAULT_DURATION_MS,
       playlists,
-      matchup: STAGE_MATCHUP_CONFIG,
+      matchup: readMatchupConfigFromDisk(),
     };
     const festies = await this.fetchFesties();
     this.electNpcLeader();
