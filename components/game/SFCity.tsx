@@ -80,12 +80,16 @@ import { loadoutSyncKey, serializeLoadout } from '@/lib/multiplayer/loadoutSync'
 import { isBuzNpc } from '@/lib/vendorShop';
 import { pickAutopilotVendorItem } from '@/lib/autopilot/vendorShop';
 import {
+  nextAutopilotDrawAtMs,
+  pickAutopilotDrawPrompt,
+} from '@/lib/autopilot/drawing';
+import {
   nextAutopilotPropLossAtMs,
   pickOwnedVendorPropToLose,
 } from '@/lib/autopilot/propLoss';
 import { buildAutopilotAmbientContext } from '@/lib/autopilot/ambientContext';
 import { vendorAnchorGroundWorldX } from '@/lib/stageAnchor';
-import { getAmbientIntervalMs, pickAutopilotAmbientLine, pickLostPropAmbientLine } from '@/lib/npcAmbientChat';
+import { getAmbientIntervalMs, pickAutopilotAmbientLine, pickAutopilotDrawAmbientLine, pickLostPropAmbientLine } from '@/lib/npcAmbientChat';
 import {
   getOrCreatePlayerId,
   getPlayerName,
@@ -801,6 +805,9 @@ export default function SFCity({
   const autopilotShopCooldownRef = useRef(0);
   const autopilotAmbientAtRef = useRef(0);
   const autopilotPropLossAtRef = useRef(0);
+  const autopilotDrawAtRef = useRef(0);
+  const chatNpcDrawingsRef = useRef(chatNpcDrawings);
+  chatNpcDrawingsRef.current = chatNpcDrawings;
 
   const npcChatLabel = useCallback((npcId: string, fallback: string) => {
     return npcChatLabelForId(npcId, fallback);
@@ -900,6 +907,8 @@ export default function SFCity({
   const easelLayoutRoute = effectiveVenueRoute;
   const easelSessionEnabled = !homePreview;
   const easelDrawingEnabled = easelSessionEnabled && !mobileDevice;
+  const easelDrawingEnabledRef = useRef(easelDrawingEnabled);
+  easelDrawingEnabledRef.current = easelDrawingEnabled;
   const easelUserActive = TEST_EASEL_ON_LOAD || mp.connected || (!showWelcome && !showCityPicker);
   const activeEaselSession = useEaselSession(
     easelStageSlug,
@@ -1141,6 +1150,7 @@ export default function SFCity({
     if (ownerFestieNpcId) clearNpcConvoHold(ownerFestieNpcId);
     autopilotAmbientAtRef.current = Date.now() + 3_000 + Math.random() * 4_000;
     autopilotPropLossAtRef.current = nextAutopilotPropLossAtMs();
+    autopilotDrawAtRef.current = nextAutopilotDrawAtMs();
     keysRef.current.left = false;
     keysRef.current.right = false;
     walkingRef.current = false;
@@ -2333,6 +2343,55 @@ export default function SFCity({
       });
     };
 
+    const runAutopilotDraw = () => {
+      const ownerId = ownerFestieNpcIdRef.current;
+      if (!autopilotOnRef.current || !ownerId || !easelDrawingEnabledRef.current) return;
+      const now = Date.now();
+      if (now < autopilotDrawAtRef.current) return;
+
+      autopilotDrawAtRef.current = nextAutopilotDrawAtMs(now);
+
+      if (peerChatRef.current !== null) return;
+      if (greetingRef.current !== null) return;
+      if (roomChatterRef.current.isNpcInConvo(ownerId)) return;
+      if (activeChatDrawingForNpc(chatNpcDrawingsRef.current, ownerId)) return;
+
+      const festieIdx = ownerFestieNpcIndexRef.current;
+      if (festieIdx < 0) return;
+      const festieWx = npcWorldXRefs.current[festieIdx];
+      if (!Number.isFinite(festieWx)) return;
+
+      const ambientCtx = buildAutopilotAmbientContext({
+        stageName: stageChatterWelcomeRef.current.stageName,
+        creatorStage: creatorStageRef.current,
+        stagePlaybackChannel: stagePlaybackChannelRef.current,
+        cinemaNowPlaying: cinemaNowRef.current,
+        concertNowPlaying: concertNowRef.current,
+        remotePlayers: mpRef.current?.remoteStateRef.current
+          ? [...mpRef.current.remoteStateRef.current.values()]
+          : [],
+      });
+      const prompt = pickAutopilotDrawPrompt(ambientCtx);
+      if (!roomChatterRef.current.isNpcInConvo(ownerId)) {
+        roomChatterRef.current.handleNpcShout(
+          ownerId,
+          pickAutopilotDrawAmbientLine(prompt),
+        );
+      }
+
+      void fetchPromptDraw({
+        npcId: ownerId,
+        prompt,
+        npcWorldX: festieWx!,
+      }).then(hit => {
+        if (!hit) return;
+        setChatNpcDrawings(prev => [
+          ...prev.filter(s => s.npcId !== hit.npcId),
+          { ...hit, status: 'painting' },
+        ]);
+      });
+    };
+
     const persistNpcWorldXById = () => {
       const cast = effectiveNpcCastRef.current;
       for (let i = 0; i < cast.length; i++) {
@@ -2477,6 +2536,7 @@ export default function SFCity({
           runAutopilotAmbient();
           runAutopilotVendor();
           runAutopilotPropLoss();
+          runAutopilotDraw();
         }
       }
 

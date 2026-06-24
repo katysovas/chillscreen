@@ -651,6 +651,22 @@ export function pickLostPropAmbientLine(propName: string): string {
   return clampAmbientLine(line);
 }
 
+const AUTOPILOT_DRAW_AMBIENT_LINES = [
+  (subject: string) => `gonna draw ${subject}`,
+  (subject: string) => `drawing ${subject} rn`,
+  (subject: string) => `art time: ${subject}`,
+  (subject: string) => `watch me draw ${subject}`,
+  (subject: string) => `doodle break — ${subject}`,
+  (subject: string) => `canvas needs ${subject}`,
+] as const;
+
+/** Autopilot festie announces a spontaneous doodle. */
+export function pickAutopilotDrawAmbientLine(subject: string): string {
+  const label = subject.trim().toLowerCase() || 'something';
+  const line = pick([...AUTOPILOT_DRAW_AMBIENT_LINES])(label);
+  return clampAmbientLine(line);
+}
+
 function pickStreamAutopilotLine(act: string): string {
   return pick([...FESTIE_AUTOPILOT_STREAM_LINES])(act);
 }
