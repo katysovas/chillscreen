@@ -2,7 +2,7 @@ import { normalizeLoadout } from '@/components/game/characters/loadout/defaults'
 import type { CharacterLoadout } from '@/components/game/characters/loadout/types';
 import { requireDb } from '@/lib/db';
 import { STARTING_COINS } from '@/lib/player/constants';
-import { sanitizePlayerLoadout } from '@/lib/player/loadoutValidation';
+import { applyLoadoutItemLoss, sanitizePlayerLoadout } from '@/lib/player/loadoutValidation';
 
 export { STARTING_COINS };
 
@@ -111,6 +111,25 @@ export async function deductPlayerCoinsDb(
   `;
   if (!rows.length) return null;
   return Number((rows[0] as { coins: number }).coins);
+}
+
+/** Permanently drop a purchased vendor item (autopilot prop loss). */
+export async function losePlayerLoadoutItemDb(
+  userId: string,
+  itemId: string,
+  balloonColor = '#ef4023',
+): Promise<CharacterLoadout | null> {
+  const sql = requireDb();
+  const profile = await getPlayerProfile(userId);
+  if (!profile) return null;
+  const next = applyLoadoutItemLoss(profile.loadout, itemId, balloonColor);
+  if (!next) return null;
+  const rows = await sql`
+    UPDATE users SET loadout = ${JSON.stringify(next)}::jsonb
+    WHERE id = ${userId}::uuid
+    RETURNING loadout
+  `;
+  return parseLoadout((rows[0] as { loadout: unknown }).loadout);
 }
 
 export function mergeLoadoutForBalloon(

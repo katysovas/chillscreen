@@ -56,6 +56,15 @@ export const FESTIE_AUTOPILOT_FUNNY_LINES = [
   'professionally vibing',
 ] as const;
 
+const LOST_PROP_AMBIENT_LINES = [
+  (name: string) => `uh oh lost my ${name}`,
+  (name: string) => `where is my ${name}?`,
+  (name: string) => `no I lost my ${name}`,
+  (name: string) => `my ${name} is gone`,
+  (name: string) => `did I drop my ${name}?`,
+  (name: string) => `anyone seen my ${name}?`,
+] as const;
+
 const AUTOPILOT_CHEER_WEIGHT = 0.22;
 const AUTOPILOT_FUNNY_WEIGHT = 0.38;
 
@@ -560,6 +569,13 @@ function pickBuzAmbientMumble(): string {
 
 export function pickAmbientCheerLine(): string {
   return pick([...NPC_AMBIENT_CHEER_LINES]);
+}
+
+/** Autopilot festie notices a prop went missing. */
+export function pickLostPropAmbientLine(propName: string): string {
+  const label = propName.trim().toLowerCase() || 'prop';
+  const line = pick([...LOST_PROP_AMBIENT_LINES])(label);
+  return clampAmbientLine(line);
 }
 
 /** Autopilot festie shouts — cheers, silly asides, and stage-aware mumbles. */

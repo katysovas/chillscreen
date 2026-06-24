@@ -5,6 +5,7 @@ import { defaultLoadout } from '@/components/game/characters/loadout/defaults';
 import { loadoutItem } from '@/components/game/characters/loadout/catalog';
 import {
   getPlayerLoadout as getSessionLoadout,
+  losePurchasedLoadoutItem as loseSessionItem,
   unequipLoadoutItem as unequipSessionItem,
 } from '@/lib/player/session';
 
@@ -17,6 +18,13 @@ export async function unequipLoadoutItem(
   balloonColor: string,
 ): Promise<CharacterLoadout | null> {
   return unequipSessionItem(itemId, balloonColor);
+}
+
+export async function losePurchasedLoadoutItem(
+  itemId: string,
+  balloonColor: string,
+): Promise<CharacterLoadout | null> {
+  return loseSessionItem(itemId, balloonColor);
 }
 
 /** Equip a catalog item by id — prefer purchaseVendorItem for vendor flow. */

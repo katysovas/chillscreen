@@ -38,7 +38,7 @@ import {
   subscribeBalloonColor,
 } from '@/lib/identity';
 import type { NpcConvoMeta, PlayerProfile } from '@/lib/multiplayer/protocol';
-import { getPlayerLoadout, unequipLoadoutItem } from '@/lib/playerLoadout';
+import { getPlayerLoadout, losePurchasedLoadoutItem, unequipLoadoutItem } from '@/lib/playerLoadout';
 import { addPlayerCoins, getPlayerCoins, STARTING_COINS } from '@/lib/playerCoins';
 import { GroundScoreLayer } from './GroundScoreLayer';
 import { purchaseVendorItemAsync } from '@/lib/vendorPurchase';
@@ -79,8 +79,12 @@ import { preloadPurchaseSound, playPurchaseSound, unlockPurchaseSound } from '@/
 import { loadoutSyncKey, serializeLoadout } from '@/lib/multiplayer/loadoutSync';
 import { isBuzNpc } from '@/lib/vendorShop';
 import { pickAutopilotVendorItem } from '@/lib/autopilot/vendorShop';
+import {
+  nextAutopilotPropLossAtMs,
+  pickOwnedVendorPropToLose,
+} from '@/lib/autopilot/propLoss';
 import { vendorAnchorGroundWorldX } from '@/lib/stageAnchor';
-import { getAmbientIntervalMs, pickAutopilotAmbientLine } from '@/lib/npcAmbientChat';
+import { getAmbientIntervalMs, pickAutopilotAmbientLine, pickLostPropAmbientLine } from '@/lib/npcAmbientChat';
 import {
   getOrCreatePlayerId,
   getPlayerName,
@@ -224,6 +228,7 @@ import { npcTouchDistPx } from '@/lib/npcProximity';
 import { appendChatLine, type ChatLine } from '@/lib/chatLines';
 import type { CharacterDef } from './characters';
 import type { CharacterLoadout } from './characters/loadout';
+import { loadoutItem } from './characters/loadout';
 import { defaultLoadout } from './characters/loadout';
 
 /** Force all characters into dance mode regardless of stage proximity (testing). */
@@ -585,6 +590,15 @@ export default function SFCity({
     broadcastProfileRef.current(nextLoadout);
   }, [myColor]);
 
+  const handlePropLoss = useCallback(async (itemId: string): Promise<boolean> => {
+    const next = await losePurchasedLoadoutItem(itemId, myColor);
+    if (!next) return false;
+    const nextLoadout = { ...next, ...TEST_PLAYER_LOADOUT };
+    setPlayerLoadout(nextLoadout);
+    broadcastProfileRef.current(nextLoadout);
+    return true;
+  }, [myColor]);
+
   const openSettings = useCallback((tab: FestieSettingsTab = 'customize') => {
     setSettingsInitialTab(tab);
     setSettingsOpen(true);
@@ -779,6 +793,7 @@ export default function SFCity({
   const lastNpcPosSendRef = useRef(0);
   const autopilotShopCooldownRef = useRef(0);
   const autopilotAmbientAtRef = useRef(0);
+  const autopilotPropLossAtRef = useRef(0);
 
   const npcChatLabel = useCallback((npcId: string, fallback: string) => {
     return npcChatLabelForId(npcId, fallback);
@@ -1118,6 +1133,7 @@ export default function SFCity({
     if (!autopilotOn) return;
     if (ownerFestieNpcId) clearNpcConvoHold(ownerFestieNpcId);
     autopilotAmbientAtRef.current = Date.now() + 3_000 + Math.random() * 4_000;
+    autopilotPropLossAtRef.current = nextAutopilotPropLossAtMs();
     keysRef.current.left = false;
     keysRef.current.right = false;
     walkingRef.current = false;
@@ -1219,6 +1235,8 @@ export default function SFCity({
   roomChatterRef.current = roomChatter;
   const handleVendorPurchaseRef = useRef(handleVendorPurchase);
   handleVendorPurchaseRef.current = handleVendorPurchase;
+  const handlePropLossRef = useRef(handlePropLoss);
+  handlePropLossRef.current = handlePropLoss;
   const playerCoinsRef = useRef(playerCoins);
   playerCoinsRef.current = playerCoins;
   const playerLoadoutRef = useRef(playerLoadout);
@@ -2278,6 +2296,27 @@ export default function SFCity({
       });
     };
 
+    const runAutopilotPropLoss = () => {
+      const ownerId = ownerFestieNpcIdRef.current;
+      if (!autopilotOnRef.current || !ownerId) return;
+      const now = Date.now();
+      if (now < autopilotPropLossAtRef.current) return;
+
+      const itemId = pickOwnedVendorPropToLose(playerLoadoutRef.current);
+      autopilotPropLossAtRef.current = nextAutopilotPropLossAtMs(now);
+      if (!itemId) return;
+
+      const propName = loadoutItem(itemId)?.name ?? 'prop';
+      void handlePropLossRef.current(itemId).then(lost => {
+        if (!lost) return;
+        if (roomChatterRef.current.isNpcInConvo(ownerId)) return;
+        roomChatterRef.current.handleNpcShout(
+          ownerId,
+          pickLostPropAmbientLine(propName),
+        );
+      });
+    };
+
     const persistNpcWorldXById = () => {
       const cast = effectiveNpcCastRef.current;
       for (let i = 0; i < cast.length; i++) {
@@ -2421,6 +2460,7 @@ export default function SFCity({
         if (autopilotOnRef.current) {
           runAutopilotAmbient();
           runAutopilotVendor();
+          runAutopilotPropLoss();
         }
       }
 

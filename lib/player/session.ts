@@ -7,6 +7,7 @@ import { loadoutItemId } from '@/components/game/characters/loadout/types';
 import { markLocalFestieAccount } from '@/lib/festie/localAccount';
 import type { FestieOwner } from '@/lib/festie/types';
 import { GUEST_PLAYER_ID_KEY, STARTING_COINS } from '@/lib/player/constants';
+import { applyLoadoutItemLoss } from '@/lib/player/loadoutValidation';
 
 export { STARTING_COINS };
 
@@ -248,5 +249,34 @@ export async function unequipLoadoutItem(
     balloonColor,
   );
   await persistLoadout(next, balloonColor);
+  return getPlayerLoadout(balloonColor);
+}
+
+/** Permanently lose a purchased vendor item — must buy again to re-equip. */
+export async function losePurchasedLoadoutItem(
+  itemId: string,
+  balloonColor: string,
+): Promise<CharacterLoadout | null> {
+  const def = loadoutItem(itemId);
+  if (!def) return null;
+
+  if (!state.authenticated) {
+    const current = getPlayerLoadout(balloonColor);
+    const next = applyLoadoutItemLoss(current, itemId, balloonColor);
+    if (!next) return null;
+    state = { ...state, loadout: next };
+    emit();
+    return getPlayerLoadout(balloonColor);
+  }
+
+  const res = await fetch('/api/vendor/lose', {
+    ...fetchOpts,
+    method: 'POST',
+    body: JSON.stringify({ itemId, balloonColor }),
+  });
+  const data = await res.json();
+  if (!res.ok) return null;
+  state = { ...state, loadout: data.loadout as CharacterLoadout };
+  emit();
   return getPlayerLoadout(balloonColor);
 }

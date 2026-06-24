@@ -1,4 +1,5 @@
 import { loadoutItem } from '@/components/game/characters/loadout/catalog';
+import { hasPurchasedLoadoutItem } from '@/components/game/characters/loadout/ownership';
 import { normalizeLoadout } from '@/components/game/characters/loadout/defaults';
 import {
   LOADOUT_SLOTS,
@@ -72,6 +73,27 @@ export function sanitizePlayerLoadout(
       continue;
     }
     next[slot] = loadoutItemId(base, slot) ?? defaultForSlot(slot);
+  }
+
+  return normalizeLoadout(next, balloonColor);
+}
+
+/** Remove a purchased vendor item — unequip if worn and drop from owned. */
+export function applyLoadoutItemLoss(
+  loadout: CharacterLoadout | undefined,
+  itemId: string,
+  balloonColor: string,
+): CharacterLoadout | null {
+  const def = loadoutItem(itemId);
+  if (!def || isFreeLoadoutItem(itemId)) return null;
+  if (!hasPurchasedLoadoutItem(loadout, itemId)) return null;
+
+  const base = normalizeLoadout(loadout, balloonColor);
+  const owned = [...(base.owned ?? [])].filter(id => id !== itemId);
+  const next: CharacterLoadout = { ...base, owned };
+
+  if (loadoutItemId(base, def.slot) === itemId) {
+    next[def.slot] = defaultForSlot(def.slot);
   }
 
   return normalizeLoadout(next, balloonColor);
