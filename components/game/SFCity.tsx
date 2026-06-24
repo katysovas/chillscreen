@@ -98,7 +98,7 @@ import {
   tryBeginAutopilotEvent,
 } from '@/lib/autopilot/busy';
 import { vendorAnchorGroundWorldX } from '@/lib/stageAnchor';
-import { getAmbientIntervalMs, pickAutopilotAmbientLine, pickAutopilotDrawAmbientLine, pickLostPropAmbientLine } from '@/lib/npcAmbientChat';
+import { getAutopilotAmbientIntervalMs, pickAutopilotAmbientLine, pickAutopilotDrawAmbientLine, pickLostPropAmbientLine } from '@/lib/npcAmbientChat';
 import {
   getOrCreatePlayerId,
   getPlayerName,
@@ -1170,7 +1170,7 @@ export default function SFCity({
       return;
     }
     if (ownerFestieNpcId) clearNpcConvoHold(ownerFestieNpcId);
-    autopilotAmbientAtRef.current = Date.now() + 3_000 + Math.random() * 4_000;
+    autopilotAmbientAtRef.current = Date.now() + 12_000 + Math.random() * 10_000;
     autopilotPropLossAtRef.current = nextAutopilotPropLossAtMs();
     autopilotDrawAtRef.current = nextAutopilotDrawAtMs();
     keysRef.current.left = false;
@@ -1348,7 +1348,18 @@ export default function SFCity({
   useEffect(() => {
     if (!autopilotOn || !ownerFestieNpcId) return;
     const t = setTimeout(() => {
-      roomChatter.handleNpcShout(ownerFestieNpcId, "let's party!");
+      const cfg = effectiveNpcCastRef.current.find(c => c.id === ownerFestieNpcId);
+      if (!cfg) return;
+      const roster = mpRef.current?.remoteStateRef.current;
+      const ambientCtx = buildAutopilotAmbientContext({
+        stageName: stageChatterWelcomeRef.current.stageName,
+        creatorStage: creatorStageRef.current,
+        stagePlaybackChannel: stagePlaybackChannelRef.current,
+        cinemaNowPlaying: cinemaNowRef.current,
+        concertNowPlaying: concertNowRef.current,
+        remotePlayers: roster ? [...roster.values()] : [],
+      });
+      roomChatter.handleNpcShout(ownerFestieNpcId, pickAutopilotAmbientLine(cfg, ambientCtx));
     }, 32);
     return () => clearTimeout(t);
   }, [autopilotOn, ownerFestieNpcId, roomChatter.handleNpcShout]);
@@ -2348,7 +2359,7 @@ export default function SFCity({
       if (now < autopilotAmbientAtRef.current) return;
       const cfg = effectiveNpcCastRef.current.find(c => c.id === ownerId);
       if (!cfg) return;
-      const { minMs, maxMs } = getAmbientIntervalMs(ownerId);
+      const { minMs, maxMs } = getAutopilotAmbientIntervalMs();
       autopilotAmbientAtRef.current = now + minMs + Math.random() * (maxMs - minMs);
       if (roomChatterRef.current.isNpcInConvo(ownerId)) return;
       const roster = mpRef.current?.remoteStateRef.current;

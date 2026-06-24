@@ -9,6 +9,9 @@ export const AMBIENT_VISIBLE_JITTER_MS = 2_000;
 /** Faster cadence while ambient is the primary NPC chatter surface. */
 export const AMBIENT_INTERVAL_MIN_MS = 10_000;
 export const AMBIENT_INTERVAL_MAX_MS = 22_000;
+/** Slower cadence for festie autopilot solo shouts. */
+export const AUTOPILOT_AMBIENT_INTERVAL_MIN_MS = 32_000;
+export const AUTOPILOT_AMBIENT_INTERVAL_MAX_MS = 58_000;
 
 /** Canned crowd cheers — server posts one every ~2.5–6 min (stage chat + NPC bubble). */
 export const AMBIENT_CHEER_INTERVAL_MIN_MS = 150_000;
@@ -159,6 +162,13 @@ export function getAmbientIntervalMs(characterId: string): { minMs: number; maxM
   return NPC_AMBIENT_INTERVAL[key] ?? {
     minMs: AMBIENT_INTERVAL_MIN_MS,
     maxMs: AMBIENT_INTERVAL_MAX_MS,
+  };
+}
+
+export function getAutopilotAmbientIntervalMs(): { minMs: number; maxMs: number } {
+  return {
+    minMs: AUTOPILOT_AMBIENT_INTERVAL_MIN_MS,
+    maxMs: AUTOPILOT_AMBIENT_INTERVAL_MAX_MS,
   };
 }
 

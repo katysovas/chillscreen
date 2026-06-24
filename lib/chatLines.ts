@@ -1,5 +1,7 @@
-/** Max bubbles shown in a chatter stack (connected + ambient). */
+/** Max bubbles shown in a connected chat stack. */
 export const CHAT_LINE_MAX = 6;
+/** Max fading bubbles for solo ambient / public NPC shouts. */
+export const AMBIENT_CHAT_LINE_MAX = 4;
 
 export type ChatLine = {
   id: string;
@@ -38,6 +40,11 @@ export function buildChatThread(
 export function appendChatLine(prev: ChatLine[], text: string): ChatLine[] {
   const next = [...prev, createChatLine(text)];
   return next.length > CHAT_LINE_MAX ? next.slice(-CHAT_LINE_MAX) : next;
+}
+
+export function appendAmbientChatLine(prev: ChatLine[], text: string): ChatLine[] {
+  const next = [...prev, createChatLine(text)];
+  return next.length > AMBIENT_CHAT_LINE_MAX ? next.slice(-AMBIENT_CHAT_LINE_MAX) : next;
 }
 
 /** 0 = newest (bottom); higher = older (higher in stack). */

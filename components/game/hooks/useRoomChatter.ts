@@ -3,7 +3,13 @@
 import { useCallback, useRef, useState } from 'react';
 import { stripNpcChatterDots } from '@/lib/messageFilter';
 import { clearNpcConvoAnchor } from '@/lib/npcConvoAnchor';
-import { appendChatLine, createChatLine, type ChatLine, type KeyedChatLine } from '@/lib/chatLines';
+import {
+  appendAmbientChatLine,
+  appendChatLine,
+  createChatLine,
+  type ChatLine,
+  type KeyedChatLine,
+} from '@/lib/chatLines';
 import { AMBIENT_VISIBLE_MS, AMBIENT_VISIBLE_JITTER_MS } from '@/lib/npcAmbientChat';
 import { PLAYER_AMBIENT_VISIBLE_MS } from '@/lib/multiplayer/useMultiplayer';
 import { bumpPublicChatBubbleLayer } from '@/lib/publicChatBubbleLayer';
@@ -94,7 +100,7 @@ export function useRoomChatter(
     bumpPublicChatBubbleLayer(`npc:${npcId}`);
     setNpcMessages(prev => {
       const next = new Map(prev);
-      next.set(npcId, appendChatLine(prev.get(npcId) ?? [], text));
+      next.set(npcId, appendAmbientChatLine(prev.get(npcId) ?? [], text));
       return next;
     });
     const visibleMs = AMBIENT_VISIBLE_MS + Math.random() * AMBIENT_VISIBLE_JITTER_MS;

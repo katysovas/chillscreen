@@ -55,6 +55,7 @@ import {
   AUTOPILOT_NPC_CHAT_WINDOW_MS,
   AUTOPILOT_PARTY_PROP_WINDOW_MS,
   AUTOPILOT_RIVALRY_WINDOW_MS,
+  AUTOPILOT_RPS_TRIGGER_PROBABILITY,
   AUTOPILOT_RPS_WINDOW_MS,
   nextAutopilotAtMs,
   nextAutopilotNapUntil,
@@ -483,13 +484,15 @@ export function useAutopilotBehaviors({
     // Long-running events first — one action per tick.
     if (now >= rpsAtRef.current) {
       rpsAtRef.current = nextAutopilotAtMs(AUTOPILOT_RPS_WINDOW_MS, now);
-      const candidates = effectiveNpcCast
-        .map((c, i) => ({ c, i }))
-        .filter(({ c, i }) => i !== festieIdx && c.id !== ownerId && !isBuzNpc(c.id));
-      if (candidates.length > 0) {
-        const { i: targetIdx } = candidates[Math.floor(Math.random() * candidates.length)]!;
-        void runRpsGame(ownerId, festieIdx, targetIdx);
-        return;
+      if (Math.random() < AUTOPILOT_RPS_TRIGGER_PROBABILITY) {
+        const candidates = effectiveNpcCast
+          .map((c, i) => ({ c, i }))
+          .filter(({ c, i }) => i !== festieIdx && c.id !== ownerId && !isBuzNpc(c.id));
+        if (candidates.length > 0) {
+          const { i: targetIdx } = candidates[Math.floor(Math.random() * candidates.length)]!;
+          void runRpsGame(ownerId, festieIdx, targetIdx);
+          return;
+        }
       }
     }
 
