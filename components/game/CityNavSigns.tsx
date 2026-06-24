@@ -21,6 +21,8 @@ import {
   isMobileStaticViewport,
   LANDING_HERO_DESKTOP_PAR,
   LANDING_HERO_MOBILE_PAR,
+  LANDING_HERO_VB_H,
+  LANDING_HERO_VB_Y,
   landingHeroDesktopViewBox,
   landingHeroMobileViewBox,
 } from '@/lib/staticCityViewport';
@@ -257,7 +259,21 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
               : route === 'edc'
                 ? VEGAS_GRASS_DROP_Y
                 : CITY_GRASS_DROP_Y;
-    const signY = SIGN_Y + grassDropY;
+    const signY = (() => {
+      if (!landingHero) return SIGN_Y + grassDropY;
+      // For the landing hero the NPC is CSS-positioned at bottom:11% of the
+      // game surface, while the sign lives in SVG world coordinates.  As the
+      // viewport gets wider the SVG scale factor (width-driven) pushes the
+      // sign below the NPC regardless of the grass drop offset.  Compute the
+      // exact SVG Y that places the post base ~12px below the NPC's feet so
+      // it looks planted at ground level on every viewport.
+      const NAV_H = 74;
+      const CHAR_BOTTOM_FRAC = 0.11;
+      const gameSurfaceH = viewport.h - NAV_H;
+      const scale = Math.max(viewport.w / VIEW_W, gameSurfaceH / LANDING_HERO_VB_H);
+      const npcFeetSvgY = gameSurfaceH * (1 - CHAR_BOTTOM_FRAC) / scale + LANDING_HERO_VB_Y;
+      return Math.round(npcFeetSvgY + 12);
+    })();
 
     const showNavSigns = route !== 'deep-space';
 

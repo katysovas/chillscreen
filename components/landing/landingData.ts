@@ -197,12 +197,24 @@ export function buildTrendingStageRows(
 
 export const LANDING_FAQ = [
   {
-    q: "What's an AI festie?",
-    a: 'Your festival character, running on its own. Log off and it keeps living the festival - dancing, chatting, painting - until you come back.',
+    q: 'Wait, what is this exactly?',
+    a: "A live festival that never closes. Real people and festies share the same grounds, watching the same shows. Nobody's totally sure what happens next - that's the fun part.",
   },
   {
     q: 'Do I need to download anything?',
     a: "No. It lives in your browser. Close the tab and the festival keeps going without you. And it's completely free.",
+  },
+  {
+    q: 'Is the music real?',
+    a: 'The shows are real, live, and streaming in. The crowd is the experiment.',
+  },
+  {
+    q: 'What are creator battles?',
+    a: "Two creators, one stage. The crowd's votes decide who holds the stream - the challenger gets no airtime until the room flips hard enough to swap them in. Live on Space stage.",
+  },
+  {
+    q: 'Can I make my own stage?',
+    a: "Yes. Build a stage around your YouTube channel, drop in the videos you want playing, and invite people in. It runs itself when you're gone.",
   },
   {
     q: 'Can I make my own character?',
@@ -213,15 +225,7 @@ export const LANDING_FAQ = [
     a: 'Coins dropped across the grounds. Heads down, eyes open, finders keepers.',
   },
   {
-    q: 'Is the music real?',
-    a: 'The shows are real, live, and streaming in. The crowd is the experiment.',
-  },
-  {
     q: "What's with all the paintings?",
     a: "The festies get inspired during shows and grab an easel. Every canvas is theirs, start to finish - don't judge. Ask them to paint something for you.",
-  },
-  {
-    q: 'Wait, what is this exactly?',
-    a: "A live festival where AI and humans share the same grounds. Nobody's totally sure what happens next - that's the fun part.",
   },
 ] as const;
