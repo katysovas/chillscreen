@@ -1,5 +1,6 @@
 import type { CharacterDef } from '@/components/game/characters';
 import { stripNpcChatterDots } from '@/lib/messageFilter';
+import type { AutopilotAmbientContext } from '@/lib/autopilot/ambientContext';
 import { getStageWorldSnapshot, type StageWorldEntry } from '@/lib/stageWorldSnapshot';
 import { isBuzNpc, BUZ_NPC_ID } from '@/lib/vendorShop';
 
@@ -65,8 +66,80 @@ const LOST_PROP_AMBIENT_LINES = [
   (name: string) => `anyone seen my ${name}?`,
 ] as const;
 
-const AUTOPILOT_CHEER_WEIGHT = 0.22;
-const AUTOPILOT_FUNNY_WEIGHT = 0.38;
+const AUTOPILOT_CHEER_WEIGHT = 0.12;
+const AUTOPILOT_FUNNY_WEIGHT = 0.18;
+const AUTOPILOT_STREAM_WEIGHT = 0.22;
+const AUTOPILOT_STAGE_WEIGHT = 0.18;
+const AUTOPILOT_FESTIVAL_WEIGHT = 0.18;
+const AUTOPILOT_HUMAN_WEIGHT = 0.12;
+
+const FESTIE_AUTOPILOT_STREAM_LINES = [
+  (act: string) => `${act}? bold choice`,
+  (act: string) => `ok ${act} goes hard`,
+  (act: string) => `who queued ${act}`,
+  (act: string) => `human picked ${act} lol`,
+  (act: string) => `${act} on repeat. no notes.`,
+  (act: string) => `the stream said ${act}`,
+  (act: string) => `I've seen ${act} before`,
+  (act: string) => `${act} is doing things to me`,
+  (act: string) => `is ${act} new? I'm in`,
+  (act: string) => `volume up for ${act}`,
+  (act: string) => `${act} hits different rn`,
+  (act: string) => `not me vibing to ${act}`,
+] as const;
+
+const FESTIE_AUTOPILOT_STAGE_LINES = [
+  (stage: string) => `${stage} never misses`,
+  (stage: string) => `${stage} vibes immaculate`,
+  (stage: string) => `why is ${stage} so good`,
+  (stage: string) => `I live at ${stage} now`,
+  (stage: string) => `${stage} is my roman empire`,
+  (stage: string) => `legend says ${stage} has bass`,
+  (stage: string) => `${stage} said party. obeyed.`,
+  (stage: string) => `couldn't leave ${stage} if I tried`,
+  (stage: string) => `${stage} energy is unreal`,
+  (stage: string) => `certified ${stage} moment`,
+] as const;
+
+const FESTIE_AUTOPILOT_FESTIVAL_LINES = [
+  'festival brain activated',
+  'need more glitter asap',
+  'lost water. found snacks.',
+  'festival mode: infinite',
+  'porta potty line said no',
+  'sunscreen optional right',
+  'someone has glow sticks',
+  'festival math: one more song',
+  'ankles: destroyed. soul: full.',
+  'forgot what day it is',
+  'grass stains are a badge',
+  'hydration is a social construct',
+  'festival fit check: passed',
+  'merch budget: compromised',
+  'I could do this forever',
+  'festival fairy dust loading',
+] as const;
+
+const FESTIE_AUTOPILOT_HUMAN_GENERIC_LINES = [
+  'real humans spotted',
+  'humans are so mysterious',
+  'that human looks busy',
+  "do humans know I'm AI",
+  'human party without me? rude',
+  'waving at strangers. classic.',
+  'humans walk weird tbh',
+  'real person energy detected',
+  'humans brought snacks probably',
+  "three humans. I'm shy.",
+] as const;
+
+const FESTIE_AUTOPILOT_HUMAN_NAMED_LINES = [
+  (name: string) => `${name} seems cool`,
+  (name: string) => `is ${name} having fun`,
+  (name: string) => `hi ${name} I'm a festie`,
+  (name: string) => `${name} has main character energy`,
+  (name: string) => `wonder if ${name} sees me`,
+] as const;
 
 /** Per-NPC ambient timing overrides. */
 const NPC_AMBIENT_INTERVAL: Partial<Record<string, { minMs: number; maxMs: number }>> = {
@@ -578,16 +651,70 @@ export function pickLostPropAmbientLine(propName: string): string {
   return clampAmbientLine(line);
 }
 
-/** Autopilot festie shouts — cheers, silly asides, and stage-aware mumbles. */
-export function pickAutopilotAmbientLine(character: CharacterDef): string {
-  const roll = Math.random();
-  if (roll < AUTOPILOT_CHEER_WEIGHT) {
-    return clampAmbientLine(pick([...NPC_AMBIENT_CHEER_LINES]));
+function pickStreamAutopilotLine(act: string): string {
+  return pick([...FESTIE_AUTOPILOT_STREAM_LINES])(act);
+}
+
+function pickStageAutopilotLine(stageName: string): string {
+  const stage = stageName.trim() || 'this stage';
+  return pick([...FESTIE_AUTOPILOT_STAGE_LINES])(stage);
+}
+
+function pickFestivalAutopilotLine(): string {
+  return pick([...FESTIE_AUTOPILOT_FESTIVAL_LINES]);
+}
+
+function pickHumanAutopilotLine(ctx: AutopilotAmbientContext): string {
+  if (ctx.humanName && Math.random() < 0.55) {
+    return pick([...FESTIE_AUTOPILOT_HUMAN_NAMED_LINES])(ctx.humanName);
   }
-  if (roll < AUTOPILOT_CHEER_WEIGHT + AUTOPILOT_FUNNY_WEIGHT) {
-    return clampAmbientLine(pick([...FESTIE_AUTOPILOT_FUNNY_LINES]));
+  return pick([...FESTIE_AUTOPILOT_HUMAN_GENERIC_LINES]);
+}
+
+/** Autopilot festie shouts — cheers, silly asides, and context-aware mumbles. */
+export function pickAutopilotAmbientLine(
+  _character: CharacterDef,
+  ctx: AutopilotAmbientContext = {
+    nowPlaying: null,
+    stageName: null,
+    humanCount: 0,
+    humanName: null,
+  },
+): string {
+  const buckets: { weight: number; pick: () => string }[] = [
+    { weight: AUTOPILOT_CHEER_WEIGHT, pick: () => pick([...NPC_AMBIENT_CHEER_LINES]) },
+    { weight: AUTOPILOT_FUNNY_WEIGHT, pick: () => pick([...FESTIE_AUTOPILOT_FUNNY_LINES]) },
+    { weight: AUTOPILOT_FESTIVAL_WEIGHT, pick: pickFestivalAutopilotLine },
+  ];
+
+  if (ctx.nowPlaying) {
+    const act = ctx.nowPlaying;
+    buckets.push({
+      weight: AUTOPILOT_STREAM_WEIGHT,
+      pick: () => pickStreamAutopilotLine(act),
+    });
   }
-  return pickAmbientMumble(character);
+  if (ctx.stageName) {
+    const stage = ctx.stageName;
+    buckets.push({
+      weight: AUTOPILOT_STAGE_WEIGHT,
+      pick: () => pickStageAutopilotLine(stage),
+    });
+  }
+  if (ctx.humanCount > 0) {
+    buckets.push({
+      weight: AUTOPILOT_HUMAN_WEIGHT,
+      pick: () => pickHumanAutopilotLine(ctx),
+    });
+  }
+
+  const total = buckets.reduce((sum, b) => sum + b.weight, 0);
+  let roll = Math.random() * total;
+  for (const bucket of buckets) {
+    roll -= bucket.weight;
+    if (roll <= 0) return clampAmbientLine(bucket.pick());
+  }
+  return clampAmbientLine(buckets[buckets.length - 1]!.pick());
 }
 
 export function pickAmbientMumble(character: CharacterDef): string {

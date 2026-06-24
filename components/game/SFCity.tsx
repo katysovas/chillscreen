@@ -83,6 +83,7 @@ import {
   nextAutopilotPropLossAtMs,
   pickOwnedVendorPropToLose,
 } from '@/lib/autopilot/propLoss';
+import { buildAutopilotAmbientContext } from '@/lib/autopilot/ambientContext';
 import { vendorAnchorGroundWorldX } from '@/lib/stageAnchor';
 import { getAmbientIntervalMs, pickAutopilotAmbientLine, pickLostPropAmbientLine } from '@/lib/npcAmbientChat';
 import {
@@ -313,6 +314,12 @@ export default function SFCity({
       stageDescription: seo.longDescription,
     };
   }, [creatorStage, effectiveVenueRoute]);
+  const creatorStageRef = useRef(creatorStage);
+  creatorStageRef.current = creatorStage;
+  const stageChatterWelcomeRef = useRef(stageChatterWelcome);
+  stageChatterWelcomeRef.current = stageChatterWelcome;
+  const stagePlaybackChannelRef = useRef(stagePlaybackChannel);
+  stagePlaybackChannelRef.current = stagePlaybackChannel;
   const isDeepSpace = effectiveVenueRoute === 'deep-space';
   const isHeadliner = effectiveVenueRoute === 'headliner';
   const splitGrassLayout =
@@ -2252,7 +2259,16 @@ export default function SFCity({
       const { minMs, maxMs } = getAmbientIntervalMs(ownerId);
       autopilotAmbientAtRef.current = now + minMs + Math.random() * (maxMs - minMs);
       if (roomChatterRef.current.isNpcInConvo(ownerId)) return;
-      roomChatterRef.current.handleNpcShout(ownerId, pickAutopilotAmbientLine(cfg));
+      const roster = mpRef.current?.remoteStateRef.current;
+      const ambientCtx = buildAutopilotAmbientContext({
+        stageName: stageChatterWelcomeRef.current.stageName,
+        creatorStage: creatorStageRef.current,
+        stagePlaybackChannel: stagePlaybackChannelRef.current,
+        cinemaNowPlaying: cinemaNowRef.current,
+        concertNowPlaying: concertNowRef.current,
+        remotePlayers: roster ? [...roster.values()] : [],
+      });
+      roomChatterRef.current.handleNpcShout(ownerId, pickAutopilotAmbientLine(cfg, ambientCtx));
     };
 
     const runAutopilotVendor = () => {
