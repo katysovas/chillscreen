@@ -348,6 +348,7 @@
     },
     "edc": {
       "label": "Las Vegas",
+      "announce": true,
       "source": "curated",
       "videos": [
         {
@@ -606,6 +607,7 @@
     },
     "forest": {
       "label": "The Forest",
+      "announce": true,
       "source": "curated",
       "videos": [
         {
@@ -662,6 +664,7 @@
     },
     "silent-disco": {
       "label": "Silent Disco",
+      "announce": true,
       "source": "curated",
       "videos": [
         {

@@ -1,5 +1,6 @@
 {
   "label": "Las Vegas",
+  "announce": true,
   "source": "curated",
   "videos": [
     {

@@ -1,5 +1,6 @@
 {
   "label": "Silent Disco",
+  "announce": true,
   "source": "curated",
   "videos": [
     {
