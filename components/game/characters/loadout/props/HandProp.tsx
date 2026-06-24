@@ -3,7 +3,7 @@ import { LightsaberAccessory } from '../../accessories/lightsaber/accessory';
 import { MicrophoneAccessory } from '../../accessories/microphone/accessory';
 import { PirateSwordAccessory } from '../../pirate/accessory';
 import type { LoadoutRenderCtx } from '../types';
-import { brushHandStyle, handPropRotateStyle } from './handPropRotateStyle';
+import { handPropRotateStyle } from './handPropRotateStyle';
 
 const BOOMBOX_SRC = '/images/props/hands_boombox.svg';
 const BALLOONS_SRC = '/images/props/hands_balloons.svg';
@@ -186,7 +186,7 @@ export function HandProp({ variant, ctx }: HandPropProps) {
       );
     case 'brush':
       return (
-        <div className="ch-lo-brush" style={brushHandStyle()}>
+        <div className="ch-lo-brush">
           <div className="ch-lo-brush-stroke">
             <img src={BRUSH_SRC} alt="" className="ch-lo-brush-img" draggable={false} />
           </div>

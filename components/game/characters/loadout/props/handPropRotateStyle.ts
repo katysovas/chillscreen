@@ -40,11 +40,3 @@ export function handPropRotateStyle(variant: HandPropVariant): CSSProperties {
     : `rotate(${r.deg}deg)`;
   return { transform, transformOrigin: r.origin };
 }
-
-/** Paintbrush — mirror + 180° on the outer hand layer (bristles toward easel). */
-export function brushHandStyle(): CSSProperties {
-  return {
-    transform: 'scaleX(var(--ch-mirror, 1)) rotate(180deg)',
-    transformOrigin: '50% 88%',
-  };
-}

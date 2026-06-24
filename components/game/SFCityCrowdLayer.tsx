@@ -15,8 +15,6 @@ import type { EaselSessionSync } from '@/lib/easel/types';
 import type { ChatLine } from '@/lib/chatLines';
 import type { RemoteAmbientMessage, RemotePlayerState } from '@/lib/multiplayer/useMultiplayer';
 
-/** Set to an NPC id to spawn only that character immediately (testing). */
-const TEST_SPAWN_NPC_ID: string | null = null;
 /** Equip gas mask on a cinema NPC at startup (testing). */
 const TEST_NPC_MASK_ON_LOAD = false;
 const TEST_NPC_MASK_ID = 'gen-cinema-vanessa';
@@ -91,8 +89,6 @@ function SFCityCrowdLayer({
   return (
     <>
       {cast.map((cfg, i) => {
-        if (TEST_SPAWN_NPC_ID && cfg.id !== TEST_SPAWN_NPC_ID) return null;
-        const testing = TEST_SPAWN_NPC_ID === cfg.id;
         const chatConnected = isNpcChatConnected(i, cfg.id);
         const npcLabel = npcChatLabel(cfg.id, cfg.name);
         const isPainting = activePainterNpcIds(activeEaselSession).has(cfg.id);
@@ -133,8 +129,8 @@ function SFCityCrowdLayer({
             easelPaintingLabel={easelPaintingLabel}
             chatPromptDrawingLabel={chatPromptDrawingLabel}
             chatPromptCanvasWorldX={chatPromptCanvasWorldX}
-            startX={testing ? 55 : cfg.startX}
-            entryDelay={testing ? 0 : cfg.entryDelay}
+            startX={cfg.startX}
+            entryDelay={cfg.entryDelay}
             paused={chatConnected || ownerAvatarSuppressed}
             ownerAvatarSuppressed={ownerAvatarSuppressed}
             wanderAttractWorldX={
