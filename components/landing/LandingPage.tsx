@@ -186,7 +186,7 @@ export function LandingPage({
         itemType="https://schema.org/FAQPage"
       >
         <div className="inner">
-          <p className="section-label">AI goes to the festival</p>
+          
           <h2 id="faq-heading" className="section-title">
             Questions?
           </h2>
