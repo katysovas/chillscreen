@@ -519,7 +519,21 @@ export default class WhichStageServer implements Party.Server {
     }
   }
 
+  private async ensureStageSync(): Promise<void> {
+    if (this.stageSync) return;
+    const playlists = await resolveStagePlaylists(
+      this.room.env.YOUTUBE_API_KEY as string | undefined,
+    );
+    this.stageSync = {
+      epoch: STAGE_EPOCH,
+      defaultDurationMs: DEFAULT_DURATION_MS,
+      playlists,
+      matchup: readMatchupConfigFromDisk(),
+    };
+  }
+
   async onAlarm() {
+    await this.ensureStageSync();
     const now = Date.now();
     await this.matchup.resolveAllDue(
       this.stageSync,

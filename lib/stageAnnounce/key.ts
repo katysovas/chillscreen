@@ -6,6 +6,8 @@ import { scheduleFor, type StageChannel, type StageSync } from '@/lib/stageVideo
 export type AnnounceContext = {
   key: string;
   displayName: string;
+  /** YouTube video thumbnail URL, present for rotation channels. */
+  thumbnailUrl?: string;
 };
 
 /**
@@ -46,5 +48,6 @@ export function announceContextFor(
 
   const sched = scheduleFor(channel, now, sync);
   const displayName = sched?.video.title?.trim() || key;
-  return { key, displayName };
+  const thumbnailUrl = `https://i.ytimg.com/vi/${key}/mqdefault.jpg`;
+  return { key, displayName, thumbnailUrl };
 }

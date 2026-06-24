@@ -17,6 +17,7 @@ type AnnounceBody = {
   key?: string;
   displayName?: string;
   channel?: StageChannel;
+  thumbnailUrl?: string;
 };
 
 export async function POST(req: Request) {
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
   const slug = body.slug?.trim();
   const displayName = body.displayName?.trim();
   const channel = body.channel;
+  const thumbnailUrl = body.thumbnailUrl?.trim() || undefined;
   if (!slug || !displayName || !channel) {
     return Response.json({ error: 'slug, displayName, and channel required' }, { status: 400 });
   }
@@ -51,7 +53,7 @@ export async function POST(req: Request) {
     return new Response(null, { status: 204 });
   }
 
-  const embed = buildDiscordAnnounceEmbed(slug, channel, displayName);
+  const embed = buildDiscordAnnounceEmbed(slug, channel, displayName, thumbnailUrl);
   const payload = discordWebhookBody(embed);
 
   try {

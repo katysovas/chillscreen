@@ -6,17 +6,20 @@ export type DiscordAnnounceEmbed = {
   title: string;
   description: string;
   url: string;
+  thumbnail?: { url: string };
 };
 
 export function buildDiscordAnnounceEmbed(
   venueSlug: string,
   channel: StageChannel,
   displayName: string,
+  thumbnailUrl?: string,
 ): DiscordAnnounceEmbed {
   return {
     title: displayName,
     description: announceDescriptionForChannel(channel),
     url: `${SITE_URL}/${venueSlug}`,
+    ...(thumbnailUrl ? { thumbnail: { url: thumbnailUrl } } : {}),
   };
 }
 

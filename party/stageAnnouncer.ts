@@ -91,6 +91,7 @@ export class StageAnnouncer {
       key: ctx.key,
       displayName: ctx.displayName,
       channel,
+      ...(ctx.thumbnailUrl ? { thumbnailUrl: ctx.thumbnailUrl } : {}),
     });
 
     if (result === 'dead') {
