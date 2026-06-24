@@ -459,6 +459,7 @@
     },
     "which-stage": {
       "label": "The Farm",
+      "announce": true,
       "source": "curated",
       "videos": [
         {
@@ -701,6 +702,7 @@
     },
     "deep-space": {
       "label": "Deep Space",
+      "announce": true,
       "source": "curated",
       "videos": [
         {

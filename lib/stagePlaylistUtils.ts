@@ -4,6 +4,8 @@ import type { MatchupStageConfig } from './matchup/normalize';
 
 export type StagePlaylistChannelEntry = StageChannelConfig & {
   label?: string;
+  /** Opt in to Discord now-playing announcements (webhook url is server-side only). */
+  announce?: boolean;
   /** King-of-the-hill vote buckets (per-streamer video lists). */
   matchup?: MatchupStageConfig;
 };

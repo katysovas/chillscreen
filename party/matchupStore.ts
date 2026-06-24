@@ -237,6 +237,20 @@ export class MatchupStore {
     return this.toPayload(channel, next, now, voterId);
   }
 
+  getCachedChannel(channel: StageChannel): RoomState | undefined {
+    return this.cache.get(channel);
+  }
+
+  async ensureChannelLoaded(
+    channel: StageChannel,
+    sync: StageSync,
+    now: number,
+    apiBase: string,
+    secret: string | undefined,
+  ): Promise<RoomState> {
+    return this.loadChannel(channel, sync, now, apiBase, secret);
+  }
+
   earliestEndsAt(): number | null {
     let earliest: number | null = null;
     for (const state of this.cache.values()) {

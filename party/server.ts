@@ -39,6 +39,7 @@ import { NpcChatterScheduler } from './npcChatterScheduler';
 import { EaselScheduler } from './easelScheduler';
 import { LineupStore, resolveLineupVoterId } from './lineupStore';
 import { MatchupStore } from './matchupStore';
+import { StageAnnouncer } from './stageAnnouncer';
 import { isMatchupChannel } from '../lib/matchup/config';
 import { isSuperAdminFestieName, superAdminMatchupVoterId } from '../lib/superAdmin';
 import { clientIpFromRequest, isConnectionBlocked } from './blocklistCache';
@@ -87,6 +88,7 @@ export default class WhichStageServer implements Party.Server {
   private easels: EaselScheduler;
   private lineup: LineupStore;
   private matchup: MatchupStore;
+  private announcer: StageAnnouncer;
   /** Cached HuskyNights check for signed-in user ids. */
   private superAdminByUserId = new Map<string, boolean>();
   private superAdminVoteNonce = 0;
@@ -94,6 +96,7 @@ export default class WhichStageServer implements Party.Server {
   constructor(readonly room: Party.Room) {
     this.lineup = new LineupStore(room.storage, room.id);
     this.matchup = new MatchupStore(room.storage, room.id);
+    this.announcer = new StageAnnouncer(room.storage, room.id);
     this.chatter = new NpcChatterScheduler({
       room: this.room,
       broadcast: msg => this.room.broadcast(encode(msg)),
@@ -159,6 +162,13 @@ export default class WhichStageServer implements Party.Server {
       conn.send(encode({ t: 'stage-chatter-history', messages }));
     });
     this.easels.syncToClient(msg => conn.send(encode(msg)));
+    void this.announcer.ensureArmed(
+      this.stageSync,
+      Date.now(),
+      this.festiesApiBase(),
+      this.partyEnv().NPC_CHATTER_SECRET,
+      this.matchup,
+    );
   }
 
   onMessage(raw: string, sender: Party.Connection) {
@@ -518,8 +528,21 @@ export default class WhichStageServer implements Party.Server {
       this.partyEnv().NPC_CHATTER_SECRET,
       payload => this.room.broadcast(encode({ t: 'matchup-state', ...payload, myVote: null })),
     );
+    await this.announcer.afterMatchupResolve(
+      this.stageSync,
+      now,
+      this.festiesApiBase(),
+      this.partyEnv().NPC_CHATTER_SECRET,
+      this.matchup,
+    );
     void this.matchup.scheduleTrackAlarm(this.room.storage);
     await this.chatter.onAlarm();
+    await this.announcer.onRotationBoundary(
+      this.stageSync,
+      now,
+      this.festiesApiBase(),
+      this.partyEnv().NPC_CHATTER_SECRET,
+    );
     void this.matchup.scheduleTrackAlarm(this.room.storage);
   }
 

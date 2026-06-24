@@ -44,6 +44,7 @@ import {
 import { getNpcRosterEntry, festieChatterNpcIds } from '../lib/npcRoster.server';
 import type { RoomChatLine } from '../lib/npcChatter/prompts';
 import { stageSlugForRoom, streamContextForRoom } from '../lib/npcChatter/roomContext';
+import { channelAnnounces, stageChannelForRoom } from '../lib/stageAnnounce/config';
 import type { StageSync } from '../lib/stageVideos';
 import { ierror, ilog, INTERNAL_DEBUG_HEADER, runWithInternalDebug } from '../lib/internalDebug';
 import { CHATTER_DEBUG_HEADER, runWithChatterDebug } from '../lib/chatterDebug';
@@ -216,6 +217,11 @@ export class NpcChatterScheduler {
     void this.roomStorage.setAlarm(Date.now() + delay);
   }
 
+  private roomAnnouncesNowPlaying(): boolean {
+    const channel = stageChannelForRoom(this.deps.room.id);
+    return Boolean(channel && channelAnnounces(channel));
+  }
+
   onLastPlayer() {
     this.schedulerOn = false;
     this.activeConvo = false;
@@ -224,8 +230,10 @@ export class NpcChatterScheduler {
       clearTimeout(this.stageWaveDebounceTimer);
       this.stageWaveDebounceTimer = null;
     }
-    // Push alarm far out — empty room = zero LLM calls.
-    void this.roomStorage.setAlarm(Date.now() + 86_400_000);
+    // Announcing stages keep the DO alarm alive for Discord now-playing posts.
+    if (!this.roomAnnouncesNowPlaying()) {
+      void this.roomStorage.setAlarm(Date.now() + 86_400_000);
+    }
   }
 
   updateNpcPositions(
@@ -704,7 +712,9 @@ export class NpcChatterScheduler {
       return;
     }
     if (this.chatterDisabled || !this.schedulerOn) {
-      void this.roomStorage.setAlarm(Date.now() + 86_400_000);
+      if (!this.roomAnnouncesNowPlaying()) {
+        void this.roomStorage.setAlarm(Date.now() + 86_400_000);
+      }
       return;
     }
 
