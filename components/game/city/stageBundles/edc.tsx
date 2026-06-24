@@ -20,6 +20,7 @@ export const bundle = {
           live={edcLiveOnTile(props)}
           midX={EDC_STATIC_STAGE_MID_X}
           scale={EDC_STATIC_STAGE_SCALE}
+          desktopStageOverlay={props.desktopStageOverlay}
         />
         <StageToiletsFlanking
           centerX={EDC_STATIC_STAGE_MID_X}

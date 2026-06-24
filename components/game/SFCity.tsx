@@ -161,6 +161,7 @@ import { SkyCreaturesLayer } from './SkyCreatures';
 import { SkyLayer } from './city/SkyLayer';
 import { HeadlinerSkyBackdrop } from './city/headliner-sky';
 import { SpaceParallaxStars, DeepSpaceStageOverlay } from './city/orbit';
+import { EDCStageOverlay } from './city/lasvegas';
 import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 import { MidLayer } from './city/MidLayer';
 import { GroundLayer } from './city/GroundLayer';
@@ -3057,7 +3058,7 @@ export default function SFCity({
           hideTrees={mobileDevice || isDeepSpace || isLasVegas || isHeadliner}
           isolatedTileIndex={isolatedTile}
           creatorBackdropUrl={staticStageBackdropUrl ?? stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null}
-          stageOverlay={isDeepSpace && !mobileDevice && !homePreview}
+          stageOverlay={(isDeepSpace || isLasVegas) && !mobileDevice && !homePreview}
         />
         {splitGrassLayout && !isDeepSpace && !isHeadliner && (
           <div aria-hidden className="mobile-venue-grass-fill" />
@@ -3225,6 +3226,10 @@ export default function SFCity({
 
       {isDeepSpace && !mobileDevice && !homePreview && (
         <DeepSpaceStageOverlay live />
+      )}
+
+      {isLasVegas && !mobileDevice && !homePreview && (
+        <EDCStageOverlay live />
       )}
 
       {!homePreview && (

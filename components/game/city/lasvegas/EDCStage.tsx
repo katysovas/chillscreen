@@ -1,7 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
-import type { HTMLAttributes } from 'react';
+import { useRef, type HTMLAttributes } from 'react';
 import {
   EDC_STAGE_MID_X,
   EDC_STAGE_PUSH_Y,
@@ -9,6 +8,7 @@ import {
   NEON,
   VEGAS_GND,
 } from './constants';
+import { EDC_SCREEN_H, EDC_SCREEN_W, EDC_SCREEN_Y, getEdcVideoScreenRect } from './edcStageLayout';
 import { Flame, laserFan } from './helpers';
 import { setEdcNowPlaying } from '@/lib/edcNowPlaying';
 import type { StageChannel } from '@/lib/stageVideos';
@@ -39,10 +39,10 @@ function EDCStageShell({
 }: EDCStageShellProps) {
   const cx = midX;
   const stageY = GND;
-  const scrW = 440;
-  const scrH = 248;
+  const scrW = EDC_SCREEN_W;
+  const scrH = EDC_SCREEN_H;
   const scrX = cx - scrW / 2;
-  const scrY = 404;
+  const scrY = EDC_SCREEN_Y;
   const owlEyeY = 366;
   const deckY = 648;
   const S = scale;
@@ -173,12 +173,6 @@ function EDCStageLive({
   channel?: StageChannel;
   onNowPlaying?: (title: string | null) => void;
 }) {
-  const cx = midX;
-  const stageY = GND;
-  const scrW = 440;
-  const scrH = 248;
-  const scrX = cx - scrW / 2;
-  const scrY = 404;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { video, src, vidKey, onIframeLoad } = useStagePlayer({
     live: true,
@@ -187,33 +181,29 @@ function EDCStageLive({
     onNowPlaying,
   });
 
-  const S = scale;
-  const pushY = EDC_STAGE_PUSH_Y;
-  const ox = cx;
-  const oy = stageY;
-  const videoFoX = ox + S * (scrX - ox);
-  const videoFoY = oy + S * (scrY - oy) + pushY;
-  const videoFoW = scrW * S;
-  const videoFoH = scrH * S;
   const marquee = video?.title ?? 'LOADING…';
+  const screen = getEdcVideoScreenRect(midX, scale);
 
   return (
     <>
       <EDCStageShell marquee={marquee} idleScreen={false} midX={midX} scale={scale} />
       <foreignObject
-        x={videoFoX}
-        y={videoFoY}
-        width={videoFoW}
-        height={videoFoH}
+        x={screen.x}
+        y={screen.y}
+        width={screen.width}
+        height={screen.height}
         data-stage-video-fo
-        style={STAGE_VIDEO_FO_STYLE}
+        style={{ ...STAGE_VIDEO_FO_STYLE, overflow: 'hidden' }}
       >
         <div
           {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
           style={{
-            width: scrW,
-            transform: `scale(${S})`,
-            transformOrigin: 'top left',
+            width: screen.width,
+            height: screen.height,
+            margin: 0,
+            padding: 0,
+            display: 'block',
+            boxSizing: 'border-box',
             ...STAGE_VIDEO_WRAPPER_STYLE,
           }}
         >
@@ -223,9 +213,9 @@ function EDCStageLive({
             vidKey={vidKey}
             title={video?.title}
             onIframeLoad={onIframeLoad}
-            width={scrW}
-            height={scrH}
-            borderRadius={6}
+            width={screen.width}
+            height={screen.height}
+            borderRadius={screen.borderRadius}
           />
         </div>
       </foreignObject>
@@ -237,10 +227,29 @@ type EDCStageProps = EDCStageLayout & {
   live?: boolean;
   channel?: StageChannel;
   onNowPlaying?: (title: string | null) => void;
+  /** Desktop HTML overlay renders video outside SVG — skip foreignObject. */
+  desktopStageOverlay?: boolean;
 };
 
 /** EDC "Electric Daze" kineticFIELD-style owl megastage with synchronized YouTube when live. */
-export function EDCStage({ live = false, midX, scale, channel, onNowPlaying }: EDCStageProps) {
+export function EDCStage({
+  live = false,
+  midX,
+  scale,
+  channel,
+  onNowPlaying,
+  desktopStageOverlay = false,
+}: EDCStageProps) {
   if (!live) return <EDCStageShell midX={midX} scale={scale} />;
-  return <EDCStageLive midX={midX} scale={scale} channel={channel} onNowPlaying={onNowPlaying} />;
+  if (desktopStageOverlay) {
+    return <EDCStageShell idleScreen={false} midX={midX} scale={scale} />;
+  }
+  return (
+    <EDCStageLive
+      midX={midX}
+      scale={scale}
+      channel={channel}
+      onNowPlaying={onNowPlaying}
+    />
+  );
 }
