@@ -213,8 +213,10 @@ export class NpcChatterScheduler {
     this.schedulerOn = true;
     this.scheduleNextAmbientCheer();
     this.scheduleNextFestieDescribeShoutout(true);
-    const delay = jitterMs(FIRST_CONVO_DELAY_MIN_MS, FIRST_CONVO_DELAY_MAX_MS);
-    void this.roomStorage.setAlarm(Date.now() + delay);
+    if (!this.roomAnnouncesNowPlaying()) {
+      const delay = jitterMs(FIRST_CONVO_DELAY_MIN_MS, FIRST_CONVO_DELAY_MAX_MS);
+      void this.roomStorage.setAlarm(Date.now() + delay);
+    }
   }
 
   private roomAnnouncesNowPlaying(): boolean {
@@ -732,6 +734,8 @@ export class NpcChatterScheduler {
       await this.runPairConvo();
     }
 
-    void this.roomStorage.setAlarm(Date.now() + jitterMs(ALARM_MIN_MS, ALARM_MAX_MS));
+    if (!this.roomAnnouncesNowPlaying()) {
+      void this.roomStorage.setAlarm(Date.now() + jitterMs(ALARM_MIN_MS, ALARM_MAX_MS));
+    }
   }
 }

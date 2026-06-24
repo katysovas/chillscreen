@@ -17,6 +17,7 @@ const STORAGE_DISABLED = 'announce:disabled';
 
 export class StageAnnouncer {
   private loggedMissingWebhook = new Set<string>();
+  private loggedMissingSecret = false;
 
   constructor(
     private readonly storage: Party.Room['storage'],
@@ -28,6 +29,15 @@ export class StageAnnouncer {
     secret: string | undefined,
     body: Record<string, unknown>,
   ): Promise<'ok' | 'missing' | 'dead' | 'rate-limited' | 'error'> {
+    if (!secret?.trim()) {
+      if (!this.loggedMissingSecret) {
+        this.loggedMissingSecret = true;
+        console.warn(
+          '[announce] NPC_CHATTER_SECRET missing on PartyKit — redeploy with npm run party:deploy',
+        );
+      }
+      return 'error';
+    }
     try {
       const res = await fetch(`${apiBase}/api/announce`, {
         method: 'POST',

@@ -536,13 +536,13 @@ export default class WhichStageServer implements Party.Server {
       this.matchup,
     );
     void this.matchup.scheduleTrackAlarm(this.room.storage);
-    await this.chatter.onAlarm();
     await this.announcer.onRotationBoundary(
       this.stageSync,
       now,
       this.festiesApiBase(),
       this.partyEnv().NPC_CHATTER_SECRET,
     );
+    await this.chatter.onAlarm();
     void this.matchup.scheduleTrackAlarm(this.room.storage);
   }
 

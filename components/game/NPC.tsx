@@ -234,6 +234,9 @@ function NPC({
   const stageVisibleRef     = useRef(!stageAnchor);
   const chatConnectedRef    = useRef(chatConnected || greeting);
   chatConnectedRef.current = chatConnected || greeting;
+  const pairChatSpreadPxRef = useRef(pairChatSpreadPx);
+  pairChatSpreadPxRef.current = pairChatSpreadPx;
+  const effectiveDepthYRef    = useRef(depthY);
   const ownerAvatarSuppressedRef = useRef(ownerAvatarSuppressed);
   ownerAvatarSuppressedRef.current = ownerAvatarSuppressed;
   const spaceFloatRef       = useRef(spaceFloat);
@@ -267,6 +270,10 @@ function NPC({
     // off-screen while collision still tracks the real world-x.
     if (divRef.current) {
       divRef.current.style.left = `${screenXRef.current}%`;
+      const spread = chatConnectedRef.current
+        ? chatConnectSpreadPx(screenXRef.current)
+        : pairChatSpreadPxRef.current;
+      divRef.current.style.transform = `translate(${spread}px, ${effectiveDepthYRef.current}px)`;
     }
   });
 
@@ -762,9 +769,10 @@ function NPC({
       screenXRef.current = pct;
       if (divRef.current) {
         divRef.current.style.left = `${pct}%`;
-        const spread = chatConnectedRef.current ? chatConnectSpreadPx(pct) : 0;
-        const y = easelStationedRef.current ? 0 : depthY;
-        divRef.current.style.transform = `translate(${spread}px, ${y}px)`;
+        const spread = chatConnectedRef.current
+          ? chatConnectSpreadPx(pct)
+          : pairChatSpreadPxRef.current;
+        divRef.current.style.transform = `translate(${spread}px, ${effectiveDepthYRef.current}px)`;
       }
 
       if ((publicMessagesRef.current?.length ?? 0) > 0 && !greetingRef.current) {
@@ -827,18 +835,20 @@ function NPC({
   const showPublicBubble = Boolean(
     publicMessages?.length && !greeting && !showPaintingBubble,
   );
-  /** Easel canvas anchors at CHAR_BOTTOM — painters must match, not use crowd depth. */
-  const effectiveDepthY = showPaintingBubble || easelStationed || easelPaintingSlot != null || chatPromptCanvasWorldX != null ? 0 : depthY;
-  const bubbleSide = showPaintingBubble
-    ? 'left'
-    : pairChatBubbleSide ?? screenXToBubbleSide(screenX);
-
   const showGreetingChat = Boolean(
     greeting && greetingChat && (greetingChat.npcTyping || greetingChat.messages.length > 0),
   );
   const showChattingBubble = Boolean(
     pairChatIndicator && !showPaintingBubble && !showGreetingChat,
   );
+  /** Easel canvas anchors at CHAR_BOTTOM — painters must match, not use crowd depth. */
+  const effectiveDepthY = showPaintingBubble || easelStationed || easelPaintingSlot != null || chatPromptCanvasWorldX != null ? 0 : depthY;
+  effectiveDepthYRef.current = effectiveDepthY;
+  const bubbleSide = showPaintingBubble
+    ? 'left'
+    : showChattingBubble
+      ? 'center'
+      : pairChatBubbleSide ?? screenXToBubbleSide(screenX);
 
   const publicChatKey = `npc:${characterId}`;
   const boostedPublicZ = usePublicChatBubbleZ(publicChatKey, depthZ);
@@ -861,28 +871,12 @@ function NPC({
       style={{
         position: 'absolute',
         bottom: CHAR_BOTTOM,
-        transform: `translateY(${effectiveDepthY}px) translateX(${pairChatSpreadPx}px)`,
         zIndex: zIndex,
         opacity: dimmed ? 0.6 : 1,
         filter: dimmed ? 'brightness(0.85)' : undefined,
         transition: 'opacity 0.4s ease, filter 0.4s ease',
       }}
     >
-      {showChattingBubble && (
-        <div
-          style={{
-            position: 'absolute',
-            left: '50%',
-            bottom: '100%',
-            marginBottom: 8,
-            transform: 'translateX(-50%)',
-            zIndex: 42,
-            pointerEvents: 'none',
-          }}
-        >
-          <AttachedChatEmojiIndicator />
-        </div>
-      )}
       <div style={{ animation: jumping ? 'ch-jump-outer 0.55s linear' : 'none' }}>
         <Character
           ref={characterRef}
@@ -923,6 +917,8 @@ function NPC({
                 messages={publicMessages!}
                 side={bubbleSide}
               />
+            ) : showChattingBubble ? (
+              <AttachedChatEmojiIndicator />
             ) : undefined
           }
         />
