@@ -16,6 +16,23 @@ import {
   type FeaturedChartEntry,
 } from '@/lib/stages/featuredStagesChart';
 import { useCreatorChartMeta } from './useCreatorChartMeta';
+import { StageChartRow } from './StageChartRow';
+import {
+  STAGE_CHART_INFO,
+  STAGE_CHART_MOVE,
+  STAGE_CHART_MOVE_DOWN,
+  STAGE_CHART_MOVE_SAME,
+  STAGE_CHART_MOVE_UP,
+  STAGE_CHART_NAME,
+  STAGE_CHART_SUBTITLE,
+  STAGE_CHART_BODY,
+  STAGE_CHART_JOIN,
+  STAGE_CHART_JOIN_DISABLED,
+  STAGE_CHART_MODAL,
+  STAGE_CHART_THUMB,
+  STAGE_CHART_THUMB_IMG,
+  stageChartRankStyle,
+} from './stageChartRowStyles';
 import './FeaturedStagesChart.css';
 
 export type FeaturedStagesChartProps = {
@@ -24,9 +41,13 @@ export type FeaturedStagesChartProps = {
   selectedId?: string | null;
   /** Mark the stage the user is already on. */
   currentId?: string | null;
-  /** Per-row join button — homepage uses this; modals rely on row pick + submit. */
+  /** Per-row join button — homepage uses this; switch modal joins directly. */
   showJoinAction?: boolean;
   joinLabel?: string;
+  /** Hide billboard rank movement arrows (up/down). */
+  showRankMovement?: boolean;
+  /** When set, join button calls this instead of only decorating the row. */
+  onJoin?: (target: StagePickerTarget) => void;
   /** Tighter layout + scroll for modals. */
   variant?: 'page' | 'modal';
   /** Hide built-in header when the parent supplies section chrome. */
@@ -45,7 +66,7 @@ function MoveIndicator({ entry }: { entry: FeaturedChartEntry }) {
   const move = chartMovement(entry.rank, entry.previousRank);
   if (move === 'up') {
     return (
-      <span className="featured-stages-chart__move featured-stages-chart__move--up" aria-label="Moved up">
+      <span className="featured-stages-chart__move featured-stages-chart__move--up" style={STAGE_CHART_MOVE_UP} aria-label="Moved up">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
           <path d="M7 11V3M4 6l3-3 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -54,7 +75,7 @@ function MoveIndicator({ entry }: { entry: FeaturedChartEntry }) {
   }
   if (move === 'down') {
     return (
-      <span className="featured-stages-chart__move featured-stages-chart__move--down" aria-label="Moved down">
+      <span className="featured-stages-chart__move featured-stages-chart__move--down" style={STAGE_CHART_MOVE_DOWN} aria-label="Moved down">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
           <path d="M7 3v8M4 8l3 3 3-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -62,7 +83,7 @@ function MoveIndicator({ entry }: { entry: FeaturedChartEntry }) {
     );
   }
   return (
-    <span className="featured-stages-chart__move featured-stages-chart__move--same" aria-label="No change">
+    <span className="featured-stages-chart__move featured-stages-chart__move--same" style={STAGE_CHART_MOVE_SAME} aria-label="No change">
       —
     </span>
   );
@@ -89,6 +110,8 @@ export function FeaturedStagesChart({
   currentId = null,
   showJoinAction = false,
   joinLabel = 'Join',
+  showRankMovement = true,
+  onJoin,
   variant = 'page',
   showHeader = true,
   showTabs,
@@ -141,12 +164,17 @@ export function FeaturedStagesChart({
   };
 
   const list = (
-    <div className="featured-stages-chart__body" role="list">
+    <div
+      className="featured-stages-chart__body"
+      role="list"
+      style={isModal ? STAGE_CHART_BODY : undefined}
+    >
       {tab.entries.map(entry => {
           const id = chartEntryId(entry);
           const display = resolveEntry(entry);
           const selected = selectedId === id;
           const current = currentId === id;
+          const isCurrent = current;
           const rowClass = [
             'featured-stages-chart__row',
             !showJoinAction ? 'featured-stages-chart__row--no-action' : '',
@@ -154,39 +182,64 @@ export function FeaturedStagesChart({
             current ? 'featured-stages-chart__row--current' : '',
           ].filter(Boolean).join(' ');
 
-          return (
-            <div key={id} role="listitem">
+          const joinControl = showJoinAction ? (
+            onJoin ? (
               <button
                 type="button"
+                className="featured-stages-chart__join"
+                style={{
+                  ...STAGE_CHART_JOIN,
+                  ...(isCurrent ? STAGE_CHART_JOIN_DISABLED : {}),
+                }}
+                disabled={isCurrent}
+                onClick={e => {
+                  e.stopPropagation();
+                  if (!isCurrent) onJoin(entry.target);
+                }}
+              >
+                {joinLabel}
+                <JoinArrow />
+              </button>
+            ) : (
+              <span className="featured-stages-chart__join">
+                {joinLabel}
+                <JoinArrow />
+              </span>
+            )
+          ) : null;
+
+          return (
+            <div key={id} role="listitem">
+              <StageChartRow
                 className={rowClass}
-                aria-pressed={selected || undefined}
-                aria-current={current ? 'true' : undefined}
+                selected={selected}
+                current={current}
                 onClick={() => onSelect(entry.target)}
               >
-                <span className="featured-stages-chart__rank">{entry.rank}</span>
-                <div className="featured-stages-chart__thumb">
+                <span className="featured-stages-chart__rank" style={stageChartRankStyle(entry.rank)}>{entry.rank}</span>
+                <div className="featured-stages-chart__thumb" style={STAGE_CHART_THUMB}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={display.thumbnail}
                     alt=""
                     loading="lazy"
+                    style={STAGE_CHART_THUMB_IMG}
                     onError={e => { e.currentTarget.style.display = 'none'; }}
                   />
                 </div>
-                <div className="featured-stages-chart__info">
-                  <p className="featured-stages-chart__name">{display.name}</p>
+                <div className="featured-stages-chart__info" style={STAGE_CHART_INFO}>
+                  <p className="featured-stages-chart__name" style={STAGE_CHART_NAME}>{display.name}</p>
                   {display.subtitle ? (
-                    <p className="featured-stages-chart__subtitle">{display.subtitle}</p>
+                    <p className="featured-stages-chart__subtitle" style={STAGE_CHART_SUBTITLE}>{display.subtitle}</p>
                   ) : null}
                 </div>
-                {showJoinAction && (
-                  <span className="featured-stages-chart__join">
-                    {joinLabel}
-                    <JoinArrow />
+                {joinControl}
+                {showRankMovement && (
+                  <span style={STAGE_CHART_MOVE}>
+                    <MoveIndicator entry={entry} />
                   </span>
                 )}
-                <MoveIndicator entry={entry} />
-              </button>
+              </StageChartRow>
             </div>
           );
         })}
@@ -202,6 +255,7 @@ export function FeaturedStagesChart({
         isModal ? 'featured-stages-chart--modal featured-stages-chart--scrollable' : '',
         className,
       ].filter(Boolean).join(' ')}
+      style={isModal ? STAGE_CHART_MODAL : undefined}
     >
       {showHeader && (
         <div className="featured-stages-chart__header">

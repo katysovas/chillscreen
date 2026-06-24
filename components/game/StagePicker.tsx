@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   currentStagePickerTarget,
   stagePickerTargetId,
@@ -9,6 +10,7 @@ import {
 } from '@/lib/stagePickerOptions';
 import { FeaturedStagesChart } from '@/components/stages/FeaturedStagesChart';
 import { SwitchStagesChart } from '@/components/stages/SwitchStagesChart';
+import '@/components/stages/FeaturedStagesChart.css';
 import { chartEntryId, getFeaturedStagesChartTab } from '@/lib/stages/featuredStagesChart';
 import {
   isValidPlayerName,
@@ -46,6 +48,7 @@ export function StagePicker({
   onClose,
   initialName,
 }: Props) {
+  const [mounted, setMounted] = useState(false);
   const [draft, setDraft] = useState(initialName ?? '');
   const currentTarget = useMemo(
     () => currentStagePickerTarget(initialRoute, creatorSlug),
@@ -59,6 +62,10 @@ export function StagePicker({
   const isSwap = variant === 'swap';
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (initialName) setDraft(initialName);
   }, [initialName]);
 
@@ -69,9 +76,6 @@ export function StagePicker({
     return stagePickerTargetFromId(pickedId);
   }, [chartEntries, pickedId]);
 
-  const sameAsCurrent = pickedTarget != null && currentTarget != null
-    && stagePickerTargetId(pickedTarget) === stagePickerTargetId(currentTarget);
-
   const submit = () => {
     const name = draft.trim();
     if (requireName && !isValidPlayerName(name)) return;
@@ -79,8 +83,9 @@ export function StagePicker({
     onEnter(name, pickedTarget);
   };
 
-  return (
+  const overlay = (
     <div
+      className="stage-picker-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -93,6 +98,9 @@ export function StagePicker({
         WebkitBackdropFilter: 'blur(5px)',
         padding: 'max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))',
         overflowY: 'auto',
+        touchAction: 'auto',
+        WebkitUserSelect: 'auto',
+        userSelect: 'auto',
       }}
       onClick={isSwap && onClose ? onClose : undefined}
     >
@@ -193,6 +201,12 @@ export function StagePicker({
             selectedId={pickedId}
             currentId={currentId}
             onSelect={target => setPickedId(stagePickerTargetId(target))}
+            onJoin={target => {
+              if (currentTarget && stagePickerTargetId(target) === stagePickerTargetId(currentTarget)) {
+                return;
+              }
+              onEnter(draft.trim() || initialName || '', target);
+            }}
           />
         ) : (
           <FeaturedStagesChart
@@ -243,9 +257,10 @@ export function StagePicker({
           </>
         )}
 
+        {!isSwap && (
         <button
           type="button"
-          disabled={!validName || !pickedTarget || (isSwap && sameAsCurrent)}
+          disabled={!validName || !pickedTarget}
           onClick={submit}
           style={{
             width: '100%',
@@ -253,21 +268,25 @@ export function StagePicker({
             padding: '14px 16px',
             borderRadius: 14,
             border: 'none',
-            background: validName && pickedTarget && !(isSwap && sameAsCurrent)
+            background: validName && pickedTarget
               ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
               : 'rgba(255,255,255,0.08)',
-            color: validName && pickedTarget && !(isSwap && sameAsCurrent)
+            color: validName && pickedTarget
               ? '#fff'
               : 'rgba(255,255,255,0.35)',
             fontSize: 15,
             fontWeight: 700,
             fontFamily: 'system-ui,sans-serif',
-            cursor: validName && pickedTarget && !(isSwap && sameAsCurrent) ? 'pointer' : 'not-allowed',
+            cursor: validName && pickedTarget ? 'pointer' : 'not-allowed',
           }}
         >
-          {isSwap ? 'Go' : 'Enter the show'}
+          Enter the show
         </button>
+        )}
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(overlay, document.body);
 }

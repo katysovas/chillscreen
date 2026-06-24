@@ -42,6 +42,21 @@ type MidLayerProps = {
   isolatedTileIndex?: number;
   /** Custom city skyline for creator-cinema stages. */
   creatorBackdropUrl?: string | null;
+  /**
+   * Desktop in-game mode: pass `worldOff * MID_F` here to use a zero-origin
+   * viewBox (`0 0 1400 900`) with an SVG `<g transform>` for the x-offset
+   * instead of encoding the offset in the viewBox `x` attribute.
+   * This avoids a Safari WebKit bug where the viewBox x-origin is silently
+   * ignored, shifting stage content to the right side of the screen.
+   * Leave undefined for mobile / landing-hero modes (they use their own viewBoxes).
+   */
+  contentTranslateX?: number;
+  /**
+   * When true, stage `foreignObject` content is omitted from the SVG tiles.
+   * The caller renders the Deep Space stage as a CSS-positioned HTML overlay
+   * that is completely independent of the SVG coordinate system.
+   */
+  stageOverlay?: boolean;
 };
 
 function tileContentScale(tileIndex: number) {
@@ -58,6 +73,8 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
     hideTrees = false,
     isolatedTileIndex,
     creatorBackdropUrl = null,
+    contentTranslateX,
+    stageOverlay = false,
   }, ref) {
     const vx = worldOff * MID_F;
     const nearTiles = nearIsolatedMidTiles(isolatedTileIndex!, deepLinkRoute);
@@ -103,11 +120,12 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
       concertFoH,
       concertFoY,
       creatorBackdropUrl,
+      desktopStageOverlay: stageOverlay,
     }), [
       vx, hideTrees, deepLinkRoute, cinemaLive, concertLive, coachellaLive,
       edcLive, whichStageLive, forestLive, silentDiscoLive, focus,
       cinemaFoW, cinemaFoH, cinemaFoY, concertFoW, concertFoH, concertFoY,
-      creatorBackdropUrl,
+      creatorBackdropUrl, stageOverlay,
     ]);
 
     const renderTile = useCallback((t: number) => {
@@ -177,6 +195,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
           shapeRendering="optimizeSpeed"
           parallaxLayer="stage"
           style={{ zIndex: 2 }}
+          contentTranslateX={contentTranslateX}
         >
           {renderTile}
         </ParallaxSvgLayer>
@@ -190,6 +209,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             shapeRendering="optimizeSpeed"
             parallaxLayer="stage"
             style={{ pointerEvents: 'none', zIndex: 4 }}
+            contentTranslateX={contentTranslateX}
           >
             {renderMidForeground}
           </ParallaxSvgLayer>
@@ -204,6 +224,7 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
             shapeRendering="optimizeSpeed"
             parallaxLayer="stage"
             style={{ pointerEvents: 'none', zIndex: 6 }}
+            contentTranslateX={contentTranslateX}
           >
             {renderMidSkyLabels}
           </ParallaxSvgLayer>

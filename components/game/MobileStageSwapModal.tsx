@@ -4,12 +4,10 @@ import { useMemo, useState } from 'react';
 import {
   currentStagePickerTarget,
   stagePickerTargetId,
-  stagePickerTargetFromId,
   stageTargetsEqual,
   type StagePickerTarget,
 } from '@/lib/stagePickerOptions';
 import { SwitchStagesChart } from '@/components/stages/SwitchStagesChart';
-import { chartEntryId, getFeaturedStagesChartTab } from '@/lib/stages/featuredStagesChart';
 import type { VenueRoute } from '@/lib/venueRoutes';
 
 type Props = {
@@ -32,23 +30,6 @@ export function MobileStageSwapModal({
   );
   const currentId = currentTarget ? stagePickerTargetId(currentTarget) : null;
   const [pickedId, setPickedId] = useState<string | null>(currentId);
-  const chartEntries = useMemo(() => getFeaturedStagesChartTab().entries, []);
-
-  const pickedTarget = useMemo(() => {
-    if (!pickedId) return null;
-    const fromChart = chartEntries.find(e => chartEntryId(e) === pickedId);
-    if (fromChart) return fromChart.target;
-    return stagePickerTargetFromId(pickedId);
-  }, [chartEntries, pickedId]);
-
-  const canSwap = pickedTarget != null
-    && currentTarget != null
-    && !stageTargetsEqual(pickedTarget, currentTarget);
-
-  const submit = () => {
-    if (!canSwap || !pickedTarget) return;
-    onSwap(pickedTarget);
-  };
 
   return (
     <div
@@ -112,30 +93,11 @@ export function MobileStageSwapModal({
           selectedId={pickedId}
           currentId={currentId}
           onSelect={target => setPickedId(stagePickerTargetId(target))}
-        />
-
-        <button
-          type="button"
-          disabled={!canSwap}
-          onClick={submit}
-          style={{
-            width: '100%',
-            marginTop: 16,
-            padding: '14px 16px',
-            borderRadius: 14,
-            border: 'none',
-            background: canSwap
-              ? 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)'
-              : 'rgba(255,255,255,0.08)',
-            color: canSwap ? '#fff' : 'rgba(255,255,255,0.35)',
-            fontSize: 15,
-            fontWeight: 700,
-            fontFamily: 'system-ui,sans-serif',
-            cursor: canSwap ? 'pointer' : 'not-allowed',
+          onJoin={target => {
+            if (currentTarget && stageTargetsEqual(target, currentTarget)) return;
+            onSwap(target);
           }}
-        >
-          Go to stage
-        </button>
+        />
       </div>
     </div>
   );

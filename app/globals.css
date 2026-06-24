@@ -76,6 +76,7 @@ html:has(.game-surface):not(:has(.landing-page)) body {
   pointer-events: none;
 }
 
+
 /* YouTube embed — re-enable through SVG stacks + game touch-action: none. */
 .game-surface foreignObject[data-stage-video-fo],
 .game-surface foreignObject[data-stage-vote-fo],

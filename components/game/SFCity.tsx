@@ -160,7 +160,7 @@ import { StagePicker } from './StagePicker';
 import { SkyCreaturesLayer } from './SkyCreatures';
 import { SkyLayer } from './city/SkyLayer';
 import { HeadlinerSkyBackdrop } from './city/headliner-sky';
-import { SpaceParallaxStars } from './city/orbit';
+import { SpaceParallaxStars, DeepSpaceStageOverlay } from './city/orbit';
 import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 import { MidLayer } from './city/MidLayer';
 import { GroundLayer } from './city/GroundLayer';
@@ -425,10 +425,10 @@ export default function SFCity({
    */
   const staticViewBoxKey = (off: number) => {
     if (typeof window === 'undefined') return String(off);
-    if (window.innerWidth <= 767) {
-      return `${off}|${window.innerWidth}|${window.innerHeight}|${effectiveVenueRoute}`;
-    }
-    return String(off);
+    const vv = window.visualViewport;
+    const w = Math.round(vv?.width ?? window.innerWidth);
+    const h = Math.round(vv?.height ?? window.innerHeight);
+    return `${off}|${w}|${h}|${effectiveVenueRoute}`;
   };
 
   /** Update scrolling SVG viewBoxes directly — zero React overhead. */
@@ -446,6 +446,8 @@ export default function SFCity({
       mobileVenue && effectiveVenueRoute !== 'deep-space';
     /** All in-game mobile venues — including Deep Space (no grass split). */
     const mobileStageViewport = mobileVenue;
+    const desktopStatic =
+      !mobileLanding && !mobileStageViewport && !desktopLanding;
     const vb = (x: number) => `${x} 0 1400 900`;
     const staticPar = mobileLanding
       ? LANDING_HERO_MOBILE_PAR
@@ -1627,6 +1629,24 @@ export default function SFCity({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spawnWorldOff]);
 
+
+  useEffect(() => {
+    if (homePreview) return;
+    const svg = midRef.current;
+    if (!svg) return;
+    const onResize = () => {
+      lastStaticViewBoxKeyRef.current = null;
+      updateViewBoxes(worldRef.current, { force: true });
+    };
+    const ro = new ResizeObserver(onResize);
+    ro.observe(svg);
+    const surface = svg.closest('.game-surface');
+    if (surface instanceof Element) ro.observe(surface);
+    return () => ro.disconnect();
+  // updateViewBoxes is stable (no deps)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [homePreview, spawnWorldOff]);
+
   useLayoutEffect(() => {
     if (!ownerFestieNpcId || autopilotOn) return;
     const wx = playerWorldXRef.current;
@@ -2664,6 +2684,8 @@ export default function SFCity({
       clampPlayerWorldX(window.innerWidth);
     };
     window.addEventListener('resize', onResize);
+    window.visualViewport?.addEventListener('resize', onResize);
+    window.visualViewport?.addEventListener('scroll', onResize);
 
     return () => {
       if (rafRef.current)     cancelAnimationFrame(rafRef.current);
@@ -2671,6 +2693,8 @@ export default function SFCity({
       window.removeEventListener('keydown', onDown, true);
       window.removeEventListener('keyup',   onUp);
       window.removeEventListener('resize', onResize);
+      window.visualViewport?.removeEventListener('resize', onResize);
+      window.visualViewport?.removeEventListener('scroll', onResize);
     };
   }, [homePreview]);
 
@@ -3033,6 +3057,7 @@ export default function SFCity({
           hideTrees={mobileDevice || isDeepSpace || isLasVegas || isHeadliner}
           isolatedTileIndex={isolatedTile}
           creatorBackdropUrl={staticStageBackdropUrl ?? stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null}
+          stageOverlay={isDeepSpace && !mobileDevice && !homePreview}
         />
         {splitGrassLayout && !isDeepSpace && !isHeadliner && (
           <div aria-hidden className="mobile-venue-grass-fill" />
@@ -3197,6 +3222,10 @@ export default function SFCity({
           </div>
         ))}
       </div>
+
+      {isDeepSpace && !mobileDevice && !homePreview && (
+        <DeepSpaceStageOverlay live />
+      )}
 
       {!homePreview && (
       <>

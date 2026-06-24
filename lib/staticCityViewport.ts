@@ -80,6 +80,51 @@ export function landingHeroVisibleViewBoxSlice(
   return { vbLeft, vbWidth, scale };
 }
 
+/** Visible slice after desktop `xMidYMid slice` — explicit crop avoids Safari mis-centering. */
+export function desktopStaticVisibleViewBoxSlice(
+  viewportWidth: number,
+  viewportHeight: number,
+): { vbLeft: number; vbWidth: number; scale: number } {
+  const scale = Math.max(viewportWidth / VIEW_WIDTH, viewportHeight / MOBILE_STATIC_VB_HEIGHT);
+  const vbWidth = viewportWidth / scale;
+  const vbLeft = VIEW_CENTER_X - vbWidth / 2;
+  return { vbLeft, vbWidth, scale };
+}
+
+export function desktopStaticViewBox(
+  layerVx: number,
+  viewportWidth: number,
+  viewportHeight: number,
+): string {
+  const { vbLeft, vbWidth } = desktopStaticVisibleViewBoxSlice(viewportWidth, viewportHeight);
+  return `${layerVx + vbLeft} 0 ${vbWidth} ${MOBILE_STATIC_VB_HEIGHT}`;
+}
+
+/** Read the painted SVG box — Safari `innerWidth` can disagree with the layer. */
+export function staticSceneViewportPx(
+  svg?: SVGSVGElement | null,
+): { w: number; h: number } {
+  if (typeof window === 'undefined') return { w: VIEW_WIDTH, h: MOBILE_STATIC_VB_HEIGHT };
+  if (svg) {
+    const { width, height } = svg.getBoundingClientRect();
+    const w = Math.round(width);
+    const h = Math.round(height);
+    if (w > 0 && h > 0) return { w, h };
+  }
+  const host = svg?.closest('.game-surface') as HTMLElement | null;
+  if (host) {
+    const { width, height } = host.getBoundingClientRect();
+    const w = Math.round(width);
+    const h = Math.round(height);
+    if (w > 0 && h > 0) return { w, h };
+  }
+  const vv = window.visualViewport;
+  return {
+    w: Math.round(vv?.width ?? window.innerWidth),
+    h: Math.round(vv?.height ?? window.innerHeight),
+  };
+}
+
 export function landingHeroMobileViewBox(layerVx: number): string {
   return `${staticMobileViewBoxX(layerVx)} ${LANDING_HERO_VB_Y} ${MOBILE_STATIC_VB_WIDTH} ${LANDING_HERO_VB_H}`;
 }
@@ -89,6 +134,10 @@ export const LANDING_HERO_MOBILE_PAR = 'xMidYMin slice' as const;
 /** Landing hero desktop — pin truss/lights just under nav header. */
 export const LANDING_HERO_DESKTOP_PAR = 'xMidYMin slice' as const;
 export const DESKTOP_STATIC_PAR = 'xMidYMid slice' as const;
+/** Desktop static — left-anchor explicit crop (Chrome/Firefox centering). */
+export const DESKTOP_STATIC_EXPLICIT_PAR = 'xMinYMid slice' as const;
+/** Desktop static Safari — full viewBox + meet; slice/crop math mis-centers in WebKit. */
+export const DESKTOP_STATIC_SAFARI_PAR = 'xMidYMid meet' as const;
 /** In-game mobile — show full stage width, pin rig below top controls. */
 export const MOBILE_VENUE_PAR = 'xMidYMin meet' as const;
 /** Mobile ground — stretch lawn to fill the area below the stage. */

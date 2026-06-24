@@ -23,6 +23,12 @@ export type MidTileRenderProps = {
   concertFoY: number;
   /** Creator city template — custom skyline photo (cinema preset only). */
   creatorBackdropUrl?: string | null;
+  /**
+   * When true, the stage foreignObject is omitted from the SVG — the caller
+   * renders the stage content as an HTML overlay outside the SVG, bypassing
+   * any browser-specific SVG coordinate-mapping quirks.
+   */
+  desktopStageOverlay?: boolean;
 };
 
 export type StageMidBundle = {

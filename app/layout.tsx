@@ -6,6 +6,7 @@ import { PostHogPageView } from '@/components/PostHogPageView';
 import { defaultSiteGraphJsonLd } from '@/lib/jsonLd';
 import { rootMetadata } from '@/lib/siteMetadata';
 import './globals.css';
+import '@/components/stages/FeaturedStagesChart.css';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 

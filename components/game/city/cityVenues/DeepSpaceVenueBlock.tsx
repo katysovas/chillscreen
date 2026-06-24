@@ -28,6 +28,9 @@ export type DeepSpaceVenueBlockProps = {
   concertLive: number;
   focus: VenueFocus;
   deepLinkRoute?: VenueRoute;
+  /** When true, only SVG decoration (glow ellipses) is rendered; the stage
+   *  content is provided by a CSS-positioned HTML overlay outside the SVG. */
+  desktopStageOverlay?: boolean;
 };
 
 export function DeepSpaceVenueBlock({
@@ -36,6 +39,7 @@ export function DeepSpaceVenueBlock({
   concertLive,
   focus,
   deepLinkRoute,
+  desktopStageOverlay = false,
 }: DeepSpaceVenueBlockProps) {
   const mobile = useSyncExternalStore(
     subscribeViewport,
@@ -52,7 +56,6 @@ export function DeepSpaceVenueBlock({
   const stageHeight = mobile ? DEEP_SPACE_VIDEO_HEIGHT : DEEP_SPACE_HEIGHT;
   const deepSpaceFoW = DEEP_SPACE_WIDTH * DEEP_SPACE_SCALE;
   const deepSpaceFoH = stageHeight * DEEP_SPACE_SCALE;
-  const deepSpaceFoY = STAGE_ANCHOR_Y - deepSpaceFoH - DEEP_SPACE_STAGE_LIFT_Y;
   const deepSpaceGlowY = 670 - DEEP_SPACE_STAGE_LIFT_Y;
   const deepSpaceGlowInnerY = 674 - DEEP_SPACE_STAGE_LIFT_Y;
 
@@ -74,28 +77,30 @@ export function DeepSpaceVenueBlock({
           fill="rgba(54,224,200,.14)"
         />
       </g>
-      <foreignObject
-        x={deepSpaceX - deepSpaceFoW / 2}
-        y={deepSpaceFoY}
-        width={deepSpaceFoW}
-        height={deepSpaceFoH}
-        data-stage-video-fo={deepSpaceLiveNow ? true : undefined}
-        style={deepSpaceLiveNow ? STAGE_VIDEO_FO_STYLE : { overflow: 'visible' }}
-      >
-        <div
-          {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
-          style={{
-            width: DEEP_SPACE_WIDTH,
-            transform: `scale(${DEEP_SPACE_SCALE})`,
-            transformOrigin: 'top left',
-            ...(deepSpaceLiveNow ? STAGE_VIDEO_WRAPPER_STYLE : { pointerEvents: 'none' }),
-          }}
+      {!desktopStageOverlay && (
+        <foreignObject
+          x={deepSpaceX - deepSpaceFoW / 2}
+          y={STAGE_ANCHOR_Y - deepSpaceFoH - DEEP_SPACE_STAGE_LIFT_Y}
+          width={deepSpaceFoW}
+          height={deepSpaceFoH}
+          data-stage-video-fo={deepSpaceLiveNow ? true : undefined}
+          style={deepSpaceLiveNow ? STAGE_VIDEO_FO_STYLE : { overflow: 'visible' }}
         >
-          {deepSpaceLiveNow
-            ? <DeepSpaceStage live embedVoteStrip={!mobile} />
-            : <DeepSpaceShell />}
-        </div>
-      </foreignObject>
+          <div
+            {...({ xmlns: 'http://www.w3.org/1999/xhtml' } as HTMLAttributes<HTMLDivElement>)}
+            style={{
+              width: DEEP_SPACE_WIDTH,
+              transform: `scale(${DEEP_SPACE_SCALE})`,
+              transformOrigin: 'top left',
+              ...(deepSpaceLiveNow ? STAGE_VIDEO_WRAPPER_STYLE : { pointerEvents: 'none' }),
+            }}
+          >
+            {deepSpaceLiveNow
+              ? <DeepSpaceStage live embedVoteStrip={!mobile} />
+              : <DeepSpaceShell />}
+          </div>
+        </foreignObject>
+      )}
     </>
   );
 }

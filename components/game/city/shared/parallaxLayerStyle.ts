@@ -5,10 +5,12 @@ export const DECORATIVE_SHAPE: Pick<SVGProps<SVGElement>, 'shapeRendering'> = {
   shapeRendering: 'optimizeSpeed',
 };
 
-/** Compositor hints for full-screen parallax layers — isolate paint during scroll. */
+/** Compositor hints for full-screen parallax layers — isolate paint during scroll.
+ * `paint` is intentionally omitted: Safari mis-computes the SVG viewport when
+ * paint containment is active, causing the viewBox coordinate mapping to break. */
 export const PARALLAX_LAYER_COMPOSITING: Pick<CSSProperties, 'willChange' | 'contain'> = {
   willChange: 'transform',
-  contain: 'layout style paint',
+  contain: 'layout style',
 };
 
 /** Base layout for absolute full-viewport parallax layers. */

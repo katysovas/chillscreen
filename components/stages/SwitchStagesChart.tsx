@@ -8,6 +8,21 @@ import type { UserStagePublic } from '@/lib/stages/types';
 import { displayForOwnedStage } from '@/lib/stages/chartEntryDisplay';
 import { getFeaturedStagesChartTabs } from '@/lib/stages/featuredStagesChart';
 import { FeaturedStagesChart } from './FeaturedStagesChart';
+import { StageChartRow } from './StageChartRow';
+import {
+  STAGE_CHART_BODY,
+  STAGE_CHART_INFO,
+  STAGE_CHART_JOIN,
+  STAGE_CHART_JOIN_DISABLED,
+  STAGE_CHART_MODAL,
+  STAGE_CHART_NAME,
+  STAGE_CHART_SUBTITLE,
+  STAGE_CHART_SWITCH_HEADER,
+  STAGE_CHART_TABBAR,
+  STAGE_CHART_THUMB,
+  STAGE_CHART_THUMB_IMG,
+  stageChartSwitchTabStyle,
+} from './stageChartRowStyles';
 import './FeaturedStagesChart.css';
 
 export type SwitchStagesTab = string;
@@ -16,6 +31,8 @@ type Props = {
   selectedId?: string | null;
   currentId?: string | null;
   onSelect: (target: StagePickerTarget) => void;
+  onJoin: (target: StagePickerTarget) => void;
+  joinLabel?: string;
   titleId?: string;
 };
 
@@ -24,6 +41,8 @@ export function SwitchStagesChart({
   selectedId = null,
   currentId = null,
   onSelect,
+  onJoin,
+  joinLabel = 'Join the stage',
   titleId = 'switch-stages-chart-title',
 }: Props) {
   const chartTabs = useMemo(() => getFeaturedStagesChartTabs(), []);
@@ -52,26 +71,38 @@ export function SwitchStagesChart({
   const isMine = activeTab === 'mine';
 
   return (
-    <div className="featured-stages-chart featured-stages-chart--modal featured-stages-chart--switch featured-stages-chart--scrollable">
+    <div
+      className="featured-stages-chart featured-stages-chart--modal featured-stages-chart--switch featured-stages-chart--scrollable"
+      style={STAGE_CHART_MODAL}
+    >
       <span id={titleId} className="featured-stages-chart__sr-only">Switch stage</span>
 
-      <div className="featured-stages-chart__switch-header">
-        <div className="featured-stages-chart__tabbar" role="tablist" aria-label="Stage lists">
-          {chartTabs.map(tab => (
+      <div className="featured-stages-chart__switch-header" style={STAGE_CHART_SWITCH_HEADER}>
+        <div
+          className="featured-stages-chart__tabbar"
+          role="tablist"
+          aria-label="Stage lists"
+          style={STAGE_CHART_TABBAR}
+        >
+          {chartTabs.map(tab => {
+            const active = !isMine && activeTab === tab.id;
+            return (
             <button
               key={tab.id}
               type="button"
               role="tab"
-              aria-selected={!isMine && activeTab === tab.id}
+              aria-selected={active}
               className={[
                 'featured-stages-chart__switch-tab',
-                !isMine && activeTab === tab.id ? 'featured-stages-chart__switch-tab--active' : '',
+                active ? 'featured-stages-chart__switch-tab--active' : '',
               ].filter(Boolean).join(' ')}
+              style={stageChartSwitchTabStyle(active)}
               onClick={() => setActiveTab(tab.id)}
             >
               {tab.label}
             </button>
-          ))}
+            );
+          })}
           {showMineTab && (
             <button
               type="button"
@@ -81,6 +112,7 @@ export function SwitchStagesChart({
                 'featured-stages-chart__switch-tab',
                 isMine ? 'featured-stages-chart__switch-tab--active' : '',
               ].filter(Boolean).join(' ')}
+              style={stageChartSwitchTabStyle(isMine)}
               onClick={() => setActiveTab('mine')}
             >
               My Stages
@@ -97,10 +129,14 @@ export function SwitchStagesChart({
           chartTabId={activeTab}
           selectedId={selectedId}
           currentId={currentId}
+          showJoinAction
+          joinLabel={joinLabel}
+          showRankMovement={false}
           onSelect={onSelect}
+          onJoin={onJoin}
         />
       ) : (
-        <div className="featured-stages-chart__body" role="list">
+        <div className="featured-stages-chart__body" role="list" style={STAGE_CHART_BODY}>
           {(myStages ?? []).map(stage => {
             const id = stagePickerTargetId({ kind: 'creator', slug: stage.slug });
             const display = displayForOwnedStage(stage);
@@ -109,36 +145,51 @@ export function SwitchStagesChart({
             const rowClass = [
               'featured-stages-chart__row',
               'featured-stages-chart__row--owned',
-              'featured-stages-chart__row--no-action',
               selected ? 'featured-stages-chart__row--selected' : '',
               current ? 'featured-stages-chart__row--current' : '',
             ].filter(Boolean).join(' ');
+            const target = { kind: 'creator' as const, slug: stage.slug };
 
             return (
               <div key={id} role="listitem">
-                <button
-                  type="button"
+                <StageChartRow
                   className={rowClass}
-                  aria-pressed={selected || undefined}
-                  aria-current={current ? 'true' : undefined}
-                  onClick={() => onSelect({ kind: 'creator', slug: stage.slug })}
+                  selected={selected}
+                  current={current}
+                  onClick={() => onSelect(target)}
                 >
-                  <div className="featured-stages-chart__thumb">
+                  <div className="featured-stages-chart__thumb" style={STAGE_CHART_THUMB}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={display.thumbnail}
                       alt=""
                       loading="lazy"
+                      style={STAGE_CHART_THUMB_IMG}
                       onError={e => { e.currentTarget.style.display = 'none'; }}
                     />
                   </div>
-                  <div className="featured-stages-chart__info">
-                    <p className="featured-stages-chart__name">{display.name}</p>
+                  <div className="featured-stages-chart__info" style={STAGE_CHART_INFO}>
+                    <p className="featured-stages-chart__name" style={STAGE_CHART_NAME}>{display.name}</p>
                     {display.subtitle ? (
-                      <p className="featured-stages-chart__subtitle">{display.subtitle}</p>
+                      <p className="featured-stages-chart__subtitle" style={STAGE_CHART_SUBTITLE}>{display.subtitle}</p>
                     ) : null}
                   </div>
-                </button>
+                  <button
+                    type="button"
+                    className="featured-stages-chart__join"
+                    style={{
+                      ...STAGE_CHART_JOIN,
+                      ...(current ? STAGE_CHART_JOIN_DISABLED : {}),
+                    }}
+                    disabled={current}
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (!current) onJoin(target);
+                    }}
+                  >
+                    {joinLabel}
+                  </button>
+                </StageChartRow>
               </div>
             );
           })}

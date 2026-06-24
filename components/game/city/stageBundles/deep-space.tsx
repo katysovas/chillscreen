@@ -15,6 +15,7 @@ export const bundle = {
           concertLive={props.concertLive}
           focus={props.focus}
           deepLinkRoute={props.deepLinkRoute}
+          desktopStageOverlay={props.desktopStageOverlay}
         />
       </>
     );
