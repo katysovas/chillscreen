@@ -5,6 +5,13 @@ import type { CharacterDef } from '@/components/game/characters';
 import type { CharacterLoadout } from '@/components/game/characters/loadout';
 import type { UserStagePublic } from '@/lib/stages/types';
 import { buildAutopilotAmbientContext } from '@/lib/autopilot/ambientContext';
+import {
+  clearAutopilotEvent,
+  endAutopilotEvent,
+  isAutopilotEventBusy,
+  isOwnerFestieOccupied,
+  tryBeginAutopilotEvent,
+} from '@/lib/autopilot/busy';
 import { claimAutopilotEasel } from '@/lib/autopilot/easelClaim';
 import { pickAutopilotDrawPrompt } from '@/lib/autopilot/drawing';
 import {
@@ -24,6 +31,20 @@ import { pickAutopilotLineupVote } from '@/lib/autopilot/lineupVote';
 import { pickAutopilotPartyProp } from '@/lib/autopilot/partyProps';
 import { fetchAutopilotDescribeShoutout } from '@/lib/autopilot/shoutout';
 import {
+  AUTOPILOT_RPS_ROUNDS,
+  AUTOPILOT_RPS_TIMING,
+  formatRpsOpponentReveal,
+  formatRpsShootReveal,
+  pickRpsCelebrationLine,
+  pickRpsChoice,
+  pickRpsGameIntroLine,
+  pickRpsLossLine,
+  pickRpsSeriesWinLine,
+  pickRpsTieLine,
+  resolveRps,
+  rpsEmoji,
+} from '@/lib/autopilot/rps';
+import {
   AUTOPILOT_DESCRIBE_SHOUTOUT_WINDOW_MS,
   AUTOPILOT_EASEL_WINDOW_MS,
   AUTOPILOT_FLEX_WINDOW_MS,
@@ -34,12 +55,12 @@ import {
   AUTOPILOT_NPC_CHAT_WINDOW_MS,
   AUTOPILOT_PARTY_PROP_WINDOW_MS,
   AUTOPILOT_RIVALRY_WINDOW_MS,
+  AUTOPILOT_RPS_WINDOW_MS,
   nextAutopilotAtMs,
   nextAutopilotNapUntil,
 } from '@/lib/autopilot/timing';
 import { easelSlotWorldX } from '@/lib/easel/layout';
 import type { EaselSessionSync } from '@/lib/easel/types';
-import { activeChatDrawingForNpc } from '@/lib/easel/chatNpcDrawings';
 import { notifyEaselUpdated } from '@/lib/easel/notifyUpdated';
 import type { FestieOwner } from '@/lib/festie/types';
 import { isFestieNpcId } from '@/lib/festie/toCharacterDef';
@@ -50,6 +71,7 @@ import { crowdSpawnWorldX, type StageAnchorKind } from '@/lib/stageAnchor';
 import type { StageChannel } from '@/lib/stageVideos';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { isBuzNpc } from '@/lib/vendorShop';
+import { snapNpcPairForConvo, releaseNpcConvoSnap } from '@/lib/npcConvoSnap';
 import type { RoomChatterState } from '@/components/game/hooks/useRoomChatter';
 
 type Params = {
@@ -116,6 +138,7 @@ export function useAutopilotBehaviors({
   const [attractWx, setAttractWx] = useState<number | undefined>(undefined);
   const [paused, setPaused] = useState(false);
   const [jumpBurstKey, setJumpBurstKey] = useState(0);
+  const [rpsPairIds, setRpsPairIds] = useState<readonly [string, string] | null>(null);
 
   const sessionStartedAtRef = useRef(0);
   const napUntilRef = useRef(0);
@@ -127,9 +150,9 @@ export function useAutopilotBehaviors({
   const lineupVoteAtRef = useRef(0);
   const describeAtRef = useRef(0);
   const jumpBurstAtRef = useRef(0);
+  const rpsAtRef = useRef(0);
   const flexAtRef = useRef(0);
   const lastNowPlayingRef = useRef<string | null>(null);
-  const npcChatBusyRef = useRef(false);
   const stageAttractUntilRef = useRef(0);
   const humanAttractUntilRef = useRef(0);
   const npcChatAttractUntilRef = useRef(0);
@@ -170,7 +193,9 @@ export function useAutopilotBehaviors({
       napUntilRef.current = 0;
       setAttractWx(undefined);
       setPaused(false);
-      npcChatBusyRef.current = false;
+      setRpsPairIds(null);
+      clearAutopilotEvent();
+      releaseNpcConvoSnap();
       return;
     }
     const now = Date.now();
@@ -183,6 +208,7 @@ export function useAutopilotBehaviors({
     lineupVoteAtRef.current = nextAutopilotAtMs(AUTOPILOT_LINEUP_VOTE_WINDOW_MS, now);
     describeAtRef.current = nextAutopilotAtMs(AUTOPILOT_DESCRIBE_SHOUTOUT_WINDOW_MS, now);
     jumpBurstAtRef.current = nextAutopilotAtMs(AUTOPILOT_JUMP_BURST_WINDOW_MS, now);
+    rpsAtRef.current = nextAutopilotAtMs(AUTOPILOT_RPS_WINDOW_MS, now);
     flexAtRef.current = 0;
     lastNowPlayingRef.current = null;
   }, [enabled, ownerFestieNpcId]);
@@ -201,69 +227,67 @@ export function useAutopilotBehaviors({
     festieIdx: number,
     targetIdx: number,
   ) => {
-    if (npcChatBusyRef.current) return;
-    npcChatBusyRef.current = true;
+    if (!tryBeginAutopilotEvent('npc-chat')) return;
     setPaused(true);
 
     const target = effectiveNpcCast[targetIdx];
     const targetWx = npcWorldXRefs.current?.[targetIdx];
     if (!target || !Number.isFinite(targetWx)) {
-      npcChatBusyRef.current = false;
+      endAutopilotEvent('npc-chat');
       setPaused(false);
       return;
     }
 
-    npcChatAttractUntilRef.current = Date.now() + 12_000;
-    setAttractWx(targetWx!);
+    try {
+      npcChatAttractUntilRef.current = Date.now() + 12_000;
+      setAttractWx(targetWx!);
 
-    await new Promise(r => setTimeout(r, 2_800));
-    if (!enabled) {
-      npcChatBusyRef.current = false;
+      await new Promise(r => setTimeout(r, 2_800));
+      if (!enabled) return;
+
+      const opener = pickAutopilotNpcChatOpener();
+      shoutOwner(opener);
+
+      const reply1 = await fetchNpcReply({
+        characterId: target.id,
+        playerName: playerName ?? 'festie',
+        message: opener,
+        cinemaNowPlaying,
+        concertNowPlaying,
+      }, new AbortController().signal);
+
+      if (reply1?.reply?.trim()) {
+        roomChatterRef.current?.handleNpcShout(target.id, reply1.reply!);
+      }
+
+      await new Promise(r => setTimeout(r, 2_400));
+      const followup = pickAutopilotNpcChatFollowup();
+      shoutOwner(followup);
+
+      const reply2 = await fetchNpcReply({
+        characterId: target.id,
+        playerName: playerName ?? 'festie',
+        message: followup,
+        history: [
+          { role: 'user', content: opener },
+          ...(reply1?.reply ? [{ role: 'assistant' as const, content: reply1.reply }] : []),
+          { role: 'user', content: followup },
+        ],
+        cinemaNowPlaying,
+        concertNowPlaying,
+      }, new AbortController().signal);
+
+      if (reply2?.reply?.trim()) {
+        roomChatterRef.current?.handleNpcShout(target.id, reply2.reply!);
+      }
+
+      await new Promise(r => setTimeout(r, 3_500));
+    } finally {
+      npcChatAttractUntilRef.current = 0;
+      endAutopilotEvent('npc-chat');
       setPaused(false);
-      return;
+      resolveAttract();
     }
-
-    const opener = pickAutopilotNpcChatOpener();
-    shoutOwner(opener);
-
-    const reply1 = await fetchNpcReply({
-      characterId: target.id,
-      playerName: playerName ?? 'festie',
-      message: opener,
-      cinemaNowPlaying,
-      concertNowPlaying,
-    }, new AbortController().signal);
-
-    if (reply1?.reply?.trim()) {
-      roomChatterRef.current?.handleNpcShout(target.id, reply1.reply!);
-    }
-
-    await new Promise(r => setTimeout(r, 2_400));
-    const followup = pickAutopilotNpcChatFollowup();
-    shoutOwner(followup);
-
-    const reply2 = await fetchNpcReply({
-      characterId: target.id,
-      playerName: playerName ?? 'festie',
-      message: followup,
-      history: [
-        { role: 'user', content: opener },
-        ...(reply1?.reply ? [{ role: 'assistant' as const, content: reply1.reply }] : []),
-        { role: 'user', content: followup },
-      ],
-      cinemaNowPlaying,
-      concertNowPlaying,
-    }, new AbortController().signal);
-
-    if (reply2?.reply?.trim()) {
-      roomChatterRef.current?.handleNpcShout(target.id, reply2.reply!);
-    }
-
-    await new Promise(r => setTimeout(r, 3_500));
-    npcChatAttractUntilRef.current = 0;
-    npcChatBusyRef.current = false;
-    setPaused(false);
-    resolveAttract();
   }, [
     concertNowPlaying,
     cinemaNowPlaying,
@@ -277,41 +301,140 @@ export function useAutopilotBehaviors({
   ]);
 
   const runHumanApproach = useCallback(async (ownerId: string, festieIdx: number) => {
-    const roster = mpRef.current?.remoteStateRef.current;
-    if (!roster || roster.size === 0) return;
+    if (!tryBeginAutopilotEvent('human-approach')) return;
 
-    let bestId: string | null = null;
-    let bestWx = NaN;
-    let bestDist = Infinity;
-    const festieWx = npcWorldXRefs.current?.[festieIdx];
-    if (!Number.isFinite(festieWx)) return;
+    try {
+      const roster = mpRef.current?.remoteStateRef.current;
+      if (!roster || roster.size === 0) return;
 
-    for (const [pid, st] of roster) {
-      const dist = Math.abs(st.worldX - festieWx!);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestId = pid;
-        bestWx = st.worldX;
+      let bestId: string | null = null;
+      let bestWx = NaN;
+      let bestDist = Infinity;
+      const festieWx = npcWorldXRefs.current?.[festieIdx];
+      if (!Number.isFinite(festieWx)) return;
+
+      for (const [pid, st] of roster) {
+        const dist = Math.abs(st.worldX - festieWx!);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestId = pid;
+          bestWx = st.worldX;
+        }
       }
+      if (!bestId || !Number.isFinite(bestWx)) return;
+
+      humanAttractUntilRef.current = Date.now() + 10_000;
+      setAttractWx(bestWx);
+
+      await new Promise(r => setTimeout(r, 2_500));
+      const peerName = roster.get(bestId)?.name?.trim() ?? null;
+      shoutOwner(pickAutopilotHumanApproachLine(peerName));
+
+      const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      if (bestDist <= npcTouchDistPx(width) * 1.5) {
+        triggerJumpBurst();
+      }
+
+      await new Promise(r => setTimeout(r, 1_500));
+    } finally {
+      humanAttractUntilRef.current = 0;
+      endAutopilotEvent('human-approach');
+      resolveAttract();
     }
-    if (!bestId || !Number.isFinite(bestWx)) return;
-
-    humanAttractUntilRef.current = Date.now() + 10_000;
-    setAttractWx(bestWx);
-
-    await new Promise(r => setTimeout(r, 2_500));
-    const peerName = roster.get(bestId)?.name?.trim() ?? null;
-    shoutOwner(pickAutopilotHumanApproachLine(peerName));
-
-    const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    if (bestDist <= npcTouchDistPx(width) * 1.5) {
-      triggerJumpBurst();
-    }
-
-    await new Promise(r => setTimeout(r, 1_500));
-    humanAttractUntilRef.current = 0;
-    resolveAttract();
   }, [mpRef, npcWorldXRefs, resolveAttract, shoutOwner, triggerJumpBurst]);
+
+  const runRpsGame = useCallback(async (
+    ownerId: string,
+    festieIdx: number,
+    targetIdx: number,
+  ) => {
+    if (!tryBeginAutopilotEvent('rps')) return;
+    setPaused(true);
+
+    const target = effectiveNpcCast[targetIdx];
+    if (!target) {
+      endAutopilotEvent('rps');
+      setPaused(false);
+      return;
+    }
+
+    try {
+      const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      snapNpcPairForConvo(ownerId, target.id, width, {
+        npcCast: effectiveNpcCast,
+        npcWorldXRefs,
+      });
+      setRpsPairIds([ownerId, target.id]);
+
+      await new Promise(r => setTimeout(r, AUTOPILOT_RPS_TIMING.afterSnapMs));
+      if (!enabled) return;
+
+      shoutOwner(pickRpsGameIntroLine());
+      await new Promise(r => setTimeout(r, AUTOPILOT_RPS_TIMING.afterIntroMs));
+
+      let ownerWins = 0;
+      let targetWins = 0;
+
+      for (let round = 0; round < AUTOPILOT_RPS_ROUNDS; round++) {
+        if (!enabled) break;
+
+        const ownerChoice = pickRpsChoice();
+        const targetChoice = pickRpsChoice();
+        const ownerReveal = rpsEmoji(ownerChoice);
+        const targetReveal = rpsEmoji(targetChoice);
+
+        shoutOwner(formatRpsShootReveal(ownerReveal));
+        await new Promise(r => setTimeout(r, AUTOPILOT_RPS_TIMING.betweenRevealMs));
+        roomChatterRef.current?.handleNpcShout(target.id, formatRpsOpponentReveal(targetReveal));
+
+        await new Promise(r => setTimeout(r, AUTOPILOT_RPS_TIMING.afterRevealMs));
+
+        const result = resolveRps(ownerChoice, targetChoice);
+
+        if (result === 'a') {
+          ownerWins++;
+          triggerJumpBurst();
+          shoutOwner(pickRpsCelebrationLine());
+        } else if (result === 'b') {
+          targetWins++;
+          roomChatterRef.current?.handleNpcShout(target.id, pickRpsCelebrationLine());
+        } else {
+          shoutOwner(pickRpsTieLine());
+          roomChatterRef.current?.handleNpcShout(target.id, pickRpsTieLine());
+        }
+
+        await new Promise(r => setTimeout(r, AUTOPILOT_RPS_TIMING.afterResultMs));
+      }
+
+      if (enabled) {
+        if (ownerWins > targetWins) {
+          shoutOwner(pickRpsSeriesWinLine(ownerWins, targetWins));
+          triggerJumpBurst();
+        } else if (targetWins > ownerWins) {
+          roomChatterRef.current?.handleNpcShout(target.id, pickRpsSeriesWinLine(targetWins, ownerWins));
+          shoutOwner(pickRpsLossLine());
+        } else {
+          shoutOwner('series tied');
+        }
+      }
+
+      await new Promise(r => setTimeout(r, AUTOPILOT_RPS_TIMING.seriesEndMs));
+    } finally {
+      setRpsPairIds(null);
+      releaseNpcConvoSnap();
+      endAutopilotEvent('rps');
+      setPaused(false);
+      resolveAttract();
+    }
+  }, [
+    effectiveNpcCast,
+    enabled,
+    npcWorldXRefs,
+    resolveAttract,
+    roomChatterRef,
+    shoutOwner,
+    triggerJumpBurst,
+  ]);
 
   const tickAutopilotBehaviors = useCallback(() => {
     const ownerId = ownerFestieNpcId;
@@ -321,10 +444,7 @@ export function useAutopilotBehaviors({
     const festieIdx = ownerFestieIndex;
     if (festieIdx < 0) return;
 
-    if (npcChatBusyRef.current) return;
-    if (roomChatterRef.current?.isNpcInConvo(ownerId)) return;
-    if (activeChatDrawingForNpc(chatNpcDrawingsRef.current ?? [], ownerId)) return;
-
+    const chatDrawings = chatNpcDrawingsRef.current ?? [];
     const ambientCtx = buildAutopilotAmbientContext({
       stageName,
       creatorStage,
@@ -335,6 +455,15 @@ export function useAutopilotBehaviors({
         ? [...mpRef.current.remoteStateRef.current.values()]
         : [],
     });
+
+    const nowPlaying = ambientCtx.nowPlaying;
+    const prevNowPlaying = lastNowPlayingRef.current;
+
+    if (isAutopilotEventBusy()) return;
+    if (roomChatterRef.current?.isNpcInConvo(ownerId)) return;
+
+    const occupied = isOwnerFestieOccupied(ownerId, activeEaselSession, chatDrawings);
+    if (occupied) return;
 
     // Nap mode
     if (napUntilRef.current > now) {
@@ -351,10 +480,90 @@ export function useAutopilotBehaviors({
     }
     setPaused(false);
 
-    // Drop reaction (11)
-    const nowPlaying = ambientCtx.nowPlaying;
-    if (nowPlaying && nowPlaying !== lastNowPlayingRef.current) {
-      if (lastNowPlayingRef.current != null) {
+    // Long-running events first — one action per tick.
+    if (now >= rpsAtRef.current) {
+      rpsAtRef.current = nextAutopilotAtMs(AUTOPILOT_RPS_WINDOW_MS, now);
+      const candidates = effectiveNpcCast
+        .map((c, i) => ({ c, i }))
+        .filter(({ c, i }) => i !== festieIdx && c.id !== ownerId && !isBuzNpc(c.id));
+      if (candidates.length > 0) {
+        const { i: targetIdx } = candidates[Math.floor(Math.random() * candidates.length)]!;
+        void runRpsGame(ownerId, festieIdx, targetIdx);
+        return;
+      }
+    }
+
+    if (now >= npcChatAtRef.current) {
+      npcChatAtRef.current = nextAutopilotAtMs(AUTOPILOT_NPC_CHAT_WINDOW_MS, now);
+      const candidates = effectiveNpcCast
+        .map((c, i) => ({ c, i }))
+        .filter(({ c, i }) => i !== festieIdx && c.id !== ownerId && !isBuzNpc(c.id));
+      if (candidates.length > 0) {
+        const { i: targetIdx } = candidates[Math.floor(Math.random() * candidates.length)]!;
+        void runNpcChatSpree(ownerId, festieIdx, targetIdx);
+        return;
+      }
+    }
+
+    if (now >= humanAtRef.current && (mpRef.current?.remoteIds.length ?? 0) > 0) {
+      humanAtRef.current = nextAutopilotAtMs(AUTOPILOT_HUMAN_APPROACH_WINDOW_MS, now);
+      void runHumanApproach(ownerId, festieIdx);
+      return;
+    }
+
+    if (easelDrawingEnabled && now >= easelAtRef.current) {
+      easelAtRef.current = nextAutopilotAtMs(AUTOPILOT_EASEL_WINDOW_MS, now);
+      const alreadyPainting = activeEaselSession?.slots.some(
+        s => s.npc === ownerId && s.status === 'painting',
+      );
+      if (!alreadyPainting && tryBeginAutopilotEvent('easel')) {
+        void claimAutopilotEasel(easelStageSlug).then(slot => {
+          if (!slot) {
+            endAutopilotEvent('easel');
+            return;
+          }
+          notifyEaselUpdated();
+          const topic = slot.topic?.trim() || 'something';
+          shoutOwner(pickAutopilotEaselLine(topic));
+          const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+          const wx = easelSlotWorldX(slot.slot, easelStageSlug, width, easelLayoutRoute, gndScrollWorldOff);
+          easelAttractUntilRef.current = Date.now() + 15_000;
+          setAttractWx(wx);
+          endAutopilotEvent('easel');
+        });
+        return;
+      }
+    }
+
+    if (now >= partyPropAtRef.current) {
+      partyPropAtRef.current = nextAutopilotAtMs(AUTOPILOT_PARTY_PROP_WINDOW_MS, now);
+      const prop = pickAutopilotPartyProp(playerLoadout, playerCoins);
+      if (prop) {
+        shoutOwner(pickAutopilotPartyPropLine(prop.name));
+        void handleVendorPurchase(prop.itemId).then(ok => {
+          if (ok && prop.needsPurchase) recordFlexPurchase(prop.name);
+        });
+        return;
+      }
+    }
+
+    if (
+      curatedStageChannel
+      && sendLineupVote
+      && now >= lineupVoteAtRef.current
+    ) {
+      lineupVoteAtRef.current = nextAutopilotAtMs(AUTOPILOT_LINEUP_VOTE_WINDOW_MS, now);
+      const pick = pickAutopilotLineupVote(curatedStageChannel, lineupMyVote);
+      if (pick && !lineupMyVote) {
+        sendLineupVote(curatedStageChannel, pick.videoId);
+        shoutOwner(pickAutopilotLineupVoteLine(pick.title));
+        flexShout('vote', pick.title.toLowerCase());
+        return;
+      }
+    }
+
+    if (nowPlaying && nowPlaying !== prevNowPlaying) {
+      if (prevNowPlaying != null) {
         triggerJumpBurst();
         shoutOwner(pickAutopilotDropReactionLine(nowPlaying));
         const cfg = effectiveNpcCast[festieIdx];
@@ -371,28 +580,25 @@ export function useAutopilotBehaviors({
             setAttractWx(stageWx);
           }
         }
+        lastNowPlayingRef.current = nowPlaying;
+        return;
       }
       lastNowPlayingRef.current = nowPlaying;
     }
 
-    // Jump spree (14)
-    if (now >= jumpBurstAtRef.current) {
-      jumpBurstAtRef.current = nextAutopilotAtMs(AUTOPILOT_JUMP_BURST_WINDOW_MS, now);
-      triggerJumpBurst();
-    }
-
-    // Describe shoutout (13)
     if (
       ownerFestie?.personality_notes?.trim()
       && now >= describeAtRef.current
     ) {
       describeAtRef.current = nextAutopilotAtMs(AUTOPILOT_DESCRIBE_SHOUTOUT_WINDOW_MS, now);
       void fetchAutopilotDescribeShoutout(easelStageSlug).then(text => {
-        if (text) shoutOwner(text);
+        if (text && !isAutopilotEventBusy() && !isOwnerFestieOccupied(ownerId, activeEaselSession, chatNpcDrawingsRef.current ?? [])) {
+          shoutOwner(text);
+        }
       });
+      return;
     }
 
-    // Festie rivalry (6)
     if (now >= rivalryAtRef.current) {
       rivalryAtRef.current = nextAutopilotAtMs(AUTOPILOT_RIVALRY_WINDOW_MS, now);
       const rivals = effectiveNpcCast.filter(c => isFestieNpcId(c.id) && c.id !== ownerId);
@@ -402,74 +608,14 @@ export function useAutopilotBehaviors({
         if (Math.random() < 0.35) {
           roomChatterRef.current?.handleNpcShout(rival.id, pickAutopilotRivalryLine(playerName ?? 'my human\'s festie'));
         }
-      }
-    }
-
-    // Lineup vote (12)
-    if (
-      curatedStageChannel
-      && sendLineupVote
-      && now >= lineupVoteAtRef.current
-    ) {
-      lineupVoteAtRef.current = nextAutopilotAtMs(AUTOPILOT_LINEUP_VOTE_WINDOW_MS, now);
-      const pick = pickAutopilotLineupVote(curatedStageChannel, lineupMyVote);
-      if (pick && !lineupMyVote) {
-        sendLineupVote(curatedStageChannel, pick.videoId);
-        shoutOwner(pickAutopilotLineupVoteLine(pick.title));
-        flexShout('vote', pick.title.toLowerCase());
-      }
-    }
-
-    // Party prop chaos (4)
-    if (now >= partyPropAtRef.current) {
-      partyPropAtRef.current = nextAutopilotAtMs(AUTOPILOT_PARTY_PROP_WINDOW_MS, now);
-      const prop = pickAutopilotPartyProp(playerLoadout, playerCoins);
-      if (prop) {
-        shoutOwner(pickAutopilotPartyPropLine(prop.name));
-        void handleVendorPurchase(prop.itemId).then(ok => {
-          if (ok && prop.needsPurchase) recordFlexPurchase(prop.name);
-        });
-      }
-    }
-
-    // NPC chat spree (1)
-    if (now >= npcChatAtRef.current) {
-      npcChatAtRef.current = nextAutopilotAtMs(AUTOPILOT_NPC_CHAT_WINDOW_MS, now);
-      const candidates = effectiveNpcCast
-        .map((c, i) => ({ c, i }))
-        .filter(({ c, i }) => i !== festieIdx && c.id !== ownerId && !isBuzNpc(c.id));
-      if (candidates.length > 0) {
-        const { i: targetIdx } = candidates[Math.floor(Math.random() * candidates.length)]!;
-        void runNpcChatSpree(ownerId, festieIdx, targetIdx);
         return;
       }
     }
 
-    // Human approach (5)
-    if (now >= humanAtRef.current && (mpRef.current?.remoteIds.length ?? 0) > 0) {
-      humanAtRef.current = nextAutopilotAtMs(AUTOPILOT_HUMAN_APPROACH_WINDOW_MS, now);
-      void runHumanApproach(ownerId, festieIdx);
+    if (now >= jumpBurstAtRef.current) {
+      jumpBurstAtRef.current = nextAutopilotAtMs(AUTOPILOT_JUMP_BURST_WINDOW_MS, now);
+      triggerJumpBurst();
       return;
-    }
-
-    // Main easel (2)
-    if (easelDrawingEnabled && now >= easelAtRef.current) {
-      easelAtRef.current = nextAutopilotAtMs(AUTOPILOT_EASEL_WINDOW_MS, now);
-      const alreadyPainting = activeEaselSession?.slots.some(
-        s => s.npc === ownerId && s.status === 'painting',
-      );
-      if (!alreadyPainting) {
-        void claimAutopilotEasel(easelStageSlug).then(slot => {
-          if (!slot) return;
-          notifyEaselUpdated();
-          const topic = slot.topic?.trim() || 'something';
-          shoutOwner(pickAutopilotEaselLine(topic));
-          const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
-          const wx = easelSlotWorldX(slot.slot, easelStageSlug, width, easelLayoutRoute, gndScrollWorldOff);
-          easelAttractUntilRef.current = Date.now() + 15_000;
-          setAttractWx(wx);
-        });
-      }
     }
 
     resolveAttract();
@@ -501,6 +647,7 @@ export function useAutopilotBehaviors({
     roomChatterRef,
     runHumanApproach,
     runNpcChatSpree,
+    runRpsGame,
     sendLineupVote,
     shoutOwner,
     stageName,
@@ -514,6 +661,7 @@ export function useAutopilotBehaviors({
     ownerFestieAttractWx,
     ownerFestiePaused: paused,
     jumpBurstKey,
+    rpsPairIds,
     tickAutopilotBehaviors,
     recordFlexPurchase,
     recordFlexLoss,

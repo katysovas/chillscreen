@@ -5,7 +5,7 @@ import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
 import type { CharacterLoadout } from './characters/loadout';
 import { CHAR_BOTTOM, crowdDepthForSeed } from './groundLayout';
-import { AttachedChatEmojiIndicator, screenXToBubbleSide } from './ChatBubble';
+import { AttachedChatEmojiIndicator, screenXToBubbleSide, type BubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
 import {
   crowdSpawnWorldX,
@@ -117,6 +117,10 @@ type NPCProps = NPCConfig & {
   crowdSize?: number;
   /** Increment to force a jump burst (autopilot festie). */
   jumpBurstKey?: number;
+  /** Face-to-face pair chat — bubble on outer side so bubbles don't overlap. */
+  pairChatBubbleSide?: BubbleSide;
+  /** Horizontal nudge while in a face-to-face pair chat. */
+  pairChatSpreadPx?: number;
 };
 
 function rndBetween(min: number, max: number) {
@@ -165,6 +169,8 @@ function NPC({
   ownerAvatarSuppressed = false,
   crowdSize,
   jumpBurstKey = 0,
+  pairChatBubbleSide,
+  pairChatSpreadPx = 0,
 }: NPCProps) {
   const { depthY, depthZ } = useMemo(
     () => crowdDepthForSeed(characterId, {
@@ -825,7 +831,7 @@ function NPC({
   const effectiveDepthY = showPaintingBubble || easelStationed || easelPaintingSlot != null || chatPromptCanvasWorldX != null ? 0 : depthY;
   const bubbleSide = showPaintingBubble
     ? 'left'
-    : screenXToBubbleSide(screenX);
+    : pairChatBubbleSide ?? screenXToBubbleSide(screenX);
 
   const showGreetingChat = Boolean(
     greeting && greetingChat && (greetingChat.npcTyping || greetingChat.messages.length > 0),
@@ -855,7 +861,7 @@ function NPC({
       style={{
         position: 'absolute',
         bottom: CHAR_BOTTOM,
-        transform: `translateY(${effectiveDepthY}px)`,
+        transform: `translateY(${effectiveDepthY}px) translateX(${pairChatSpreadPx}px)`,
         zIndex: zIndex,
         opacity: dimmed ? 0.6 : 1,
         filter: dimmed ? 'brightness(0.85)' : undefined,
@@ -970,6 +976,8 @@ function areNpcPropsEqual(prev: NPCProps, next: NPCProps): boolean {
     && prev.ownerAvatarSuppressed === next.ownerAvatarSuppressed
     && prev.crowdSize === next.crowdSize
     && prev.jumpBurstKey === next.jumpBurstKey
+    && prev.pairChatBubbleSide === next.pairChatBubbleSide
+    && prev.pairChatSpreadPx === next.pairChatSpreadPx
     && prev.publicMessages === next.publicMessages
     && greetingChatEqual(prev.greetingChat, next.greetingChat);
 }

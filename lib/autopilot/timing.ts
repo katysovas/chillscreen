@@ -7,6 +7,8 @@ export const AUTOPILOT_LINEUP_VOTE_WINDOW_MS = 8 * 60 * 1000;
 export const AUTOPILOT_DESCRIBE_SHOUTOUT_WINDOW_MS = 90 * 1000;
 export const AUTOPILOT_JUMP_BURST_WINDOW_MS = 45 * 1000;
 export const AUTOPILOT_FLEX_WINDOW_MS = 6 * 60 * 1000;
+/** Rock-paper-scissors — frequent autopilot mini-game. */
+export const AUTOPILOT_RPS_WINDOW_MS = 45 * 1000;
 
 /** Autopilot nap after sustained runtime. */
 export const AUTOPILOT_NAP_AFTER_MS = 18 * 60 * 1000;

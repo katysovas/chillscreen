@@ -91,6 +91,12 @@ import {
   pickOwnedVendorPropToLose,
 } from '@/lib/autopilot/propLoss';
 import { buildAutopilotAmbientContext } from '@/lib/autopilot/ambientContext';
+import {
+  canRunAutopilotActivity,
+  clearAutopilotEvent,
+  endAutopilotEvent,
+  tryBeginAutopilotEvent,
+} from '@/lib/autopilot/busy';
 import { vendorAnchorGroundWorldX } from '@/lib/stageAnchor';
 import { getAmbientIntervalMs, pickAutopilotAmbientLine, pickAutopilotDrawAmbientLine, pickLostPropAmbientLine } from '@/lib/npcAmbientChat';
 import {
@@ -927,6 +933,8 @@ export default function SFCity({
     mp.easelSession,
     { ensureOnLoad: TEST_EASEL_ON_LOAD },
   );
+  const activeEaselSessionRef = useRef(activeEaselSession);
+  activeEaselSessionRef.current = activeEaselSession;
   const partyDrivesEasel = Boolean(mp.easelSession?.slots?.length);
   useEaselHoldAdvance(
     easelStageSlug,
@@ -1157,7 +1165,10 @@ export default function SFCity({
   }, [effectiveNpcCast, ownerFestieNpcId]);
 
   useEffect(() => {
-    if (!autopilotOn) return;
+    if (!autopilotOn) {
+      clearAutopilotEvent();
+      return;
+    }
     if (ownerFestieNpcId) clearNpcConvoHold(ownerFestieNpcId);
     autopilotAmbientAtRef.current = Date.now() + 3_000 + Math.random() * 4_000;
     autopilotPropLossAtRef.current = nextAutopilotPropLossAtMs();
@@ -2332,6 +2343,7 @@ export default function SFCity({
     const runAutopilotAmbient = () => {
       const ownerId = ownerFestieNpcIdRef.current;
       if (!autopilotOnRef.current || !ownerId) return;
+      if (!canRunAutopilotActivity(ownerId, activeEaselSessionRef.current, chatNpcDrawingsRef.current)) return;
       const now = Date.now();
       if (now < autopilotAmbientAtRef.current) return;
       const cfg = effectiveNpcCastRef.current.find(c => c.id === ownerId);
@@ -2354,6 +2366,7 @@ export default function SFCity({
     const runAutopilotVendor = () => {
       const ownerId = ownerFestieNpcIdRef.current;
       if (!autopilotOnRef.current || !ownerId) return;
+      if (!canRunAutopilotActivity(ownerId, activeEaselSessionRef.current, chatNpcDrawingsRef.current)) return;
       const now = Date.now();
       if (now < autopilotShopCooldownRef.current) return;
       if (peerChatRef.current !== null) return;
@@ -2373,6 +2386,7 @@ export default function SFCity({
 
       const itemId = pickAutopilotVendorItem(playerCoinsRef.current, playerLoadoutRef.current);
       if (!itemId) return;
+      if (!tryBeginAutopilotEvent('vendor')) return;
 
       autopilotShopCooldownRef.current = now + 45_000;
 
@@ -2388,34 +2402,42 @@ export default function SFCity({
         }
         window.setTimeout(() => {
           if (greetingRef.current === buzIdx) disconnect();
+          endAutopilotEvent('vendor');
         }, 1_200);
+      }).catch(() => {
+        endAutopilotEvent('vendor');
       });
     };
 
     const runAutopilotPropLoss = () => {
       const ownerId = ownerFestieNpcIdRef.current;
       if (!autopilotOnRef.current || !ownerId) return;
+      if (!canRunAutopilotActivity(ownerId, activeEaselSessionRef.current, chatNpcDrawingsRef.current)) return;
       const now = Date.now();
       if (now < autopilotPropLossAtRef.current) return;
 
       const itemId = pickOwnedVendorPropToLose(playerLoadoutRef.current);
       autopilotPropLossAtRef.current = nextAutopilotPropLossAtMs(now);
       if (!itemId) return;
+      if (!tryBeginAutopilotEvent('prop-loss')) return;
 
       const propName = loadoutItem(itemId)?.name ?? 'prop';
       void handlePropLossRef.current(itemId).then(lost => {
-        if (!lost) return;
-        if (roomChatterRef.current.isNpcInConvo(ownerId)) return;
-        roomChatterRef.current.handleNpcShout(
-          ownerId,
-          pickLostPropAmbientLine(propName),
-        );
+        if (lost && !roomChatterRef.current.isNpcInConvo(ownerId)) {
+          roomChatterRef.current.handleNpcShout(
+            ownerId,
+            pickLostPropAmbientLine(propName),
+          );
+        }
+      }).finally(() => {
+        endAutopilotEvent('prop-loss');
       });
     };
 
     const runAutopilotDraw = () => {
       const ownerId = ownerFestieNpcIdRef.current;
       if (!autopilotOnRef.current || !ownerId || !easelDrawingEnabledRef.current) return;
+      if (!canRunAutopilotActivity(ownerId, activeEaselSessionRef.current, chatNpcDrawingsRef.current)) return;
       const now = Date.now();
       if (now < autopilotDrawAtRef.current) return;
 
@@ -2424,12 +2446,18 @@ export default function SFCity({
       if (peerChatRef.current !== null) return;
       if (greetingRef.current !== null) return;
       if (roomChatterRef.current.isNpcInConvo(ownerId)) return;
-      if (activeChatDrawingForNpc(chatNpcDrawingsRef.current, ownerId)) return;
+      if (!tryBeginAutopilotEvent('draw')) return;
 
       const festieIdx = ownerFestieNpcIndexRef.current;
-      if (festieIdx < 0) return;
+      if (festieIdx < 0) {
+        endAutopilotEvent('draw');
+        return;
+      }
       const festieWx = npcWorldXRefs.current[festieIdx];
-      if (!Number.isFinite(festieWx)) return;
+      if (!Number.isFinite(festieWx)) {
+        endAutopilotEvent('draw');
+        return;
+      }
 
       const ambientCtx = buildAutopilotAmbientContext({
         stageName: stageChatterWelcomeRef.current.stageName,
@@ -2454,12 +2482,18 @@ export default function SFCity({
         prompt,
         npcWorldX: festieWx!,
       }).then(hit => {
-        if (!hit) return;
+        if (!hit) {
+          endAutopilotEvent('draw');
+          return;
+        }
         setChatNpcDrawings(prev => [
           ...prev.filter(s => s.npcId !== hit.npcId),
           { ...hit, status: 'painting' },
         ]);
         recordFlexDrawRef.current(prompt);
+        endAutopilotEvent('draw');
+      }).catch(() => {
+        endAutopilotEvent('draw');
       });
     };
 
@@ -3082,6 +3116,7 @@ export default function SFCity({
             ownerFestieAttractWx={autopilotBehaviors.ownerFestieAttractWx}
             ownerFestiePaused={autopilotBehaviors.ownerFestiePaused}
             ownerFestieJumpBurstKey={autopilotBehaviors.jumpBurstKey}
+            rpsPairIds={autopilotBehaviors.rpsPairIds}
           />
         )}
 

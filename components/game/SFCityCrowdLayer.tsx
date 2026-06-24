@@ -14,6 +14,8 @@ import type { VenueRoute } from '@/lib/venueSlugs';
 import type { EaselSessionSync } from '@/lib/easel/types';
 import type { ChatLine } from '@/lib/chatLines';
 import type { RemoteAmbientMessage, RemotePlayerState } from '@/lib/multiplayer/useMultiplayer';
+import { getNpcConvoHold } from '@/lib/npcConvoHold';
+import { rpsPairBubbleSide, rpsPairChatSpreadPx } from '@/lib/autopilot/rps';
 
 /** Equip gas mask on a cinema NPC at startup (testing). */
 const TEST_NPC_MASK_ON_LOAD = false;
@@ -51,6 +53,7 @@ type SFCityCrowdLayerProps = {
   ownerFestieAttractWx?: number;
   ownerFestiePaused?: boolean;
   ownerFestieJumpBurstKey?: number;
+  rpsPairIds?: readonly [string, string] | null;
 };
 
 function SFCityCrowdLayer({
@@ -84,6 +87,7 @@ function SFCityCrowdLayer({
   ownerFestieAttractWx,
   ownerFestiePaused = false,
   ownerFestieJumpBurstKey = 0,
+  rpsPairIds = null,
 }: SFCityCrowdLayerProps) {
   const handleEaselStationed = useCallback(
     (npcId: string) => onEaselStationed(npcId),
@@ -118,6 +122,20 @@ function SFCityCrowdLayer({
         const ownerAvatarSuppressed = Boolean(
           ownerFestieNpcId && cfg.id === ownerFestieNpcId && !autopilotOn,
         );
+        const inRpsPair = rpsPairIds?.includes(cfg.id) ?? false;
+        let pairChatBubbleSide: 'left' | 'right' | undefined;
+        let pairChatSpreadPx = 0;
+        if (inRpsPair && rpsPairIds) {
+          const [idA, idB] = rpsPairIds;
+          const holdA = getNpcConvoHold(idA);
+          const holdB = getNpcConvoHold(idB);
+          const myHold = getNpcConvoHold(cfg.id);
+          const partnerHold = cfg.id === idA ? holdB : holdA;
+          if (myHold != null && partnerHold != null) {
+            pairChatBubbleSide = rpsPairBubbleSide(myHold, partnerHold);
+            pairChatSpreadPx = rpsPairChatSpreadPx(myHold, partnerHold);
+          }
+        }
         return (
           <NPC
             key={cfg.id}
@@ -135,16 +153,18 @@ function SFCityCrowdLayer({
             chatPromptCanvasWorldX={chatPromptCanvasWorldX}
             startX={cfg.startX}
             entryDelay={cfg.entryDelay}
-            paused={chatConnected || ownerAvatarSuppressed || (ownerFestieNpcId === cfg.id && autopilotOn && ownerFestiePaused)}
+            paused={chatConnected || ownerAvatarSuppressed || inRpsPair || (ownerFestieNpcId === cfg.id && autopilotOn && ownerFestiePaused)}
             ownerAvatarSuppressed={ownerAvatarSuppressed}
             wanderAttractWorldX={
-              ownerAvatarSuppressed || !autopilotOn || cfg.id !== ownerFestieNpcId
+              ownerAvatarSuppressed || !autopilotOn || cfg.id !== ownerFestieNpcId || inRpsPair
                 ? undefined
                 : ownerFestieAttractWx
             }
             jumpBurstKey={ownerFestieNpcId === cfg.id && autopilotOn ? ownerFestieJumpBurstKey : 0}
+            pairChatBubbleSide={pairChatBubbleSide}
+            pairChatSpreadPx={pairChatSpreadPx}
             greeting={greetingNpc === i}
-            connectGlow={ownerFestieNpcId === cfg.id && autopilotOn}
+            connectGlow={inRpsPair || (ownerFestieNpcId === cfg.id && autopilotOn && !rpsPairIds)}
             chatConnected={chatConnected}
             pairChatIndicator={isNpcInPairConvo(cfg.id)}
             dimmed={festieDimNpcIds.has(cfg.id)}
