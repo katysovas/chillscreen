@@ -20,7 +20,7 @@ type BuildAutopilotAmbientContextInput = {
   remotePlayers: Iterable<{ name: string | null }>;
 };
 
-function shortNowPlayingTitle(title: string): string {
+export function shortNowPlayingTitle(title: string): string {
   let t = title.trim();
   if (!t) return 'this set';
   const dashSplit = t.split(/\s[—–-]\s+/);

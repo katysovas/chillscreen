@@ -40,7 +40,10 @@ import {
 import type { NpcConvoMeta, PlayerProfile } from '@/lib/multiplayer/protocol';
 import { getPlayerLoadout, losePurchasedLoadoutItem, unequipLoadoutItem } from '@/lib/playerLoadout';
 import { addPlayerCoins, getPlayerCoins, STARTING_COINS } from '@/lib/playerCoins';
+import { useAutopilotBehaviors } from '@/components/game/hooks/useAutopilotBehaviors';
 import { GroundScoreLayer } from './GroundScoreLayer';
+import type { StageChannel } from '@/lib/stageVideos';
+import type { LineupStatePayload } from '@/lib/lineup/types';
 import { purchaseVendorItemAsync } from '@/lib/vendorPurchase';
 import { festieLifeFill } from '@/lib/festie/config';
 import {
@@ -578,6 +581,9 @@ export default function SFCity({
   const [ownedStage, setOwnedStage] = useState<UserStagePublic | null | undefined>(undefined);
   const lifeRefillFromRef = useRef<number | null>(null);
   const broadcastProfileRef = useRef<(loadout: CharacterLoadout) => void>(() => {});
+  const recordFlexPurchaseRef = useRef<(name: string) => void>(() => {});
+  const recordFlexLossRef = useRef<(name: string) => void>(() => {});
+  const recordFlexDrawRef = useRef<(subject: string) => void>(() => {});
 
   const handleVendorPurchase = useCallback(async (itemId: string): Promise<boolean> => {
     const coinsBefore = getPlayerCoins();
@@ -590,6 +596,9 @@ export default function SFCity({
     setPlayerLoadout(nextLoadout);
     setPlayerCoins(result.coins);
     broadcastProfileRef.current(nextLoadout);
+    if (result.charged) {
+      recordFlexPurchaseRef.current(loadoutItem(itemId)?.name ?? itemId);
+    }
     return result.charged || result.coins < coinsBefore;
   }, [myColor]);
 
@@ -602,11 +611,13 @@ export default function SFCity({
   }, [myColor]);
 
   const handlePropLoss = useCallback(async (itemId: string): Promise<boolean> => {
+    const propName = loadoutItem(itemId)?.name ?? 'prop';
     const next = await losePurchasedLoadoutItem(itemId, myColor);
     if (!next) return false;
     const nextLoadout = { ...next, ...TEST_PLAYER_LOADOUT };
     setPlayerLoadout(nextLoadout);
     broadcastProfileRef.current(nextLoadout);
+    recordFlexLossRef.current(propName);
     return true;
   }, [myColor]);
 
@@ -1258,6 +1269,65 @@ export default function SFCity({
   playerCoinsRef.current = playerCoins;
   const playerLoadoutRef = useRef(playerLoadout);
   playerLoadoutRef.current = playerLoadout;
+
+  const [lineupMyVote, setLineupMyVote] = useState<string | null>(null);
+  const sendLineupVoteCb = useCallback((channel: StageChannel, videoId: string) => {
+    mpRef.current?.sendLineupVote(channel, videoId);
+    setLineupMyVote(videoId);
+  }, []);
+
+  useEffect(() => {
+    if (!curatedStageChannel) return;
+    const channel = curatedStageChannel;
+    const onState = (msg: LineupStatePayload) => {
+      if (msg.channel !== channel) return;
+      if (msg.myVote !== undefined) setLineupMyVote(msg.myVote ?? null);
+    };
+    mp.registerLineupStateHandler(onState);
+    mp.sendLineupSubscribe(channel);
+    return () => mp.registerLineupStateHandler(null);
+  }, [curatedStageChannel, mp]);
+
+  const ownerFestieNpcIndex = ownerFestieNpcId
+    ? effectiveNpcCast.findIndex(c => c.id === ownerFestieNpcId)
+    : -1;
+
+  const autopilotBehaviors = useAutopilotBehaviors({
+    enabled: autopilotOn,
+    ownerFestieNpcId,
+    ownerFestieIndex: ownerFestieNpcIndex,
+    ownerFestie,
+    effectiveNpcCast,
+    easelDrawingEnabled,
+    easelStageSlug,
+    easelLayoutRoute,
+    activeEaselSession,
+    curatedStageChannel,
+    stageName: stageChatterWelcome.stageName,
+    creatorStage,
+    stagePlaybackChannel,
+    cinemaNowPlaying,
+    concertNowPlaying,
+    playerName,
+    playerLoadout,
+    playerCoins,
+    gndScrollWorldOff,
+    vendorAttractWx: ownerFestieVendorAttractWx,
+    mpRef,
+    npcWorldXRefs,
+    roomChatterRef,
+    chatNpcDrawingsRef,
+    handleVendorPurchase,
+    setChatNpcDrawings,
+    sendLineupVote: curatedStageChannel ? sendLineupVoteCb : null,
+    lineupMyVote,
+  });
+
+  recordFlexPurchaseRef.current = autopilotBehaviors.recordFlexPurchase;
+  recordFlexLossRef.current = autopilotBehaviors.recordFlexLoss;
+  recordFlexDrawRef.current = autopilotBehaviors.recordFlexDraw;
+  const tickAutopilotBehaviorsRef = useRef(autopilotBehaviors.tickAutopilotBehaviors);
+  tickAutopilotBehaviorsRef.current = autopilotBehaviors.tickAutopilotBehaviors;
 
   useEffect(() => {
     if (!festieSignedIn || !mp.connected) return;
@@ -2389,6 +2459,7 @@ export default function SFCity({
           ...prev.filter(s => s.npcId !== hit.npcId),
           { ...hit, status: 'painting' },
         ]);
+        recordFlexDrawRef.current(prompt);
       });
     };
 
@@ -2537,6 +2608,7 @@ export default function SFCity({
           runAutopilotVendor();
           runAutopilotPropLoss();
           runAutopilotDraw();
+          tickAutopilotBehaviorsRef.current();
         }
       }
 
@@ -3007,7 +3079,9 @@ export default function SFCity({
             npcPublicMessages={roomChatter.npcMessages}
             ownerFestieNpcId={ownerFestieNpcId}
             autopilotOn={autopilotOn}
-            ownerFestieVendorAttractWx={ownerFestieVendorAttractWx}
+            ownerFestieAttractWx={autopilotBehaviors.ownerFestieAttractWx}
+            ownerFestiePaused={autopilotBehaviors.ownerFestiePaused}
+            ownerFestieJumpBurstKey={autopilotBehaviors.jumpBurstKey}
           />
         )}
 

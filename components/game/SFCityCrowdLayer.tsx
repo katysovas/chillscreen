@@ -48,7 +48,9 @@ type SFCityCrowdLayerProps = {
   npcPublicMessages: Map<string, ChatLine[]>;
   ownerFestieNpcId?: string | null;
   autopilotOn?: boolean;
-  ownerFestieVendorAttractWx?: number;
+  ownerFestieAttractWx?: number;
+  ownerFestiePaused?: boolean;
+  ownerFestieJumpBurstKey?: number;
 };
 
 function SFCityCrowdLayer({
@@ -79,7 +81,9 @@ function SFCityCrowdLayer({
   npcPublicMessages,
   ownerFestieNpcId = null,
   autopilotOn = false,
-  ownerFestieVendorAttractWx,
+  ownerFestieAttractWx,
+  ownerFestiePaused = false,
+  ownerFestieJumpBurstKey = 0,
 }: SFCityCrowdLayerProps) {
   const handleEaselStationed = useCallback(
     (npcId: string) => onEaselStationed(npcId),
@@ -131,13 +135,14 @@ function SFCityCrowdLayer({
             chatPromptCanvasWorldX={chatPromptCanvasWorldX}
             startX={cfg.startX}
             entryDelay={cfg.entryDelay}
-            paused={chatConnected || ownerAvatarSuppressed}
+            paused={chatConnected || ownerAvatarSuppressed || (ownerFestieNpcId === cfg.id && autopilotOn && ownerFestiePaused)}
             ownerAvatarSuppressed={ownerAvatarSuppressed}
             wanderAttractWorldX={
               ownerAvatarSuppressed || !autopilotOn || cfg.id !== ownerFestieNpcId
                 ? undefined
-                : ownerFestieVendorAttractWx
+                : ownerFestieAttractWx
             }
+            jumpBurstKey={ownerFestieNpcId === cfg.id && autopilotOn ? ownerFestieJumpBurstKey : 0}
             greeting={greetingNpc === i}
             connectGlow={ownerFestieNpcId === cfg.id && autopilotOn}
             chatConnected={chatConnected}

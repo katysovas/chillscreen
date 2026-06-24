@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useLayoutEffect, useMemo, memo } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect, useMemo, memo, useCallback } from 'react';
 import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
@@ -115,6 +115,8 @@ type NPCProps = NPCConfig & {
   ownerAvatarSuppressed?: boolean;
   /** Total on-screen crowd — even mobile depth distribution. */
   crowdSize?: number;
+  /** Increment to force a jump burst (autopilot festie). */
+  jumpBurstKey?: number;
 };
 
 function rndBetween(min: number, max: number) {
@@ -162,6 +164,7 @@ function NPC({
   spawnWorldX,
   ownerAvatarSuppressed = false,
   crowdSize,
+  jumpBurstKey = 0,
 }: NPCProps) {
   const { depthY, depthZ } = useMemo(
     () => crowdDepthForSeed(characterId, {
@@ -310,6 +313,29 @@ function NPC({
   useEffect(() => {
     if (paintingBrushRef.current) applyFacing('right');
   }, [loadout]);
+
+  const fireJump = useCallback(() => {
+    if (jumpingRef.current) return;
+    jumpingRef.current = true;
+    setJumping(true);
+    if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current);
+    jumpTimerRef.current = setTimeout(() => {
+      jumpTimerRef.current = null;
+      jumpingRef.current = false;
+      setJumping(false);
+    }, 560);
+  }, []);
+
+  useEffect(() => {
+    if (!jumpBurstKey) return;
+    fireJump();
+    const t1 = setTimeout(fireJump, 300);
+    const t2 = setTimeout(fireJump, 620);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [jumpBurstKey, fireJump]);
 
   useEffect(() => {
     if (paused && !wasPausedRef.current) {
@@ -943,6 +969,7 @@ function areNpcPropsEqual(prev: NPCProps, next: NPCProps): boolean {
     && prev.spawnWorldX === next.spawnWorldX
     && prev.ownerAvatarSuppressed === next.ownerAvatarSuppressed
     && prev.crowdSize === next.crowdSize
+    && prev.jumpBurstKey === next.jumpBurstKey
     && prev.publicMessages === next.publicMessages
     && greetingChatEqual(prev.greetingChat, next.greetingChat);
 }
