@@ -2,14 +2,14 @@
 
 import type { KeyboardEvent, ReactNode } from 'react';
 import {
-  STAGE_CHART_ROW,
-  STAGE_CHART_ROW_CURRENT,
   STAGE_CHART_ROW_INNER,
-  STAGE_CHART_ROW_SELECTED,
+  stageChartRowStyle,
+  type StageChartTheme,
 } from './stageChartRowStyles';
 
 type Props = {
   className: string;
+  theme?: StageChartTheme;
   selected?: boolean;
   current?: boolean;
   onClick: () => void;
@@ -17,7 +17,14 @@ type Props = {
 };
 
 /** Chart list row — div + inline flex (Safari breaks layout inside <button>). */
-export function StageChartRow({ className, selected, current, onClick, children }: Props) {
+export function StageChartRow({
+  className,
+  theme = 'page',
+  selected,
+  current,
+  onClick,
+  children,
+}: Props) {
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -25,17 +32,12 @@ export function StageChartRow({ className, selected, current, onClick, children 
     }
   };
 
-  const rowStyle = {
-    ...STAGE_CHART_ROW,
-    ...(selected ? STAGE_CHART_ROW_SELECTED : current ? STAGE_CHART_ROW_CURRENT : {}),
-  };
-
   return (
     <div
       role="button"
       tabIndex={0}
       className={className}
-      style={rowStyle}
+      style={stageChartRowStyle(theme, { selected, current })}
       aria-pressed={selected || undefined}
       aria-current={current ? 'true' : undefined}
       onClick={onClick}

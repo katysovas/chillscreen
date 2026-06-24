@@ -1,6 +1,76 @@
 import type { CSSProperties } from 'react';
 
-/** Modal chart palette — duplicated inline so Safari works when chunked CSS is late. */
+export type StageChartTheme = 'page' | 'modal';
+
+/** Layout-only — safe on LP (colors come from CSS classes). */
+export const STAGE_CHART_ROW_LAYOUT: CSSProperties = {
+  display: 'block',
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: 0,
+  margin: 0,
+  borderRadius: 10,
+  textAlign: 'left',
+  cursor: 'pointer',
+  font: 'inherit',
+};
+
+export const STAGE_CHART_ROW_INNER: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '10px 12px',
+};
+
+export const STAGE_CHART_THUMB_LAYOUT: CSSProperties = {
+  flex: '0 0 52px',
+  width: 52,
+  height: 52,
+  minWidth: 52,
+  maxWidth: 52,
+  flexShrink: 0,
+  borderRadius: 8,
+  overflow: 'hidden',
+};
+
+export const STAGE_CHART_THUMB_IMG: CSSProperties = {
+  display: 'block',
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
+
+export const STAGE_CHART_INFO_LAYOUT: CSSProperties = {
+  flex: '1 1 0',
+  minWidth: 0,
+  overflow: 'hidden',
+};
+
+export const STAGE_CHART_RANK_LAYOUT: CSSProperties = {
+  flex: '0 0 36px',
+  width: 36,
+  minWidth: 36,
+  flexShrink: 0,
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  fontSize: 15,
+  fontWeight: 700,
+  lineHeight: 1,
+};
+
+export const STAGE_CHART_MOVE_LAYOUT: CSSProperties = {
+  flex: '0 0 28px',
+  width: 28,
+  minWidth: 28,
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+/** Modal palette — inline for Safari when CSS chunks load late. */
 export const STAGE_CHART_MODAL: CSSProperties = {
   color: '#fff',
   fontFamily: "Georgia, 'Times New Roman', serif",
@@ -52,83 +122,28 @@ export const STAGE_CHART_BODY: CSSProperties = {
   minHeight: 0,
 };
 
-/** Inline layout — Safari ignores flex/grid on and inside <button>. */
-export const STAGE_CHART_ROW: CSSProperties = {
-  display: 'block',
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: 0,
-  margin: 0,
-  borderRadius: 10,
-  textAlign: 'left',
-  cursor: 'pointer',
-  font: 'inherit',
+const MODAL_ROW: CSSProperties = {
   color: '#fff',
   border: '1px solid rgba(255, 255, 255, 0.1)',
   background: 'rgba(255, 255, 255, 0.04)',
 };
 
-export const STAGE_CHART_ROW_SELECTED: CSSProperties = {
+const MODAL_ROW_SELECTED: CSSProperties = {
   border: '1px solid rgba(230, 126, 34, 0.55)',
   background: 'rgba(230, 126, 34, 0.12)',
   boxShadow: 'inset 0 0 0 1px rgba(230, 126, 34, 0.15)',
 };
 
-export const STAGE_CHART_ROW_CURRENT: CSSProperties = {
+const MODAL_ROW_CURRENT: CSSProperties = {
   border: '1px solid rgba(255, 255, 255, 0.16)',
 };
 
-export const STAGE_CHART_ROW_INNER: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 10,
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '10px 12px',
-};
-
-export function stageChartRankStyle(rank: number): CSSProperties {
-  return {
-    flex: '0 0 36px',
-    width: 36,
-    minWidth: 36,
-    flexShrink: 0,
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-    fontSize: rank <= 3 ? 17 : 15,
-    fontWeight: 700,
-    lineHeight: 1,
-    color: rank <= 3 ? '#ffb347' : '#fff',
-  };
-}
-
-export const STAGE_CHART_THUMB: CSSProperties = {
-  flex: '0 0 52px',
-  width: 52,
-  height: 52,
-  minWidth: 52,
-  maxWidth: 52,
-  flexShrink: 0,
-  borderRadius: 8,
-  overflow: 'hidden',
+const MODAL_THUMB: CSSProperties = {
   background: 'rgba(255, 255, 255, 0.06)',
   boxShadow: '0 2px 10px rgba(0, 0, 0, 0.28)',
 };
 
-export const STAGE_CHART_THUMB_IMG: CSSProperties = {
-  display: 'block',
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover',
-};
-
-export const STAGE_CHART_INFO: CSSProperties = {
-  flex: '1 1 0',
-  minWidth: 0,
-  overflow: 'hidden',
-};
-
-export const STAGE_CHART_NAME: CSSProperties = {
+const MODAL_NAME: CSSProperties = {
   margin: 0,
   fontWeight: 700,
   fontSize: 14,
@@ -139,7 +154,7 @@ export const STAGE_CHART_NAME: CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-export const STAGE_CHART_SUBTITLE: CSSProperties = {
+const MODAL_SUBTITLE: CSSProperties = {
   margin: '3px 0 0',
   fontFamily: 'system-ui, sans-serif',
   fontSize: 11,
@@ -150,7 +165,7 @@ export const STAGE_CHART_SUBTITLE: CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-export const STAGE_CHART_JOIN: CSSProperties = {
+const MODAL_JOIN: CSSProperties = {
   flex: '0 0 auto',
   display: 'inline-flex',
   alignItems: 'center',
@@ -177,27 +192,64 @@ export const STAGE_CHART_JOIN_DISABLED: CSSProperties = {
   cursor: 'not-allowed',
 };
 
-export const STAGE_CHART_MOVE: CSSProperties = {
-  flex: '0 0 28px',
-  width: 28,
-  minWidth: 28,
-  flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
-
-export const STAGE_CHART_MOVE_SAME: CSSProperties = {
+const MODAL_MOVE_SAME: CSSProperties = {
   color: 'rgba(255, 255, 255, 0.22)',
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
   fontSize: 12,
   lineHeight: 1,
 };
 
-export const STAGE_CHART_MOVE_UP: CSSProperties = {
-  color: '#6eed9a',
-};
+const MODAL_MOVE_UP: CSSProperties = { color: '#6eed9a' };
+const MODAL_MOVE_DOWN: CSSProperties = { color: '#ff6b6b' };
 
-export const STAGE_CHART_MOVE_DOWN: CSSProperties = {
-  color: '#ff6b6b',
-};
+export function stageChartRowStyle(
+  theme: StageChartTheme,
+  opts?: { selected?: boolean; current?: boolean },
+): CSSProperties {
+  if (theme === 'page') return STAGE_CHART_ROW_LAYOUT;
+  return {
+    ...STAGE_CHART_ROW_LAYOUT,
+    ...MODAL_ROW,
+    ...(opts?.selected ? MODAL_ROW_SELECTED : opts?.current ? MODAL_ROW_CURRENT : {}),
+  };
+}
+
+export function stageChartThumbStyle(theme: StageChartTheme): CSSProperties {
+  return theme === 'modal'
+    ? { ...STAGE_CHART_THUMB_LAYOUT, ...MODAL_THUMB }
+    : STAGE_CHART_THUMB_LAYOUT;
+}
+
+export function stageChartRankStyle(theme: StageChartTheme, rank: number): CSSProperties {
+  const layout = {
+    ...STAGE_CHART_RANK_LAYOUT,
+    fontSize: rank <= 3 ? 17 : 15,
+  };
+  if (theme === 'page') return layout;
+  return {
+    ...layout,
+    color: rank <= 3 ? '#ffb347' : '#fff',
+  };
+}
+
+export function stageChartNameStyle(theme: StageChartTheme): CSSProperties | undefined {
+  return theme === 'modal' ? MODAL_NAME : undefined;
+}
+
+export function stageChartSubtitleStyle(theme: StageChartTheme): CSSProperties | undefined {
+  return theme === 'modal' ? MODAL_SUBTITLE : undefined;
+}
+
+export function stageChartJoinStyle(theme: StageChartTheme): CSSProperties | undefined {
+  return theme === 'modal' ? MODAL_JOIN : undefined;
+}
+
+export function stageChartMoveStyle(
+  theme: StageChartTheme,
+  move: 'up' | 'down' | 'same',
+): CSSProperties | undefined {
+  if (theme === 'page') return undefined;
+  if (move === 'up') return MODAL_MOVE_UP;
+  if (move === 'down') return MODAL_MOVE_DOWN;
+  return MODAL_MOVE_SAME;
+}

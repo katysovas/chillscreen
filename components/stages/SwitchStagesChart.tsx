@@ -11,16 +11,16 @@ import { FeaturedStagesChart } from './FeaturedStagesChart';
 import { StageChartRow } from './StageChartRow';
 import {
   STAGE_CHART_BODY,
-  STAGE_CHART_INFO,
-  STAGE_CHART_JOIN,
+  STAGE_CHART_INFO_LAYOUT,
   STAGE_CHART_JOIN_DISABLED,
   STAGE_CHART_MODAL,
-  STAGE_CHART_NAME,
-  STAGE_CHART_SUBTITLE,
   STAGE_CHART_SWITCH_HEADER,
   STAGE_CHART_TABBAR,
-  STAGE_CHART_THUMB,
   STAGE_CHART_THUMB_IMG,
+  stageChartJoinStyle,
+  stageChartNameStyle,
+  stageChartSubtitleStyle,
+  stageChartThumbStyle,
   stageChartSwitchTabStyle,
 } from './stageChartRowStyles';
 import './FeaturedStagesChart.css';
@@ -154,11 +154,12 @@ export function SwitchStagesChart({
               <div key={id} role="listitem">
                 <StageChartRow
                   className={rowClass}
+                  theme="modal"
                   selected={selected}
                   current={current}
                   onClick={() => onSelect(target)}
                 >
-                  <div className="featured-stages-chart__thumb" style={STAGE_CHART_THUMB}>
+                  <div className="featured-stages-chart__thumb" style={stageChartThumbStyle('modal')}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={display.thumbnail}
@@ -168,17 +169,17 @@ export function SwitchStagesChart({
                       onError={e => { e.currentTarget.style.display = 'none'; }}
                     />
                   </div>
-                  <div className="featured-stages-chart__info" style={STAGE_CHART_INFO}>
-                    <p className="featured-stages-chart__name" style={STAGE_CHART_NAME}>{display.name}</p>
+                  <div className="featured-stages-chart__info" style={STAGE_CHART_INFO_LAYOUT}>
+                    <p className="featured-stages-chart__name" style={stageChartNameStyle('modal')}>{display.name}</p>
                     {display.subtitle ? (
-                      <p className="featured-stages-chart__subtitle" style={STAGE_CHART_SUBTITLE}>{display.subtitle}</p>
+                      <p className="featured-stages-chart__subtitle" style={stageChartSubtitleStyle('modal')}>{display.subtitle}</p>
                     ) : null}
                   </div>
                   <button
                     type="button"
                     className="featured-stages-chart__join"
                     style={{
-                      ...STAGE_CHART_JOIN,
+                      ...stageChartJoinStyle('modal'),
                       ...(current ? STAGE_CHART_JOIN_DISABLED : {}),
                     }}
                     disabled={current}

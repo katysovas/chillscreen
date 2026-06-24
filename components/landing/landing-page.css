@@ -154,8 +154,7 @@
   position: relative;
   min-height: 100svh;
   overflow: hidden;
-  background: #5a9c4e;
-  background: linear-gradient(180deg, #cce4cf 0%, #cce4cf 34%, #5a9c4e 40%, #5a9c4e 100%);
+  background: var(--lp-bg);
 }
 
 .landing-page .hero::after {
@@ -179,8 +178,7 @@
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
-  background: #5a9c4e;
-  background: linear-gradient(180deg, #cce4cf 0%, #cce4cf 34%, #5a9c4e 40%, #5a9c4e 100%);
+  background: var(--lp-bg);
 }
 
 .landing-page .hero-backdrop:not(.hero-backdrop--ready) .game-surface {
