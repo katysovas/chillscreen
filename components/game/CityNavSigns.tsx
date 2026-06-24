@@ -2,10 +2,12 @@
 
 import { forwardRef, memo, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLandingHero } from '@/components/landing/LandingHeroContext';
 import { GND_F } from '@/lib/parallax';
 import {
   cityOptionForRoute,
   cityWorldOffBounds,
+  landingHeroSignGroundX,
   nextCityRoute,
   prevCityRoute,
   staticCitySignGroundX,
@@ -15,9 +17,16 @@ import { PARALLAX_LAYER_BASE } from './city/shared/parallaxLayerStyle';
 import { venueSlugForRoute } from '@/lib/venueRoutes';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { Z_NAV_SIGNS } from '@/lib/zLayers';
+import {
+  isMobileStaticViewport,
+  LANDING_HERO_DESKTOP_PAR,
+  LANDING_HERO_MOBILE_PAR,
+  landingHeroDesktopViewBox,
+  landingHeroMobileViewBox,
+} from '@/lib/staticCityViewport';
 import { CITY_GRASS_DROP_Y } from '@/components/game/city/cinema/constants';
 import { FOREST_GRASS_DROP_Y } from '@/components/game/city/forest/constants';
-import { CHILL_GRASS_DROP_Y } from '@/components/game/city/chill/constants';
+import { CHILL_GRASS_DROP_Y, LANDING_HERO_GRASS_DROP_Y } from '@/components/game/city/chill/constants';
 import { SEATTLE_GRASS_DROP_Y } from '@/components/game/city/seattle/constants';
 import { SF_GRASS_DROP_Y } from '@/components/game/city/sf/constants';
 import { VEGAS_GRASS_DROP_Y } from '@/components/game/city/lasvegas/constants';
@@ -53,6 +62,10 @@ type EdgeSignProps = {
   onGo: () => void;
   /** Smaller board + post for static viewport stages. */
   compact?: boolean;
+  /** Hide wide ground shadow on landing (reads as a dark band on grass). */
+  hideGroundShadow?: boolean;
+  /** Hide accent pulse rings on landing (can read as a dark band above signs). */
+  hidePulse?: boolean;
 };
 
 const EDGE_SIGN_FULL = {
@@ -107,7 +120,16 @@ const EDGE_SIGN_MOTION_CSS = `
 `;
 
 /** Wooden signpost with one chevron wing — same art as the old junction signs. */
-function EdgeSign({ x, y, dir, route, onGo, compact = false }: EdgeSignProps) {
+function EdgeSign({
+  x,
+  y,
+  dir,
+  route,
+  onGo,
+  compact = false,
+  hideGroundShadow = false,
+  hidePulse = false,
+}: EdgeSignProps) {
   const { title } = cityOptionForRoute(route);
   const { icon, accent } = SIGN_STYLE[route];
   const label = `Enter ${title}`;
@@ -119,36 +141,39 @@ function EdgeSign({ x, y, dir, route, onGo, compact = false }: EdgeSignProps) {
 
   return (
     <g transform={`translate(${x},${y})`}>
-      <ellipse
-        cx={0}
-        cy={3}
-        rx={m.shadowRx}
-        ry={m.shadowRy}
-        fill="rgba(0,0,0,.22)"
-        pointerEvents="none"
-      />
+      {!hideGroundShadow && (
+        <ellipse
+          cx={0}
+          cy={3}
+          rx={m.shadowRx}
+          ry={m.shadowRy}
+          fill="rgba(0,0,0,.22)"
+          pointerEvents="none"
+        />
+      )}
 
-      {/* Accent pulse — CSS only (replaces per-circle SMIL r/opacity) */}
-      <g transform={`translate(0,${boardCy})`} pointerEvents="none">
-        <circle
-          className="edge-sign-pulse"
-          cx={0}
-          cy={0}
-          r={m.pulseR}
-          fill="none"
-          stroke={accent}
-          strokeWidth={3}
-        />
-        <circle
-          className="edge-sign-pulse edge-sign-pulse--delay"
-          cx={0}
-          cy={0}
-          r={m.pulseR}
-          fill="none"
-          stroke={accent}
-          strokeWidth={3}
-        />
-      </g>
+      {!hidePulse && (
+        <g transform={`translate(0,${boardCy})`} pointerEvents="none">
+          <circle
+            className="edge-sign-pulse"
+            cx={0}
+            cy={0}
+            r={m.pulseR}
+            fill="none"
+            stroke={accent}
+            strokeWidth={3}
+          />
+          <circle
+            className="edge-sign-pulse edge-sign-pulse--delay"
+            cx={0}
+            cy={0}
+            r={m.pulseR}
+            fill="none"
+            stroke={accent}
+            strokeWidth={3}
+          />
+        </g>
+      )}
 
       <g
         style={{ pointerEvents: 'auto', cursor: 'pointer' }}
@@ -194,6 +219,7 @@ type Props = {
 export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
   function CityNavSigns({ route, worldOff, active }, ref) {
     const router = useRouter();
+    const landingHero = useLandingHero();
     const [viewport, setViewport] = useState(() => ({
       w: typeof window !== 'undefined' ? window.innerWidth : VIEW_W,
       h: typeof window !== 'undefined' ? window.innerHeight : 900,
@@ -212,15 +238,18 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
     const prev = prevCityRoute(route);
     const next = nextCityRoute(route);
     const cameraOff = bounds.min;
-    const edgeSigns = staticCitySignGroundX(cameraOff, viewport.w, viewport.h);
+    const edgeSigns = landingHero
+      ? landingHeroSignGroundX(cameraOff, viewport.w, viewport.h)
+      : staticCitySignGroundX(cameraOff, viewport.w, viewport.h);
     const leftX = edgeSigns.leftX;
     const rightX = edgeSigns.rightX;
+    const chillGrassDrop = landingHero ? LANDING_HERO_GRASS_DROP_Y : CHILL_GRASS_DROP_Y;
     const grassDropY = route === 'silent-disco'
       ? SILENT_DISCO_GRASS_DROP_Y
       : route === 'forest'
         ? FOREST_GRASS_DROP_Y
         : route === 'tentaroo' || route === 'creator-chill' || route === 'hula' || route === 'headliner'
-          ? CHILL_GRASS_DROP_Y
+          ? chillGrassDrop
           : route === 'seattle-concerts'
             ? SEATTLE_GRASS_DROP_Y
             : route === 'outside-hands' || route === 'cinema'
@@ -236,15 +265,24 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
       router.push(`/${venueSlugForRoute(target)}`);
     };
 
+    const gndVx = worldOff * GND_F;
+    const mobileLanding = landingHero && isMobileStaticViewport(viewport.w);
+    const viewBox = landingHero
+      ? (mobileLanding ? landingHeroMobileViewBox(gndVx) : landingHeroDesktopViewBox(gndVx))
+      : `${gndVx} 0 1400 900`;
+    const preserveAspectRatio = landingHero
+      ? (mobileLanding ? LANDING_HERO_MOBILE_PAR : LANDING_HERO_DESKTOP_PAR)
+      : 'xMidYMid slice';
+
     return (
       <svg
         ref={ref}
         data-paraloid-svg
         data-paraloid-layer="ground"
-        viewBox={`${worldOff * GND_F} 0 1400 900`}
+        viewBox={viewBox}
         width="100%"
         height="100%"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio={preserveAspectRatio}
         style={{
           ...PARALLAX_LAYER_BASE,
           zIndex: Z_NAV_SIGNS,
@@ -256,8 +294,8 @@ export const CityNavSigns = memo(forwardRef<SVGSVGElement, Props>(
         <style>{EDGE_SIGN_MOTION_CSS}</style>
         {active && showNavSigns && (
           <>
-            <EdgeSign x={leftX} y={signY} dir="left" route={prev} onGo={() => goTo(prev)} compact />
-            <EdgeSign x={rightX} y={signY} dir="right" route={next} onGo={() => goTo(next)} compact />
+            <EdgeSign x={leftX} y={signY} dir="left" route={prev} onGo={() => goTo(prev)} compact hideGroundShadow={landingHero} hidePulse={landingHero} />
+            <EdgeSign x={rightX} y={signY} dir="right" route={next} onGo={() => goTo(next)} compact hideGroundShadow={landingHero} hidePulse={landingHero} />
           </>
         )}
       </svg>

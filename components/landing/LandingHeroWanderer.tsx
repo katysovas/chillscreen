@@ -19,6 +19,8 @@ export function LandingHeroWanderer({ wanderer }: Props) {
       paused={false}
       greeting={false}
       greetFacing="right"
+      landingHeroGrass
+      crowdSize={1}
     />
   );
 }

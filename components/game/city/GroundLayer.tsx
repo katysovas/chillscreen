@@ -11,15 +11,8 @@ import type { VenueRoute } from '@/lib/venueRoutes';
 import { isStaticCityTemplateRoute } from '@/lib/venueSlugs';
 import { VIEW_WIDTH } from '@/lib/venues';
 import {
-  isMobileStaticViewport,
-  LANDING_HERO_DESKTOP_PAR,
-  LANDING_HERO_MOBILE_PAR,
-  landingHeroDesktopViewBox,
-  landingHeroMobileViewBox,
-  MOBILE_STATIC_VB_WIDTH,
   MOBILE_VENUE_GROUND_PAR,
   staticMobileGroundViewBox,
-  staticMobileViewBoxX,
 } from '@/lib/staticCityViewport';
 import { CITY_GRASS_DROP_Y } from './cinema/constants';
 import { FOREST_GRASS_DROP_Y } from './forest/constants';
@@ -27,7 +20,7 @@ import { SEATTLE_GRASS_DROP_Y } from './seattle/constants';
 import { SF_GRASS_DROP_Y } from './sf/constants';
 import { VEGAS_GRASS_DROP_Y } from './lasvegas/constants';
 import { TENTAROO_GRASS_DROP_Y } from './tentaroo/constants';
-import { CHILL_GRASS_DROP_Y } from './chill/constants';
+import { CHILL_GRASS_DROP_Y, LANDING_GRASS_FILL } from './chill/constants';
 import { SILENT_DISCO_GRASS_DROP_Y } from './silent-disco/constants';
 import { GROUND_TREE_XS } from '@/lib/sleepingCats';
 import { skipGroundStreetLamp, skipGroundStreetProp, skipGroundStreetTree, type GroundStreetSkipContext } from '@/lib/stageTreeExclusion';
@@ -74,21 +67,28 @@ function grassRand(i: number, salt: number) {
 }
 
 /** City template experiment — lawn instead of road/sidewalk. */
-function GrassGround({
+export function GrassGround({
   w,
   tile,
   dropY,
   skipTopSeam = false,
+  overlapTop = 0,
+  topOverride,
 }: {
   w: number;
   tile: number;
   dropY: number;
   /** Mobile crop — omit the bright top seam that reads as a horizontal divider. */
   skipTopSeam?: boolean;
+  /** Pull grass plane upward (landing hero — bridge stage deck / Safari seams). */
+  overlapTop?: number;
+  /** Fixed grass horizon (landing hero shorter strip). */
+  topOverride?: number;
 }) {
-  const top = GRASS_TOP + dropY;
+  const top = topOverride ?? GRASS_TOP + dropY - overlapTop;
   const h = 900 - top;
   const gid = `city-grass-${tile}`;
+  const landingGrass = topOverride != null && skipTopSeam;
 
   const tuftSpacing = skipTopSeam ? 22 : 28;
   const tufts = Array.from({ length: Math.ceil(w / tuftSpacing) }, (_, i) => {
@@ -117,7 +117,7 @@ function GrassGround({
     <>
       <defs>
         <linearGradient id={`${gid}-fill`} gradientUnits="userSpaceOnUse" x1={0} y1={top} x2={0} y2={top + h}>
-          <stop offset="0%" stopColor="#6eb860" />
+          <stop offset="0%" stopColor={skipTopSeam ? '#5a9c4e' : '#6eb860'} />
           <stop offset="45%" stopColor="#5a9c4e" />
           <stop offset="100%" stopColor="#3f7238" />
         </linearGradient>
@@ -130,20 +130,25 @@ function GrassGround({
           <stop offset="100%" stopColor="#8ecf7e" stopOpacity={0} />
         </linearGradient>
       </defs>
-      <rect x={0} y={top} width={w + 1} height={h} fill={`url(#${gid}-fill)`} />
-      {Array.from({ length: Math.ceil(h / 52) }, (_, i) => (
+      {landingGrass && (
+        <rect x={0} y={top} width={w + 2} height={h + 1} fill={LANDING_GRASS_FILL} />
+      )}
+      <rect x={0} y={top} width={w + 2} height={h + 1} fill={`url(#${gid}-fill)`} />
+      {!landingGrass && Array.from({ length: Math.ceil(h / 52) }, (_, i) => (
         <rect
           key={`stripe-${i}`}
           x={0}
           y={top + i * 52}
-          width={w + 1}
+          width={w + 2}
           height={26}
           fill={i % 2 === 0 ? '#ffffff' : '#1a3018'}
           opacity={0.035}
         />
       ))}
-      <g opacity={0.9}>{tufts}</g>
-      <rect x={0} y={top} width={w + 1} height={h} fill={`url(#${gid}-depth)`} />
+      <g opacity={landingGrass ? 0.55 : 0.9}>{tufts}</g>
+      {!landingGrass && (
+        <rect x={0} y={top} width={w + 2} height={h + 1} fill={`url(#${gid}-depth)`} />
+      )}
       {!skipTopSeam && (
         <rect x={0} y={top} width={w + 1} height={24} fill={`url(#${gid}-seam)`} />
       )}
@@ -308,50 +313,6 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
     const skipCtx: GroundStreetSkipContext | undefined = deepLinkRoute
       ? { route: deepLinkRoute, cameraOff: worldOff }
       : undefined;
-
-    // Landing hero — one viewport-wide grass plane (tile origins do not match mid camera).
-    if (
-      landingHero
-      && deepLinkRoute
-      && isStaticCityTemplateRoute(deepLinkRoute)
-      && !bareGround
-    ) {
-      const tile = isolatedTileIndex ?? 0;
-      const mobileLanding = landingHero && isMobileStaticViewport();
-      const desktopLanding = landingHero && !isMobileStaticViewport();
-      const vbW = mobileLanding ? MOBILE_STATIC_VB_WIDTH : VIEW_WIDTH;
-      const vb = mobileLanding
-        ? landingHeroMobileViewBox(vx)
-        : desktopLanding
-          ? landingHeroDesktopViewBox(vx)
-          : `${vx} 0 ${VIEW_WIDTH} 900`;
-      const grassX = mobileLanding ? staticMobileViewBoxX(vx) : vx;
-      const par = mobileLanding
-        ? LANDING_HERO_MOBILE_PAR
-        : desktopLanding
-          ? LANDING_HERO_DESKTOP_PAR
-          : 'xMidYMid slice';
-      return (
-        <svg
-          ref={ref}
-          data-paraloid-svg
-          viewBox={vb}
-          width="100%"
-          height="100%"
-          preserveAspectRatio={par}
-          shapeRendering="optimizeSpeed"
-          style={{
-            ...PARALLAX_LAYER_BASE,
-            zIndex: 5,
-            pointerEvents: 'none',
-          }}
-        >
-          <g transform={`translate(${grassX}, 0)`}>
-            <GrassGround w={vbW} tile={tile} dropY={grassDropYForRoute(deepLinkRoute)} />
-          </g>
-        </svg>
-      );
-    }
 
     const nearTiles = isolatedTileIndex != null
       ? nearIsolatedGndTiles(isolatedTileIndex, deepLinkRoute)

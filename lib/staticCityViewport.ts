@@ -14,7 +14,7 @@ import { TENTAROO_GRASS_DROP_Y } from '@/components/game/city/tentaroo/constants
 import { CHILL_GRASS_DROP_Y } from '@/components/game/city/chill/constants';
 import { SILENT_DISCO_GRASS_DROP_Y } from '@/components/game/city/silent-disco/constants';
 import type { VenueRoute } from '@/lib/venueRoutes';
-import { VIEW_WIDTH } from '@/lib/venues';
+import { VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
 
 const LANDING_HERO_SCR_H = 192;
 const LANDING_HERO_SCREEN_INSET = 10;
@@ -69,12 +69,23 @@ export function landingHeroDesktopViewBox(layerVx: number): string {
   return `${layerVx} ${LANDING_HERO_VB_Y} ${VIEW_WIDTH} ${LANDING_HERO_VB_H}`;
 }
 
+/** Visible slice for landing hero — matches `xMidYMin slice` + cropped viewBox. */
+export function landingHeroVisibleViewBoxSlice(
+  viewportWidth: number,
+  viewportHeight: number,
+): { vbLeft: number; vbWidth: number; scale: number } {
+  const scale = Math.max(viewportWidth / VIEW_WIDTH, viewportHeight / LANDING_HERO_VB_H);
+  const vbWidth = viewportWidth / scale;
+  const vbLeft = VIEW_CENTER_X - vbWidth / 2;
+  return { vbLeft, vbWidth, scale };
+}
+
 export function landingHeroMobileViewBox(layerVx: number): string {
   return `${staticMobileViewBoxX(layerVx)} ${LANDING_HERO_VB_Y} ${MOBILE_STATIC_VB_WIDTH} ${LANDING_HERO_VB_H}`;
 }
 
-/** Landing hero mobile — pin stage rig to top of viewport (below nav). */
-export const LANDING_HERO_MOBILE_PAR = 'xMidYMin meet' as const;
+/** Landing hero mobile — fill width; slice pins rig to top (meet left a Safari gap above grass). */
+export const LANDING_HERO_MOBILE_PAR = 'xMidYMin slice' as const;
 /** Landing hero desktop — pin truss/lights just under nav header. */
 export const LANDING_HERO_DESKTOP_PAR = 'xMidYMin slice' as const;
 export const DESKTOP_STATIC_PAR = 'xMidYMid slice' as const;

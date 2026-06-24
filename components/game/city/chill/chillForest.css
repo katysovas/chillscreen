@@ -6,6 +6,17 @@
   pointer-events: none;
 }
 
+.chill-forest--landing {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.chill-forest--landing .chill-forest__layer {
+  max-height: none;
+  height: 100%;
+}
+
 .chill-forest__layer {
   position: absolute;
   bottom: -100%;

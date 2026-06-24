@@ -22,6 +22,8 @@ export type CrowdDepthOptions = {
   crowdTotal?: number;
   /** Deep Space — float band below the orbit stage instead of grass lawn. */
   orbitFloat?: boolean;
+  /** Landing hero — shallow grass strip instead of full-viewport mobile lawn. */
+  landingHeroGrass?: boolean;
 };
 
 /**
@@ -75,6 +77,13 @@ export function crowdDepthForSeed(
   seed: number | string,
   options: CrowdDepthOptions = {},
 ): { depthY: number; depthZ: number } {
+  if (options.landingHeroGrass) {
+    if (typeof window !== 'undefined' && window.innerWidth <= 767) {
+      return { depthY: 0, depthZ: MOBILE_CROWD_Z_MAX };
+    }
+    const depthY = crowdDepthOffsetPx(seed);
+    return { depthY, depthZ: crowdDepthZIndex(depthY) };
+  }
   if (typeof window !== 'undefined' && window.innerWidth <= 767) {
     const bandPx = options.orbitFloat
       ? mobileOrbitBandHeightPx()

@@ -50,18 +50,18 @@
   align-items: center;
   justify-content: space-between;
   padding: 22px 36px;
-  background: rgba(8, 7, 6, 0.38);
+  background: rgba(8, 7, 6, 0.88);
   border-bottom: 1px solid rgba(240, 237, 230, 0.06);
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   transition: background 0.4s, border-color 0.4s, backdrop-filter 0.4s;
 }
 
 .landing-page .nav.scrolled {
-  background: rgba(8, 7, 6, 0.78);
+  background: rgba(8, 7, 6, 0.95);
   border-bottom-color: rgba(240, 237, 230, 0.08);
-  backdrop-filter: blur(20px) saturate(1.1);
-  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .landing-page .nav-logo img {
@@ -148,13 +148,14 @@
   --landing-hero-screen-height: 0.489;
   --landing-hero-vb-h: 845;
   --landing-hero-screen-w: calc(
-    340 * max(100vw / 1400, (100vh - var(--landing-nav-height)) / var(--landing-hero-vb-h))
+    340 * max(100svw / 1400, (100svh - var(--landing-nav-height)) / var(--landing-hero-vb-h))
   );
-  --landing-hero-mobile-stage-h: calc(100vw * var(--landing-hero-vb-h) / 900);
+  --landing-hero-mobile-stage-h: calc(100svw * var(--landing-hero-vb-h) / 900);
   position: relative;
-  min-height: 100vh;
+  min-height: 100svh;
   overflow: hidden;
-  background: #1e332e;
+  background: #5a9c4e;
+  background: linear-gradient(180deg, #cce4cf 0%, #cce4cf 34%, #5a9c4e 40%, #5a9c4e 100%);
 }
 
 .landing-page .hero::after {
@@ -178,7 +179,8 @@
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
-  background: linear-gradient(180deg, #4a6b62 0%, #2a4540 42%, #1e332e 100%);
+  background: #5a9c4e;
+  background: linear-gradient(180deg, #cce4cf 0%, #cce4cf 34%, #5a9c4e 40%, #5a9c4e 100%);
 }
 
 .landing-page .hero-backdrop:not(.hero-backdrop--ready) .game-surface {
@@ -201,9 +203,20 @@
   overscroll-behavior: auto;
 }
 
-@media (min-width: 768px) {
-  .landing-page .hero-backdrop .game-character-crowd {
-    bottom: 6% !important;
+.landing-page .hero-backdrop .game-scene-layers {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  .landing-page .hero-backdrop svg[data-paraloid-layer='ground'] {
+    display: none !important;
+  }
+
+  .landing-page .hero-backdrop .game-character {
+    bottom: 4% !important;
+    z-index: 5;
   }
 }
 
@@ -402,7 +415,7 @@
 @media (max-width: 767px) {
   .landing-page .hero {
     --landing-nav-height: 66px;
-    --landing-hero-screen-w: calc(100vw * 480 / 900);
+    --landing-hero-screen-w: calc(100svw * 480 / 900);
   }
 
   .landing-page .hero {
@@ -413,12 +426,15 @@
   }
 
   .landing-page .hero-backdrop {
-    height: var(--landing-hero-mobile-stage-h);
+    width: 100%;
+    height: auto;
+    aspect-ratio: 900 / var(--landing-hero-vb-h);
     bottom: auto;
   }
 
   .landing-page .hero-backdrop .game-surface {
-    height: var(--landing-hero-mobile-stage-h) !important;
+    height: 100% !important;
+    max-height: none !important;
   }
 
   .landing-page .hero::after {

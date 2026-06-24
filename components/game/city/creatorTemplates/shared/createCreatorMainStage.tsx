@@ -110,8 +110,6 @@ ${beamKeyframes}
 @keyframes ${P}-beamFade{0%,100%{opacity:.12}50%{opacity:.34}}
 @keyframes ${P}-haze{0%,100%{opacity:.65}50%{opacity:1}}
 @keyframes ${P}-lens{0%,100%{opacity:1}50%{opacity:.45}}
-@keyframes ${P}-twinkle{0%,100%{opacity:0}50%{opacity:1}}
-@keyframes ${P}-dash{0%,100%{opacity:.5}50%{opacity:.95}}
 @keyframes ${P}-border{0%,100%{opacity:.55}50%{opacity:.85}}
 @keyframes ${P}-screenPulse{0%,100%{transform:scale(.9);opacity:.7}50%{transform:scale(1.06);opacity:1}}
 @keyframes ${P}-spkTopPulse{0%,100%{opacity:.26}50%{opacity:.96}}
@@ -388,43 +386,6 @@ ${beamKeyframes}
               </>
             )}
 
-            <rect x={cx - rigW / 2 + 20} y={deck - 8} width={rigW - 40} height={8} rx={2} fill="#0c1c15" stroke="rgba(56,245,176,.25)" strokeWidth={1} />
-            <line
-              x1={cx - rigW / 2 + 24}
-              y1={deck - 4}
-              x2={cx + rigW / 2 - 24}
-              y2={deck - 4}
-              stroke={C.WHICH_NEON.green}
-              strokeWidth={2}
-              strokeDasharray="4 22"
-              style={{ animation: `${P}-dash 3s ease-in-out infinite` }}
-            />
-
-            <path
-              d={`M${cx - rigW / 2 - 40},${deck + 18}
-                ${Array.from({ length: 32 }, (_, i) => {
-                  const px = cx - rigW / 2 - 40 + i * 18;
-                  const py = deck + 8 + (i % 4) * 4;
-                  return `L${px},${py}`;
-                }).join(' ')}
-                L${cx + rigW / 2 + 40},${deck + 28} L${cx - rigW / 2 - 40},${deck + 36} Z`}
-              fill="#010604"
-            />
-            {/* Footlight twinkle: opacity-only CSS, staggered so they don't blink
-                in lockstep. */}
-            {Array.from({ length: 14 }, (_, i) => (
-              <circle
-                key={i}
-                cx={cx - rigW / 2 + 30 + i * 34}
-                cy={deck + 10 + (i % 3) * 5}
-                r={2.2}
-                fill="#bdfff0"
-                style={{
-                  animation: `${P}-twinkle ${(2.3 + (i % 5) * 0.3).toFixed(2)}s ease-in-out infinite`,
-                  animationDelay: `${((i % 5) * 0.4).toFixed(2)}s`,
-                }}
-              />
-            ))}
           </g>
         </g>
       </>

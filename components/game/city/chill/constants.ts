@@ -1,8 +1,8 @@
-import { CHILL_FOREST_BG } from '@/lib/creatorVenueBackdrop';
+import { CHILL_FOREST_BG, LANDING_GRASS_FILL, LANDING_HERO_SKY } from '@/lib/creatorVenueBackdrop';
 import { minStageScale } from '@/lib/stageViewport';
 import { STAGE_TOILET } from '@/lib/stageToilets';
 
-export { CHILL_FOREST_BG };
+export { CHILL_FOREST_BG, LANDING_GRASS_FILL, LANDING_HERO_SKY };
 
 /** Mid-layer scene art — customize per template folder. */
 export const CREATOR_SCENE_HREF = '/images/cities/creator-chill-scene.svg?v=1';
@@ -24,6 +24,13 @@ export const CHILL_STAGE_TITLE_COLOR = '#2e3d45';
 
 /** Grass + sidewalk props sit this many px lower than default GND_Y. */
 export const CHILL_GRASS_DROP_Y = 52;
+
+/** Landing hero — shorter grass strip (default chill top is 729). */
+export const LANDING_HERO_GRASS_TOP = 772;
+/** Extend grass paint upward over forest bottom (foreground layer, above forest). */
+export const LANDING_HERO_GRASS_BLEED = 80;
+export const LANDING_HERO_GRASS_PAINT_TOP = LANDING_HERO_GRASS_TOP - LANDING_HERO_GRASS_BLEED;
+export const LANDING_HERO_GRASS_DROP_Y = LANDING_HERO_GRASS_TOP - (685 - 8);
 
 /** Ground line on creator Chill tiles (farm-derived layout). */
 export const TENTAROO_GND = 660;

@@ -60,6 +60,8 @@ html:has(.game-surface):not(:has(.landing-page)) body {
   -webkit-user-select: none;
   user-select: none;
   overscroll-behavior: none;
+  width: 100%;
+  max-width: 100%;
 }
 
 .game-surface input,
@@ -90,7 +92,7 @@ html:has(.game-surface):not(:has(.landing-page)) body {
   right: 0;
   top: var(--mobile-lawn-fill-top, calc(
     var(--mobile-scene-top, calc(max(env(safe-area-inset-top, 0px), 8px) + 72px))
-    + var(--mobile-stage-strip-height, calc((685 / 900) * 100vw))
+    + var(--mobile-stage-strip-height, calc((685 / 900) * 100%))
   ));
   bottom: 0;
   z-index: 4;
@@ -124,6 +126,12 @@ html:has(.game-surface):not(:has(.landing-page)) body {
     max-height: 100dvh;
   }
 
+  /* Landing hero — fixed aspect backdrop; not full-viewport game shell. */
+  .landing-page .hero-backdrop .game-surface {
+    height: 100% !important;
+    max-height: none !important;
+  }
+
   .mobile-controls-tray,
   .festie-life-corner-mobile {
     top: calc(max(env(safe-area-inset-top, 0px), 8px) + 8px) !important;
@@ -147,7 +155,7 @@ html:has(.game-surface):not(:has(.landing-page)) body {
     width: 100%;
     top: calc(
       var(--mobile-scene-top, calc(max(env(safe-area-inset-top, 0px), 8px) + 72px))
-      + var(--mobile-stage-strip-height, calc((685 / 900) * 100vw))
+      + var(--mobile-stage-strip-height, calc((685 / 900) * 100%))
     );
     pointer-events: auto;
     touch-action: manipulation;
@@ -165,7 +173,7 @@ html:has(.game-surface):not(:has(.landing-page)) body {
     left: 0 !important;
     right: 0 !important;
     bottom: auto !important;
-    height: var(--mobile-stage-strip-height, calc((685 / 900) * 100vw)) !important;
+    height: var(--mobile-stage-strip-height, calc((685 / 900) * 100%)) !important;
   }
 
   /* Deep Space — stars bleed through the full lower viewport (no black gap). */
@@ -181,7 +189,7 @@ html:has(.game-surface):not(:has(.landing-page)) body {
     background: #5a9c4e;
     top: var(--mobile-grass-top, calc(
       var(--mobile-scene-top, calc(max(env(safe-area-inset-top, 0px), 8px) + 72px))
-      + var(--mobile-stage-strip-height, calc((685 / 900) * 100vw))
+      + var(--mobile-stage-strip-height, calc((685 / 900) * 100%))
       + var(--mobile-ground-gap, 100px)
     )) !important;
     left: 0 !important;

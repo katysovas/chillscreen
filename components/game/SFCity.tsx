@@ -16,6 +16,7 @@ import {
   staticMobileStageViewBox,
   staticMobileViewBox,
 } from '@/lib/staticCityViewport';
+import { CHILL_FOREST_BG } from '@/lib/creatorVenueBackdrop';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Character from './Character';
 import { worldXToScreenPct } from './NPC';
@@ -257,11 +258,6 @@ const TEST_PLAYER_LOADOUT = {} as const;
 /** Auto-connect player + first NPC on load to preview chat connect glow (testing). */
 const TEST_CHAT_CONNECT_ON_LOAD = false;
 
-/** Creator venue sky fills — keep in sync with lib/creatorVenueBackdrop.ts */
-const CHILL_FOREST_BG = '#D1EBD4';
-
-// ─── NPC cast ─────────────────────────────────────────────────────────────────
-
 // Characters are defined in characters.ts (names, personalities, AI chat).
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -448,22 +444,24 @@ export default function SFCity({
     const mobileVenue = isMobileStaticViewport() && !landingHero;
     const splitGrassLayout =
       mobileVenue && effectiveVenueRoute !== 'deep-space';
+    /** All in-game mobile venues — including Deep Space (no grass split). */
+    const mobileStageViewport = mobileVenue;
     const vb = (x: number) => `${x} 0 1400 900`;
     const staticPar = mobileLanding
       ? LANDING_HERO_MOBILE_PAR
-      : splitGrassLayout
+      : mobileStageViewport
         ? MOBILE_VENUE_PAR
         : desktopLanding
           ? LANDING_HERO_DESKTOP_PAR
           : DESKTOP_STATIC_PAR;
     const staticVb = (layerVx: number) => mobileLanding
       ? landingHeroMobileViewBox(layerVx)
-      : splitGrassLayout
+      : mobileStageViewport
         ? staticMobileViewBox(layerVx)
         : desktopLanding
           ? landingHeroDesktopViewBox(layerVx)
           : vb(layerVx);
-    const stageVb = (layerVx: number) => splitGrassLayout
+    const stageVb = (layerVx: number) => mobileStageViewport
       ? staticMobileStageViewBox(layerVx)
       : staticVb(layerVx);
     const groundVb = (layerVx: number) => splitGrassLayout
@@ -1722,12 +1720,9 @@ export default function SFCity({
 
     let cancelled = false;
     const dressCodeExtras = effectiveVenueRoute === 'silent-disco' ? ['hat-headphones'] : [];
-    const showLandingWanderer = landingHero && landingHeroWanderer;
-    const loadouts = showLandingWanderer
-      ? [landingHeroWanderer.loadout]
-      : landingHero
-        ? []
-        : [playerLoadout, ...effectiveNpcCast.map(c => c.loadout)];
+    const loadouts = landingHero
+      ? (landingHeroWanderer?.loadout ? [landingHeroWanderer.loadout] : [])
+      : [playerLoadout, ...effectiveNpcCast.map(c => c.loadout)];
 
     if (loadouts.length === 0) {
       setCrowdVisualsReady(true);
@@ -2900,7 +2895,7 @@ export default function SFCity({
       data-headliner-sky={isHeadliner && !landingHero && !homePreview ? '' : undefined}
       data-deep-space={mobileDevice && !landingHero && !homePreview && isDeepSpace ? '' : undefined}
       style={{
-        width: landingHero ? '100%' : '100vw',
+        width: '100%',
         height: landingHero ? '100%' : '100vh',
         overflow: 'hidden',
         position: 'relative',
@@ -2912,14 +2907,14 @@ export default function SFCity({
           ? {
               ['--mobile-scene-top' as string]: 'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)',
               ['--mobile-ground-gap' as string]: splitGrassLayout ? '100px' : '0px',
-              ['--mobile-stage-strip-height' as string]: 'calc((685 / 900) * 100vw)',
+              ['--mobile-stage-strip-height' as string]: 'calc((685 / 900) * 100%)',
               ['--mobile-lawn-fill-top' as string]:
                 'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height))',
               ['--mobile-grass-top' as string]: splitGrassLayout
                 ? 'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height) + var(--mobile-ground-gap))'
                 : 'calc(var(--mobile-scene-top) + var(--mobile-stage-strip-height))',
               ['--mobile-char-bottom' as string]: splitGrassLayout
-                ? 'calc(100dvh - var(--mobile-grass-top) - (8 / 900) * 100vw)'
+                ? 'calc(100dvh - var(--mobile-grass-top) - (8 / 900) * 100%)'
                 : 'calc(100dvh - var(--mobile-scene-top) - var(--mobile-stage-strip-height) - 12%)',
             }
           : {}),
@@ -2936,7 +2931,7 @@ export default function SFCity({
               inset: 0,
               zIndex: 1,
               pointerEvents: 'none',
-              background: CHILL_FOREST_BG,
+              background: landingHero ? 'transparent' : CHILL_FOREST_BG,
             }}
           />
         ) : isCreatorCinema ? (
@@ -3042,7 +3037,7 @@ export default function SFCity({
         {splitGrassLayout && !isDeepSpace && !isHeadliner && (
           <div aria-hidden className="mobile-venue-grass-fill" />
         )}
-        {!(mobileDevice && isDeepSpace) && !isHeadliner && (
+        {!(mobileDevice && isDeepSpace) && !isHeadliner && !landingHero && (
         <GroundLayer
           ref={groundRef}
           worldOff={gndScrollWorldOff}
@@ -3055,7 +3050,7 @@ export default function SFCity({
           mobileLawn={splitGrassLayout}
         />
         )}
-        {!isDeepSpace && effectiveVenueRoute !== 'tentaroo' && (
+        {!isDeepSpace && effectiveVenueRoute !== 'tentaroo' && !landingHero && (
           <CabanaForegroundLayer
             ref={cabanaRef}
             worldOff={gndScrollWorldOff}
@@ -3070,12 +3065,12 @@ export default function SFCity({
           />
         )}
 
-        {!homePreview && !mobileDevice && (
+        {(landingHero ? !mobileDevice : !homePreview && !mobileDevice) && (
           <CityNavSigns
             ref={navSignsRef}
             route={effectiveVenueRoute}
             worldOff={gndScrollWorldOff}
-            active={!showWelcome && !showCityPicker}
+            active={landingHero ? crowdVisualsReady : (!showWelcome && !showCityPicker)}
           />
         )}
 

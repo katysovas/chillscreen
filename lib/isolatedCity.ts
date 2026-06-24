@@ -9,6 +9,7 @@ import { isCreatorTemplateRoute, venueSlugForRoute } from '@/lib/venueSlugs';
 import { worldOffForVenueRoute } from '@/lib/venueRoutes';
 import { VIEW_CENTER_X, VIEW_WIDTH } from '@/lib/venues';
 import { nearGndTiles } from '@/lib/worldTileGeometry';
+import { landingHeroVisibleViewBoxSlice } from '@/lib/staticCityViewport';
 
 /**
  * Distance from the viewport edge at which nav signs are planted (shared with
@@ -96,6 +97,22 @@ export function staticCitySignGroundX(
   viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900,
 ): { leftX: number; rightX: number } {
   const { vbLeft, vbWidth, scale } = visibleGroundViewBoxSlice(viewportWidth, viewportHeight);
+  const walkInsetVb = (STATIC_SIGN_EDGE_INSET_PCT / 100) * vbWidth
+    + STATIC_SIGN_EDGE_PADDING_PX / scale;
+  const insetVb = walkInsetVb + STATIC_SIGN_WING_VB;
+  return {
+    leftX: cameraOff + vbLeft + insetVb,
+    rightX: cameraOff + vbLeft + vbWidth - insetVb,
+  };
+}
+
+/** Nav sign x for landing hero — matches cropped `xMidYMin` viewBox slice. */
+export function landingHeroSignGroundX(
+  cameraOff: number,
+  viewportWidth = typeof window !== 'undefined' ? window.innerWidth : VIEW_WIDTH,
+  viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900,
+): { leftX: number; rightX: number } {
+  const { vbLeft, vbWidth, scale } = landingHeroVisibleViewBoxSlice(viewportWidth, viewportHeight);
   const walkInsetVb = (STATIC_SIGN_EDGE_INSET_PCT / 100) * vbWidth
     + STATIC_SIGN_EDGE_PADDING_PX / scale;
   const insetVb = walkInsetVb + STATIC_SIGN_WING_VB;

@@ -115,6 +115,8 @@ type NPCProps = NPCConfig & {
   ownerAvatarSuppressed?: boolean;
   /** Total on-screen crowd — even mobile depth distribution. */
   crowdSize?: number;
+  /** Landing hero grass — shallow mobile lawn (no full-viewport depth push). */
+  landingHeroGrass?: boolean;
   /** Increment to force a jump burst (autopilot festie). */
   jumpBurstKey?: number;
   /** Face-to-face pair chat — bubble on outer side so bubbles don't overlap. */
@@ -168,6 +170,7 @@ function NPC({
   spawnWorldX,
   ownerAvatarSuppressed = false,
   crowdSize,
+  landingHeroGrass = false,
   jumpBurstKey = 0,
   pairChatBubbleSide,
   pairChatSpreadPx = 0,
@@ -177,8 +180,9 @@ function NPC({
       crowdIndex: index,
       crowdTotal: crowdSize,
       orbitFloat: spaceFloat,
+      landingHeroGrass,
     }),
-    [characterId, index, crowdSize, spaceFloat],
+    [characterId, index, crowdSize, spaceFloat, landingHeroGrass],
   );
 
   // ── React state: only for infrequent visual changes ─────────────────────────
@@ -971,6 +975,7 @@ function areNpcPropsEqual(prev: NPCProps, next: NPCProps): boolean {
     && prev.spawnWorldX === next.spawnWorldX
     && prev.ownerAvatarSuppressed === next.ownerAvatarSuppressed
     && prev.crowdSize === next.crowdSize
+    && prev.landingHeroGrass === next.landingHeroGrass
     && prev.jumpBurstKey === next.jumpBurstKey
     && prev.pairChatBubbleSide === next.pairChatBubbleSide
     && prev.pairChatSpreadPx === next.pairChatSpreadPx

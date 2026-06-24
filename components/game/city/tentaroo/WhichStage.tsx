@@ -220,42 +220,6 @@ function WhichStageShell({ marquee = 'WHICH STAGE', idleScreen = true, layout }:
             </>
           )}
 
-          <rect x={cx - rigW / 2 + 20} y={deck - 8} width={rigW - 40} height={8} rx={2} fill="#0c1c15" stroke="rgba(56,245,176,.25)" strokeWidth={1} />
-          <line
-            x1={cx - rigW / 2 + 24}
-            y1={deck - 4}
-            x2={cx + rigW / 2 - 24}
-            y2={deck - 4}
-            stroke={WHICH_NEON.green}
-            strokeWidth={2}
-            strokeDasharray="4 22"
-            opacity={0.75}
-          >
-            <animate attributeName="opacity" values="0.5;0.95;0.5" dur="3s" repeatCount="indefinite" />
-          </line>
-
-          <path
-            d={`M${cx - rigW / 2 - 40},${deck + 18}
-              ${Array.from({ length: 32 }, (_, i) => {
-                const px = cx - rigW / 2 - 40 + i * 18;
-                const py = deck + 8 + (i % 4) * 4;
-                return `L${px},${py}`;
-              }).join(' ')}
-              L${cx + rigW / 2 + 40},${deck + 28} L${cx - rigW / 2 - 40},${deck + 36} Z`}
-            fill="#010604"
-          />
-          {Array.from({ length: 14 }, (_, i) => (
-            <circle
-              key={i}
-              cx={cx - rigW / 2 + 30 + i * 34}
-              cy={deck + 10 + (i % 3) * 5}
-              r={2.2}
-              fill="#bdfff0"
-              opacity={0.8}
-            >
-              <animate attributeName="opacity" values="0;1;0" dur={`${2.3 + (i % 5) * 0.3}s`} repeatCount="indefinite" />
-            </circle>
-          ))}
 
           <rect x={cx - 168} y={deck + 20} width={336} height={22} rx={3} fill="#081a12" stroke="rgba(56,245,176,.25)" strokeWidth={1} />
           <text

@@ -419,47 +419,6 @@ function SilentDiscoStageShell({ marquee = 'SILENT DISCO', idleScreen = true, la
             ))}
           </g>
 
-          <rect x={cx - rigW / 2 + 20} y={deck - 8} width={rigW - 40} height={8} rx={2} fill="#0b1120" stroke="rgba(54,227,255,.25)" strokeWidth={1} />
-          <line
-            x1={cx - rigW / 2 + 24}
-            y1={deck - 4}
-            x2={cx + rigW / 2 - 24}
-            y2={deck - 4}
-            stroke={SD_NEON.magenta}
-            strokeWidth={2}
-            strokeDasharray="4 22"
-            opacity={0.75}
-          >
-            <animate attributeName="opacity" values="0.5;0.95;0.5" dur="2s" repeatCount="indefinite" />
-          </line>
-
-          {/* crowd silhouette */}
-          <path
-            d={`M${cx - rigW / 2 - 40},${deck + 18}
-              ${Array.from({ length: 32 }, (_, i) => {
-                const px = cx - rigW / 2 - 40 + i * 18;
-                const py = deck + 8 + (i % 4) * 4;
-                return `L${px},${py}`;
-              }).join(' ')}
-              L${cx + rigW / 2 + 40},${deck + 28} L${cx - rigW / 2 - 40},${deck + 36} Z`}
-            fill="#01030a"
-          />
-          {/* glowing headphone dots on every head — the whole crowd is wearing them */}
-          {Array.from({ length: 14 }, (_, i) => {
-            const hx = cx - rigW / 2 + 30 + i * 34;
-            const hy = deck + 10 + (i % 3) * 5;
-            const col = [SD_NEON.cyan, SD_NEON.magenta, SD_NEON.laser, SD_NEON.amber, SD_NEON.blue][i % 5]!;
-            return (
-              <g key={i}>
-                <circle cx={hx - 4} cy={hy} r={2.2} fill={col} opacity={0.9}>
-                  <animate attributeName="opacity" values="0.3;1;0.3" dur={`${1.6 + (i % 5) * 0.3}s`} repeatCount="indefinite" />
-                </circle>
-                <circle cx={hx + 4} cy={hy} r={2.2} fill={col} opacity={0.9}>
-                  <animate attributeName="opacity" values="0.3;1;0.3" dur={`${1.6 + (i % 5) * 0.3}s`} repeatCount="indefinite" />
-                </circle>
-              </g>
-            );
-          })}
 
           {/* glowsticks waving above the crowd */}
           {GLOWSTICKS.map((g, i) => (
