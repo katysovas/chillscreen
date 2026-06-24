@@ -14,10 +14,10 @@ import {
   validatePersonalityNotes,
 } from '@/lib/festie/validation';
 import { getPlayerSession } from '@/lib/player/session';
-import { getPlayerName } from '@/lib/playerStorage';
+import { DISCORD_URL } from '@/lib/site';
 import { HelpFaqContent } from './HelpFaqContent';
 
-export type FestieSettingsTab = 'customize' | 'stage' | 'access' | 'help' | 'contact';
+export type FestieSettingsTab = 'customize' | 'stage' | 'access' | 'help';
 
 function TabIconCustomize({ size = 16 }: { size?: number }) {
   return (
@@ -61,21 +61,12 @@ function TabIconAccess({ size = 16 }: { size?: number }) {
   );
 }
 
-function TabIconContact({ size = 16 }: { size?: number }) {
+function TabIconDiscord({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ display: 'block' }}>
+    <svg width={size} height={size * (96 / 127)} viewBox="0 0 127 96" aria-hidden style={{ display: 'block' }}>
       <path
-        d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-9Z"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-      <path
-        d="m4 7 8 6 8-6"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        fill="currentColor"
+        d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.41,75.41,0,0,0,75.37,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"
       />
     </svg>
   );
@@ -114,7 +105,6 @@ const TAB_ICONS: Record<FestieSettingsTab, typeof TabIconCustomize> = {
   stage: TabIconStage,
   access: TabIconAccess,
   help: TabIconHelp,
-  contact: TabIconContact,
 };
 
 type Props = {
@@ -156,7 +146,6 @@ const BASE_TABS: { id: FestieSettingsTab; label: string }[] = [
   { id: 'stage', label: 'Stage' },
   { id: 'access', label: 'Access' },
   { id: 'help', label: 'Help' },
-  { id: 'contact', label: 'Contact' },
 ];
 
 function visibleSettingsTabs(ownedStage: UserStagePublic | null | undefined) {
@@ -197,7 +186,7 @@ const BTN: React.CSSProperties = {
   fontFamily: 'system-ui,sans-serif',
 };
 
-/** Festie settings — tabbed: customize, access, help, contact. */
+/** Festie settings — tabbed: customize, access, help, plus Discord link. */
 export function FestieSettingsModal({
   onClose,
   onUpdated,
@@ -227,10 +216,6 @@ export function FestieSettingsModal({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactNotes, setContactNotes] = useState('');
-  const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const [contactError, setContactError] = useState('');
   useEffect(() => {
     const next = initialTab === 'stage' && !ownedStage
       ? 'customize'
@@ -310,33 +295,6 @@ export function FestieSettingsModal({
       setPasswordError(err instanceof Error ? err.message : 'Could not update password');
     } finally {
       setSavingPassword(false);
-    }
-  };
-
-  const handleContactSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setContactStatus('sending');
-    setContactError('');
-    try {
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: festie?.name ?? getPlayerName() ?? 'Festie',
-          email: contactEmail,
-          notes: contactNotes,
-        }),
-      });
-      const data = await res.json() as { ok?: boolean; error?: string };
-      if (!res.ok || !data.ok) {
-        setContactError(data.error ?? 'Something went wrong.');
-        setContactStatus('error');
-      } else {
-        setContactStatus('sent');
-      }
-    } catch {
-      setContactError('Network error. Please try again.');
-      setContactStatus('error');
     }
   };
 
@@ -433,7 +391,7 @@ export function FestieSettingsModal({
           aria-label="Settings sections"
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${tabs.length + 1}, minmax(0, 1fr))`,
             gap: 3,
             margin: '0 16px 12px',
             padding: 3,
@@ -478,6 +436,35 @@ export function FestieSettingsModal({
               </button>
             );
           })}
+          <a
+            href={DISCORD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Join us on Discord"
+            title="Discord"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+              padding: '8px 2px',
+              minWidth: 0,
+              borderRadius: 9,
+              border: 'none',
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: 0.15,
+              fontFamily: 'system-ui,sans-serif',
+              background: 'transparent',
+              color: 'rgba(255,255,255,0.5)',
+              cursor: 'pointer',
+              textDecoration: 'none',
+            }}
+          >
+            <TabIconDiscord size={15} />
+            <span style={{ lineHeight: 1.1, textAlign: 'center' }}>Discord</span>
+          </a>
         </div>
 
         <div style={{
@@ -613,77 +600,6 @@ export function FestieSettingsModal({
           {tab === 'help' && (
             <>
               <HelpFaqContent />
-            </>
-          )}
-
-          {tab === 'contact' && (
-            <>
-              <p style={{
-                margin: '0 0 16px',
-                fontSize: 14,
-                color: 'rgba(255,255,255,0.5)',
-                fontFamily: 'system-ui,sans-serif',
-                lineHeight: 1.5,
-              }}>
-                We'd love to hear from you.
-              </p>
-              {contactStatus === 'sent' ? (
-                <div style={{
-                  color: 'rgba(255,255,255,0.6)',
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                  fontFamily: 'system-ui,sans-serif',
-                  textAlign: 'center',
-                  padding: '20px 0',
-                }}>
-                  Message sent! We'll be in touch.
-                </div>
-              ) : (
-                <form onSubmit={e => void handleContactSubmit(e)} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div>
-                    <span style={LABEL}>Email</span>
-                    <input
-                      type="email"
-                      value={contactEmail}
-                      onChange={e => setContactEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      required
-                      style={INPUT}
-                    />
-                  </div>
-                  <div>
-                    <span style={LABEL}>Notes</span>
-                    <textarea
-                      value={contactNotes}
-                      onChange={e => setContactNotes(e.target.value)}
-                      placeholder="How would you like to contribute?"
-                      required
-                      rows={4}
-                      style={{ ...INPUT, resize: 'vertical' }}
-                    />
-                  </div>
-                  {contactError && (
-                    <p style={{ color: '#ff9d9d', fontSize: 13, fontFamily: 'system-ui,sans-serif', margin: 0 }}>
-                      {contactError}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={contactStatus === 'sending'}
-                    style={{
-                      ...BTN,
-                      width: '100%',
-                      background: contactStatus === 'sending'
-                        ? 'rgba(255,255,255,0.06)'
-                        : 'linear-gradient(180deg, #ffb347 0%, #e67e22 100%)',
-                      color: contactStatus === 'sending' ? 'rgba(255,255,255,0.4)' : '#fff',
-                      cursor: contactStatus === 'sending' ? 'default' : 'pointer',
-                    }}
-                  >
-                    {contactStatus === 'sending' ? 'Sending…' : 'Send message'}
-                  </button>
-                </form>
-              )}
             </>
           )}
         </div>

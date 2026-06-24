@@ -4,10 +4,10 @@
       "id": "featured",
       "label": "Featured",
       "entries": [
-        { "rank": 1, "previousRank": 1, "name": "Las Vegas", "subtitle": "Neon, lasers, and bass with the Strip at your back", "thumbnail": "/images/homepage/edc.webp", "target": { "kind": "venue", "route": "edc" } },
-        { "rank": 2, "previousRank": 2, "name": "Silent Disco", "subtitle": "Headsets on, dance till the sun comes up", "thumbnail": "/images/homepage/silentdisco.webp", "target": { "kind": "venue", "route": "silent-disco" } },
-        { "rank": 3, "previousRank": 3, "name": "The Forest", "subtitle": "Get lost in the woods — Electric Forest vibes", "thumbnail": "/images/homepage/forest.webp", "target": { "kind": "venue", "route": "forest" } },
-        { "rank": 4, "previousRank": 4, "name": "Deep Space", "subtitle": "Drift through the cosmos when the night goes deep", "thumbnail": "/images/homepage/space.webp", "target": { "kind": "venue", "route": "deep-space" } },
+        { "rank": 1, "previousRank": 4, "name": "Deep Space", "subtitle": "Drift through the cosmos when the night goes deep", "thumbnail": "/images/homepage/space.webp", "target": { "kind": "venue", "route": "deep-space" } },
+        { "rank": 2, "previousRank": 1, "name": "Las Vegas", "subtitle": "Neon, lasers, and bass with the Strip at your back", "thumbnail": "/images/homepage/edc.webp", "target": { "kind": "venue", "route": "edc" } },
+        { "rank": 3, "previousRank": 2, "name": "Silent Disco", "subtitle": "Headsets on, dance till the sun comes up", "thumbnail": "/images/homepage/silentdisco.webp", "target": { "kind": "venue", "route": "silent-disco" } },
+        { "rank": 4, "previousRank": 3, "name": "The Forest", "subtitle": "Get lost in the woods — Electric Forest vibes", "thumbnail": "/images/homepage/forest.webp", "target": { "kind": "venue", "route": "forest" } },
         { "rank": 5, "previousRank": 5, "name": "The Farm", "subtitle": "Camp out in the fields where the music never stops", "thumbnail": "/images/homepage/thefarm.webp", "target": { "kind": "venue", "route": "tentaroo" } }
       ]
     },

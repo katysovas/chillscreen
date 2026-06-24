@@ -61,6 +61,7 @@ export const OG_IMAGE_HEIGHT = 630;
 
 export const TWITTER_HANDLE = '@aifesties';
 export const TWITTER_URL = 'https://x.com/aifesties';
+export const DISCORD_URL = 'https://discord.gg/G3cnR3mHQ';
 
 export const CONTACT = {
   support: 'whichstageteam@gmail.com',

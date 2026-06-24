@@ -2,9 +2,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Syne, Space_Mono } from 'next/font/google';
-import { SITE_NAME, TWITTER_HANDLE, TWITTER_URL } from '@/lib/site';
+import { DISCORD_URL, SITE_NAME } from '@/lib/site';
 
 const TRANSPARENT_LOGO_PATH = '/images/logos/logo_transparent.png';
 import type { StagePickerTarget } from '@/lib/stagePickerOptions';
@@ -53,8 +53,6 @@ export function LandingPage({
   initialCreatorStageCount = 0,
 }: Props) {
   const navRef = useRef<HTMLElement>(null);
-  const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const [contactError, setContactError] = useState('');
 
   useEffect(() => {
     const nav = navRef.current;
@@ -64,38 +62,6 @@ export function LandingPage({
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    const name = String(fd.get('name') ?? '').trim();
-    const email = String(fd.get('email') ?? '').trim();
-    const notes = String(fd.get('message') ?? '').trim();
-
-    setContactStatus('sending');
-    setContactError('');
-
-    try {
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, notes }),
-      });
-      const data = await res.json() as { ok?: boolean; error?: string };
-      if (!res.ok || !data.ok) {
-        setContactError(data.error ?? 'Something went wrong.');
-        setContactStatus('error');
-        return;
-      }
-      setContactStatus('sent');
-      form.reset();
-      window.setTimeout(() => setContactStatus('idle'), 4000);
-    } catch {
-      setContactError('Network error. Please try again.');
-      setContactStatus('error');
-    }
-  };
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -138,11 +104,6 @@ export function LandingPage({
           <li>
             <a className="nav-link" href="#faq" onClick={e => handleNavScroll(e, 'faq')}>
               FAQ
-            </a>
-          </li>
-          <li>
-            <a className="nav-link" href="#contact" onClick={e => handleNavScroll(e, 'contact')}>
-              Get In Touch
             </a>
           </li>
           <li>
@@ -255,6 +216,24 @@ export function LandingPage({
               </article>
             ))}
           </div>
+          <div className="faq-discord-wrap">
+            <a
+              className="faq-discord"
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="/images/cabanas/discord.svg"
+                alt=""
+                className="faq-discord-logo"
+                width={32}
+                height={24}
+                aria-hidden
+              />
+              <span className="faq-discord-label">Join Discord</span>
+            </a>
+          </div>
         </div>
       </section>
 
@@ -290,53 +269,6 @@ export function LandingPage({
         </div>
       </section>
       */}
-
-      <section className="section contact-section" id="contact">
-        <div className="contact-bg-word" aria-hidden>HELLO</div>
-        <div className="inner">
-          <div className="contact-grid">
-            <div>
-              
-              <h2 className="section-title" style={{ marginBottom: 0 }}>Say<br />hello.</h2>
-              <p className="contact-blurb">
-              Help build the festival of the future. Whether you make music, write code, or just love a good set in strange company - we want to hear from you.
-              </p>
-              <p className="contact-handle">
-                <a className="contact-handle-link" href={TWITTER_URL} target="_blank" rel="noopener noreferrer">
-                  → {TWITTER_HANDLE}
-                </a>
-              </p>
-            </div>
-            <form className="c-form" onSubmit={e => void handleContactSubmit(e)}>
-              <div>
-                <label className="c-label" htmlFor="cf-n">Name</label>
-                <input className="c-input" id="cf-n" name="name" type="text" placeholder="Your name" required disabled={contactStatus === 'sending'} />
-              </div>
-              <div>
-                <label className="c-label" htmlFor="cf-e">Email</label>
-                <input className="c-input" id="cf-e" name="email" type="email" placeholder="your@email.com" required disabled={contactStatus === 'sending'} />
-              </div>
-              <div>
-                <label className="c-label" htmlFor="cf-m">Message</label>
-                <textarea className="c-input" id="cf-m" name="message" placeholder="What's on your mind?" required disabled={contactStatus === 'sending'} />
-              </div>
-              {contactError && <p className="c-error">{contactError}</p>}
-              <button
-                className="c-submit"
-                type="submit"
-                disabled={contactStatus === 'sending' || contactStatus === 'sent'}
-                style={contactStatus === 'sent' ? { background: '#8fd49a' } : undefined}
-              >
-                {contactStatus === 'sent'
-                  ? 'Sent ✓'
-                  : contactStatus === 'sending'
-                    ? 'Sending…'
-                    : 'Send it →'}
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
 
       <footer className="footer">
         <div className="footer-logo">
