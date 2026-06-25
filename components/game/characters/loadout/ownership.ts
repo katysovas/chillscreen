@@ -43,3 +43,15 @@ export function hasConfettiEquipped(loadout: CharacterLoadout | undefined): bool
 export function hasFireworksEquipped(loadout: CharacterLoadout | undefined): boolean {
   return loadout?.hand === PARTY_FIREWORKS_ID;
 }
+
+/** Guitar in hand — both hands stay low while dancing (no party sway). */
+export function hasGuitarEquipped(loadout: CharacterLoadout | undefined): boolean {
+  const hand = loadout?.hand;
+  return typeof hand === 'string' && hand.includes('guitar');
+}
+
+/** Drum kit in hand — large prop should paint over legs. */
+export function hasDrumsEquipped(loadout: CharacterLoadout | undefined): boolean {
+  const hand = loadout?.hand;
+  return typeof hand === 'string' && (hand.includes('drums') || hand.includes('bongo'));
+}

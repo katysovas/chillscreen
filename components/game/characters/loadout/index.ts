@@ -35,7 +35,7 @@ export {
   renderLoadoutTop,
   resolveLoadout,
 } from './renderLayers';
-export { defaultLoadout, normalizeLoadout } from './defaults';
+export { defaultLoadout, normalizeLoadout, npcDisplayLoadout } from './defaults';
 export { loadoutFromAccessory } from './bridge';
 export { GlowstickAmbient, GLOWSTICK_AMBIENT_TWEAK } from './GlowstickAmbient';
 export { ConfettiAmbient, CONFETTI_AMBIENT_TWEAK } from './ConfettiAmbient';
@@ -46,6 +46,8 @@ export {
   hasGlowsticksEquipped,
   hasConfettiEquipped,
   hasFireworksEquipped,
+  hasGuitarEquipped,
+  hasDrumsEquipped,
   hasStickerTripActive,
   hasStickerEquipped,
   PARTY_GLOWSTICKS_ID,

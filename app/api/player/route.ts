@@ -3,6 +3,7 @@ import { userIdFromRequest } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { getFestieByUserId, toFestieOwner } from '@/lib/festie/db';
 import {
+  ensureSuperAdminTestCoins,
   getPlayerProfile,
   savePlayerLoadout,
 } from '@/lib/player/db';
@@ -28,10 +29,11 @@ export async function GET(request: Request) {
     const profile = await getPlayerProfile(userId);
     if (!profile) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     const festie = await getFestieByUserId(userId);
+    const coins = (await ensureSuperAdminTestCoins(userId, festie?.name)) ?? profile.coins;
     return NextResponse.json({
       userId,
       name: profile.name,
-      coins: profile.coins,
+      coins,
       loadout: profile.loadout,
       festie: festie ? toFestieOwner(festie) : null,
     });

@@ -140,4 +140,22 @@ export const LOADOUT_STYLES = `
   .ch-lo-fireworks-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
   .ch-right-hand .ch-lo-sticker{position:absolute;left:4px;top:8px;width:80px;height:80px;transform:rotate(318deg);transform-origin:50% 92%;z-index:12;pointer-events:none;}
   .ch-lo-sticker-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-guitar-1{position:absolute;left:-208px;top:-148px;width:200px;height:220px;transform:rotate(85deg);transform-origin:60% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-guitar-1-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-guitar-acoustic{position:absolute;left:-208px;top:-168px;width:200px;height:220px;transform:rotate(85deg);transform-origin:60% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-guitar-acoustic-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-guitar-bass{position:absolute;left:-208px;top:-148px;width:200px;height:220px;transform:rotate(85deg);transform-origin:60% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-guitar-bass-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-guitar-electric-1{position:absolute;left:-208px;top:-148px;width:200px;height:220px;transform:rotate(85deg);transform-origin:60% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-guitar-electric-1-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-guitar-electric{position:absolute;left:-208px;top:-148px;width:200px;height:220px;transform:rotate(85deg);transform-origin:60% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-guitar-electric-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-guitar{position:absolute;left:-208px;top:-148px;width:200px;height:220px;transform:rotate(85deg);transform-origin:60% 92%;z-index:12;pointer-events:none;}
+  .ch-lo-guitar-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-drums{position:absolute;left:-250px;top:-150px;width:260px;height:260px;transform:rotate(42deg);transform-origin:60% 92%;z-index:14;pointer-events:none;}
+  .ch-lo-drums-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-bongo{position:absolute;left:-150px;top:-40px;width:160px;height:160px;transform:rotate(38deg);transform-origin:60% 92%;z-index:14;pointer-events:none;}
+  .ch-lo-bongo-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
+  .ch-right-hand .ch-lo-trumpet{position:absolute;left:-70px;top:-110px;width:180px;height:200px;transform:rotate(58deg);transform-origin:50% 88%;z-index:12;pointer-events:none;}
+  .ch-lo-trumpet-img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;}
 `;

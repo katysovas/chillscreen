@@ -17,11 +17,6 @@ import type { RemoteAmbientMessage, RemotePlayerState } from '@/lib/multiplayer/
 import { getNpcConvoHold } from '@/lib/npcConvoHold';
 import { rpsPairBubbleSide, rpsPairChatSpreadPx } from '@/lib/autopilot/rps';
 
-/** Equip gas mask on a cinema NPC at startup (testing). */
-const TEST_NPC_MASK_ON_LOAD = false;
-const TEST_NPC_MASK_ID = 'gen-cinema-vanessa';
-const TEST_NPC_MASK_ITEM = 'mask-gasmask' as const;
-
 type SFCityCrowdLayerProps = {
   cast: CharacterDef[];
   greetingNpc: number | null;
@@ -112,9 +107,7 @@ function SFCityCrowdLayer({
         const easelPaintingLabel = isPainting
           ? easelPaintingLabelForNpc(cfg.id, activeEaselSession)
           : null;
-        const baseLoadout = TEST_NPC_MASK_ON_LOAD && cfg.id === TEST_NPC_MASK_ID
-          ? { ...(cfg.loadout ?? {}), mask: TEST_NPC_MASK_ITEM }
-          : cfg.loadout;
+        const baseLoadout = cfg.loadout;
         const easelPaintingSlot = isPainting
           ? activeEaselSession?.slots.find(s => s.npc === cfg.id && s.status === 'painting')?.slot
           : undefined;

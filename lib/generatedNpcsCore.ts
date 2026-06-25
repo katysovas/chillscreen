@@ -3,7 +3,7 @@
  */
 
 import type { CharacterDef } from '@/components/game/characters';
-import type { CharacterLoadout } from '@/components/game/characters/loadout';
+import { defaultLoadout, type CharacterLoadout } from '@/components/game/characters/loadout';
 import type { Personality } from '@/components/game/NPC';
 import type { StageAnchorKind } from '@/lib/stageAnchor';
 import type { StageChannel } from '@/lib/stageVideos';
@@ -41,12 +41,18 @@ const BALLOON_PALETTE = [
 
 const GENERATED_WANDER: [number, number] = [8, 92];
 
-function loadoutForProp(prop: string | null): CharacterLoadout | undefined {
-  if (!prop) return undefined;
-  if (prop.startsWith('hat-')) return { hat: prop };
-  if (prop.startsWith('shades-')) return { sunglasses: prop };
-  if (prop.startsWith('mask-')) return { mask: prop };
-  return { hand: prop };
+function loadoutForProp(prop: string | null, balloonColor: string): CharacterLoadout {
+  if (!prop) return defaultLoadout(balloonColor);
+  if (prop.startsWith('hat-')) {
+    return { hat: prop, hand: 'hand-balloon', balloonColor };
+  }
+  if (prop.startsWith('shades-')) {
+    return { sunglasses: prop, hand: 'hand-balloon', balloonColor };
+  }
+  if (prop.startsWith('mask-')) {
+    return { mask: prop, hand: 'hand-balloon', balloonColor };
+  }
+  return { hand: prop, balloonColor };
 }
 
 function slugName(name: string): string {
@@ -109,12 +115,13 @@ export function toCharacterDef(
   const anchor = CHANNEL_STAGE_ANCHOR[channel];
   const onStageAtLoad = index < stageCrowdCount;
   const trickleIndex = Math.max(0, index - stageCrowdCount);
+  const balloonColor = BALLOON_PALETTE[index % BALLOON_PALETTE.length]!;
 
   return {
     id: `gen-${channel}-${slugName(npc.name)}`,
     name: npc.name,
-    balloonColor: BALLOON_PALETTE[index % BALLOON_PALETTE.length]!,
-    loadout: loadoutForProp(npc.prop),
+    balloonColor,
+    loadout: loadoutForProp(npc.prop, balloonColor),
     outfit: npc.outfit && npc.outfit !== 'none' ? npc.outfit : undefined,
     startX: onStageAtLoad
       ? 10 + (index % 17) * 5

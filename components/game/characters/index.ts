@@ -50,5 +50,6 @@ export {
   loadoutItem,
   loadoutItemId,
   normalizeLoadout,
+  npcDisplayLoadout,
   renderLoadoutItem,
 } from './loadout';

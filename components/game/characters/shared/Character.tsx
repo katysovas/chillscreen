@@ -15,6 +15,8 @@ import {
   hasGlowsticksEquipped,
   hasConfettiEquipped,
   hasFireworksEquipped,
+  hasGuitarEquipped,
+  hasDrumsEquipped,
   loadoutHoldSide,
   preloadLoadoutItems,
   renderLoadoutBottom,
@@ -187,6 +189,9 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   const facingRef      = useRef(facing);
   facingRef.current    = facing;
   const holdRightRef   = useRef(false);
+  const hasHandMountedRef = useRef(false);
+  const imperativeDancingRef = useRef(false);
+  const imperativeWalkingRef = useRef(false);
 
   function applyChatAnchorSide(side: BubbleSide) {
     const el = chatAnchorRef.current;
@@ -234,11 +239,20 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     () => null,
   );
 
+  const effectiveLoadout = useMemo(
+    () => (forcedHat && loadout ? { ...loadout, hat: forcedHat } : loadout),
+    [forcedHat, loadout],
+  );
+  const equipped = useMemo(
+    () => (effectiveLoadout ? resolveLoadout(effectiveLoadout, balloonColor) : null),
+    [effectiveLoadout, balloonColor],
+  );
+
   const equippedItemIds = useMemo(() => {
-    const ids = loadout ? equippedLoadoutItemIds(loadout) : [];
+    const ids = equipped ? equippedLoadoutItemIds(equipped) : [];
     if (forcedHat) ids.push(forcedHat);
     return ids;
-  }, [loadout, forcedHat]);
+  }, [equipped, forcedHat]);
 
   const [propsReady, setPropsReady] = useState(() => areLoadoutItemsReady(equippedItemIds));
 
@@ -260,20 +274,43 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   }, [equippedItemIds]);
 
   const mirrored = facingRef.current === 'left';
-  const effectiveLoadout = forcedHat && loadout
-    ? { ...loadout, hat: forcedHat }
-    : loadout;
-  const equipped = effectiveLoadout ? resolveLoadout(effectiveLoadout, balloonColor) : null;
   const holdRight = equipped
     ? loadoutHoldSide(equipped) === 'right'
     : accessoryHoldSide(accessory) === 'right';
   holdRightRef.current = holdRight;
+  const guitarProp = hasGuitarEquipped(effectiveLoadout ?? undefined);
+  const drumsProp = hasDrumsEquipped(effectiveLoadout ?? undefined);
+  const hasHandMounted = propsReady && (
+    effectiveLoadout?.hand
+      ? isLoadoutHandMounted(effectiveLoadout)
+      : Boolean(accessory)
+  );
+  hasHandMountedRef.current = hasHandMounted;
+  const hasHandProp = hasHandMounted && holdRight;
+
+  function syncWalkingClass(active: boolean) {
+    if (!wrapperRef.current) return;
+    if (spaceFloatRef.current) {
+      wrapperRef.current.classList.remove('ch-walking');
+      wrapperRef.current.classList.toggle('ch-space-float-moving', active);
+      return;
+    }
+    wrapperRef.current.classList.remove('ch-space-float-moving');
+    wrapperRef.current.classList.toggle('ch-walking', active);
+  }
 
   function syncDancingClasses(active: boolean) {
     if (!wrapperRef.current || !outerRef.current) return;
+    const mounted = hasHandMountedRef.current;
     wrapperRef.current.classList.toggle('ch-dancing', active);
-    wrapperRef.current.classList.toggle('ch-free-hand-left', active && !holdRightRef.current);
-    wrapperRef.current.classList.toggle('ch-free-hand-right', active && holdRightRef.current);
+    wrapperRef.current.classList.toggle(
+      'ch-free-hand-left',
+      active && mounted && holdRightRef.current,
+    );
+    wrapperRef.current.classList.toggle(
+      'ch-free-hand-right',
+      active && mounted && !holdRightRef.current,
+    );
     outerRef.current.style.transition = active ? 'none' : 'transform 0.1s ease';
   }
 
@@ -287,16 +324,11 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
       syncChatAnchorTransform(m);
     },
     setWalking(w) {
-      if (!wrapperRef.current) return;
-      if (spaceFloatRef.current) {
-        wrapperRef.current.classList.remove('ch-walking');
-        wrapperRef.current.classList.toggle('ch-space-float-moving', w);
-      } else {
-        wrapperRef.current.classList.remove('ch-space-float-moving');
-        wrapperRef.current.classList.toggle('ch-walking', w);
-      }
+      imperativeWalkingRef.current = w;
+      syncWalkingClass(w);
     },
     setDancing(d) {
+      imperativeDancingRef.current = d;
       syncDancingClasses(d);
     },
     setChatScreenPct(pct) {
@@ -311,8 +343,11 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   }), []);
 
   useLayoutEffect(() => {
-    syncDancingClasses(dancing);
-  }, [dancing]);
+    if (dancing) imperativeDancingRef.current = false;
+    if (walking) imperativeWalkingRef.current = false;
+    syncDancingClasses(dancing || imperativeDancingRef.current);
+    syncWalkingClass(walking || imperativeWalkingRef.current);
+  }, [dancing, walking, holdRight, guitarProp, drumsProp, hasHandMounted]);
 
   useLayoutEffect(() => {
     if (!chatOverlay) return;
@@ -335,7 +370,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
     syncChatAnchorTransform(facingRef.current === 'left');
   }, [bubbleSide, scale, easelChatAnchor, Boolean(chatOverlay)]);
 
-  const partyHandClass = dancing
+  const partyHandClass = dancing && hasHandProp
     ? holdRight ? ' ch-free-hand-left' : ' ch-free-hand-right'
     : '';
   const glowstickAmbient = GLOWSTICK_AMBIENT_TWEAK
@@ -343,12 +378,6 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
   const confettiAmbient = CONFETTI_AMBIENT_TWEAK
     || (loadout ? hasConfettiEquipped(loadout) : false);
   const fireworksActive = loadout ? hasFireworksEquipped(loadout) : false;
-
-  const hasHandProp = propsReady && holdRight && (
-    effectiveLoadout?.hand
-      ? isLoadoutHandMounted(effectiveLoadout)
-      : Boolean(accessory)
-  );
   const paintingBrush = isPaintingBrushLoadout(effectiveLoadout ?? undefined);
 
   return (
@@ -368,7 +397,7 @@ const Character = forwardRef<CharacterHandle, CharacterProps>(function Character
       }}>
         <div
           ref={wrapperRef}
-          className={`ch-wrapper${outfit ? ` ch-outfit-${outfit}` : ''}${hasHandProp ? ' ch-hand-prop' : ''}${paintingBrush ? ' ch-painting-brush' : ''}${spaceFloat ? ' ch-space-float' : ''}${!spaceFloat && walking ? ' ch-walking' : ''}${spaceFloat && walking ? ' ch-space-float-moving' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
+          className={`ch-wrapper${outfit ? ` ch-outfit-${outfit}` : ''}${hasHandProp ? ' ch-hand-prop' : ''}${guitarProp ? ' ch-guitar-prop' : ''}${drumsProp ? ' ch-drums-prop' : ''}${paintingBrush ? ' ch-painting-brush' : ''}${spaceFloat ? ' ch-space-float' : ''}${!spaceFloat && walking ? ' ch-walking' : ''}${spaceFloat && walking ? ' ch-space-float-moving' : ''}${dancing ? ' ch-dancing' : ''}${partyHandClass}`}
         >
           <div className="ch-animal">
             {equipped

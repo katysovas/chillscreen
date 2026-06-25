@@ -28,9 +28,18 @@ const FIREWORKS_SRC = '/images/props/festival_fireworks.svg';
 const STICKER_SRC = '/images/props/sticker.svg';
 const TOTEM_SRC = '/images/props/hands_totem.svg';
 const BRUSH_SRC = '/images/props/hands_brush.svg';
+const GUITAR_1_SRC = '/images/props/instrument_guitar_1.svg';
+const GUITAR_ACOUSTIC_SRC = '/images/props/instrument_guitar_accoustic.svg';
+const GUITAR_BASS_SRC = '/images/props/instrument_guitar_bass.svg';
+const GUITAR_ELECTRIC_1_SRC = '/images/props/instrument_guitar_electric_1.svg';
+const GUITAR_ELECTRIC_SRC = '/images/props/instrument_guitar_electric.svg';
+const GUITAR_SRC = '/images/props/instrument_guitar.svg';
+const DRUMS_SRC = '/images/props/instruments_drums.svg';
+const BONGO_SRC = '/images/props/instruments_bongo.svg';
+const TRUMPET_SRC = '/images/props/instruments_trumpet.svg';
 
 type HandPropProps = {
-  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza' | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle' | 'water' | 'juice' | 'coffee' | 'glowsticks' | 'confetti' | 'fireworks' | 'sticker' | 'totem' | 'brush';
+  variant: 'balloon' | 'microphone' | 'lightsaber' | 'sword' | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza' | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle' | 'water' | 'juice' | 'coffee' | 'glowsticks' | 'confetti' | 'fireworks' | 'sticker' | 'totem' | 'brush' | 'guitar1' | 'guitarAcoustic' | 'guitarBass' | 'guitarElectric1' | 'guitarElectric' | 'guitar' | 'drums' | 'bongo' | 'trumpet';
   ctx: LoadoutRenderCtx;
 };
 
@@ -190,6 +199,60 @@ export function HandProp({ variant, ctx }: HandPropProps) {
           <div className="ch-lo-brush-stroke">
             <img src={BRUSH_SRC} alt="" className="ch-lo-brush-img" draggable={false} />
           </div>
+        </div>
+      );
+    case 'guitar1':
+      return (
+        <div className="ch-lo-guitar-1" style={handPropRotateStyle('guitar1')}>
+          <img src={GUITAR_1_SRC} alt="" className="ch-lo-guitar-1-img" draggable={false} />
+        </div>
+      );
+    case 'guitarAcoustic':
+      return (
+        <div className="ch-lo-guitar-acoustic" style={handPropRotateStyle('guitarAcoustic')}>
+          <img src={GUITAR_ACOUSTIC_SRC} alt="" className="ch-lo-guitar-acoustic-img" draggable={false} />
+        </div>
+      );
+    case 'guitarBass':
+      return (
+        <div className="ch-lo-guitar-bass" style={handPropRotateStyle('guitarBass')}>
+          <img src={GUITAR_BASS_SRC} alt="" className="ch-lo-guitar-bass-img" draggable={false} />
+        </div>
+      );
+    case 'guitarElectric1':
+      return (
+        <div className="ch-lo-guitar-electric-1" style={handPropRotateStyle('guitarElectric1')}>
+          <img src={GUITAR_ELECTRIC_1_SRC} alt="" className="ch-lo-guitar-electric-1-img" draggable={false} />
+        </div>
+      );
+    case 'guitarElectric':
+      return (
+        <div className="ch-lo-guitar-electric" style={handPropRotateStyle('guitarElectric')}>
+          <img src={GUITAR_ELECTRIC_SRC} alt="" className="ch-lo-guitar-electric-img" draggable={false} />
+        </div>
+      );
+    case 'guitar':
+      return (
+        <div className="ch-lo-guitar" style={handPropRotateStyle('guitar')}>
+          <img src={GUITAR_SRC} alt="" className="ch-lo-guitar-img" draggable={false} />
+        </div>
+      );
+    case 'drums':
+      return (
+        <div className="ch-lo-drums" style={handPropRotateStyle('drums')}>
+          <img src={DRUMS_SRC} alt="" className="ch-lo-drums-img" draggable={false} />
+        </div>
+      );
+    case 'bongo':
+      return (
+        <div className="ch-lo-bongo" style={handPropRotateStyle('bongo')}>
+          <img src={BONGO_SRC} alt="" className="ch-lo-bongo-img" draggable={false} />
+        </div>
+      );
+    case 'trumpet':
+      return (
+        <div className="ch-lo-trumpet" style={handPropRotateStyle('trumpet')}>
+          <img src={TRUMPET_SRC} alt="" className="ch-lo-trumpet-img" draggable={false} />
         </div>
       );
   }

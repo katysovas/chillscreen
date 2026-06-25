@@ -4,7 +4,7 @@ type HandPropVariant =
   | 'boombox' | 'balloons' | 'balloons2' | 'hotdog' | 'donut' | 'fries' | 'pizza'
   | 'tacos' | 'popcorn' | 'lollipop' | 'martini' | 'lemonade' | 'beer' | 'bottle'
   | 'water' | 'juice' | 'coffee' | 'glowsticks' | 'confetti' | 'fireworks'
-  | 'sticker' | 'totem' | 'brush';
+  | 'sticker' | 'totem' | 'brush' | 'guitar1' | 'guitarAcoustic' | 'guitarBass' | 'guitarElectric1' | 'guitarElectric' | 'guitar' | 'drums' | 'bongo' | 'trumpet';
 
 /** Hand prop rotation — inline so angle is correct before CSS recalc on load. */
 const ROTATE: Record<HandPropVariant, { deg: number; origin: string; scale?: number }> = {
@@ -31,6 +31,15 @@ const ROTATE: Record<HandPropVariant, { deg: number; origin: string; scale?: num
   confetti: { deg: 50, origin: '50% 92%' },
   fireworks: { deg: 60, origin: '50% 92%' },
   sticker: { deg: 318, origin: '50% 92%' },
+  guitar1: { deg: 85, origin: '60% 92%' },
+  guitarAcoustic: { deg: 85, origin: '60% 92%' },
+  guitarBass: { deg: 85, origin: '60% 92%' },
+  guitarElectric1: { deg: 85, origin: '60% 92%' },
+  guitarElectric: { deg: 85, origin: '60% 92%' },
+  guitar: { deg: 85, origin: '60% 92%' },
+  drums: { deg: 42, origin: '60% 92%' },
+  bongo: { deg: 38, origin: '60% 92%' },
+  trumpet: { deg: 58, origin: '50% 88%' },
 };
 
 export function handPropRotateStyle(variant: HandPropVariant): CSSProperties {

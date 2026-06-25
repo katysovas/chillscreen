@@ -29,4 +29,13 @@ export const RENDERERS: Record<string, ItemRenderer> = {
   'party-fireworks': ctx => <HandProp variant="fireworks" ctx={ctx} />,
   'party-sticker': ctx => <HandProp variant="sticker" ctx={ctx} />,
   'hand-brush': ctx => <HandProp variant="brush" ctx={ctx} />,
+  'instrument-guitar-1': ctx => <HandProp variant="guitar1" ctx={ctx} />,
+  'instrument-guitar-acoustic': ctx => <HandProp variant="guitarAcoustic" ctx={ctx} />,
+  'instrument-guitar-bass': ctx => <HandProp variant="guitarBass" ctx={ctx} />,
+  'instrument-guitar-electric-1': ctx => <HandProp variant="guitarElectric1" ctx={ctx} />,
+  'instrument-guitar-electric': ctx => <HandProp variant="guitarElectric" ctx={ctx} />,
+  'instrument-guitar': ctx => <HandProp variant="guitar" ctx={ctx} />,
+  'instrument-drums': ctx => <HandProp variant="drums" ctx={ctx} />,
+  'instrument-bongo': ctx => <HandProp variant="bongo" ctx={ctx} />,
+  'instrument-trumpet': ctx => <HandProp variant="trumpet" ctx={ctx} />,
 };

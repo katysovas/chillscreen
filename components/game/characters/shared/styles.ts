@@ -34,6 +34,8 @@ export const SHARED_CHARACTER_STYLES = `
   .ch-right-hand span:last-child:before{content:"";position:absolute;left:0;right:5px;top:0;background:rgba(220,220,220,.5);height:5px;}
   .ch-right-hand span:last-child:after{content:"";position:absolute;left:0;top:2px;width:18.7px;height:35px;background:rgba(220,220,220,.5);border-radius:0 0 10px 10px;}
   .ch-legs{margin:0 auto;text-align:center;height:60px;}
+  .ch-drums-prop .ch-body{position:relative;z-index:2;}
+  .ch-drums-prop .ch-legs{position:relative;z-index:1;}
   .ch-legs span{width:10px;height:20px;border-right:2px solid #605d5e;border-left:2px solid #605d5e;display:inline-block;margin:0 20px;position:relative;top:-8px;z-index:1;animation:ch-right-leg 2s 1s infinite alternate;transform:rotate(5deg);}
   .ch-legs span:before{content:"";width:25px;height:10px;position:absolute;border-radius:0 20px 20px 20px;border:2px solid #000;left:-2px;bottom:-12px;}
   .ch-legs span:after{content:"";background:rgba(200,200,200,.4);right:0;left:0;position:absolute;bottom:-2px;height:7px;}
@@ -68,13 +70,13 @@ export const SHARED_CHARACTER_STYLES = `
     animation:ch-dance-stomp-l .56s ease-in-out .28s infinite!important;
     transform-origin:top center!important;
   }
-  .ch-dancing.ch-free-hand-left .ch-left-hand,
-  .ch-dancing.ch-free-hand-left.ch-walking .ch-left-hand{
+  .ch-dancing:not(.ch-guitar-prop):not(.ch-free-hand-right) .ch-left-hand,
+  .ch-dancing:not(.ch-guitar-prop):not(.ch-free-hand-right).ch-walking .ch-left-hand{
     animation:ch-dance-party-sway-left 1.15s ease-in-out infinite alternate!important;
     transform-origin:88% 8%;
   }
-  .ch-dancing.ch-free-hand-right .ch-right-hand,
-  .ch-dancing.ch-free-hand-right.ch-walking .ch-right-hand{
+  .ch-dancing.ch-free-hand-right:not(.ch-guitar-prop) .ch-right-hand,
+  .ch-dancing.ch-free-hand-right:not(.ch-guitar-prop).ch-walking .ch-right-hand{
     animation:ch-dance-party-sway-right 1.15s ease-in-out infinite alternate!important;
     transform-origin:12% 8%;
   }
@@ -85,6 +87,11 @@ export const SHARED_CHARACTER_STYLES = `
   .ch-dancing.ch-free-hand-right .ch-left-hand,
   .ch-dancing.ch-free-hand-right.ch-walking .ch-left-hand{
     animation:ch-dance-held-bob .56s ease-in-out infinite alternate!important;
+  }
+  .ch-dancing.ch-guitar-prop.ch-free-hand-left .ch-left-hand,
+  .ch-dancing.ch-guitar-prop.ch-free-hand-left.ch-walking .ch-left-hand{
+    animation:ch-dance-guitar-left-sway 1.1s ease-in-out infinite alternate!important;
+    transform-origin:85% 10%;
   }
   .ch-dancing .ch-eyes:before,.ch-dancing .ch-eyes:after{
     animation:ch-dance-happy-eyes 1.4s ease-in-out infinite!important;
@@ -116,6 +123,10 @@ export const SHARED_CHARACTER_STYLES = `
   @keyframes ch-dance-held-bob{
     from{transform:rotate(-47deg) translateY(0);}
     to{transform:rotate(-47deg) translateY(-8px);}
+  }
+  @keyframes ch-dance-guitar-left-sway{
+    from{transform:rotate(-16deg);}
+    to{transform:rotate(16deg);}
   }
   @keyframes ch-dance-happy-eyes{
     0%,60%,100%{height:10px;width:10px;border-radius:50%;}

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useLayoutEffect, useMemo, memo, useCallbac
 import Character, { type CharacterHandle } from './Character';
 import { NpcChatOverlay } from './ConnectChatOverlay';
 import type { CharacterAccessory } from './characterAccessories';
-import type { CharacterLoadout } from './characters/loadout';
+import { npcDisplayLoadout, type CharacterLoadout } from './characters/loadout';
 import { CHAR_BOTTOM, crowdDepthForSeed } from './groundLayout';
 import { AttachedChatEmojiIndicator, screenXToBubbleSide, type BubbleSide } from './ChatBubble';
 import { gameWorldOffRef } from '@/lib/gameWorldRef';
@@ -183,6 +183,10 @@ function NPC({
       landingHeroGrass,
     }),
     [characterId, index, crowdSize, spaceFloat, landingHeroGrass],
+  );
+  const displayLoadout = useMemo(
+    () => npcDisplayLoadout(loadout, accessory, balloonColor),
+    [loadout, accessory, balloonColor],
   );
 
   // ── React state: only for infrequent visual changes ─────────────────────────
@@ -889,7 +893,7 @@ function NPC({
           facing={facingRef.current}
           spaceFloat={spaceFloat}
           balloonColor={balloonColor}
-          loadout={loadout}
+          loadout={displayLoadout}
           accessory={accessory}
           outfit={outfit}
           scale={scale}

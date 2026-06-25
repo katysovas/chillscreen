@@ -41,6 +41,18 @@ const DRINK_ITEMS = ['drink-martini', 'drink-lemonade', 'drink-beer', 'drink-bot
 
 const PARTY_FAVOR_ITEMS = ['party-glowsticks', 'party-confetti', 'party-fireworks', 'party-sticker'] as const;
 
+const INSTRUMENT_ITEMS = [
+  'instrument-guitar-1',
+  'instrument-guitar-acoustic',
+  'instrument-guitar-bass',
+  'instrument-guitar-electric-1',
+  'instrument-guitar-electric',
+  'instrument-guitar',
+  'instrument-drums',
+  'instrument-bongo',
+  'instrument-trumpet',
+] as const;
+
 export type VendorShopItemId =
   | (typeof HAT_ITEMS)[number]
   | (typeof GLASSES_ITEMS)[number]
@@ -48,7 +60,8 @@ export type VendorShopItemId =
   | (typeof HAND_ITEMS)[number]
   | (typeof FOOD_ITEMS)[number]
   | (typeof DRINK_ITEMS)[number]
-  | (typeof PARTY_FAVOR_ITEMS)[number];
+  | (typeof PARTY_FAVOR_ITEMS)[number]
+  | (typeof INSTRUMENT_ITEMS)[number];
 
 export type VendorShopCategory = {
   id: string;
@@ -101,6 +114,12 @@ export const VENDOR_SHOP_CATEGORIES: VendorShopCategory[] = [
     slot: 'hand',
     items: PARTY_FAVOR_ITEMS,
   },
+  {
+    id: 'instruments',
+    label: 'Instruments',
+    slot: 'hand',
+    items: INSTRUMENT_ITEMS,
+  },
 ];
 
 export const DEFAULT_VENDOR_CATEGORY = VENDOR_SHOP_CATEGORIES[0]!.id;
@@ -114,6 +133,7 @@ export const VENDOR_SHOP_ITEMS: VendorShopItemId[] = [
   ...FOOD_ITEMS,
   ...DRINK_ITEMS,
   ...PARTY_FAVOR_ITEMS,
+  ...INSTRUMENT_ITEMS,
 ];
 
 /** Legacy id — prefer `isBuzNpc()`. */
@@ -173,6 +193,15 @@ export const VENDOR_ITEM_PREVIEWS: Partial<Record<VendorShopItemId, string>> = {
   'party-confetti': '/images/props/festival_confetti.svg',
   'party-fireworks': '/images/props/festival_fireworks.svg',
   'party-sticker': '/images/props/sticker.svg',
+  'instrument-guitar-1': '/images/props/instrument_guitar_1.svg',
+  'instrument-guitar-acoustic': '/images/props/instrument_guitar_accoustic.svg',
+  'instrument-guitar-bass': '/images/props/instrument_guitar_bass.svg',
+  'instrument-guitar-electric-1': '/images/props/instrument_guitar_electric_1.svg',
+  'instrument-guitar-electric': '/images/props/instrument_guitar_electric.svg',
+  'instrument-guitar': '/images/props/instrument_guitar.svg',
+  'instrument-drums': '/images/props/instruments_drums.svg',
+  'instrument-bongo': '/images/props/instruments_bongo.svg',
+  'instrument-trumpet': '/images/props/instruments_trumpet.svg',
 };
 
 /** Thumbnail sizing tweaks per item in the shop panel. */
@@ -225,4 +254,13 @@ export const VENDOR_PREVIEW_SIZE: Partial<
   'party-confetti': { width: 32, height: 32 },
   'party-fireworks': { width: 32, height: 32 },
   'party-sticker': { width: 34, height: 34 },
+  'instrument-guitar-1': { width: 34, height: 34 },
+  'instrument-guitar-acoustic': { width: 34, height: 34 },
+  'instrument-guitar-bass': { width: 34, height: 34 },
+  'instrument-guitar-electric-1': { width: 34, height: 34 },
+  'instrument-guitar-electric': { width: 34, height: 34 },
+  'instrument-guitar': { width: 34, height: 34 },
+  'instrument-drums': { width: 34, height: 34 },
+  'instrument-bongo': { width: 34, height: 34 },
+  'instrument-trumpet': { width: 34, height: 34 },
 };

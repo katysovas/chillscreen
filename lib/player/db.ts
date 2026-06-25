@@ -3,6 +3,7 @@ import type { CharacterLoadout } from '@/components/game/characters/loadout/type
 import { requireDb } from '@/lib/db';
 import { STARTING_COINS } from '@/lib/player/constants';
 import { applyLoadoutItemLoss, sanitizePlayerLoadout } from '@/lib/player/loadoutValidation';
+import { isSuperAdminFestieName, SUPER_ADMIN_TEST_COINS } from '@/lib/superAdmin';
 
 export { STARTING_COINS };
 
@@ -95,6 +96,25 @@ export async function addPlayerCoinsDb(userId: string, amount: number): Promise<
     WHERE id = ${userId}::uuid
     RETURNING coins
   `;
+  return Number((rows[0] as { coins: number }).coins);
+}
+
+/** Top up super-admin test wallet when balance is below the testing floor. */
+export async function ensureSuperAdminTestCoins(
+  userId: string,
+  festieName: string | null | undefined,
+): Promise<number | null> {
+  if (!isSuperAdminFestieName(festieName)) return null;
+  const sql = requireDb();
+  const rows = await sql`
+    UPDATE users SET coins = ${SUPER_ADMIN_TEST_COINS}
+    WHERE id = ${userId}::uuid AND coins < ${SUPER_ADMIN_TEST_COINS}
+    RETURNING coins
+  `;
+  if (!rows.length) {
+    const profile = await getPlayerProfile(userId);
+    return profile?.coins ?? null;
+  }
   return Number((rows[0] as { coins: number }).coins);
 }
 
