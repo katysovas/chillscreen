@@ -35,7 +35,8 @@ export {
   renderLoadoutTop,
   resolveLoadout,
 } from './renderLayers';
-export { defaultLoadout, normalizeLoadout, npcDisplayLoadout } from './defaults';
+export { defaultLoadout, normalizeLoadout, npcDisplayLoadout, finalizeNpcCharacterDef, finalizeNpcCast } from './defaults';
+export { npcInstrumentHandForId, swapNpcBalloonForInstrument } from './npcInstruments';
 export { loadoutFromAccessory } from './bridge';
 export { GlowstickAmbient, GLOWSTICK_AMBIENT_TWEAK } from './GlowstickAmbient';
 export { ConfettiAmbient, CONFETTI_AMBIENT_TWEAK } from './ConfettiAmbient';

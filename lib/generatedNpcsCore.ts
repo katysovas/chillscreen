@@ -3,7 +3,7 @@
  */
 
 import type { CharacterDef } from '@/components/game/characters';
-import { defaultLoadout, type CharacterLoadout } from '@/components/game/characters/loadout';
+import { defaultLoadout, finalizeNpcCharacterDef, type CharacterLoadout } from '@/components/game/characters/loadout';
 import type { Personality } from '@/components/game/NPC';
 import type { StageAnchorKind } from '@/lib/stageAnchor';
 import type { StageChannel } from '@/lib/stageVideos';
@@ -117,7 +117,7 @@ export function toCharacterDef(
   const trickleIndex = Math.max(0, index - stageCrowdCount);
   const balloonColor = BALLOON_PALETTE[index % BALLOON_PALETTE.length]!;
 
-  return {
+  return finalizeNpcCharacterDef({
     id: `gen-${channel}-${slugName(npc.name)}`,
     name: npc.name,
     balloonColor,
@@ -134,7 +134,7 @@ export function toCharacterDef(
     personality: { ...base, wanderRange: GENERATED_WANDER },
     personalityNotes: npc.personalityNotes || npc.vibe,
     modelId: npc.modelId,
-  };
+  });
 }
 
 export function characterDefsFromPool(

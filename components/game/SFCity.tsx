@@ -202,7 +202,7 @@ import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
 import { CreatorStageLineupModal } from '@/components/create/CreatorStageSettingsModal';
-import { hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
+import { finalizeNpcCast, hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import {
   clearNpcSyncedWorldX,
   runAllNpcMovementTicks,
@@ -1121,17 +1121,17 @@ export default function SFCity({
       });
     }
 
-    const base = [
+    const base = finalizeNpcCast([
       ...npcCast,
       ...festieDefs,
-    ];
+    ]);
     if (!easelDrawingEnabled) return base;
     if (!easelCastReady && !TEST_EASEL_ON_LOAD) return base;
-    return mergeEaselOwnersIntoCast(
+    return finalizeNpcCast(mergeEaselOwnersIntoCast(
       base,
       easelChannel,
       activePainterNpcIds(activeEaselSession),
-    );
+    ));
   }, [npcCast, syncedStageFesties, effectiveVenueRoute, easelCastReady, activeEaselSession, easelDrawingEnabled, easelChannel, autopilotOn, ownerFestieNpcId, ownerFestieSpawnWx, myColor, playerLoadout, mp.connectedUserIds]);
 
   const ownerFestieVendorAttractWx = useMemo(() => {

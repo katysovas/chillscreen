@@ -96,20 +96,11 @@ const EDGE_SIGN_COMPACT = {
   shadowRy: 6,
 } as const;
 
-/** Shared sign motion — CSS transform/opacity only (compositor-friendly, no SMIL). */
+/** Shared sign motion — pulse rings only (compositor-friendly, no SMIL). */
 const EDGE_SIGN_MOTION_CSS = `
-  @keyframes edge-sign-bob {
-    0%, 100% { transform: translate3d(0, 0, 0); }
-    50% { transform: translate3d(0, -7px, 0); }
-  }
   @keyframes edge-sign-pulse {
     0% { transform: scale(1); opacity: 0.55; }
     100% { transform: scale(1.78); opacity: 0; }
-  }
-  .edge-sign-board {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: edge-sign-bob 2.4s ease-in-out infinite;
   }
   .edge-sign-pulse {
     transform-box: fill-box;
@@ -188,8 +179,7 @@ function EdgeSign({
         <line x1={0} y1={-postH + 6} x2={0} y2={-4} stroke="#6b5344" strokeWidth={1} opacity={0.45} />
         <circle cx={0} cy={-postH + 2} r={2.5} fill="#6b5344" stroke="#3a342c" strokeWidth={0.8} />
 
-        {/* Bobbing board — same motion language as in-game pickups */}
-        <g className="edge-sign-board">
+        <g>
           <ArrowSignBoard
             cy={boardCy}
             dir={dir}

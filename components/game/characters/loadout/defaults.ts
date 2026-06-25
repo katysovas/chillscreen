@@ -1,5 +1,7 @@
+import type { CharacterDef } from '@/components/game/characters';
 import type { CharacterAccessory } from '../types';
 import type { CharacterLoadout } from './types';
+import { swapNpcBalloonForInstrument } from './npcInstruments';
 
 /** Default player appearance — heart balloon, no outfit pieces. */
 export function defaultLoadout(balloonColor = '#ef4023'): CharacterLoadout {
@@ -39,14 +41,32 @@ export function normalizeLoadout(
 }
 
 /**
- * NPC crowd appearance — use the loadout path with the classic heart balloon
- * when there is no equipped hand prop and no legacy accessory override.
+ * NPC crowd appearance — normalize loadout and swap the default balloon
+ * for a stable random instrument when no legacy accessory override is set.
  */
 export function npcDisplayLoadout(
   loadout: CharacterLoadout | undefined,
   accessory: CharacterAccessory | undefined,
   balloonColor: string,
+  npcId: string,
 ): CharacterLoadout | undefined {
   if (accessory) return loadout;
-  return normalizeLoadout(loadout, balloonColor);
+  const normalized = normalizeLoadout(loadout, balloonColor);
+  return swapNpcBalloonForInstrument(normalized, npcId);
+}
+
+/** Bake instrument swap into a cast entry (idempotent). */
+export function finalizeNpcCharacterDef(cfg: CharacterDef): CharacterDef {
+  if (cfg.accessory) return cfg;
+  return {
+    ...cfg,
+    loadout: swapNpcBalloonForInstrument(
+      normalizeLoadout(cfg.loadout, cfg.balloonColor),
+      cfg.id,
+    ),
+  };
+}
+
+export function finalizeNpcCast(cast: CharacterDef[]): CharacterDef[] {
+  return cast.map(finalizeNpcCharacterDef);
 }

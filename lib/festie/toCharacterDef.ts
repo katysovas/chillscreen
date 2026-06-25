@@ -1,5 +1,6 @@
 import type { CharacterDef } from '@/components/game/characters';
 import type { CharacterLoadout } from '@/components/game/characters/loadout';
+import { finalizeNpcCharacterDef } from '@/components/game/characters/loadout';
 import { loadoutFromSync } from '@/lib/multiplayer/loadoutSync';
 import type { Personality } from '@/components/game/NPC';
 import { festiePersonalityNotesForNpcChatter } from '@/lib/festie/describeNotes';
@@ -52,7 +53,7 @@ export function festieToCharacterDef(
     ? loadoutFromSync(festie.loadout, balloonColor)
     : undefined;
 
-  return {
+  return finalizeNpcCharacterDef({
     id: festieNpcId(festie.id),
     name: festie.name,
     balloonColor,
@@ -65,7 +66,7 @@ export function festieToCharacterDef(
     personality: attributesToPersonality(festie.attributes),
     personalityNotes: festiePersonalityNotesForNpcChatter(festie),
     modelId: festieModelIdForProvider(festie.llm_provider),
-  };
+  });
 }
 
 /** Hide festie NPC when owner is live as a remote player (keep visible for local autopilot). */

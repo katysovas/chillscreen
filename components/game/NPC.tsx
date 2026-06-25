@@ -185,8 +185,8 @@ function NPC({
     [characterId, index, crowdSize, spaceFloat, landingHeroGrass],
   );
   const displayLoadout = useMemo(
-    () => npcDisplayLoadout(loadout, accessory, balloonColor),
-    [loadout, accessory, balloonColor],
+    () => npcDisplayLoadout(loadout, accessory, balloonColor, characterId),
+    [loadout, accessory, balloonColor, characterId],
   );
 
   // ── React state: only for infrequent visual changes ─────────────────────────

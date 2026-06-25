@@ -41,7 +41,7 @@ const DRINK_ITEMS = ['drink-martini', 'drink-lemonade', 'drink-beer', 'drink-bot
 
 const PARTY_FAVOR_ITEMS = ['party-glowsticks', 'party-confetti', 'party-fireworks', 'party-sticker'] as const;
 
-const INSTRUMENT_ITEMS = [
+export const INSTRUMENT_ITEMS = [
   'instrument-guitar-1',
   'instrument-guitar-acoustic',
   'instrument-guitar-bass',

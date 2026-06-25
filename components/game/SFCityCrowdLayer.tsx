@@ -5,6 +5,7 @@ import NPC from './NPC';
 import RemotePlayer from './RemotePlayer';
 import type { CharacterDef } from './characters';
 import { easelHandLoadout } from '@/lib/easel/brushLoadout';
+import { npcDisplayLoadout } from '@/components/game/characters/loadout';
 import { easelPaintingLabelForNpc } from '@/lib/easel/paintingLabel';
 import { activePainterNpcIds } from '@/lib/easel/session';
 import { activeChatDrawingForNpc } from '@/lib/easel/chatNpcDrawings';
@@ -107,7 +108,7 @@ function SFCityCrowdLayer({
         const easelPaintingLabel = isPainting
           ? easelPaintingLabelForNpc(cfg.id, activeEaselSession)
           : null;
-        const baseLoadout = cfg.loadout;
+        const baseLoadout = npcDisplayLoadout(cfg.loadout, cfg.accessory, cfg.balloonColor, cfg.id);
         const easelPaintingSlot = isPainting
           ? activeEaselSession?.slots.find(s => s.npc === cfg.id && s.status === 'painting')?.slot
           : undefined;
