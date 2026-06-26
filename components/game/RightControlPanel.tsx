@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   activeVenueRoute,
   buildInviteUrl,
-  inviteLinkLabel,
 } from '@/lib/inviteLink';
 import type { VenueRoute } from '@/lib/venueRoutes';
 import { SignOutIcon } from './BottomControlPanel';
+import { InviteFriendsModal } from './InviteFriendsModal';
 import './GameControlBar.css';
 
 type Props = {
@@ -16,6 +16,7 @@ type Props = {
   playerName: string | null;
   venueRoute?: VenueRoute;
   creatorStageSlug?: string | null;
+  stageTitle?: string;
   hidden?: boolean;
   showCreateStage?: boolean;
   onCreateStage?: () => void;
@@ -29,6 +30,7 @@ export function RightControlPanel({
   playerName,
   venueRoute,
   creatorStageSlug = null,
+  stageTitle = 'this stage',
   hidden = false,
   showCreateStage = false,
   onCreateStage,
@@ -36,7 +38,6 @@ export function RightControlPanel({
   onSignOut,
 }: Props) {
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const route = useMemo(
     () => activeVenueRoute(worldOff, venueRoute),
@@ -50,17 +51,6 @@ export function RightControlPanel({
 
   const showInvite = Boolean(inviteUrl);
 
-  const copyLink = useCallback(async () => {
-    if (!inviteUrl) return;
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* clipboard blocked */
-    }
-  }, [inviteUrl]);
-
   useEffect(() => {
     setInviteOpen(false);
   }, [hidden, route]);
@@ -70,17 +60,26 @@ export function RightControlPanel({
   }
 
   return (
-    <div
-      data-paraloid-ui
-      className="hidden md:block bottom-5"
-      style={{
-        position: 'absolute',
-        right: 'max(12px, calc(env(safe-area-inset-right, 0px) + 8px))',
-        zIndex: 38,
-        pointerEvents: 'auto',
-      }}
-    >
-      <div className={['game-control-bar', inviteOpen ? 'game-control-bar--open' : ''].filter(Boolean).join(' ')}>
+    <>
+      {inviteOpen && inviteUrl ? (
+        <InviteFriendsModal
+          stageTitle={stageTitle}
+          inviteUrl={inviteUrl}
+          onClose={() => setInviteOpen(false)}
+        />
+      ) : null}
+
+      <div
+        data-paraloid-ui
+        className="hidden md:block bottom-5"
+        style={{
+          position: 'absolute',
+          right: 'max(12px, calc(env(safe-area-inset-right, 0px) + 8px))',
+          zIndex: 38,
+          pointerEvents: 'auto',
+        }}
+      >
+        <div className="game-control-bar">
         {showCreateStage && (
           onCreateStage ? (
             <button
@@ -102,33 +101,14 @@ export function RightControlPanel({
         )}
 
         {showInvite && (
-          <>
-            <button
-              type="button"
-              className={[
-                'game-control-bar__text-btn',
-                inviteOpen ? 'game-control-bar__text-btn--active' : '',
-              ].filter(Boolean).join(' ')}
-              onClick={() => setInviteOpen(open => !open)}
-              aria-expanded={inviteOpen}
-            >
-              Invite Friends
-            </button>
-            {inviteOpen && (
-              <>
-                <span className="game-control-bar__dot" aria-hidden>·</span>
-                <span className="game-control-bar__mono">{inviteLinkLabel(inviteUrl)}</span>
-                <span className="game-control-bar__dot" aria-hidden>·</span>
-                <button
-                  type="button"
-                  className="game-control-bar__text-btn"
-                  onClick={() => void copyLink()}
-                >
-                  {copied ? 'Copied' : 'Copy'}
-                </button>
-              </>
-            )}
-          </>
+          <button
+            type="button"
+            className="game-control-bar__text-btn"
+            onClick={() => setInviteOpen(true)}
+            aria-haspopup="dialog"
+          >
+            Invite Friends
+          </button>
         )}
 
         {(showCreateStage || showInvite) && showSignOut && (
@@ -149,5 +129,6 @@ export function RightControlPanel({
         )}
       </div>
     </div>
+    </>
   );
 }

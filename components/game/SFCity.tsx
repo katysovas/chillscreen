@@ -3346,7 +3346,6 @@ export default function SFCity({
       {(festieSignedIn && ownerFestie || !festieSignedIn || mobileDevice) && (
         <FestieLifeCorner
           festie={ownerFestie}
-          settingsOpen={settingsOpen}
           stageLineupOpen={stageLineupOpen}
           showStageSettings={canManageCreatorLineup}
           onOpenStageSettings={
@@ -3354,7 +3353,6 @@ export default function SFCity({
           }
           hidden={showWelcome || showCityPicker}
           isMobile={mobileDevice}
-          onOpenSettings={festieSignedIn ? toggleSettings : undefined}
           showAutopilot={festieSignedIn ? Boolean(ownerFestie) : true}
           persistAutopilot={festieSignedIn}
           onControlModeChange={mode => {
@@ -3376,6 +3374,7 @@ export default function SFCity({
         playerName={playerName}
         venueRoute={effectiveVenueRoute}
         creatorStageSlug={creatorStage?.slug ?? null}
+        stageTitle={stageChatterWelcome.stageName}
         hidden={showWelcome || showCityPicker || stageLineupOpen || isChatterDebugMode()}
         showCreateStage={!mobileDevice}
         onCreateStage={handleCreateRoom}
@@ -3414,6 +3413,8 @@ export default function SFCity({
           isMobile={mobileDevice}
           mobileOpen={mobileStagePanelOpen}
           onMobileOpenChange={setMobileStagePanelOpen}
+          settingsOpen={settingsOpen}
+          onOpenSettings={festieSignedIn ? toggleSettings : undefined}
         />
       )}
 

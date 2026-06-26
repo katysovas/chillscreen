@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useSyncExternalStore } from 'react';
-import { LineupIcon, SettingsIcon } from './BottomControlPanel';
+import { LineupIcon } from './BottomControlPanel';
 import {
   getFestieControlMode,
   setFestieControlMode,
@@ -16,13 +16,11 @@ import './GameControlBar.css';
 
 type Props = {
   festie?: FestieOwner | null;
-  settingsOpen?: boolean;
   stageLineupOpen?: boolean;
   showStageSettings?: boolean;
   onOpenStageSettings?: () => void;
   hidden?: boolean;
   isMobile?: boolean;
-  onOpenSettings?: () => void;
   onControlModeChange?: (mode: FestieControlMode) => void;
   /** Show autopilot toggle for guests (local-only, no festie row). */
   showAutopilot?: boolean;
@@ -116,14 +114,11 @@ function AutopilotSwitch({
 }
 
 type BarProps = {
-  settingsOpen: boolean;
   stageLineupOpen: boolean;
   showStageSettings: boolean;
   isMobile: boolean;
-  showSettings: boolean;
   showAutopilot: boolean;
   persistAutopilot?: boolean;
-  onOpenSettings?: () => void;
   onOpenStageSettings?: () => void;
   onControlModeChange?: (mode: FestieControlMode) => void;
   stagePanelOpen?: boolean;
@@ -131,14 +126,11 @@ type BarProps = {
 };
 
 function FestieControlBar({
-  settingsOpen,
   stageLineupOpen,
   showStageSettings,
   isMobile,
-  showSettings,
   showAutopilot,
   persistAutopilot = true,
-  onOpenSettings,
   onOpenStageSettings,
   onControlModeChange,
   stagePanelOpen = false,
@@ -147,57 +139,37 @@ function FestieControlBar({
   const iconSize = isMobile ? 18 : 16;
   const showLineup = showStageSettings && Boolean(onOpenStageSettings) && !isMobile;
   const showChat = isMobile && Boolean(onOpenStagePanel);
-  const guestMatchBar = !showSettings && !isMobile;
+  const guestMatchBar = showAutopilot && !showLineup && !isMobile;
 
   return (
     <div
       className={[
         'game-control-bar',
         guestMatchBar ? 'festie-control-bar--guest-match' : 'festie-control-bar',
-        settingsOpen ? 'game-control-bar--open festie-control-bar--open' : '',
+        stageLineupOpen ? 'game-control-bar--open festie-control-bar--open' : '',
         isMobile ? 'game-control-bar--mobile festie-control-bar--mobile' : '',
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      {showSettings && onOpenSettings && (
+      {showLineup && (
         <button
           type="button"
-          className={['festie-icon-btn', settingsOpen ? 'festie-icon-btn--active' : '']
+          className={['festie-icon-btn', stageLineupOpen ? 'festie-icon-btn--active' : '']
             .filter(Boolean)
             .join(' ')}
-          onClick={onOpenSettings}
+          onClick={onOpenStageSettings}
           onPointerDown={isMobile ? e => e.preventDefault() : undefined}
-          aria-label="Settings"
-          aria-pressed={settingsOpen}
-          title="Settings"
+          aria-label="Lineup settings"
+          aria-pressed={stageLineupOpen}
+          title="Lineup"
           style={isMobile ? { touchAction: 'none' } : undefined}
         >
-          <SettingsIcon size={iconSize} />
+          <LineupIcon size={iconSize} />
         </button>
       )}
 
-      {showLineup && (
-        <>
-          <div className="game-control-bar__divider festie-control-divider" aria-hidden />
-          <button
-            type="button"
-            className={['festie-icon-btn', stageLineupOpen ? 'festie-icon-btn--active' : '']
-              .filter(Boolean)
-              .join(' ')}
-            onClick={onOpenStageSettings}
-            onPointerDown={isMobile ? e => e.preventDefault() : undefined}
-            aria-label="Lineup settings"
-            aria-pressed={stageLineupOpen}
-            title="Lineup"
-            style={isMobile ? { touchAction: 'none' } : undefined}
-          >
-            <LineupIcon size={iconSize} />
-          </button>
-        </>
-      )}
-
-      {showSettings && showAutopilot && (
+      {showLineup && showAutopilot && (
         <div className="game-control-bar__divider festie-control-divider" aria-hidden />
       )}
 
@@ -210,7 +182,7 @@ function FestieControlBar({
 
       {showChat && (
         <>
-          {(showSettings || showAutopilot) && (
+          {(showLineup || showAutopilot) && (
             <div className="game-control-bar__divider festie-control-divider" aria-hidden />
           )}
           <button
@@ -233,16 +205,14 @@ function FestieControlBar({
   );
 }
 
-/** Bottom-left festie panel — settings, lineup, Autopilot off/on in one row. */
+/** Bottom-left festie panel — lineup, Autopilot off/on in one row. */
 export function FestieLifeCorner({
   festie: _festie,
-  settingsOpen = false,
   stageLineupOpen = false,
   showStageSettings = false,
   onOpenStageSettings,
   hidden = false,
   isMobile = false,
-  onOpenSettings,
   onControlModeChange,
   showAutopilot: showAutopilotProp,
   persistAutopilot = true,
@@ -251,13 +221,12 @@ export function FestieLifeCorner({
 }: Props) {
   if (hidden) return null;
 
-  const showSettings = Boolean(onOpenSettings);
   const showAutopilot = showAutopilotProp ?? Boolean(_festie);
 
   if (
-    !showSettings
-    && !showAutopilot
+    !showAutopilot
     && !(isMobile && onOpenStagePanel)
+    && !(showStageSettings && onOpenStageSettings && !isMobile)
   ) {
     return null;
   }
@@ -274,14 +243,11 @@ export function FestieLifeCorner({
       }}
     >
       <FestieControlBar
-        settingsOpen={settingsOpen}
         stageLineupOpen={stageLineupOpen}
         showStageSettings={showStageSettings}
         isMobile={isMobile}
-        showSettings={showSettings}
         showAutopilot={showAutopilot}
         persistAutopilot={persistAutopilot}
-        onOpenSettings={onOpenSettings}
         onOpenStageSettings={onOpenStageSettings}
         onControlModeChange={onControlModeChange}
         stagePanelOpen={stagePanelOpen}

@@ -5,7 +5,7 @@ import { filterChatMessage } from '@/lib/messageFilter';
 import type { StageChatterMessage } from '@/lib/stageChatter/types';
 import type { CharacterLoadout } from './characters/loadout';
 import { Z_CONTROLS } from '@/lib/zLayers';
-import { ShoppingCartIcon } from './BottomControlPanel';
+import { ShoppingCartIcon, SettingsIcon } from './BottomControlPanel';
 import { StageLineupPanel } from './StageLineupPanel';
 import { StageInfoPanel } from './StageInfoPanel';
 import { VendorShopPanel } from './VendorShopPanelLazy';
@@ -80,6 +80,9 @@ type Props = {
   /** Headliner lawn layout — panel anchored below stage strip. */
   panelTop?: number | string;
   panelMaxHeight?: string;
+  /** Signed-in festie — gear tab opens FestieSettingsModal. */
+  settingsOpen?: boolean;
+  onOpenSettings?: () => void;
 };
 
 function formatTime(ts: number): string {
@@ -193,12 +196,14 @@ function SidePanelTab({
   label,
   icon,
   notify = false,
+  iconOnly = false,
   onClick,
 }: {
   active: boolean;
   label: string;
   icon: React.ReactNode;
   notify?: boolean;
+  iconOnly?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -214,10 +219,11 @@ function SidePanelTab({
         color: active ? 'rgba(255, 240, 250, 0.95)' : 'rgba(255, 255, 255, 0.45)',
         background: active ? 'rgba(255, 120, 200, 0.18)' : 'transparent',
         boxShadow: active ? 'inset 0 0 12px rgba(255, 120, 200, 0.08)' : 'none',
+        padding: iconOnly ? '5px 7px' : tabBtnBase.padding,
       }}
     >
       {icon}
-      {label}
+      {!iconOnly && label}
       {notify ? (
         <span
           aria-hidden
@@ -264,6 +270,8 @@ export function StageChatterPanel({
   onMobileOpenChange,
   panelTop,
   panelMaxHeight,
+  settingsOpen = false,
+  onOpenSettings,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
@@ -516,6 +524,15 @@ export function StageChatterPanel({
             icon={<NowPlayingTabIcon />}
             onClick={() => selectTab('info')}
           />
+          {onOpenSettings ? (
+            <SidePanelTab
+              active={settingsOpen}
+              label="Settings"
+              icon={<SettingsIcon size={14} />}
+              iconOnly
+              onClick={onOpenSettings}
+            />
+          ) : null}
         </div>
 
 

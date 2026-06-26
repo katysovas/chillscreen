@@ -23,6 +23,14 @@ type PageMetadataOptions = {
   imageAlt?: string;
 };
 
+/** Absolute URL for OG/Twitter crawlers (required for external images). */
+export function resolveShareImageUrl(image: string, baseUrl = SITE_URL): string {
+  if (/^https?:\/\//i.test(image)) return image;
+  const base = baseUrl.replace(/\/$/, '');
+  const path = image.startsWith('/') ? image : `/${image}`;
+  return `${base}${path}`;
+}
+
 export function buildPageMetadata({
   title,
   description = SITE_DESCRIPTION,
@@ -35,7 +43,8 @@ export function buildPageMetadata({
   const canonical = path.startsWith('/') ? path : `/${path}`;
   const pageTitle = title ?? SITE_NAME;
   const fullTitle = title && title !== SITE_NAME ? `${title} | ${SITE_NAME}` : SITE_NAME;
-  const ogImageUrl = image ?? OG_IMAGE_PATH;
+  const ogImagePath = image ?? OG_IMAGE_PATH;
+  const ogImageUrl = resolveShareImageUrl(ogImagePath);
   const ogImageAlt = imageAlt ?? `${SITE_NAME} — ${pageTitle}`;
 
   return {
@@ -79,7 +88,7 @@ export function buildPageMetadata({
           width: OG_IMAGE_WIDTH,
           height: OG_IMAGE_HEIGHT,
           alt: ogImageAlt,
-          type: 'image/png',
+          type: ogImageUrl.endsWith('.webp') ? 'image/webp' : 'image/png',
         },
       ],
     },
