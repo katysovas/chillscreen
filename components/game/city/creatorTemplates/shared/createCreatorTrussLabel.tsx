@@ -2,9 +2,10 @@
 
 import { useOptionalCreatorStage } from '@/lib/stages/CreatorStageContext';
 import { creatorStageTrussTitle } from '@/lib/stages/stageDisplayName';
+import type { VenueRoute } from '@/lib/venueSlugs';
 import type { CreatorStageConstants } from './types';
 
-type TrussLabelProps = { tile: number };
+type TrussLabelProps = { tile: number; deepLinkRoute?: VenueRoute };
 
 export function createCreatorTrussLabel(C: CreatorStageConstants) {
   const cx = C.WHICH_STAGE_MID_X;
@@ -16,11 +17,11 @@ export function createCreatorTrussLabel(C: CreatorStageConstants) {
   const titleY = C.WHICH_STAGE_TITLE_Y ?? trussY - 18;
   const isChill = C.idPrefix === 'chill';
 
-  return function CreatorTrussLabel({ tile }: TrussLabelProps) {
+  return function CreatorTrussLabel({ tile, deepLinkRoute }: TrussLabelProps) {
     if (isChill) return null;
 
     const creator = useOptionalCreatorStage();
-    const title = creatorStageTrussTitle(creator);
+    const title = creatorStageTrussTitle(creator, deepLinkRoute);
     const glowId = `${C.idPrefix}-truss-glow-${tile}`;
 
     return (

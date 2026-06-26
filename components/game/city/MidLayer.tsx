@@ -169,10 +169,10 @@ export const MidLayer = memo(forwardRef<SVGSVGElement, MidLayerProps>(
       const tf = scale === 1 ? undefined : `scale(${scale},1)`;
       return (
         <g transform={tf}>
-          {bundle.CityTileSkyLabels({ tileIndex: t })}
+          {bundle.CityTileSkyLabels({ tileIndex: t, deepLinkRoute })}
         </g>
       );
-    }, [isolatedTileIndex, bundle]);
+    }, [isolatedTileIndex, bundle, deepLinkRoute]);
 
     const atmoDefs = (
       <defs>

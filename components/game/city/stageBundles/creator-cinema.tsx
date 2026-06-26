@@ -1,4 +1,5 @@
 import { CityBackdropLayer, CinemaStage, CinemaTrussLabel } from '../cinema';
+import type { VenueRoute } from '@/lib/venueRoutes';
 import {
   CITY_BACKDROP_FILL,
   CITY_MID_TILE_H,
@@ -37,7 +38,7 @@ export const bundle = {
       <CinemaStage live={creatorTemplateLiveOnTile(props)} playbackRoute={props.deepLinkRoute} />
     );
   },
-  CityTileSkyLabels({ tileIndex: t }: { tileIndex: number }) {
-    return <CinemaTrussLabel tile={t} />;
+  CityTileSkyLabels({ tileIndex: t, deepLinkRoute }: { tileIndex: number; deepLinkRoute?: VenueRoute }) {
+    return <CinemaTrussLabel tile={t} deepLinkRoute={deepLinkRoute} />;
   },
 } satisfies StageMidBundleModule['bundle'];

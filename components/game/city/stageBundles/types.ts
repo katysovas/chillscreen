@@ -37,7 +37,7 @@ export type StageMidBundle = {
   /** Foreground stage (festival stages on separate parallax layer). */
   CityTileForeground?: (props: MidTileRenderProps) => React.ReactNode;
   /** Arch / truss labels above sky (Tentaroo only). */
-  CityTileSkyLabels?: (props: { tileIndex: number }) => React.ReactNode;
+  CityTileSkyLabels?: (props: { tileIndex: number; deepLinkRoute?: VenueRoute }) => React.ReactNode;
   /** Toilet overflow on the east town connector tile. */
   NeighborOverflow?: (props: { tileIndex: number }) => React.ReactNode;
 };
