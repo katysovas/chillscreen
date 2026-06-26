@@ -8,6 +8,8 @@ const C = { idPrefix: 'cinema', ...constants };
 
 export const CinemaStage = createCreatorMainStage(C).MainStage;
 export const CinemaTrussLabel = createCreatorTrussLabel(C);
+export { StageBackdropFill } from './StageBackdropFill';
+export { CinemaStageOverlay } from './CinemaStageOverlay';
 export { CinemaTile } from './CinemaTile';
 export { CityBackdropLayer } from './CityBackdropLayer';
 export {

@@ -26,5 +26,5 @@ export function preloadStageRouteAssets(route: VenueRoute): Promise<void> {
       applyLocalChannelPlaylist(channel, videos);
     }),
     preloadPlayerEquippedProps(),
-  ]).then(() => {});
+  ]).then(() => {}).catch(() => {});
 }

@@ -204,6 +204,8 @@ type GroundLayerProps = {
   landingHero?: boolean;
   /** Mobile lawn — flat continuous grass without stripe/seam artifacts. */
   mobileLawn?: boolean;
+  /** Safari desktop static — zero viewBox x-origin workaround. */
+  contentTranslateX?: number;
 };
 
 function groundTileContent(
@@ -308,7 +310,7 @@ function groundTileContent(
 }
 
 export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
-  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, bareGround = false, isolatedTileIndex, deepLinkRoute, landingHero = false, mobileLawn = false }, ref) {
+  function GroundLayer({ worldOff, hideTrees = false, hideStreetDogs = false, bareGround = false, isolatedTileIndex, deepLinkRoute, landingHero = false, mobileLawn = false, contentTranslateX }, ref) {
     const vx = worldOff * GND_F;
     const skipCtx: GroundStreetSkipContext | undefined = deepLinkRoute
       ? { route: deepLinkRoute, cameraOff: worldOff }
@@ -330,6 +332,7 @@ export const GroundLayer = memo(forwardRef<SVGSVGElement, GroundLayerProps>(
           shapeRendering="optimizeSpeed"
           parallaxLayer="ground"
           style={{ zIndex: 5, pointerEvents: 'none' }}
+          contentTranslateX={contentTranslateX}
         children={tile => groundTileContent(tile, hideTrees, hideStreetDogs, bareGround, skipCtx, mobileLawn)}
       />
     );

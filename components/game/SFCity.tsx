@@ -24,6 +24,11 @@ import { AmbientPlayerOverlay, NpcPairChatOverlay, PlayerChatOverlay } from './C
 import { playerBubbleSide } from './ChatBubble';
 import { CHAR_BOTTOM, crowdDepthForSeed } from './groundLayout';
 import { SKY_F, MID_F, GND_F, midScrollTile, gndScrollTile } from '@/lib/parallax';
+import { isSafariBrowser } from '@/lib/browserPlatform';
+import {
+  safariStaticContentTranslateX,
+  safariStaticViewBox,
+} from '@/lib/stageVideoOverlayStyle';
 import { scheduleIdleCallback } from '@/lib/scheduleIdleCallback';
 import { setAudioMuted } from '@/lib/audioMute';
 import { playChatInviteBeep } from '@/lib/playChatInviteBeep';
@@ -163,6 +168,7 @@ import { SkyLayer } from './city/SkyLayer';
 import { HeadlinerSkyBackdrop } from './city/headliner-sky';
 import { SpaceParallaxStars, DeepSpaceStageOverlay } from './city/orbit';
 import { EDCStageOverlay } from './city/lasvegas';
+import { CinemaStageOverlay } from './city/cinema';
 import { SkyCloudsLayer } from './city/SkyCloudsLayer';
 import { MidLayer } from './city/MidLayer';
 import { GroundLayer } from './city/GroundLayer';
@@ -185,7 +191,7 @@ import { MobileGameControls } from './MobileGameControls';
 import { MobileChatInputBar } from './MobileChatInputBar';
 import { venueSlugForRoute, type VenueRoute } from '@/lib/venueRoutes';
 import { venueSeoForRoute } from '@/lib/venueSeo';
-import { CITY_BACKDROP_FILL } from './city/cinema/constants';
+import { StageBackdropFill } from './city/cinema';
 import { FOREST_BACKDROP_FILL } from './city/forest/constants';
 import { VEGAS_BACKDROP_FILL } from './city/lasvegas/constants';
 import { SF_BACKDROP_FILL } from './city/sf/constants';
@@ -262,6 +268,11 @@ const TEST_PLAYER_LOADOUT = {} as const;
 const TEST_CHAT_CONNECT_ON_LOAD = false;
 
 // Characters are defined in characters.ts (names, personalities, AI chat).
+
+function applySafariDesktopVb(vb: string, layerVx: number, desktopStatic: boolean): string {
+  if (!desktopStatic || !isSafariBrowser() || layerVx === 0) return vb;
+  return safariStaticViewBox(vb);
+}
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -357,6 +368,10 @@ export default function SFCity({
   const isSeattle = effectiveVenueRoute === 'seattle-concerts';
   const isCreatorCustomSky = isCreatorChill || isHeadliner || isCreatorCinema || isSilentDisco || isForest || isTentaroo || isSanFrancisco || isChillCinema || isLasVegas || isSeattle;
   const staticStageBackdropUrl = effectiveVenueRoute === 'hula' ? '/images/stages/hula.webp' : null;
+  const creatorBackdropDisplayUrl = useMemo(
+    () => staticStageBackdropUrl ?? stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null,
+    [staticStageBackdropUrl, creatorStage?.backdropUrl],
+  );
   /** Stable per tab session — matches stage picker crowd counts. */
   const ambientSeed = useMemo(
     () => ambientSeedForRoute(effectiveVenueRoute),
@@ -480,9 +495,9 @@ export default function SFCity({
       : staticVb(layerVx);
     const midPar = staticPar;
     const gndPar = splitGrassLayout ? MOBILE_VENUE_GROUND_PAR : staticPar;
-    const midVb = stageVb(midVx);
-    const gndVb = groundVb(gndVx);
-    const skyVb = stageVb(skyVx);
+    const midVb = applySafariDesktopVb(stageVb(midVx), midVx, desktopStatic);
+    const gndVb = applySafariDesktopVb(groundVb(gndVx), gndVx, desktopStatic);
+    const skyVb = applySafariDesktopVb(stageVb(skyVx), skyVx, desktopStatic);
 
     skyRef.current?.setAttribute('viewBox', skyVb);
     skyRef.current?.setAttribute('preserveAspectRatio', staticPar);
@@ -3085,16 +3100,7 @@ export default function SFCity({
             }}
           />
         ) : isCreatorCinema ? (
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 1,
-              pointerEvents: 'none',
-              background: CITY_BACKDROP_FILL,
-            }}
-          />
+          <StageBackdropFill url={creatorBackdropDisplayUrl} />
         ) : isSeattle ? (
           <div
             aria-hidden
@@ -3182,8 +3188,9 @@ export default function SFCity({
           deepLinkRoute={effectiveVenueRoute}
           hideTrees={mobileDevice || isDeepSpace || isLasVegas || isHeadliner}
           isolatedTileIndex={isolatedTile}
-          creatorBackdropUrl={staticStageBackdropUrl ?? stageBackdropDisplayUrl(creatorStage?.backdropUrl) ?? null}
-          stageOverlay={(isDeepSpace || isLasVegas) && !mobileDevice && !homePreview}
+          creatorBackdropUrl={creatorBackdropDisplayUrl}
+          stageOverlay={(isDeepSpace || isLasVegas || isCreatorCinema) && !mobileDevice && !homePreview}
+          contentTranslateX={safariStaticContentTranslateX(midScrollWorldOff * MID_F)}
         />
         {splitGrassLayout && !isDeepSpace && !isHeadliner && (
           <div aria-hidden className="mobile-venue-grass-fill" />
@@ -3199,6 +3206,7 @@ export default function SFCity({
           deepLinkRoute={effectiveVenueRoute}
           landingHero={landingHero}
           mobileLawn={splitGrassLayout}
+          contentTranslateX={safariStaticContentTranslateX(gndScrollWorldOff * GND_F)}
         />
         )}
         {!isDeepSpace && effectiveVenueRoute !== 'tentaroo' && !landingHero && (
@@ -3347,6 +3355,7 @@ export default function SFCity({
             </div>
           </div>
         ))}
+
       </div>
 
       {isDeepSpace && !mobileDevice && !homePreview && (
@@ -3355,6 +3364,13 @@ export default function SFCity({
 
       {isLasVegas && !mobileDevice && !homePreview && (
         <EDCStageOverlay live />
+      )}
+
+      {isCreatorCinema && !mobileDevice && !homePreview && (
+        <CinemaStageOverlay
+          live
+          playbackRoute={effectiveVenueRoute}
+        />
       )}
 
       {!homePreview && (

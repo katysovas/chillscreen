@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+@import '../components/game/GameControlBar.css';
+@import '../components/game/FestieLifeCorner.css';
+
 /* SSR venue boot shell — LCP target on /space and other stage routes. */
 .venue-boot-overlay {
   position: fixed;

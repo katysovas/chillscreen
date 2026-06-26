@@ -450,16 +450,22 @@ ${beamKeyframes}
     live = false,
     playbackRoute,
     heroScreen = false,
+    desktopStageOverlay = false,
   }: {
     live?: boolean;
     playbackRoute?: VenueRoute;
     /** Empty stage screen for landing hero copy (no video, no idle play UI). */
     heroScreen?: boolean;
+    /** Desktop HTML overlay renders video outside SVG — skip foreignObject. */
+    desktopStageOverlay?: boolean;
   }) {
     if (heroScreen) {
       return <CreatorStageShell idleScreen={false} artistMarquee={null} heroLayout />;
     }
     if (!live) return <CreatorStageShell />;
+    if (desktopStageOverlay) {
+      return <CreatorStageShell idleScreen={false} />;
+    }
     return <CreatorStageLive playbackRoute={playbackRoute} />;
   }
 

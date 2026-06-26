@@ -15,16 +15,21 @@ import { STAGE_TOILET } from '@/lib/stageToilets';
 
 export const bundle = {
   CityTileBody(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileBody']>>[0]) {
+    const hasHtmlBackdrop = Boolean(props.creatorBackdropUrl);
     return (
       <>
-        <rect
-          x={CITY_STATIC_VIEWPORT_X}
-          y={0}
-          width={CITY_STATIC_VIEWPORT_W}
-          height={CITY_MID_TILE_H}
-          fill={CITY_BACKDROP_FILL}
-        />
-        <CityBackdropLayer skylineUrl={props.creatorBackdropUrl} fitViewport />
+        {!hasHtmlBackdrop && (
+          <>
+            <rect
+              x={CITY_STATIC_VIEWPORT_X}
+              y={0}
+              width={CITY_STATIC_VIEWPORT_W}
+              height={CITY_MID_TILE_H}
+              fill={CITY_BACKDROP_FILL}
+            />
+            <CityBackdropLayer fitViewport />
+          </>
+        )}
         <StageToiletsFlanking
           centerX={CINEMA_STAGE_MID_X}
           stageHalfWidth={CINEMA_STAGE_TOILET_HALF}
@@ -35,7 +40,11 @@ export const bundle = {
   },
   CityTileForeground(props: Parameters<NonNullable<StageMidBundleModule['bundle']['CityTileForeground']>>[0]) {
     return (
-      <CinemaStage live={creatorTemplateLiveOnTile(props)} playbackRoute={props.deepLinkRoute} />
+      <CinemaStage
+        live={creatorTemplateLiveOnTile(props)}
+        playbackRoute={props.deepLinkRoute}
+        desktopStageOverlay={props.desktopStageOverlay}
+      />
     );
   },
   CityTileSkyLabels({ tileIndex: t, deepLinkRoute }: { tileIndex: number; deepLinkRoute?: VenueRoute }) {

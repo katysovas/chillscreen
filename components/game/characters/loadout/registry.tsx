@@ -63,6 +63,8 @@ export function preloadLoadoutSlot(slot: LoadoutSlot): Promise<void> {
     pending = SLOT_IMPORTS[slot]().then(mod => {
       slotModules.set(slot, mod.RENDERERS);
       bumpRegistry();
+    }).catch(() => {
+      slotLoads.delete(slot);
     });
     slotLoads.set(slot, pending);
   }
