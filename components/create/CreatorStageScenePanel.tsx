@@ -48,7 +48,7 @@ export function CreatorStageScenePanel() {
     setSocialLinksDirty(false);
   }, [slug, stageDescription, stageSocialLinks]);
 
-  if (!ctx?.isOwner || !stage) return null;
+  if (!ctx?.canManageLineup || !stage) return null;
 
   const { setStage } = ctx;
   const isCityTemplate = stage.preset === 'cinema';

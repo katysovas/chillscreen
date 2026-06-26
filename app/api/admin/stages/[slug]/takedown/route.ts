@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { AdminForbiddenError, assertLocalAdminRequest } from '@/lib/adminLocalhost';
 import { getDb } from '@/lib/db';
 import { takedownUserStage } from '@/lib/stages/db';
 
@@ -7,9 +8,18 @@ export const dynamic = 'force-dynamic';
 type RouteContext = { params: Promise<{ slug: string }> };
 
 /** POST — admin immediate takedown. */
-export async function POST(_req: Request, ctx: RouteContext) {
+export async function POST(req: Request, ctx: RouteContext) {
   if (!getDb()) {
     return NextResponse.json({ error: 'DATABASE_URL is not configured' }, { status: 503 });
+  }
+
+  try {
+    await assertLocalAdminRequest(req);
+  } catch (err) {
+    if (err instanceof AdminForbiddenError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
   }
 
   const { slug: rawSlug } = await ctx.params;

@@ -17,7 +17,7 @@ function adminError(err: unknown) {
 
 export async function GET(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     return NextResponse.json(await readSeedsFile());
   } catch (err) {
     return adminError(err);
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     const body = (await request.json()) as Partial<SeedsFile>;
     const file = await writeSeedsFile(normalizeSeedsFile(body));
     return NextResponse.json({ ok: true, updatedAt: file.updatedAt, file });

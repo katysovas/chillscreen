@@ -33,7 +33,7 @@ function parseTarget(searchParams: URLSearchParams): SeedPoolTarget | null {
 /** Fetch Reddit hot posts — single sub or daily preset bundle. */
 export async function GET(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     const { searchParams } = new URL(request.url);
     const sub = searchParams.get('sub')?.trim();
     const daily = searchParams.get('daily') === '1';

@@ -56,7 +56,7 @@ async function callOpenAi(prompt: string, apiKey: string): Promise<string> {
 /** Turn selected Reddit topics into seed lines via LLM. */
 export async function POST(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
 
     const openAiKey = process.env.OPENAI_API_KEY?.trim();
     if (!openAiKey) {

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 /** Look up one YouTube video by URL or id (no search quota). */
 export async function GET(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     const { searchParams } = new URL(request.url);
     const input = searchParams.get('url') ?? searchParams.get('id') ?? '';
     if (!input.trim()) {

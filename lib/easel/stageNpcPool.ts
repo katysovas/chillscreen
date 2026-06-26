@@ -9,6 +9,7 @@ import forestNpcs from '@/data/generated-npcs/channels/forest.json';
 import outsideLandsNpcs from '@/data/generated-npcs/channels/outside-lands.json';
 import silentDiscoNpcs from '@/data/generated-npcs/channels/silent-disco.json';
 import whichStageNpcs from '@/data/generated-npcs/channels/which-stage.json';
+import hulaNpcs from '@/data/generated-npcs/channels/hula.json';
 
 /** Server-safe generated NPC pools keyed by playlist channel. */
 export const CHANNEL_NPC_POOL: Record<StageChannel, GeneratedNpc[]> = {
@@ -21,7 +22,7 @@ export const CHANNEL_NPC_POOL: Record<StageChannel, GeneratedNpc[]> = {
   'which-stage': whichStageNpcs as GeneratedNpc[],
   forest: forestNpcs as GeneratedNpc[],
   'silent-disco': silentDiscoNpcs as GeneratedNpc[],
-  hula: whichStageNpcs as GeneratedNpc[],
+  hula: hulaNpcs as GeneratedNpc[],
   headliner: [],
 };
 

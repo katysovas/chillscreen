@@ -2,7 +2,8 @@
 export {
   AdminForbiddenError,
   assertAdminRequest,
-  assertAdminRequest as assertLocalAdminRequest,
+  assertAdminOrSuperAdminRequest,
+  assertAdminOrSuperAdminRequest as assertLocalAdminRequest,
   isAdminEnabled,
   isAdminAuthenticated,
 } from '@/lib/adminAuth';

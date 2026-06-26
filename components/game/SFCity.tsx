@@ -203,6 +203,7 @@ import { FestieLifeCorner } from './FestieLifeCorner';
 import { FestieLifeModal } from './FestieLifeModal';
 import { FestieSettingsModal, type FestieSettingsTab } from './FestieSettingsModal';
 import { CreatorStageLineupModal } from '@/components/create/CreatorStageSettingsModal';
+import { BuiltInStagePlaylistModal } from '@/components/game/BuiltInStagePlaylistModal';
 import { finalizeNpcCast, hasStickerTripActive, preloadAllLoadoutSlots, preloadCrowdLoadouts, StickerTripOverlay } from './characters/loadout';
 import {
   clearNpcSyncedWorldX,
@@ -307,6 +308,10 @@ export default function SFCity({
     if (creatorStage) return null;
     const channel = stageChannelForRoute(effectiveVenueRoute);
     return isCuratedChannel(channel) ? channel : null;
+  }, [creatorStage, effectiveVenueRoute]);
+  const builtInStageChannel = useMemo(() => {
+    if (creatorStage) return null;
+    return stageChannelForRoute(effectiveVenueRoute);
   }, [creatorStage, effectiveVenueRoute]);
   const stagePlaybackChannel = useMemo(() => {
     if (creatorStage) return null;
@@ -666,6 +671,15 @@ export default function SFCity({
       setSettingsInitialTab('customize');
       setLifeModalOpen(false);
       setStageSidePanelTab('chat');
+      setStageLineupOpen(false);
+      return true;
+    });
+  }, []);
+
+  const toggleLineupEditor = useCallback(() => {
+    setStageLineupOpen(open => {
+      if (open) return false;
+      setSettingsOpen(false);
       return true;
     });
   }, []);
@@ -734,6 +748,8 @@ export default function SFCity({
   }, [festieSignedIn, profileReady, isCreatorStageOwner, creatorStage?.slug]);
 
   const isSuperAdmin = festieSignedIn && profileReady && isSuperAdminFestieName(ownerFestie?.name);
+  const canManageBuiltInPlaylist = Boolean(isSuperAdmin && builtInStageChannel);
+  const showStagePlaylistEditor = canManageCreatorLineup || canManageBuiltInPlaylist;
   const chatterRoomId = useMemo(
     () => (
       creatorStage
@@ -3346,11 +3362,6 @@ export default function SFCity({
       {(festieSignedIn && ownerFestie || !festieSignedIn || mobileDevice) && (
         <FestieLifeCorner
           festie={ownerFestie}
-          stageLineupOpen={stageLineupOpen}
-          showStageSettings={canManageCreatorLineup}
-          onOpenStageSettings={
-            canManageCreatorLineup ? () => setStageLineupOpen(true) : undefined
-          }
           hidden={showWelcome || showCityPicker}
           isMobile={mobileDevice}
           showAutopilot={festieSignedIn ? Boolean(ownerFestie) : true}
@@ -3415,11 +3426,20 @@ export default function SFCity({
           onMobileOpenChange={setMobileStagePanelOpen}
           settingsOpen={settingsOpen}
           onOpenSettings={festieSignedIn ? toggleSettings : undefined}
+          lineupOpen={stageLineupOpen}
+          onOpenLineup={showStagePlaylistEditor ? toggleLineupEditor : undefined}
         />
       )}
 
       {stageLineupOpen && canManageCreatorLineup && (
         <CreatorStageLineupModal onClose={() => setStageLineupOpen(false)} />
+      )}
+
+      {stageLineupOpen && canManageBuiltInPlaylist && builtInStageChannel && (
+        <BuiltInStagePlaylistModal
+          channel={builtInStageChannel}
+          onClose={() => setStageLineupOpen(false)}
+        />
       )}
 
       {showHelpPopup && (

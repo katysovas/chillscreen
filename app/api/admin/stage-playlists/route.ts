@@ -29,7 +29,7 @@ function adminError(err: unknown) {
 /** Load `data/stage-playlists.json` with per-channel video lists. */
 export async function GET(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     const file = readStagePlaylistsFile();
     const channels = Object.fromEntries(
       (Object.keys(file.channels) as StageChannel[]).map(id => [
@@ -57,7 +57,7 @@ type SaveBody = {
 /** Save one channel's playlist and/or matchup buckets to JSON. */
 export async function PUT(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     const body = (await request.json()) as SaveBody;
     if (!body.channel) {
       return NextResponse.json({ error: 'channel required' }, { status: 400 });
@@ -89,7 +89,7 @@ type FullSaveBody = StagePlaylistsFile;
 /** Replace the entire playlists file (optional bulk save). */
 export async function POST(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     const body = (await request.json()) as FullSaveBody;
     if (!body.channels || body.version !== 1) {
       return NextResponse.json({ error: 'Invalid playlists file' }, { status: 400 });

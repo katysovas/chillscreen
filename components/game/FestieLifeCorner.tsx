@@ -1,7 +1,6 @@
 'use client';
 
 import { useId, useSyncExternalStore } from 'react';
-import { LineupIcon } from './BottomControlPanel';
 import {
   getFestieControlMode,
   setFestieControlMode,
@@ -16,9 +15,6 @@ import './GameControlBar.css';
 
 type Props = {
   festie?: FestieOwner | null;
-  stageLineupOpen?: boolean;
-  showStageSettings?: boolean;
-  onOpenStageSettings?: () => void;
   hidden?: boolean;
   isMobile?: boolean;
   onControlModeChange?: (mode: FestieControlMode) => void;
@@ -114,65 +110,36 @@ function AutopilotSwitch({
 }
 
 type BarProps = {
-  stageLineupOpen: boolean;
-  showStageSettings: boolean;
   isMobile: boolean;
   showAutopilot: boolean;
   persistAutopilot?: boolean;
-  onOpenStageSettings?: () => void;
   onControlModeChange?: (mode: FestieControlMode) => void;
   stagePanelOpen?: boolean;
   onOpenStagePanel?: () => void;
 };
 
 function FestieControlBar({
-  stageLineupOpen,
-  showStageSettings,
   isMobile,
   showAutopilot,
   persistAutopilot = true,
-  onOpenStageSettings,
   onControlModeChange,
   stagePanelOpen = false,
   onOpenStagePanel,
 }: BarProps) {
   const iconSize = isMobile ? 18 : 16;
-  const showLineup = showStageSettings && Boolean(onOpenStageSettings) && !isMobile;
   const showChat = isMobile && Boolean(onOpenStagePanel);
-  const guestMatchBar = showAutopilot && !showLineup && !isMobile;
+  const guestMatchBar = showAutopilot && !isMobile;
 
   return (
     <div
       className={[
         'game-control-bar',
         guestMatchBar ? 'festie-control-bar--guest-match' : 'festie-control-bar',
-        stageLineupOpen ? 'game-control-bar--open festie-control-bar--open' : '',
         isMobile ? 'game-control-bar--mobile festie-control-bar--mobile' : '',
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      {showLineup && (
-        <button
-          type="button"
-          className={['festie-icon-btn', stageLineupOpen ? 'festie-icon-btn--active' : '']
-            .filter(Boolean)
-            .join(' ')}
-          onClick={onOpenStageSettings}
-          onPointerDown={isMobile ? e => e.preventDefault() : undefined}
-          aria-label="Lineup settings"
-          aria-pressed={stageLineupOpen}
-          title="Lineup"
-          style={isMobile ? { touchAction: 'none' } : undefined}
-        >
-          <LineupIcon size={iconSize} />
-        </button>
-      )}
-
-      {showLineup && showAutopilot && (
-        <div className="game-control-bar__divider festie-control-divider" aria-hidden />
-      )}
-
       {showAutopilot && (
         <AutopilotSwitch
           onControlModeChange={onControlModeChange}
@@ -182,7 +149,7 @@ function FestieControlBar({
 
       {showChat && (
         <>
-          {(showLineup || showAutopilot) && (
+          {showAutopilot && (
             <div className="game-control-bar__divider festie-control-divider" aria-hidden />
           )}
           <button
@@ -205,12 +172,9 @@ function FestieControlBar({
   );
 }
 
-/** Bottom-left festie panel — lineup, Autopilot off/on in one row. */
+/** Bottom-left festie panel — Autopilot toggle (and mobile chat on small screens). */
 export function FestieLifeCorner({
   festie: _festie,
-  stageLineupOpen = false,
-  showStageSettings = false,
-  onOpenStageSettings,
   hidden = false,
   isMobile = false,
   onControlModeChange,
@@ -223,11 +187,7 @@ export function FestieLifeCorner({
 
   const showAutopilot = showAutopilotProp ?? Boolean(_festie);
 
-  if (
-    !showAutopilot
-    && !(isMobile && onOpenStagePanel)
-    && !(showStageSettings && onOpenStageSettings && !isMobile)
-  ) {
+  if (!showAutopilot && !(isMobile && onOpenStagePanel)) {
     return null;
   }
 
@@ -243,12 +203,9 @@ export function FestieLifeCorner({
       }}
     >
       <FestieControlBar
-        stageLineupOpen={stageLineupOpen}
-        showStageSettings={showStageSettings}
         isMobile={isMobile}
         showAutopilot={showAutopilot}
         persistAutopilot={persistAutopilot}
-        onOpenStageSettings={onOpenStageSettings}
         onControlModeChange={onControlModeChange}
         stagePanelOpen={stagePanelOpen}
         onOpenStagePanel={onOpenStagePanel}

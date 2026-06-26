@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { AdminForbiddenError, assertLocalAdminRequest } from '@/lib/adminLocalhost';
 import { getDb } from '@/lib/db';
 import {
   addModerationBlock,
@@ -13,12 +14,21 @@ import type { ModerationBlockKind } from '@/lib/moderation/types';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+function adminError(err: unknown) {
+  if (err instanceof AdminForbiddenError) {
+    return NextResponse.json({ error: err.message }, { status: err.status });
+  }
+  console.error('[admin/chat-moderation]', err);
+  return NextResponse.json({ error: 'Server error' }, { status: 500 });
+}
+
+export async function GET(request: Request) {
   if (!getDb()) {
     return NextResponse.json({ error: 'DATABASE_URL is not configured' }, { status: 503 });
   }
 
   try {
+    await assertLocalAdminRequest(request);
     const [accounts, anonymous, blocks] = await Promise.all([
       listChatAccounts(),
       aggregateAnonymousChatters(),
@@ -38,8 +48,7 @@ export async function GET() {
 
     return NextResponse.json({ accounts, anonymous: anonymousWithBlocks, blocks });
   } catch (err) {
-    console.error('[admin/chat-moderation GET]', err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return adminError(err);
   }
 }
 
@@ -68,6 +77,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    await assertLocalAdminRequest(req);
     switch (body.action) {
       case 'block': {
         if (!body.kind || !body.value?.trim()) {
@@ -124,7 +134,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
   } catch (err) {
-    console.error('[admin/chat-moderation POST]', err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return adminError(err);
   }
 }

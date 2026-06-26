@@ -12,6 +12,7 @@ import {
   characterDefsFromPool,
   sampleGeneratedNpcs,
 } from './generatedNpcsCore';
+import { resolveGeneratedNpcPool } from './generatedNpcPool';
 
 export { sampleGeneratedNpcs } from './generatedNpcsCore';
 
@@ -22,7 +23,7 @@ const FILE = generatedNpcsFile as {
 
 /** Full generated pool for one channel (chat lookup, admin). */
 export function generatedCharactersForChannel(channel: StageChannel): CharacterDef[] {
-  return characterDefsFromFullPool(FILE.channels[channel] ?? [], channel);
+  return characterDefsFromFullPool(resolveGeneratedNpcPool(FILE.channels, channel), channel);
 }
 
 /** Random ambient subset for one stage visit — server-side fallback. */
@@ -30,7 +31,7 @@ export function sampledGeneratedCharactersForChannel(
   channel: StageChannel,
   seed: number,
 ): CharacterDef[] {
-  return characterDefsFromPool(FILE.channels[channel] ?? [], channel, seed);
+  return characterDefsFromPool(resolveGeneratedNpcPool(FILE.channels, channel), channel, seed);
 }
 
 /** All generated NPCs across every stage (chat API lookup). */

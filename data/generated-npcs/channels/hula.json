@@ -1,0 +1,210 @@
+[
+  {
+    "name": "hannah",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "drink-lemonade",
+    "vibe": "still processing the fourteen dollar lemonade",
+    "personalityNotes": "Paid fourteen dollars for a lemonade and is working through it emotionally. Sips slowly to maximize value. Does the lemon math out loud.",
+    "lines": [
+      "fourteen for a lemonade",
+      "it's good but fourteen",
+      "sipping it slow on purpose",
+      "ice was half the cup",
+      "refills not a thing here",
+      "lemon math doesn't add up",
+      "still thirsty somehow",
+      "next year i bring lemons"
+    ]
+  },
+  {
+    "name": "josh",
+    "archetype": "wanderer",
+    "outfit": "none",
+    "prop": null,
+    "vibe": "cannot remember where he camped",
+    "personalityNotes": "Lost his camp spot hours ago and is navigating by vibes. His landmark was a trash can that may have moved. Walking in confident circles.",
+    "lines": [
+      "camped by a flag. which flag",
+      "row f or g",
+      "everything looks the same",
+      "landmark was a trash can",
+      "they moved the trash can",
+      "phone pin says i'm here",
+      "walking in circles officially",
+      "tent is out there somewhere"
+    ]
+  },
+  {
+    "name": "megan",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "calling the setlist before it happens",
+    "personalityNotes": "Predicts every song before it plays and keeps score with herself. Has studied past tours like exam material. Will be insufferable if she's right.",
+    "lines": [
+      "opener will be the single",
+      "calling it now",
+      "they always close with it",
+      "last tour they swapped track four",
+      "encore is two songs. always",
+      "setlist leaked. probably fake",
+      "if they skip it i riot",
+      "calling the bridge early"
+    ]
+  },
+  {
+    "name": "carlos",
+    "archetype": "vendor",
+    "outfit": "pirate",
+    "prop": "food-hotdog",
+    "vibe": "pirate vendor having a slow tip day",
+    "personalityNotes": "Costumed vendor grumbling about the tip economy in deadpan. Counts smiles as partial payment. The hotdog on the grill has been there a while.",
+    "lines": [
+      "tips thinner than this bun",
+      "long day. two buyers",
+      "one smile counts as a tip",
+      "mustard budget exceeded",
+      "pirate hat does not sell hotdogs",
+      "glowsticks would tip better",
+      "cold one on the grill",
+      "economy is rough out here"
+    ]
+  },
+  {
+    "name": "ryan",
+    "archetype": "hustler",
+    "outfit": "none",
+    "prop": null,
+    "vibe": "working an angle to get backstage",
+    "personalityNotes": "Has been trying to talk his way backstage all day. Studies security rotations and lanyard culture. Every failure is just data for plan c.",
+    "lines": [
+      "wristband guy knows a guy",
+      "almost got the nod",
+      "security rotates at nine",
+      "lanyard is half the battle",
+      "walked in confident. walked out",
+      "yellow band gets you close",
+      "plan c starts now",
+      "act like staff. basics"
+    ]
+  },
+  {
+    "name": "dana",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "hat-lady",
+    "vibe": "fighting the sun with spf fifty",
+    "personalityNotes": "Treats sunscreen reapplication like a scheduled ritual. Narrates her ongoing battle with the sun. The hat was a strategic decision she's proud of.",
+    "lines": [
+      "reapplied at noon sharp",
+      "missed a spot. feeling it",
+      "sun's stronger than advertised",
+      "shade is temporary",
+      "spf fifty doing its best",
+      "sweat undoes everything",
+      "bottle's almost out",
+      "hat was the right call"
+    ]
+  },
+  {
+    "name": "steph",
+    "archetype": "dancer",
+    "outfit": "pirate",
+    "prop": "hand-boombox",
+    "vibe": "defending the speaker sweet spot",
+    "personalityNotes": "Found the acoustic sweet spot and guards it like territory. Has strong opinions about where the snare disappears. The crowd keeps drifting into her zone.",
+    "lines": [
+      "sweet spot is here. almost",
+      "bass dies past this point",
+      "two steps left ruins it",
+      "crowd keeps drifting into it",
+      "snare disappears over there",
+      "found it. holding ground",
+      "sound guy knows. he knows",
+      "this spot is mine now"
+    ]
+  },
+  {
+    "name": "nate",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": null,
+    "vibe": "remembers when the crowds were smaller",
+    "personalityNotes": "Mellow regular quietly mourning how big this festival got. Wants one square foot of breathing room. Still wouldn't miss it for anything.",
+    "lines": [
+      "crowds doubled this year",
+      "used to be smaller",
+      "dust everywhere now",
+      "breathing room is premium",
+      "quiet corner doesn't exist",
+      "farm vibes getting lost",
+      "everyone found out about this place",
+      "still wouldn't miss it"
+    ]
+  },
+  {
+    "name": "amber",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "jam band transition expert",
+    "personalityNotes": "Knows when a jam is about to peak. Moves closer preemptively."
+  },
+  {
+    "name": "brent",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "drink-water",
+    "vibe": "camp hydration officer",
+    "personalityNotes": "Tracks who has not refilled. Passive-aggressive water reminders."
+  },
+  {
+    "name": "cindy",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": null,
+    "vibe": "lost since the opener",
+    "personalityNotes": "Friends were at the rail. Rail relocated. Still searching."
+  },
+  {
+    "name": "doug",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-hotdog",
+    "vibe": "late night dog vendor",
+    "personalityNotes": "Peak sales after midnight. Has strong opinions about condiment ratios."
+  },
+  {
+    "name": "emily",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "hat-lady",
+    "vibe": "sun hat strategy at the Hulaween",
+    "personalityNotes": "Reapplies sunscreen on a timer. The hat is non-negotiable."
+  },
+  {
+    "name": "fred",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": null,
+    "vibe": "undercover at the campground stage",
+    "personalityNotes": "Flannel and binoculars. Notes tie-dye patterns. Comedy only."
+  },
+  {
+    "name": "gloria",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "hand-boombox",
+    "vibe": "rail spot defender",
+    "personalityNotes": "Held the rail since soundcheck. Will explain why politely."
+  },
+  {
+    "name": "henry",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "food-pizza",
+    "vibe": "festival pizza historian",
+    "personalityNotes": "Compares every slice to 2019. Nobody asked but everyone listens."
+  }
+]

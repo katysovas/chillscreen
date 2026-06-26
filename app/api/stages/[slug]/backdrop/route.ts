@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { userIdFromRequest } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
+import { isSuperAdminUserId } from '@/lib/superAdmin.server';
 import {
   getUserStageBySlug,
   toUserStagePublic,
@@ -33,7 +34,11 @@ export async function POST(req: Request, ctx: RouteContext) {
 
   try {
     const existing = await getUserStageBySlug(slug);
-    if (!existing || existing.owner_id !== userId || existing.taken_down_at) {
+    if (!existing || existing.taken_down_at) {
+      return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
+    }
+    const isSuperAdmin = await isSuperAdminUserId(userId);
+    if (existing.owner_id !== userId && !isSuperAdmin) {
       return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
     }
     if (existing.preset !== 'cinema') {
@@ -62,7 +67,7 @@ export async function POST(req: Request, ctx: RouteContext) {
     }
     const backdropUrl = withCacheBust(storedPath);
 
-    const row = await updateUserStage(slug, userId, { backdropUrl });
+    const row = await updateUserStage(slug, existing.owner_id, { backdropUrl });
     if (!row) {
       return NextResponse.json({ error: 'Could not save backdrop.' }, { status: 500 });
     }

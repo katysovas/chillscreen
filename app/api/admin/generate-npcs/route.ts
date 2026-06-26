@@ -20,7 +20,7 @@ type RequestBody = {
 /** Generate ambient NPCs for a stage — localhost admin only. */
 export async function POST(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
 
     const key = process.env.OPENAI_API_KEY;
     if (!key) {

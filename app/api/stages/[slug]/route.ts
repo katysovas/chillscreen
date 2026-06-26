@@ -88,17 +88,6 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
     }
 
-    if (isSuperAdmin && !isOwner) {
-      const lineupOnlyKeys = new Set(['streams', 'nowPlayingIndex', 'shuffleOnStart']);
-      const requestedKeys = Object.keys(body).filter(key => body[key] !== undefined);
-      if (requestedKeys.some(key => !lineupOnlyKeys.has(key))) {
-        return NextResponse.json(
-          { error: 'Super admin can only edit lineup.' },
-          { status: 403 },
-        );
-      }
-    }
-
     if (body.streams !== undefined) {
       const streams = parseStreamsJson(body.streams);
       if (!streams.length) {
@@ -199,7 +188,11 @@ export async function DELETE(req: Request, ctx: RouteContext) {
 
   try {
     const existing = await getUserStageBySlug(slug);
-    if (!existing || existing.owner_id !== userId) {
+    if (!existing || existing.taken_down_at) {
+      return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
+    }
+    const isSuperAdmin = await isSuperAdminUserId(userId);
+    if (existing.owner_id !== userId && !isSuperAdmin) {
       return NextResponse.json({ error: 'Stage not found or not yours' }, { status: 404 });
     }
     await takedownUserStage(slug);

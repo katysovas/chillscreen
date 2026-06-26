@@ -1,10 +1,12 @@
 import { createHash, timingSafeEqual } from 'crypto';
+import { userIdFromRequest } from '@/lib/auth/session';
 import {
   COOKIE_NAME,
   cookieTokenFromRequest,
   getAdminPassword,
   isAdminEnabled,
 } from '@/lib/adminAuthCore';
+import { isSuperAdminUserId } from '@/lib/superAdmin.server';
 
 const COOKIE_SALT = 'chillscreen-admin-v1';
 
@@ -58,6 +60,19 @@ export class AdminForbiddenError extends Error {
 }
 
 export function assertAdminRequest(request: Request): void {
+  if (!isAdminEnabled()) {
+    throw new AdminForbiddenError('Admin is not configured');
+  }
+  if (!isAdminAuthenticated(request)) {
+    throw new AdminForbiddenError('Admin authentication required');
+  }
+}
+
+/** Admin password cookie or signed-in super admin (HuskyNights). */
+export async function assertAdminOrSuperAdminRequest(request: Request): Promise<void> {
+  const userId = userIdFromRequest(request);
+  if (userId && await isSuperAdminUserId(userId)) return;
+
   if (!isAdminEnabled()) {
     throw new AdminForbiddenError('Admin is not configured');
   }

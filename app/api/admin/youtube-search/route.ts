@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 /** Search YouTube for localhost admin curation. */
 export async function GET(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q')?.trim() ?? '';
     if (!q) {

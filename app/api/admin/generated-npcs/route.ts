@@ -20,7 +20,7 @@ function adminError(err: unknown) {
 /** Load `data/generated-npcs.json`. */
 export async function GET(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     return NextResponse.json(readGeneratedNpcsFile());
   } catch (err) {
     return adminError(err);
@@ -35,7 +35,7 @@ type SaveBody = {
 /** Save one stage's generated NPCs to `data/generated-npcs.json`. */
 export async function PUT(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     const body = (await request.json()) as SaveBody;
     if (!body.channel || !(body.channel in NPC_STAGE_CONTEXT) || !Array.isArray(body.npcs)) {
       return NextResponse.json({ error: 'channel and npcs required' }, { status: 400 });

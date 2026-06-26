@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 /** Fetch recent uploads from a YouTube channel for localhost admin curation. */
 export async function GET(request: Request) {
   try {
-    assertLocalAdminRequest(request);
+    await assertLocalAdminRequest(request);
     const { searchParams } = new URL(request.url);
     const channel = searchParams.get('channel')?.trim() ?? '';
     if (!channel) {

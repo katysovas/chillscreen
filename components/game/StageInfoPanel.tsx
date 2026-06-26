@@ -14,6 +14,8 @@ import {
   type StageSocialLinkKind,
 } from '@/lib/stages/socialLinks';
 import type { StageChannel } from '@/lib/stageVideos';
+import { DISCORD_URL } from '@/lib/site';
+import { CABANA_DISCORD_LOGO } from '@/lib/cabanas';
 import { useMatchupStagePlayback } from './hooks/useMatchupStagePlayback';
 import { useStageVideoMeta } from './hooks/useStageVideoMeta';
 
@@ -129,6 +131,62 @@ function SectionLabel({ children }: { children: string }) {
       }}
     >
       {children}
+    </div>
+  );
+}
+
+function SuggestArtistDiscord() {
+  return (
+    <div style={{ marginBottom: 14, textAlign: 'center' }}>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: 0.5,
+          textTransform: 'uppercase',
+          color: 'rgba(255, 255, 255, 0.42)',
+          marginBottom: 6,
+        }}
+      >
+        Suggest artist
+      </div>
+      <a
+        href={DISCORD_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '7px 10px',
+          borderRadius: 9,
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'rgba(255, 255, 255, 0.06)',
+          color: 'rgba(255, 255, 255, 0.9)',
+          textDecoration: 'none',
+          transition: 'background 0.15s ease, border-color 0.15s ease',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.09)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.16)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={CABANA_DISCORD_LOGO}
+          alt=""
+          width={18}
+          height={14}
+          aria-hidden
+          style={{ display: 'block', flexShrink: 0 }}
+        />
+        <span style={{ fontSize: 12, fontWeight: 600 }}>Join our Discord</span>
+        <span aria-hidden style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.38)' }}>↗</span>
+      </a>
     </div>
   );
 }
@@ -394,6 +452,7 @@ export function StageInfoPanel({
 
       {activeVideo ? (
         <div style={{ marginTop: hasStageInfo || links.length > 0 ? 18 : 0 }}>
+          {!creatorStage ? <SuggestArtistDiscord /> : null}
           <SectionLabel>Now Playing</SectionLabel>
           <NowPlayingCard video={activeVideo} meta={videoMeta.get(activeVideo.id)} />
         </div>

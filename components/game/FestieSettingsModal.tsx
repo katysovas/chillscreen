@@ -119,7 +119,7 @@ type Props = {
 
 function FestieStageSettingsSection({ ownedStage }: { ownedStage: UserStagePublic }) {
   const creatorCtx = useCreatorStageControls();
-  if (creatorCtx?.isOwner) {
+  if (creatorCtx?.canManageLineup && creatorCtx.stage.slug === ownedStage.slug) {
     return <CreatorStageScenePanel />;
   }
 

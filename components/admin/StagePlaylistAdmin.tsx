@@ -56,8 +56,18 @@ function channelVideoCount(
   return state.videos.length;
 }
 
-export function StagePlaylistAdmin() {
-  const [activeChannel, setActiveChannel] = useState<StageChannel>('which-stage');
+type StagePlaylistAdminProps = {
+  /** Pre-select channel (e.g. current built-in stage). */
+  initialChannel?: StageChannel;
+  /** In-game modal — hide admin chrome. */
+  embedded?: boolean;
+};
+
+export function StagePlaylistAdmin({
+  initialChannel = 'which-stage',
+  embedded = false,
+}: StagePlaylistAdminProps = {}) {
+  const [activeChannel, setActiveChannel] = useState<StageChannel>(initialChannel);
   const [channels, setChannels] = useState<Partial<Record<StageChannel, ChannelState>>>({});
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -84,6 +94,10 @@ export function StagePlaylistAdmin() {
   const [channelResults, setChannelResults] = useState<YoutubeAdminSearchResult[]>([]);
   const [channelScannedCount, setChannelScannedCount] = useState<number | null>(null);
   const [activeStreamerIndex, setActiveStreamerIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveChannel(initialChannel);
+  }, [initialChannel]);
 
   const loadPlaylists = useCallback(async () => {
     setLoadError(null);
@@ -332,23 +346,36 @@ export function StagePlaylistAdmin() {
   };
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px 80px' }}>
-      <header style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 6px' }}>Stage playlist admin</h1>
-        <p style={{ margin: 0, color: '#9aa0a6', fontSize: 14, lineHeight: 1.5 }}>
-          Localhost only · writes to <code style={{ color: '#8ab4f8' }}>data/stage-playlists.json</code>
-          {updatedAt && (
-            <span> · last saved {new Date(updatedAt).toLocaleString()}</span>
-          )}
+    <div style={{
+      maxWidth: embedded ? undefined : 1100,
+      margin: embedded ? undefined : '0 auto',
+      padding: embedded ? '0 0 24px' : '24px 20px 80px',
+    }}
+    >
+      {!embedded && (
+        <header style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 6px' }}>Stage playlist admin</h1>
+          <p style={{ margin: 0, color: '#9aa0a6', fontSize: 14, lineHeight: 1.5 }}>
+            Localhost only · writes to <code style={{ color: '#8ab4f8' }}>data/stage-playlists.json</code>
+            {updatedAt && (
+              <span> · last saved {new Date(updatedAt).toLocaleString()}</span>
+            )}
+          </p>
+          <p style={{ margin: '8px 0 0', color: '#6b7280', fontSize: 12 }}>
+            After saving, refresh the game tab. Restart <code>party:dev</code> if PartyKit playlists look stale.
+            YouTube search is limited to ~100/day — use <strong style={{ color: '#9aa0a6' }}>Add by URL</strong> when quota runs out.
+          </p>
+          <nav style={{ marginTop: 10, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <AdminNav active="playlists" />
+          </nav>
+        </header>
+      )}
+
+      {embedded && updatedAt ? (
+        <p style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
+          Last saved {new Date(updatedAt).toLocaleString()} · refresh the page after saving to hear changes
         </p>
-        <p style={{ margin: '8px 0 0', color: '#6b7280', fontSize: 12 }}>
-          After saving, refresh the game tab. Restart <code>party:dev</code> if PartyKit playlists look stale.
-          YouTube search is limited to ~100/day — use <strong style={{ color: '#9aa0a6' }}>Add by URL</strong> when quota runs out.
-        </p>
-        <nav style={{ marginTop: 10, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <AdminNav active="playlists" />
-        </nav>
-      </header>
+      ) : null}
 
       {loadError && (
         <div style={bannerStyle('#5c2b2b', '#f8b4b4')}>{loadError}</div>

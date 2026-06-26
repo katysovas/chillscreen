@@ -83,6 +83,9 @@ type Props = {
   /** Signed-in festie — gear tab opens FestieSettingsModal. */
   settingsOpen?: boolean;
   onOpenSettings?: () => void;
+  /** Owner / super admin — lineup tab opens playlist editor modal. */
+  lineupOpen?: boolean;
+  onOpenLineup?: () => void;
 };
 
 function formatTime(ts: number): string {
@@ -272,6 +275,8 @@ export function StageChatterPanel({
   panelMaxHeight,
   settingsOpen = false,
   onOpenSettings,
+  lineupOpen = false,
+  onOpenLineup,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
@@ -465,7 +470,7 @@ export function StageChatterPanel({
           ? 'calc(max(env(safe-area-inset-top, 0px), 8px) + 72px)'
           : (panelTop ?? 20),
         zIndex: Z_CONTROLS,
-        width: isMobile ? undefined : 320,
+        width: isMobile ? undefined : 380,
         height: expanded ? (isMobile ? 'min(72vh, 640px)' : 800) : 'auto',
         maxHeight: expanded
           ? (panelMaxHeight ?? (isMobile ? 'min(72vh, 640px)' : 'calc(100vh - 220px)'))
@@ -524,6 +529,15 @@ export function StageChatterPanel({
             icon={<NowPlayingTabIcon />}
             onClick={() => selectTab('info')}
           />
+          {onOpenLineup ? (
+            <SidePanelTab
+              active={lineupOpen}
+              label="Lineup"
+              icon={<LineupTabIcon />}
+              iconOnly
+              onClick={onOpenLineup}
+            />
+          ) : null}
           {onOpenSettings ? (
             <SidePanelTab
               active={settingsOpen}
