@@ -1,22 +1,22 @@
 [
   {
-    "name": "nova",
+    "name": "marcus",
     "archetype": "chiller",
     "outfit": "hippie",
     "prop": "shades-glasses-blue",
-    "vibe": "naming every star she can see",
+    "vibe": "naming stars he definitely did not discover",
     "personalityNotes": "Has unofficial names for constellations and gets quietly offended when people use the boring official ones. Tracks satellites like weather."
   },
   {
-    "name": "orion",
+    "name": "priya",
     "archetype": "wanderer",
     "outfit": "none",
     "prop": null,
     "vibe": "zero gravity posture on solid ground",
-    "personalityNotes": "Walks like he is still adjusting to gravity after a long orbit. Pauses to look up every thirty seconds like the sky might change."
+    "personalityNotes": "Walks like she is still adjusting to gravity after a long orbit. Pauses to look up every thirty seconds like the sky might change."
   },
   {
-    "name": "luna",
+    "name": "derek",
     "archetype": "dancer",
     "outfit": "hippie",
     "prop": "party-glowsticks",
@@ -24,7 +24,7 @@
     "personalityNotes": "Treats glowsticks like deep-sea creatures. Moves slow and floaty until the bass hits, then commits fully."
   },
   {
-    "name": "cosmo",
+    "name": "tina",
     "archetype": "vendor",
     "outfit": "none",
     "prop": "drink-water",
@@ -32,7 +32,7 @@
     "personalityNotes": "Hands out water like a mission-critical supply drop. Tracks who has not sipped in twenty minutes."
   },
   {
-    "name": "vega",
+    "name": "sam",
     "archetype": "chiller",
     "outfit": "none",
     "prop": "food-popcorn",
@@ -40,11 +40,59 @@
     "personalityNotes": "Eats popcorn like she is in zero-g — minimal hand motion, maximum focus on the screen. Crunch volume is a personal shame."
   },
   {
-    "name": "ravi",
+    "name": "jess",
     "archetype": "hustler",
     "outfit": "undercover-cop",
     "prop": null,
     "vibe": "undercover at a lunar screening",
     "personalityNotes": "Convinced the space theme is perfect cover. Takes notes on suspicious blanket formations. Comedy only."
+  },
+  {
+    "name": "kyle",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": "hand-boombox",
+    "vibe": "orbiting the speaker stack",
+    "personalityNotes": "Found the sweet spot near the subs and treats it like a space station dock. Rarely leaves."
+  },
+  {
+    "name": "amanda",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "party-confetti",
+    "vibe": "meteor shower timing",
+    "personalityNotes": "Times confetti to bass drops like re-entry events. Wind is always wrong."
+  },
+  {
+    "name": "robert",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "drink-coffee",
+    "vibe": "night watch coffee ritual",
+    "personalityNotes": "Double-cupped for a long orbit shift. Treats caffeine like fuel cells."
+  },
+  {
+    "name": "elena",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-pizza",
+    "vibe": "pizza delivery to the observation deck",
+    "personalityNotes": "Sells slices like rations to stargazers. Tracks who saved crust for later."
+  },
+  {
+    "name": "james",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "party-glowsticks",
+    "vibe": "slow drift until the drop",
+    "personalityNotes": "Floats through the crowd until the bass hits, then snaps into full commit mode."
+  },
+  {
+    "name": "natalie",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "shades-glasses-yellow",
+    "vibe": "tracking the international space station pass",
+    "personalityNotes": "Has an app for satellite passes and narrates flyovers to anyone nearby. Calm evangelist."
   }
 ]

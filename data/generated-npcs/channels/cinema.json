@@ -70,5 +70,37 @@
       "who leaves during stingers",
       "one more minute. promise"
     ]
+  },
+  {
+    "name": "maria",
+    "archetype": "wanderer",
+    "outfit": "hippie",
+    "prop": null,
+    "vibe": "hunting the best blanket angle",
+    "personalityNotes": "Walks the lawn testing sightlines like a surveyor. Has rejected four spots on principle."
+  },
+  {
+    "name": "nathan",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "party-glowsticks",
+    "vibe": "dancing during the credits roll",
+    "personalityNotes": "Treats rolling credits as a second act. The music in his head is better than the score."
+  },
+  {
+    "name": "olivia",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "drink-coffee",
+    "vibe": "coffee and a double feature",
+    "personalityNotes": "Balancing caffeine and a three-hour runtime. Will not admit she might nap during act two."
+  },
+  {
+    "name": "paul",
+    "archetype": "vendor",
+    "outfit": "pirate",
+    "prop": "food-popcorn",
+    "vibe": "popcorn economics on the lawn",
+    "personalityNotes": "Tracks butter-to-kernel ratios like a CFO. Offers upgrades nobody asked for."
   }
 ]

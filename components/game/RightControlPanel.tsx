@@ -18,6 +18,7 @@ type Props = {
   creatorStageSlug?: string | null;
   hidden?: boolean;
   showCreateStage?: boolean;
+  onCreateStage?: () => void;
   showSignOut?: boolean;
   onSignOut?: () => void;
 };
@@ -30,6 +31,7 @@ export function RightControlPanel({
   creatorStageSlug = null,
   hidden = false,
   showCreateStage = false,
+  onCreateStage,
   showSignOut = false,
   onSignOut,
 }: Props) {
@@ -80,9 +82,19 @@ export function RightControlPanel({
     >
       <div className={['game-control-bar', inviteOpen ? 'game-control-bar--open' : ''].filter(Boolean).join(' ')}>
         {showCreateStage && (
-          <Link href="/create" className="game-control-bar__text-btn" style={{ textDecoration: 'none' }}>
-            Create New Stage
-          </Link>
+          onCreateStage ? (
+            <button
+              type="button"
+              className="game-control-bar__text-btn"
+              onClick={onCreateStage}
+            >
+              Create New Stage
+            </button>
+          ) : (
+            <Link href="/create" className="game-control-bar__text-btn" style={{ textDecoration: 'none' }}>
+              Create New Stage
+            </Link>
+          )
         )}
 
         {showCreateStage && showInvite && (

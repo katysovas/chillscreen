@@ -24,6 +24,10 @@ type Props = {
   isMobile?: boolean;
   onOpenSettings?: () => void;
   onControlModeChange?: (mode: FestieControlMode) => void;
+  /** Show autopilot toggle for guests (local-only, no festie row). */
+  showAutopilot?: boolean;
+  /** When false, autopilot only updates localStorage (anonymous guests). */
+  persistAutopilot?: boolean;
   stagePanelOpen?: boolean;
   onOpenStagePanel?: () => void;
 };
@@ -50,7 +54,13 @@ function StagePanelChatIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function AutopilotSwitch({ onControlModeChange }: { onControlModeChange?: (mode: FestieControlMode) => void }) {
+function AutopilotSwitch({
+  onControlModeChange,
+  persistAutopilot = true,
+}: {
+  onControlModeChange?: (mode: FestieControlMode) => void;
+  persistAutopilot?: boolean;
+}) {
   const toggleId = useId();
   const mode = useSyncExternalStore(
     subscribeFestieControlMode,
@@ -62,8 +72,10 @@ function AutopilotSwitch({ onControlModeChange }: { onControlModeChange?: (mode:
   const handleToggle = (next: FestieControlMode) => {
     const prev = getFestieControlMode();
     setFestieControlMode(next);
-    patchPlayerSessionFestie({ control_mode: next });
     onControlModeChange?.(next);
+    if (!persistAutopilot) return;
+
+    patchPlayerSessionFestie({ control_mode: next });
     void updateFestie({ control_mode: next })
       .then(festie => {
         onControlModeChange?.(festie.control_mode);
@@ -110,6 +122,7 @@ type BarProps = {
   isMobile: boolean;
   showSettings: boolean;
   showAutopilot: boolean;
+  persistAutopilot?: boolean;
   onOpenSettings?: () => void;
   onOpenStageSettings?: () => void;
   onControlModeChange?: (mode: FestieControlMode) => void;
@@ -124,6 +137,7 @@ function FestieControlBar({
   isMobile,
   showSettings,
   showAutopilot,
+  persistAutopilot = true,
   onOpenSettings,
   onOpenStageSettings,
   onControlModeChange,
@@ -133,12 +147,13 @@ function FestieControlBar({
   const iconSize = isMobile ? 18 : 16;
   const showLineup = showStageSettings && Boolean(onOpenStageSettings) && !isMobile;
   const showChat = isMobile && Boolean(onOpenStagePanel);
+  const guestMatchBar = !showSettings && !isMobile;
 
   return (
     <div
       className={[
         'game-control-bar',
-        'festie-control-bar',
+        guestMatchBar ? 'festie-control-bar--guest-match' : 'festie-control-bar',
         settingsOpen ? 'game-control-bar--open festie-control-bar--open' : '',
         isMobile ? 'game-control-bar--mobile festie-control-bar--mobile' : '',
       ]
@@ -187,7 +202,10 @@ function FestieControlBar({
       )}
 
       {showAutopilot && (
-        <AutopilotSwitch onControlModeChange={onControlModeChange} />
+        <AutopilotSwitch
+          onControlModeChange={onControlModeChange}
+          persistAutopilot={persistAutopilot}
+        />
       )}
 
       {showChat && (
@@ -226,20 +244,28 @@ export function FestieLifeCorner({
   isMobile = false,
   onOpenSettings,
   onControlModeChange,
+  showAutopilot: showAutopilotProp,
+  persistAutopilot = true,
   stagePanelOpen = false,
   onOpenStagePanel,
 }: Props) {
   if (hidden) return null;
 
   const showSettings = Boolean(onOpenSettings);
-  const showAutopilot = Boolean(_festie);
+  const showAutopilot = showAutopilotProp ?? Boolean(_festie);
 
-  if (!showSettings && !showAutopilot && !(isMobile && onOpenStagePanel)) return null;
+  if (
+    !showSettings
+    && !showAutopilot
+    && !(isMobile && onOpenStagePanel)
+  ) {
+    return null;
+  }
 
   return (
     <div
       data-paraloid-ui
-      className={isMobile ? 'festie-life-corner-mobile' : 'bottom-5'}
+      className={isMobile ? 'festie-life-corner-mobile' : 'hidden md:block bottom-5'}
       style={{
         position: 'absolute',
         left: CORNER_LEFT,
@@ -254,6 +280,7 @@ export function FestieLifeCorner({
         isMobile={isMobile}
         showSettings={showSettings}
         showAutopilot={showAutopilot}
+        persistAutopilot={persistAutopilot}
         onOpenSettings={onOpenSettings}
         onOpenStageSettings={onOpenStageSettings}
         onControlModeChange={onControlModeChange}

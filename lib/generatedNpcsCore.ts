@@ -22,8 +22,8 @@ export const CHANNEL_STAGE_ANCHOR: Partial<Record<StageChannel, StageAnchorKind>
 };
 
 export const STAGE_CROWD_AT_LOAD_RATIO = 0.7;
-const AMBIENT_SAMPLE_MIN_RATIO = 0.45;
-const AMBIENT_SAMPLE_MIN_FLOOR = 6;
+const AMBIENT_SAMPLE_MIN_RATIO = 0.85;
+const AMBIENT_SAMPLE_MIN_FLOOR = 10;
 const STAGE_CROWD_RATIO_JITTER = 0.15;
 
 const ARCHETYPE_PERSONALITY: Record<GeneratedNpc['archetype'], Personality> = {

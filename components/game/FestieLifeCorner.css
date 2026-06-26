@@ -20,6 +20,28 @@
   padding: 4px 8px 4px 4px;
 }
 
+/* Guest desktop — same pill sizing as RightControlPanel (Invite Friends bar). */
+.festie-control-bar--guest-match {
+  gap: 0;
+  padding: 4px 8px;
+}
+
+.festie-control-bar--guest-match .festie-autopilot-row {
+  gap: 8px;
+  padding: 7px 10px;
+}
+
+.festie-control-bar--guest-match .festie-autopilot-label {
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.festie-control-bar--guest-match .festie-neon-toggle .toggle--btn {
+  font-size: 9px;
+  letter-spacing: 0.8px;
+}
+
 .festie-control-bar--open {
   /* border handled by game-control-bar--open */
 }

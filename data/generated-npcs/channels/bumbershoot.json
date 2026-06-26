@@ -46,5 +46,53 @@
     "prop": "food-pizza",
     "vibe": "sharing pizza in the rain",
     "personalityNotes": "Umbrella over pizza, not people. Priorities are clear and she owns them."
+  },
+  {
+    "name": "gina",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "shades-glasses-yellow",
+    "vibe": "layering for seattle weather",
+    "personalityNotes": "Packed for rain, sun, and wind simultaneously. Treats her jacket like a mood ring."
+  },
+  {
+    "name": "harold",
+    "archetype": "wanderer",
+    "outfit": "hippie",
+    "prop": null,
+    "vibe": "chasing the quieter stage",
+    "personalityNotes": "Heard the second stage has shorter lines and better sightlines. Will walk there eventually."
+  },
+  {
+    "name": "iris",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "party-glowsticks",
+    "vibe": "puddle dancing specialist",
+    "personalityNotes": "Found a reflective puddle and treats it like a spotlight. Unbothered by wet shoes."
+  },
+  {
+    "name": "jack",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "drink-lemonade",
+    "vibe": "lemonade stand vs the drizzle",
+    "personalityNotes": "Sells lemonade and narrates weather like a sportscaster. Ice is holding."
+  },
+  {
+    "name": "kendra",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": null,
+    "vibe": "undercover at a rainy park show",
+    "personalityNotes": "Raincoat as disguise. Notes suspicious umbrella formations. Comedy only."
+  },
+  {
+    "name": "liam",
+    "archetype": "chiller",
+    "outfit": "pirate",
+    "prop": "food-pizza",
+    "vibe": "sharing pizza under a tarp",
+    "personalityNotes": "Claimed tarp real estate early. Shares slices only with people who compliment the setup."
   }
 ]

@@ -2,11 +2,16 @@ import { isMatchupChannel } from '@/lib/matchup/config';
 import { streamerBucket } from '@/lib/matchup/playlists';
 import type { RoomState } from '@/lib/matchup/types';
 import { scheduleFor, type StageChannel, type StageSync } from '@/lib/stageVideos';
+import {
+  announceThumbnailFromMatchupTrack,
+  announceThumbnailFromStageVideo,
+  announceThumbnailFromVideoId,
+} from '@/lib/stageAnnounce/thumbnail';
 
 export type AnnounceContext = {
   key: string;
   displayName: string;
-  /** YouTube video thumbnail URL, present for rotation channels. */
+  /** YouTube video frame or channel avatar for Discord embeds. */
   thumbnailUrl?: string;
 };
 
@@ -43,11 +48,24 @@ export function announceContextFor(
     const displayName = bucket?.name?.trim()
       || kothState?.current.track.title?.trim()
       || key;
-    return { key, displayName };
+
+    const currentTrackId = kothState?.current.track.youtubeId?.trim();
+    let thumbnailUrl = announceThumbnailFromMatchupTrack(kothState?.current.track);
+    if (!thumbnailUrl && bucket && currentTrackId) {
+      const matched = bucket.videos.find(v => v.id === currentTrackId);
+      thumbnailUrl = announceThumbnailFromStageVideo(matched);
+    }
+    if (!thumbnailUrl && bucket?.videos.length) {
+      thumbnailUrl = announceThumbnailFromStageVideo(bucket.videos[0]);
+    }
+
+    return { key, displayName, ...(thumbnailUrl ? { thumbnailUrl } : {}) };
   }
 
   const sched = scheduleFor(channel, now, sync);
   const displayName = sched?.video.title?.trim() || key;
-  const thumbnailUrl = `https://i.ytimg.com/vi/${key}/mqdefault.jpg`;
-  return { key, displayName, thumbnailUrl };
+  const thumbnailUrl =
+    announceThumbnailFromStageVideo(sched?.video)
+    ?? announceThumbnailFromVideoId(key);
+  return { key, displayName, ...(thumbnailUrl ? { thumbnailUrl } : {}) };
 }

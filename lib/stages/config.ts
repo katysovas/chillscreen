@@ -6,8 +6,8 @@ export const STAGE_CONFIG = {
   /** Max gap between ambient NPC spawns on entry (ms). */
   NPC_SPAWN_DELAY_MAX_MS: 5_000,
   /** Ambient NPC count range (inclusive). */
-  NPC_SPAWN_COUNT_MIN: 3,
-  NPC_SPAWN_COUNT_MAX: 5,
+  NPC_SPAWN_COUNT_MIN: 6,
+  NPC_SPAWN_COUNT_MAX: 10,
   /** Recent presence → stage stays active. */
   DORMANCY_WINDOW_MS: 30 * 24 * 60 * 60 * 1000,
   /** Past this, slug is released back to the pool. */

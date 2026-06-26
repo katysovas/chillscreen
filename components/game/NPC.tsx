@@ -32,6 +32,7 @@ import { Z_CHAT_CHARACTER } from '@/lib/zLayers';
 import { usePublicChatBubbleZ } from '@/lib/publicChatBubbleLayer';
 import {
   NPC_FAR_WANDER_CHANCE,
+  NPC_IDLE_EXTENSION_SCALE,
   NPC_IDLE_MS_SCALE,
   NPC_JUMP_CHANCE_SCALE,
   NPC_JUMP_CHECK_MS,
@@ -91,8 +92,8 @@ type NPCProps = NPCConfig & {
   chatPromptCanvasWorldX?: number | null;
   paused: boolean;
   greeting: boolean;
-  /** Soft connect glow — autopilot owner festie only. */
-  connectGlow?: boolean;
+  /** Soft connect glow — `'subtle'` for owner festie ID; `true` for pair chat. */
+  connectGlow?: boolean | 'subtle';
   /** In a connected conversation — pauses wander; no connect aura. */
   chatConnected?: boolean;
   /** Active NPC↔NPC pair convo — shows 💬 indicator only while server convo is live. */
@@ -589,8 +590,8 @@ function NPC({
           timer = setTimeout(
             decide,
             rndBetween(
-              personality.idleMs[0] * NPC_IDLE_MS_SCALE * 0.5,
-              personality.idleMs[1] * NPC_IDLE_MS_SCALE * 0.5,
+              personality.idleMs[0] * NPC_IDLE_MS_SCALE * NPC_IDLE_EXTENSION_SCALE,
+              personality.idleMs[1] * NPC_IDLE_MS_SCALE * NPC_IDLE_EXTENSION_SCALE,
             ),
           );
           return;

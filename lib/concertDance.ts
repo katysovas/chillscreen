@@ -4,6 +4,8 @@ import {
   cinemaMidX,
   coachellaLiveTile,
   coachellaMidX,
+  deepSpaceMidX,
+  DEEP_SPACE_MID_X,
   edcLiveTile,
   edcMidX,
   forestLiveTile,
@@ -21,6 +23,7 @@ import {
 } from './venues';
 import { midOriginForTile } from './worldTileGeometry';
 import { isSouthernCaliforniaTile } from '@/lib/worldTiles';
+import type { VenueRoute } from '@/lib/venueSlugs';
 import { CINEMA_STATIC_MID_X } from '@/components/game/city/sf/constants';
 import { EDC_STAGE_HALF, EDC_STATIC_STAGE_HALF, EDC_STATIC_STAGE_MID_X } from '@/components/game/city/lasvegas/constants';
 import { COACHELLA_STAGE_HALF, COACHELLA_STATIC_STAGE_HALF, COACHELLA_STATIC_STAGE_MID_X } from '@/components/game/city/sandiego/constants';
@@ -29,6 +32,7 @@ import { FOREST_STAGE_HALF } from '@/components/game/city/forest/constants';
 import { SILENT_DISCO_STAGE_HALF } from '@/components/game/city/silent-disco/constants';
 import { CINEMA_SCALE, CINEMA_WIDTH } from '@/components/game/Cinema';
 import { CONCERT_SCALE, CONCERT_WIDTH } from '@/components/game/Concert';
+import { DEEP_SPACE_SCALE, DEEP_SPACE_WIDTH } from '@/lib/stageVideoLayout';
 
 /** Screen-% distance from a stage/cinema to start dancing. */
 export const STAGE_DANCE_RADIUS_PCT = 24;
@@ -38,6 +42,7 @@ export const CONCERT_DANCE_RADIUS_PCT = STAGE_DANCE_RADIUS_PCT;
 
 const CINEMA_HALF_MID = Math.ceil(Math.round(CINEMA_WIDTH * CINEMA_SCALE) / 2) + 24;
 const CONCERT_HALF_MID = Math.ceil(Math.round(CONCERT_WIDTH * CONCERT_SCALE) / 2) + 24;
+const DEEP_SPACE_HALF_MID = Math.ceil(Math.round(DEEP_SPACE_WIDTH * DEEP_SPACE_SCALE) / 2) + 24;
 
 function liveVenueMidWorldX(
   worldOff: number,
@@ -99,6 +104,46 @@ export function liveSilentDiscoMidWorldX(worldOff: number): number | null {
   return liveVenueMidWorldX(worldOff, silentDiscoLiveTile, silentDiscoStageMidX, SILENT_DISCO_STAGE_HALF);
 }
 
+export function liveDeepSpaceMidWorldX(worldOff: number): number | null {
+  const primary = liveVenueMidWorldX(worldOff, cinemaLiveTile, deepSpaceMidX, DEEP_SPACE_HALF_MID);
+  if (primary != null) return primary;
+  const vx = midVxFromWorldOff(worldOff);
+  const tile = cityTileIndex('sf');
+  if (cinemaLiveTile(vx) !== tile) return null;
+  if (!isVenueInView(vx, tile, DEEP_SPACE_MID_X, DEEP_SPACE_HALF_MID)) return null;
+  return midOriginForTile(tile) + DEEP_SPACE_MID_X;
+}
+
+type LiveStageMidFn = (worldOff: number) => number | null;
+
+/** Isolated venue routes — only match the active stage (avoids SF tile cross-talk). */
+const ROUTE_STAGE_MID: Partial<Record<VenueRoute, LiveStageMidFn>> = {
+  'deep-space': liveDeepSpaceMidWorldX,
+  cinema: liveCinemaMidWorldX,
+  'outside-hands': liveConcertMidWorldX,
+  'seattle-concerts': liveConcertMidWorldX,
+  coachella: liveCoachellaMidWorldX,
+  edc: liveEdcMidWorldX,
+  tentaroo: liveWhichStageMidWorldX,
+  'creator-chill': liveWhichStageMidWorldX,
+  'creator-cinema': liveWhichStageMidWorldX,
+  hula: liveWhichStageMidWorldX,
+  headliner: liveWhichStageMidWorldX,
+  forest: liveForestStageMidWorldX,
+  'silent-disco': liveSilentDiscoMidWorldX,
+};
+
+const ALL_STAGE_MIDS: LiveStageMidFn[] = [
+  liveDeepSpaceMidWorldX,
+  liveCinemaMidWorldX,
+  liveConcertMidWorldX,
+  liveCoachellaMidWorldX,
+  liveEdcMidWorldX,
+  liveWhichStageMidWorldX,
+  liveForestStageMidWorldX,
+  liveSilentDiscoMidWorldX,
+];
+
 export function entityScreenPct(worldX: number, worldOff: number, width: number) {
   return 50 + ((worldX - worldOff) / width) * 100;
 }
@@ -147,21 +192,18 @@ function isNearVenue(
   return Math.abs(entityPct - stagePct) < radiusPct;
 }
 
-/** True when entity is within dance range of any on-screen stage (cinema, concert, Coachella). */
+/** True when entity is within dance range of an on-screen stage. */
 export function isNearStage(
   entityWorldX: number,
   worldOff: number,
   width: number,
   radiusPct = STAGE_DANCE_RADIUS_PCT,
+  route?: VenueRoute | null,
 ): boolean {
-  return (
-    isNearVenue(entityWorldX, worldOff, width, liveCinemaMidWorldX(worldOff), radiusPct) ||
-    isNearVenue(entityWorldX, worldOff, width, liveConcertMidWorldX(worldOff), radiusPct) ||
-    isNearVenue(entityWorldX, worldOff, width, liveCoachellaMidWorldX(worldOff), radiusPct) ||
-    isNearVenue(entityWorldX, worldOff, width, liveEdcMidWorldX(worldOff), radiusPct) ||
-    isNearVenue(entityWorldX, worldOff, width, liveWhichStageMidWorldX(worldOff), radiusPct) ||
-    isNearVenue(entityWorldX, worldOff, width, liveForestStageMidWorldX(worldOff), radiusPct) ||
-    isNearVenue(entityWorldX, worldOff, width, liveSilentDiscoMidWorldX(worldOff), radiusPct)
+  const scoped = route ? ROUTE_STAGE_MID[route] : null;
+  const mids = scoped ? [scoped] : ALL_STAGE_MIDS;
+  return mids.some(midFn =>
+    isNearVenue(entityWorldX, worldOff, width, midFn(worldOff), radiusPct),
   );
 }
 

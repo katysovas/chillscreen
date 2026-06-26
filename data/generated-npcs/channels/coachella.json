@@ -214,5 +214,101 @@
       "tracking greg is my set",
       "he was just here. allegedly"
     ]
+  },
+  {
+    "name": "andrew",
+    "archetype": "wanderer",
+    "outfit": "none",
+    "prop": "drink-water",
+    "vibe": "desert shoe survival mode",
+    "personalityNotes": "Sand in every shoe. Has accepted it philosophically. Still dancing."
+  },
+  {
+    "name": "brittany",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "golden hour dance convert",
+    "personalityNotes": "Waits all day for the light to hit right, then commits fully for twelve minutes."
+  },
+  {
+    "name": "chris",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-tacos",
+    "vibe": "taco line philosopher",
+    "personalityNotes": "Runs the line like a TED talk. Every customer gets a desert survival tip."
+  },
+  {
+    "name": "danielle",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "shades-glasses-blue",
+    "vibe": "mist tent schedule keeper",
+    "personalityNotes": "Has mist tent times written on her arm. Shares the schedule unprompted."
+  },
+  {
+    "name": "frank",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": null,
+    "vibe": "undercover in full festival regalia",
+    "personalityNotes": "Bandana and sunglasses at noon. Notes wristband colors. Comedy only."
+  },
+  {
+    "name": "heather",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "hat-lady",
+    "vibe": "wind vs hat ongoing battle",
+    "personalityNotes": "Lost one hat, bought another, refuses a chin strap on principle."
+  },
+  {
+    "name": "ivan",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "hand-boombox",
+    "vibe": "bass chaser across the field",
+    "personalityNotes": "Follows sub bass like a homing beacon. Phone compass unused."
+  },
+  {
+    "name": "julia",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": null,
+    "vibe": "art installation tourist",
+    "personalityNotes": "Maps the grounds by sculptures and shade. Gets lost between installations happily."
+  },
+  {
+    "name": "keith",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "drink-beer",
+    "vibe": "cold beer mission at sunset",
+    "personalityNotes": "Ice math is his religion. Sundown rush is his Super Bowl."
+  },
+  {
+    "name": "linda",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "food-pizza",
+    "vibe": "slice fairness enforcer",
+    "personalityNotes": "Diagonal cuts only. Keeps a mental ledger of who owes who a crust."
+  },
+  {
+    "name": "miguel",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-confetti",
+    "vibe": "confetti wind scientist",
+    "personalityNotes": "Studies gust patterns before every throw. Data-driven celebration."
+  },
+  {
+    "name": "nora",
+    "archetype": "wanderer",
+    "outfit": "none",
+    "prop": "shades-glasses-circle",
+    "vibe": "looking for camp row seven",
+    "personalityNotes": "Camp was near a flag. The flag moved. Still confident."
   }
 ]

@@ -46,5 +46,53 @@
     "prop": "food-pizza",
     "vibe": "splitting pizza on the lawn",
     "personalityNotes": "Fair slice division is her whole personality tonight. Has a system involving diagonal cuts."
+  },
+  {
+    "name": "george",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "drink-coffee",
+    "vibe": "sf fog veteran",
+    "personalityNotes": "Has seen this fog before. Brought the right jacket. Smug but helpful."
+  },
+  {
+    "name": "hannah",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "hill climb dancer",
+    "personalityNotes": "Treats every uphill walk as a warm-up. Dances at the top as reward."
+  },
+  {
+    "name": "ian",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-hotdog",
+    "vibe": "cart on the grade",
+    "personalityNotes": "Brakes are a lifestyle. Sells dogs with hill-related small talk."
+  },
+  {
+    "name": "janet",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": "shades-glasses-yellow",
+    "vibe": "finding the quiet beer garden",
+    "personalityNotes": "Heard the garden has shorter lines. Will get there eventually."
+  },
+  {
+    "name": "kyle",
+    "archetype": "hustler",
+    "outfit": "none",
+    "prop": null,
+    "vibe": "wristband upgrade schemes",
+    "personalityNotes": "Has three plans and zero wristbands. Still optimistic."
+  },
+  {
+    "name": "laura",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "food-pizza",
+    "vibe": "lawn picnic organizer",
+    "personalityNotes": "Brought a spreadsheet for slice allocation. Friends tolerate her."
   }
 ]

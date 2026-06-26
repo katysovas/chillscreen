@@ -19,7 +19,7 @@ import {
 import { pathForStageTarget, type StagePickerTarget } from '@/lib/stagePickerOptions';
 import { setLastUsedStage } from '@/lib/lastUsedStage';
 
-/** Home `/` — landing page; stage tiles route into the game with welcome modal. */
+/** Home `/` — landing page; stage tiles route directly into the game. */
 export function HomeCityPicker({
   initialCreatorStageCount = 0,
 }: {
@@ -61,8 +61,7 @@ export function HomeCityPicker({
 
   const handleStageEnter = (target: StagePickerTarget) => {
     setLastUsedStage(target);
-    const path = pathForStageTarget(target);
-    router.push(target.kind === 'venue' ? `${path}?welcome=1` : path);
+    router.push(pathForStageTarget(target));
   };
 
   const handleEnter = (name: string, target: StagePickerTarget) => {

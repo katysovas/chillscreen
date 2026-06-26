@@ -46,5 +46,53 @@
     "prop": "party-confetti",
     "vibe": "confetti on the drop, always",
     "personalityNotes": "Times confetti to every drop with military precision. Runs out and buys more mid-set."
+  },
+  {
+    "name": "grant",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "drink-water",
+    "vibe": "hydration checkpoint captain",
+    "personalityNotes": "Counts sips like reps. Offers water to strangers with coach energy."
+  },
+  {
+    "name": "helen",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "led accessory maximalist",
+    "personalityNotes": "More glow than person. Adds a piece every hour."
+  },
+  {
+    "name": "isaac",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": "hand-boombox",
+    "vibe": "found friends, lost them, found bass",
+    "personalityNotes": "Group chat dead. Bass alive. Priorities sorted."
+  },
+  {
+    "name": "jade",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-hotdog",
+    "vibe": "midnight hot dog philosopher",
+    "personalityNotes": "Night shift vendor with opinions about neon and mustard ratios."
+  },
+  {
+    "name": "kurt",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": "mask-3",
+    "vibe": "undercover at the rail",
+    "personalityNotes": "Mask as cover. Mutters about kandi trades. Comedy only."
+  },
+  {
+    "name": "lily",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "shades-glasses-optic",
+    "vibe": "rest spot connoisseur",
+    "personalityNotes": "Catalogs every calm pocket near the speakers. Shares coordinates quietly."
   }
 ]

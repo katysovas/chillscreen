@@ -158,7 +158,11 @@ function SFCityCrowdLayer({
             pairChatBubbleSide={pairChatBubbleSide}
             pairChatSpreadPx={pairChatSpreadPx}
             greeting={greetingNpc === i}
-            connectGlow={inRpsPair || (ownerFestieNpcId === cfg.id && autopilotOn && !rpsPairIds)}
+            connectGlow={
+              inRpsPair ? true
+              : ownerFestieNpcId === cfg.id && autopilotOn ? 'subtle'
+              : false
+            }
             chatConnected={chatConnected}
             pairChatIndicator={isNpcInPairConvo(cfg.id)}
             dimmed={festieDimNpcIds.has(cfg.id)}

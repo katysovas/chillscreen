@@ -105,5 +105,53 @@
       "boombox scares them off",
       "fireflies are the real lineup"
     ]
+  },
+  {
+    "name": "amber",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "drink-lemonade",
+    "vibe": "firefly census taker",
+    "personalityNotes": "Counts fireflies by grove. Suspects they have shift schedules."
+  },
+  {
+    "name": "brandon",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "party-glowsticks",
+    "vibe": "laser path follower",
+    "personalityNotes": "Treats laser lines like dance floor tape. Never crosses a beam wrong."
+  },
+  {
+    "name": "carmen",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": null,
+    "vibe": "totem landmark navigator",
+    "personalityNotes": "Navigates by glowing totems only. Paper maps are for tourists."
+  },
+  {
+    "name": "diego",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-tacos",
+    "vibe": "midnight taco forest outpost",
+    "personalityNotes": "Sells tacos where the trail gets weird. Knows every shortcut."
+  },
+  {
+    "name": "elise",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": "shades-glasses-blue",
+    "vibe": "undercover among the string lights",
+    "personalityNotes": "Glow paint on boots. Stakeout notes about suspicious hula hoops. Comedy only."
+  },
+  {
+    "name": "felix",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "hand-boombox",
+    "vibe": "secret set believer",
+    "personalityNotes": "Swears bass from the deep trees is a real set. Following it nightly."
   }
 ]

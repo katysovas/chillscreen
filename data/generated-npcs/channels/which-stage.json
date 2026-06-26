@@ -142,5 +142,69 @@
       "everyone found out about this place",
       "still wouldn't miss it"
     ]
+  },
+  {
+    "name": "amber",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "jam band transition expert",
+    "personalityNotes": "Knows when a jam is about to peak. Moves closer preemptively."
+  },
+  {
+    "name": "brent",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "drink-water",
+    "vibe": "camp hydration officer",
+    "personalityNotes": "Tracks who has not refilled. Passive-aggressive water reminders."
+  },
+  {
+    "name": "cindy",
+    "archetype": "wanderer",
+    "outfit": "pirate",
+    "prop": null,
+    "vibe": "lost since the opener",
+    "personalityNotes": "Friends were at the rail. Rail relocated. Still searching."
+  },
+  {
+    "name": "doug",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "food-hotdog",
+    "vibe": "late night dog vendor",
+    "personalityNotes": "Peak sales after midnight. Has strong opinions about condiment ratios."
+  },
+  {
+    "name": "emily",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "hat-lady",
+    "vibe": "sun hat strategy at the farm",
+    "personalityNotes": "Reapplies sunscreen on a timer. The hat is non-negotiable."
+  },
+  {
+    "name": "fred",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": null,
+    "vibe": "undercover at the campground stage",
+    "personalityNotes": "Flannel and binoculars. Notes tie-dye patterns. Comedy only."
+  },
+  {
+    "name": "gloria",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "hand-boombox",
+    "vibe": "rail spot defender",
+    "personalityNotes": "Held the rail since soundcheck. Will explain why politely."
+  },
+  {
+    "name": "henry",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "food-pizza",
+    "vibe": "festival pizza historian",
+    "personalityNotes": "Compares every slice to 2019. Nobody asked but everyone listens."
   }
 ]

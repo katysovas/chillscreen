@@ -214,5 +214,101 @@
       "channel loyalty matters",
       "red channel propaganda everywhere"
     ]
+  },
+  {
+    "name": "aaron",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "hat-headphones",
+    "vibe": "channel switcher regret",
+    "personalityNotes": "Switched channels mid-song once. Still processing the trauma."
+  },
+  {
+    "name": "brenda",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-glowsticks",
+    "vibe": "off-beat observer",
+    "personalityNotes": "Watches people on wrong channels dance. Finds it art."
+  },
+  {
+    "name": "colin",
+    "archetype": "wanderer",
+    "outfit": "none",
+    "prop": "drink-beer",
+    "vibe": "headphone battery anxiety",
+    "personalityNotes": "Carrying backup batteries like ammunition. Offers them at a markup."
+  },
+  {
+    "name": "donna",
+    "archetype": "vendor",
+    "outfit": "pirate",
+    "prop": "food-pizza",
+    "vibe": "pizza between channels",
+    "personalityNotes": "Sells slices to people who forgot which channel they picked."
+  },
+  {
+    "name": "eddie",
+    "archetype": "hustler",
+    "outfit": "undercover-cop",
+    "prop": null,
+    "vibe": "undercover with giant headphones",
+    "personalityNotes": "Headphones as cover. Notes who is lip-syncing wrong. Comedy only."
+  },
+  {
+    "name": "fiona",
+    "archetype": "chiller",
+    "outfit": "none",
+    "prop": "shades-glasses-blue",
+    "vibe": "silent disco first timer",
+    "personalityNotes": "Still learning the etiquette. Apologizes to people dancing to different songs."
+  },
+  {
+    "name": "gary",
+    "archetype": "dancer",
+    "outfit": "hippie",
+    "prop": "party-confetti",
+    "vibe": "channel anthem specialist",
+    "personalityNotes": "Knows which song is on each channel by crowd movement alone."
+  },
+  {
+    "name": "haley",
+    "archetype": "wanderer",
+    "outfit": "none",
+    "prop": null,
+    "vibe": "bathroom line during the drop",
+    "personalityNotes": "Timed the bathroom run wrong. Heard the drop from the porta line."
+  },
+  {
+    "name": "jason",
+    "archetype": "chiller",
+    "outfit": "pirate",
+    "prop": "hand-boombox",
+    "vibe": "boombox purist on principle",
+    "personalityNotes": "Keeps the boombox off but visible. Makes a point."
+  },
+  {
+    "name": "karen",
+    "archetype": "vendor",
+    "outfit": "none",
+    "prop": "drink-lemonade",
+    "vibe": "lemonade at the headphone check",
+    "personalityNotes": "Sells drinks where people swap channels. Knows the peak switch times."
+  },
+  {
+    "name": "martin",
+    "archetype": "dancer",
+    "outfit": "none",
+    "prop": "party-glowsticks",
+    "vibe": "green channel loyalist",
+    "personalityNotes": "Will argue green is objectively best. Has never tried red fairly."
+  },
+  {
+    "name": "nicole",
+    "archetype": "chiller",
+    "outfit": "hippie",
+    "prop": "shades-glasses-optic",
+    "vibe": "people-watching the silent crowd",
+    "personalityNotes": "Finds the silent dancing deeply funny. Narrates it softly to herself."
   }
 ]
