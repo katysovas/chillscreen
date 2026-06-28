@@ -147,14 +147,26 @@
   --landing-hero-screen-top: 0.132;
   --landing-hero-screen-height: 0.489;
   --landing-hero-vb-h: 845;
+  /* vw/vh fallbacks for Safari < 15.4 (no svh/svw support) */
   --landing-hero-screen-w: calc(
-    340 * max(100svw / 1400, (100svh - var(--landing-nav-height)) / var(--landing-hero-vb-h))
+    340 * max(100vw / 1400, (100vh - var(--landing-nav-height)) / var(--landing-hero-vb-h))
   );
-  --landing-hero-mobile-stage-h: calc(100svw * var(--landing-hero-vb-h) / 900);
+  --landing-hero-mobile-stage-h: calc(100vw * var(--landing-hero-vb-h) / 900);
   position: relative;
+  min-height: 100vh; /* Safari < 15.4 fallback — hero collapses without this */
   min-height: 100svh;
   overflow: hidden;
   background: var(--lp-bg);
+}
+
+/* Upgrade to small-viewport units where supported (Safari 15.4+, Chrome 108+). */
+@supports (height: 1svh) {
+  .landing-page .hero {
+    --landing-hero-screen-w: calc(
+      340 * max(100svw / 1400, (100svh - var(--landing-nav-height)) / var(--landing-hero-vb-h))
+    );
+    --landing-hero-mobile-stage-h: calc(100svw * var(--landing-hero-vb-h) / 900);
+  }
 }
 
 .landing-page .hero::after {
@@ -339,6 +351,7 @@
   border-radius: 999px;
   background: rgba(240, 237, 230, 0.06);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   overflow: hidden;
   cursor: pointer;
   font-family: inherit;
@@ -413,7 +426,7 @@
 @media (max-width: 767px) {
   .landing-page .hero {
     --landing-nav-height: 66px;
-    --landing-hero-screen-w: calc(100svw * 480 / 900);
+    --landing-hero-screen-w: calc(100vw * 480 / 900); /* vw fallback; svw override below */
   }
 
   .landing-page .hero {
@@ -516,6 +529,15 @@
 
   .landing-page .hero-scroll-txt {
     text-align: center;
+  }
+}
+
+/* Restore svw for mobile on Safari 15.4+ / Chrome 108+. */
+@supports (width: 1svw) {
+  @media (max-width: 767px) {
+    .landing-page .hero {
+      --landing-hero-screen-w: calc(100svw * 480 / 900);
+    }
   }
 }
 

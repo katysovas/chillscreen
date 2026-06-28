@@ -269,8 +269,16 @@ const TEST_CHAT_CONNECT_ON_LOAD = false;
 
 // Characters are defined in characters.ts (names, personalities, AI chat).
 
-function applySafariDesktopVb(vb: string, layerVx: number, desktopStatic: boolean): string {
-  if (!desktopStatic || !isSafariBrowser() || layerVx === 0) return vb;
+/**
+ * Zero-out the viewBox x-origin on Safari for layers that use a `contentTranslateX`
+ * `<g transform>` to encode the x-offset instead of the viewBox attribute.
+ * Applies to:
+ *  - desktopStatic (in-game static venues): Safari ignores non-zero viewBox x-origin
+ *  - desktopLanding (landing hero mid-layer): ParallaxSvgLayer renders viewBox="0 …"
+ *    because contentTranslateX is set; updateViewBoxes must stay in sync (zero x too).
+ */
+function applySafariDesktopVb(vb: string, layerVx: number, desktopStatic: boolean, desktopLanding = false): string {
+  if ((!desktopStatic && !desktopLanding) || !isSafariBrowser() || layerVx === 0) return vb;
   return safariStaticViewBox(vb);
 }
 
@@ -495,7 +503,11 @@ export default function SFCity({
       : staticVb(layerVx);
     const midPar = staticPar;
     const gndPar = splitGrassLayout ? MOBILE_VENUE_GROUND_PAR : staticPar;
-    const midVb = applySafariDesktopVb(stageVb(midVx), midVx, desktopStatic);
+    // Pass desktopLanding so that Safari's zero-x viewBox stays in sync with
+    // the ParallaxSvgLayer initial render (which uses viewBox="0 …" when
+    // contentTranslateX is set). Sky and ground layers don't use contentTranslateX
+    // so they keep the regular (possibly non-zero x) viewBox.
+    const midVb = applySafariDesktopVb(stageVb(midVx), midVx, desktopStatic, desktopLanding);
     const gndVb = applySafariDesktopVb(groundVb(gndVx), gndVx, desktopStatic);
     const skyVb = applySafariDesktopVb(stageVb(skyVx), skyVx, desktopStatic);
 
